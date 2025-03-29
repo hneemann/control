@@ -1,6 +1,9 @@
 package polynomial
 
-import "fmt"
+import (
+	"fmt"
+	"math"
+)
 
 type Linear struct {
 	Numerator   Polynomial
@@ -13,8 +16,26 @@ func (l Linear) Eval(s complex128) complex128 {
 	return l.Numerator.EvalCplx(s) / l.Denominator.EvalCplx(s)
 }
 
+func (l Linear) Equals(b Linear) bool {
+	return l.Numerator.Equals(b.Numerator) && l.Denominator.Equals(b.Denominator)
+}
+
 func (l Linear) String() string {
-	return fmt.Sprintf("(%s)/(%s)", l.Numerator.String(), l.Denominator.String())
+	var n string
+	nr, err := l.getNumRoots()
+	if err == nil {
+		n = nr.String()
+	} else {
+		n = l.Numerator.String()
+	}
+	var d string
+	dr, err := l.getDenRoots()
+	if err == nil {
+		d = dr.String()
+	} else {
+		d = l.Denominator.String()
+	}
+	return fmt.Sprintf("%s/(%s)", n, d)
 }
 
 func (l *Linear) getNumRoots() (Roots, error) {
@@ -57,8 +78,7 @@ func (l Linear) Poles() ([]complex128, error) {
 
 func FromRoots(numerator, denominator Roots) Linear {
 	nn := Roots{factor: numerator.factor}
-	denominator = denominator.RemoveConjugate()
-	for _, nr := range numerator.RemoveConjugate().roots {
+	for _, nr := range numerator.roots {
 		found := -1
 		for i, dr := range denominator.roots {
 			if Equals(nr, dr) {
@@ -153,5 +173,15 @@ func (l Linear) MulFloat(f float64) Linear {
 	return Linear{
 		Numerator:   l.Numerator.MulFloat(f),
 		Denominator: l.Denominator,
+	}
+}
+
+func PID(kp, ti, td float64) Linear {
+	denom := Roots{factor: 1 / ti, roots: []complex128{0}}
+	sq := 1/(4*td*td) - 1/(ti*td)
+	if sq < 0 {
+		return FromRoots(NewRoots(complex(-1/(2*td), math.Sqrt(-sq))), denom).MulFloat(kp)
+	} else {
+		return FromRoots(NewRoots(complex(-1/(2*td)-math.Sqrt(sq), 0), complex(-1/(2*td)+math.Sqrt(sq), 0)), denom).MulFloat(kp)
 	}
 }

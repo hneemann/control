@@ -114,9 +114,9 @@ func TestPolynom_Roots(t *testing.T) {
 		{"linear", Polynomial{1, 2}, []complex128{complex(-0.5, 0)}, ""},
 		{"linear", Polynomial{0, 2}, []complex128{complex(0, 0)}, ""},
 		{"quadratic", Polynomial{1, 2, 1}, []complex128{complex(-1, 0), complex(-1, 0)}, ""},
-		{"quadratic", Polynomial{2, 2, 1}, []complex128{complex(-1, 1), complex(-1, -1)}, ""},
+		{"quadratic", Polynomial{2, 2, 1}, []complex128{complex(-1, 1)}, ""},
 		{"cubic", Polynomial{2, -1, -2, 1}, []complex128{complex(2, 0), complex(1, 0), complex(-1, 0)}, ""},
-		{"cubic", Polynomial{2, 0, -1, 1}, []complex128{complex(1, 1), complex(1, -1), complex(-1, 0)}, ""},
+		{"cubic", Polynomial{2, 0, -1, 1}, []complex128{complex(1, 1), complex(-1, 0)}, ""},
 		{"four", Polynomial{24, 14, -13, -2, 1}, []complex128{complex(4, 0), complex(2, 0), complex(-1, 0), complex(-3, 0)}, ""},
 	}
 	for _, tt := range tests {
@@ -164,7 +164,7 @@ func TestRoots_Polynomial(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			roots, err := tt.p.Roots()
 			assert.NoError(t, err, roots.String())
-			assert.EqualValues(t, tt.p, roots.Polynomial(), roots.String())
+			assert.True(t, tt.p.Equals(roots.Polynomial()), roots.String())
 		})
 	}
 }

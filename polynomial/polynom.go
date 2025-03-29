@@ -3,7 +3,6 @@ package polynomial
 import (
 	"errors"
 	"fmt"
-	"github.com/hneemann/control/nelderMead"
 	"math"
 	"math/cmplx"
 	"strings"
@@ -190,12 +189,13 @@ func NewRoots(roots ...complex128) Roots {
 }
 
 func (p Polynomial) Roots() (Roots, error) {
+	if len(p) == 0 {
+		return Roots{}, errors.New("no coefficients given")
+	}
 	if p[len(p)-1] == 0 {
 		return Roots{}, errors.New("not canonical")
 	}
 	switch len(p) {
-	case 0:
-		return Roots{}, nil
 	case 1:
 		return Roots{roots: nil, factor: p[0]}, nil
 	case 2:
@@ -205,16 +205,16 @@ func (p Polynomial) Roots() (Roots, error) {
 		d := b*b - 4*a*c
 		if d < 0 {
 			sqrtD := math.Sqrt(-d)
-			return Roots{roots: []complex128{complex(-b/(2*a), sqrtD/(2*a)), complex(-b/(2*a), -sqrtD/(2*a))}, factor: a}, nil
+			return Roots{roots: []complex128{complex(-b/(2*a), math.Abs(sqrtD/(2*a)))}, factor: a}, nil
 		}
 		sqrtD := math.Sqrt(d)
 		return Roots{roots: []complex128{complex((-b+sqrtD)/(2*a), 0), complex((-b-sqrtD)/(2*a), 0)}, factor: a}, nil
 	default:
-		zero, err := p.findRoot()
+		zero, err := p.findRootNewton(1e-9)
 		if err != nil {
 			return Roots{}, err
 		}
-		rp, cplx := FromRoot(zero)
+		rp := FromRoot(zero)
 		var np Polynomial
 		np, _, err = p.Div(rp)
 		if err != nil {
@@ -226,48 +226,45 @@ func (p Polynomial) Roots() (Roots, error) {
 			return Roots{}, err
 		}
 		r.roots = append(r.roots, zero)
-		if cplx {
-			r.roots = append(r.roots, complex(real(zero), -imag(zero)))
-		}
 		return r, nil
 	}
 }
 
-func (p Polynomial) findRoot() (complex128, error) {
-	r, z, err := nelderMead.NelderMead(func(x nelderMead.Vector) float64 {
-		return cmplx.Abs(p.EvalCplx(complex(x[0], x[1])))
-	}, []nelderMead.Vector{{0, 0}, {0, 1}, {1, 0}}, 1000)
-	if err != nil {
-		return 0, err
-	}
-	if math.Abs(z) > eps {
-		return 0, errors.New("Nebenminimum")
-	}
-	return complex(r[0], r[1]), nil
-}
-
-func FromRoot(zero complex128) (Polynomial, bool) {
-	if math.Abs(imag(zero)) < eps {
-		return Polynomial{-real(zero), 1}, false
-	} else {
-		return Polynomial{real(zero)*real(zero) + imag(zero)*imag(zero), -2 * real(zero), 1}, true
-	}
-}
-
-func (r Roots) RemoveConjugate() Roots {
-	var nr []complex128
-	for _, z := range r.roots {
-		if math.Abs(imag(z)) < eps {
-			nr = append(nr, z)
-		} else {
-			if imag(z) > 0 {
-				nr = append(nr, z)
-			}
+func (p Polynomial) findRootNewton(eps float64) (complex128, error) {
+	deriv := p.Derivative()
+	z := complex(1, 1)
+	for range 1000 {
+		f := p.EvalCplx(z)
+		if cmplx.Abs(f) < eps {
+			return complex(real(z), math.Abs(imag(z))), nil
 		}
+		z = z - f/deriv.EvalCplx(z)
 	}
-	return Roots{
-		roots:  nr,
-		factor: r.factor,
+	return complex(real(z), math.Abs(imag(z))), errors.New("no convergence")
+}
+
+//func (p Polynomial) findRoot() (complex128, error) {
+//	log.Println("findRoot", p)
+//	r, z, err := nelderMead.NelderMead(func(x nelderMead.Vector) float64 {
+//		return cmplx.Abs(p.EvalCplx(complex(x[0], x[1])))
+//	}, []nelderMead.Vector{{0, 0}, {0, 1}, {1, 0}}, 1000)
+//	if err != nil {
+//		return 0, err
+//	}
+//	if math.Abs(z) > 1e-9 {
+//		log.Println("Nebenminimum", p, r, z)
+//		return 0, errors.New("Nebenminimum")
+//	}
+//	root := complex(r[0], math.Abs(r[1]))
+//	log.Println("root", root)
+//	return root, nil
+//}
+
+func FromRoot(zero complex128) Polynomial {
+	if math.Abs(imag(zero)) < eps {
+		return Polynomial{-real(zero), 1}
+	} else {
+		return Polynomial{real(zero)*real(zero) + imag(zero)*imag(zero), -2 * real(zero), 1}
 	}
 }
 
@@ -278,23 +275,57 @@ func Equals(a, b complex128) bool {
 
 func (r Roots) Polynomial() Polynomial {
 	p := Polynomial{r.factor}
-	for _, root := range r.RemoveConjugate().roots {
-		m, _ := FromRoot(root)
+	for _, root := range r.roots {
+		m := FromRoot(root)
 		p = p.Mul(m)
 	}
 	return p
 }
 
+func (r Roots) MulFloat(k float64) Roots {
+	return Roots{
+		roots:  r.roots,
+		factor: r.factor * k,
+	}
+}
+
+func (r Roots) Real(a, b float64) Roots {
+	return Roots{
+		roots:  append(r.roots, complex(b/a, 0)),
+		factor: r.factor / a,
+	}
+}
+
+func (r Roots) Complex(a, b, c float64) Roots {
+	d := b*b - 4*a*c
+	if d < 0 {
+		sqrtD := math.Sqrt(-d)
+		z := complex(-b/(2*a), math.Abs(sqrtD/(2*a)))
+		return Roots{
+			roots:  append(r.roots, z),
+			factor: r.factor * a,
+		}
+	} else {
+		sqrtD := math.Sqrt(d)
+		z1 := complex((-b-sqrtD)/(2*a), 0)
+		z2 := complex((-b+sqrtD)/(2*a), 0)
+		return Roots{
+			roots:  append(r.roots, z1, z2),
+			factor: r.factor * a,
+		}
+	}
+}
+
 func (r Roots) String() string {
 	var b strings.Builder
 	if r.factor != 1 {
-		b.WriteString(fmt.Sprintf("%g", r.factor))
+		b.WriteString(fmt.Sprintf("%.6g", r.factor))
 	}
-	for _, root := range r.RemoveConjugate().roots {
+	for _, root := range r.roots {
 		if b.Len() > 0 {
 			b.WriteString("*")
 		}
-		p, _ := FromRoot(root)
+		p := FromRoot(root)
 		b.WriteString("(")
 		b.WriteString(p.String())
 		b.WriteString(")")
