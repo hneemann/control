@@ -210,9 +210,20 @@ func (p Polynomial) Roots() (Roots, error) {
 	if len(p) == 0 {
 		return Roots{}, errors.New("no coefficients given")
 	}
-	if p[len(p)-1] == 0 {
+	if math.Abs(p[len(p)-1]) < eps {
 		return Roots{}, errors.New("not canonical")
 	}
+
+	if math.Abs(p[0]) < eps {
+		np := p[1:]
+		r, err := np.Roots()
+		if err != nil {
+			return Roots{}, err
+		}
+		r.roots = append(r.roots, 0)
+		return r, nil
+	}
+
 	switch len(p) {
 	case 1:
 		return Roots{roots: nil, factor: p[0]}, nil
@@ -228,33 +239,23 @@ func (p Polynomial) Roots() (Roots, error) {
 		sqrtD := math.Sqrt(d)
 		return Roots{roots: []complex128{complex((-b+sqrtD)/(2*a), 0), complex((-b-sqrtD)/(2*a), 0)}, factor: a}, nil
 	default:
-		if math.Abs(p[0]) < eps {
-			np := p[1:]
-			r, err := np.Roots()
-			if err != nil {
-				return Roots{}, err
-			}
-			r.roots = append(r.roots, 0)
-			return r, nil
-		} else {
-			zero, err := p.findRootNewton(1e-9)
-			if err != nil {
-				return Roots{}, err
-			}
-			rp := FromRoot(zero)
-			var np Polynomial
-			np, _, err = p.Div(rp)
-			if err != nil {
-				return Roots{}, err
-			}
-			var r Roots
-			r, err = np.Roots()
-			if err != nil {
-				return Roots{}, err
-			}
-			r.roots = append(r.roots, zero)
-			return r, nil
+		zero, err := p.findRootNewton(1e-9)
+		if err != nil {
+			return Roots{}, err
 		}
+		rp := FromRoot(zero)
+		var np Polynomial
+		np, _, err = p.Div(rp)
+		if err != nil {
+			return Roots{}, err
+		}
+		var r Roots
+		r, err = np.Roots()
+		if err != nil {
+			return Roots{}, err
+		}
+		r.roots = append(r.roots, zero)
+		return r, nil
 	}
 }
 

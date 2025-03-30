@@ -162,6 +162,7 @@ func TestRoots_Polynomial(t *testing.T) {
 		{"cubic", Polynomial{-6, 11, -6, 1}},
 		{"cubic", Polynomial{-18, 33, -18, 3}},
 		{"zero", Polynomial{0, -18, 33, -18, 3}},
+		{"zeros", Polynomial{0, 0, 2}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
