@@ -118,6 +118,8 @@ func TestPolynom_Roots(t *testing.T) {
 		{"cubic", Polynomial{2, -1, -2, 1}, []complex128{complex(2, 0), complex(1, 0), complex(-1, 0)}, ""},
 		{"cubic", Polynomial{2, 0, -1, 1}, []complex128{complex(1, 1), complex(-1, 0)}, ""},
 		{"four", Polynomial{24, 14, -13, -2, 1}, []complex128{complex(4, 0), complex(2, 0), complex(-1, 0), complex(-3, 0)}, ""},
+
+		{"zero", Polynomial{0, 24, 14, -13, -2, 1}, []complex128{0, complex(4, 0), complex(2, 0), complex(-1, 0), complex(-3, 0)}, ""},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -159,12 +161,75 @@ func TestRoots_Polynomial(t *testing.T) {
 		{"quadratic", Polynomial{6, -6, 3}},
 		{"cubic", Polynomial{-6, 11, -6, 1}},
 		{"cubic", Polynomial{-18, 33, -18, 3}},
+		{"zero", Polynomial{0, -18, 33, -18, 3}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			roots, err := tt.p.Roots()
 			assert.NoError(t, err, roots.String())
 			assert.True(t, tt.p.Equals(roots.Polynomial()), roots.String())
+		})
+	}
+}
+
+func TestRoots_Real(t *testing.T) {
+	tests := []struct {
+		name string
+		a, b float64
+		want Polynomial
+	}{
+		{"simple", 2, 2, Polynomial{2, 2}},
+		{"s", 1, 0, Polynomial{0, 1}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r, err := NewRoots().Real(tt.a, tt.b)
+			assert.NoError(t, err)
+			p := r.Polynomial()
+			assert.True(t, tt.want.Equals(p), "Real(%v, %v)", tt.a, tt.b)
+		})
+	}
+}
+
+func TestRoots_Complex(t *testing.T) {
+	tests := []struct {
+		name    string
+		a, b, c float64
+		want    Polynomial
+	}{
+		{"complex", 2, 2, 2, Polynomial{2, 2, 2}},
+		{"real", 2, 2, -4, Polynomial{-4, 2, 2}},
+		{"linear", 0, 2, 2, Polynomial{2, 2}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r, err := NewRoots().Complex(tt.a, tt.b, tt.c)
+			assert.NoError(t, err)
+			p := r.Polynomial()
+			assert.True(t, tt.want.Equals(p), "Complex(%v, %v, %v)", tt.a, tt.b, tt.c)
+		})
+	}
+}
+
+func TestRoots_reduce(t *testing.T) {
+	tests := []struct {
+		name    string
+		zeros   Roots
+		poles   Roots
+		nZeros  Roots
+		nPoles  Roots
+		succees bool
+	}{
+		{"none", Roots{factor: 2, roots: []complex128{1, 2, 3}}, Roots{factor: 2, roots: []complex128{4, 5, 6}}, Roots{factor: 2, roots: []complex128{1, 2, 3}}, Roots{factor: 2, roots: []complex128{4, 5, 6}}, false},
+		{"simple", Roots{factor: 2, roots: []complex128{1, 2, 3}}, Roots{factor: 2, roots: []complex128{3, 4, 5}}, Roots{factor: 2, roots: []complex128{1, 2}}, Roots{factor: 2, roots: []complex128{4, 5}}, true},
+		{"two", Roots{factor: 2, roots: []complex128{1, 2, 3}}, Roots{factor: 2, roots: []complex128{2, 3, 4}}, Roots{factor: 2, roots: []complex128{1}}, Roots{factor: 2, roots: []complex128{4}}, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotZ, gotP, ok := tt.zeros.reduce(tt.poles)
+			assert.EqualValues(t, tt.nZeros, gotZ, "bad zeros")
+			assert.EqualValues(t, tt.nPoles, gotP, "bad poles")
+			assert.EqualValues(t, tt.succees, ok, "bad success")
 		})
 	}
 }

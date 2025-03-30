@@ -8,63 +8,94 @@ import (
 )
 
 func TestLinear_Mul(t *testing.T) {
-	l1 := Linear{
+	l1 := &Linear{
 		Numerator:   Polynomial{4, 5},
 		Denominator: Polynomial{1, 2, 3},
 	}
-	l2 := Linear{
+	l2 := &Linear{
 		Numerator:   Polynomial{5},
 		Denominator: Polynomial{-2, 1, 4},
 	}
-	mul, err := l1.Mul(l2)
-
-	expected := Linear{
+	// externally checked
+	expected := &Linear{
 		Numerator:   Polynomial{20, 25},
 		Denominator: Polynomial{-2, -3, 0, 11, 12},
 	}
 
-	assert.Nil(t, err)
-	assert.True(t, expected.Equals(mul), mul.String())
+	testOperation(t, l1, l2, (*Linear).Mul, expected)
 }
 
 func TestLinear_Div(t *testing.T) {
-	l1 := Linear{
+	l1 := &Linear{
 		Numerator:   Polynomial{4, 5},
 		Denominator: Polynomial{1, 2, 3},
 	}
-	l2 := Linear{
+	l2 := &Linear{
 		Numerator:   Polynomial{5},
 		Denominator: Polynomial{-2, 1, 4},
 	}
-	div, err := l1.Div(l2)
 
-	expected := Linear{
+	// externally checked
+	expected := &Linear{
 		Numerator:   Polynomial{-8, -6, 21, 20},
 		Denominator: Polynomial{5, 10, 15},
 	}
 
-	assert.Nil(t, err)
-	assert.True(t, expected.Equals(div), div.String())
+	testOperation(t, l1, l2, (*Linear).Div, expected)
 }
 
 func TestLinear_Add(t *testing.T) {
-	l1 := Linear{
-		Numerator:   Polynomial{4, 5},
-		Denominator: Polynomial{1, 2, 3},
+	l1 := &Linear{
+		Numerator:   Polynomial{4, 2},
+		Denominator: Polynomial{4, 4, 2},
 	}
-	l2 := Linear{
+	l2 := &Linear{
 		Numerator:   Polynomial{5},
-		Denominator: Polynomial{-2, 1, 4},
+		Denominator: Polynomial{-4, 2, 2},
 	}
-	add, err := l1.Add(l2)
-
-	expected := Linear{
-		Numerator:   Polynomial{-3, 4, 36, 20},
-		Denominator: Polynomial{-2, -3, 0, 11, 12},
+	// externally checked
+	expected := &Linear{
+		Numerator:   Polynomial{4, 20, 22, 4},
+		Denominator: Polynomial{-16, -8, 8, 12, 4},
 	}
 
+	testOperation(t, l1, l2, (*Linear).Add, expected)
+}
+
+func testOperation(t *testing.T, a, b *Linear, op func(a, b *Linear) *Linear, expected *Linear) {
+	a1, a2, a3, a4 := addRoots(t, a)
+	b1, b2, b3, b4 := addRoots(t, b)
+
+	assert.True(t, expected.Equals(op(a1, b1)))
+	assert.True(t, expected.Equals(op(a1, b2)))
+	assert.True(t, expected.Equals(op(a1, b3)))
+	assert.True(t, expected.Equals(op(a1, b4)))
+
+	assert.True(t, expected.Equals(op(a2, b1)))
+	assert.True(t, expected.Equals(op(a2, b2)))
+	assert.True(t, expected.Equals(op(a2, b3)))
+	assert.True(t, expected.Equals(op(a2, b4)))
+
+	assert.True(t, expected.Equals(op(a3, b1)))
+	assert.True(t, expected.Equals(op(a3, b2)))
+	assert.True(t, expected.Equals(op(a3, b3)))
+	assert.True(t, expected.Equals(op(a3, b4)))
+
+	assert.True(t, expected.Equals(op(a4, b1)))
+	assert.True(t, expected.Equals(op(a4, b2)))
+	assert.True(t, expected.Equals(op(a4, b3)))
+	assert.True(t, expected.Equals(op(a4, b4)))
+}
+
+func addRoots(t *testing.T, a *Linear) (*Linear, *Linear, *Linear, *Linear) {
+	nr, err := a.Zeros()
 	assert.Nil(t, err)
-	assert.True(t, expected.Equals(add), add.String())
+	dr, err := a.Poles()
+	assert.Nil(t, err)
+	return &Linear{Numerator: a.Numerator, Denominator: a.Denominator},
+		&Linear{Numerator: a.Numerator, zeros: nr, Denominator: a.Denominator},
+		&Linear{Numerator: a.Numerator, Denominator: a.Denominator, poles: dr},
+		&Linear{Numerator: a.Numerator, zeros: nr, Denominator: a.Denominator, poles: dr}
 }
 
 func TestFromRoots(t *testing.T) {
@@ -91,21 +122,29 @@ func TestFromRoots(t *testing.T) {
 }
 
 func TestLinear_Loop(t *testing.T) {
-	g0 := Linear{
-		Numerator:   Polynomial{4, 5},
-		Denominator: Polynomial{1, 2, 3, 4},
+	g0 := &Linear{
+		Numerator:   Polynomial{4, 2},
+		Denominator: Polynomial{4, 4, 2},
+	}
+	fmt.Println(g0.StringToParse())
+
+	expected := &Linear{
+		Numerator:   Polynomial{2, 1},
+		Denominator: Polynomial{4, 3, 1},
 	}
 
-	fmt.Println(g0)
-	fmt.Println(Must(g0.Zeros()))
-	fmt.Println(Must(g0.Poles()))
+	testFunc(t, g0, func(a *Linear) *Linear {
+		return Must(a.Loop())
+	}, expected)
+}
 
-	kp := 0.001
-	for i := 0; i < 7; i++ {
-		gw, _ := g0.MulFloat(kp).Loop()
-		fmt.Println(kp, Must(gw.Poles()))
-		kp = kp * 10
-	}
+func testFunc(t *testing.T, a *Linear, op func(a *Linear) *Linear, expected *Linear) {
+	a1, a2, a3, a4 := addRoots(t, a)
+
+	assert.True(t, expected.Equals(op(a1)))
+	assert.True(t, expected.Equals(op(a2)))
+	assert.True(t, expected.Equals(op(a3)))
+	assert.True(t, expected.Equals(op(a4)))
 }
 
 func Must[T any](t T, err error) T {
@@ -116,33 +155,36 @@ func Must[T any](t T, err error) T {
 }
 
 func Test_Integration(t *testing.T) {
-	n := NewRoots().Real(1.5, 1)
-	d := NewRoots().Real(2, 1).Real(1, 1).Complex(1, 3, 3.1)
+	n := Must(NewRoots().Real(1.5, 1))
+	d := Must(Must(Must(NewRoots().Real(2, 1)).Real(1, 1)).Complex(1, 3, 3.1))
 	g := FromRoots(n, d)
+
+	k := PID(12, 1.5, 1)
+
+	g0 := g.Mul(k)
+	gw, err := g0.Loop()
+	assert.Nil(t, err)
+
+	p, err := gw.Poles()
+	assert.Nil(t, err)
+
+	// externally checked
+	expected := NewRoots(complex(-1.4838920018993484, 3.04283839228145), -0.6814635644285129+0i, complex(-0.42537621588638014, 0.5755095234855198))
+	assert.True(t, expected.Equals(p))
 
 	fac := math.Sqrt(10)
 	kp := 0.001
 	for range 13 {
 
-		//  $k_p=12$,& $T_I=1.5\sek$, & $T_D=1\sek$
 		k := PID(kp, 1.5, 1)
 
-		//fmt.Println(g)
-		//fmt.Println(k)
+		g0 := k.Mul(g)
 
-		g0, err1 := k.Mul(g)
-		assert.Nil(t, err1)
-		//fmt.Println(g0)
+		gw, err := g0.Loop()
+		assert.Nil(t, err)
 
-		gw, err2 := g0.Loop()
-		assert.Nil(t, err2)
-		//fmt.Println(gw)
-
-		p, err3 := gw.Poles()
+		_, err3 := gw.Poles()
 		assert.Nil(t, err3)
-
-		fmt.Println(kp, p)
-
 		kp *= fac
 	}
 }

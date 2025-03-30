@@ -8,180 +8,237 @@ import (
 type Linear struct {
 	Numerator   Polynomial
 	Denominator Polynomial
-	nRoots      Roots
-	dRoots      Roots
+	zeros       Roots
+	poles       Roots
 }
 
-func (l Linear) Eval(s complex128) complex128 {
+func (l *Linear) Eval(s complex128) complex128 {
 	return l.Numerator.EvalCplx(s) / l.Denominator.EvalCplx(s)
 }
 
-func (l Linear) Equals(b Linear) bool {
+func (l *Linear) Equals(b *Linear) bool {
 	return l.Numerator.Equals(b.Numerator) && l.Denominator.Equals(b.Denominator)
 }
 
-func (l Linear) String() string {
+func (l *Linear) String() string {
+	return l.intString(false)
+}
+
+func (l *Linear) StringToParse() string {
+	return l.intString(true)
+}
+
+func (l *Linear) intString(parse bool) string {
 	var n string
-	nr, err := l.getNumRoots()
-	if err == nil {
-		n = nr.String()
+	if l.zerosCalculated() {
+		n = l.zeros.intString(parse)
 	} else {
-		n = l.Numerator.String()
+		n = "(" + l.Numerator.intString(parse) + ")"
 	}
 	var d string
-	dr, err := l.getDenRoots()
-	if err == nil {
-		d = dr.String()
+	if l.polesCalculated() {
+		d = l.poles.intString(parse)
 	} else {
-		d = l.Denominator.String()
+		d = l.Denominator.intString(parse)
 	}
 	return fmt.Sprintf("%s/(%s)", n, d)
 }
 
-func (l *Linear) getNumRoots() (Roots, error) {
-	if l.nRoots.factor == 0 {
+func (l *Linear) zerosCalculated() bool {
+	return l.zeros.Valid()
+}
+
+func (l *Linear) Zeros() (Roots, error) {
+	if !l.zeros.Valid() {
 		roots, err := l.Numerator.Roots()
 		if err != nil {
-			return Roots{}, err
+			return Roots{}, fmt.Errorf("error in calculating zeros of %v: %w", l, err)
 		}
-		l.nRoots = roots
+		l.zeros = roots
 	}
-	return l.nRoots, nil
+	return l.zeros, nil
 }
 
-func (l *Linear) getDenRoots() (Roots, error) {
-	if l.dRoots.factor == 0 {
+func (l *Linear) polesCalculated() bool {
+	return l.poles.Valid()
+}
+
+func (l *Linear) Poles() (Roots, error) {
+	if !l.poles.Valid() {
 		roots, err := l.Denominator.Roots()
 		if err != nil {
-			return Roots{}, err
+			return Roots{}, fmt.Errorf("error in calculating poles of %v: %w", l, err)
 		}
-		l.dRoots = roots
+		l.poles = roots
 	}
-	return l.dRoots, nil
+	return l.poles, nil
 }
 
-func (l Linear) Zeros() ([]complex128, error) {
-	r, err := l.getNumRoots()
-	if err != nil {
-		return []complex128{}, err
+func FromRoots(zeros, poles Roots) *Linear {
+	nZeros, nPoles, _ := zeros.reduce(poles)
+	return &Linear{
+		Numerator:   nZeros.Polynomial(),
+		Denominator: nPoles.Polynomial(),
+		zeros:       nZeros,
+		poles:       nPoles,
 	}
-	return r.roots, nil
 }
 
-func (l Linear) Poles() ([]complex128, error) {
-	r, err := l.getDenRoots()
-	if err != nil {
-		return []complex128{}, err
-	}
-	return r.roots, nil
-}
-
-func FromRoots(numerator, denominator Roots) Linear {
-	nn := Roots{factor: numerator.factor}
-	for _, nr := range numerator.roots {
-		found := -1
-		for i, dr := range denominator.roots {
-			if Equals(nr, dr) {
-				found = i
-				break
+func (l *Linear) reduce() *Linear {
+	if l.zerosCalculated() && l.polesCalculated() {
+		if nZeros, nPoles, ok := l.zeros.reduce(l.poles); ok {
+			return &Linear{
+				Numerator:   nZeros.Polynomial(),
+				Denominator: nPoles.Polynomial(),
+				zeros:       nZeros,
+				poles:       nPoles,
 			}
 		}
-		if found >= 0 {
-			denominator.roots = append(denominator.roots[:found], denominator.roots[found+1:]...)
-		} else {
-			nn.roots = append(nn.roots, nr)
+	}
+	return l
+}
+
+func (l *Linear) Mul(b *Linear) *Linear {
+	var n Polynomial
+	var z Roots
+	if l.zerosCalculated() && b.zerosCalculated() {
+		z = l.zeros.Mul(b.zeros)
+		n = z.Polynomial()
+	} else {
+		n = l.Numerator.Mul(b.Numerator)
+	}
+
+	var d Polynomial
+	var p Roots
+	if l.polesCalculated() && b.polesCalculated() {
+		p = l.poles.Mul(b.poles)
+		d = p.Polynomial()
+	} else {
+		d = l.Denominator.Mul(b.Denominator)
+	}
+
+	return (&Linear{
+		Numerator:   n,
+		Denominator: d,
+		zeros:       z,
+		poles:       p,
+	}).reduce()
+}
+
+func (l *Linear) Div(b *Linear) *Linear {
+	var n Polynomial
+	var z Roots
+	if l.zerosCalculated() && b.polesCalculated() {
+		z = l.zeros.Mul(b.poles)
+		n = z.Polynomial()
+	} else {
+		n = l.Numerator.Mul(b.Denominator)
+	}
+
+	var d Polynomial
+	var p Roots
+	if l.polesCalculated() && b.zerosCalculated() {
+		p = l.poles.Mul(b.zeros)
+		d = p.Polynomial()
+	} else {
+		d = l.Denominator.Mul(b.Numerator)
+	}
+
+	return (&Linear{
+		Numerator:   n,
+		Denominator: d,
+		zeros:       z,
+		poles:       p,
+	}).reduce()
+}
+
+func (l *Linear) Add(b *Linear) *Linear {
+	n := l.Numerator.Mul(b.Denominator).Add(b.Numerator.Mul(l.Denominator))
+	if l.polesCalculated() && b.polesCalculated() {
+		adr, _ := l.Poles()
+		bdr, _ := b.Poles()
+		d := adr.Mul(bdr)
+		return &Linear{
+			Numerator:   n,
+			Denominator: d.Polynomial(),
+			poles:       d,
+		}
+	} else {
+		d := l.Denominator.Mul(b.Denominator)
+		return &Linear{
+			Numerator:   n,
+			Denominator: d,
 		}
 	}
-
-	return Linear{
-		Numerator:   nn.Polynomial(),
-		Denominator: denominator.Polynomial(),
-		nRoots:      nn,
-		dRoots:      denominator,
-	}
 }
 
-func (l Linear) Mul(b Linear) (Linear, error) {
-	anr, err := l.getNumRoots()
-	if err != nil {
-		return Linear{}, err
-	}
-	adr, err := l.getDenRoots()
-	if err != nil {
-		return Linear{}, err
-	}
-	bnr, err := b.getNumRoots()
-	if err != nil {
-		return Linear{}, err
-	}
-	bdr, err := b.getDenRoots()
-	if err != nil {
-		return Linear{}, err
-	}
-	return FromRoots(anr.Mul(bnr), adr.Mul(bdr)), nil
-}
-
-func (l Linear) Div(b Linear) (Linear, error) {
-	anr, err := l.getNumRoots()
-	if err != nil {
-		return Linear{}, err
-	}
-	adr, err := l.getDenRoots()
-	if err != nil {
-		return Linear{}, err
-	}
-	bnr, err := b.getNumRoots()
-	if err != nil {
-		return Linear{}, err
-	}
-	bdr, err := b.getDenRoots()
-	if err != nil {
-		return Linear{}, err
-	}
-	return FromRoots(anr.Mul(bdr), adr.Mul(bnr)), nil
-}
-
-func (l Linear) Add(b Linear) (Linear, error) {
-	r, err := l.Numerator.Mul(b.Denominator).Add(b.Numerator.Mul(l.Denominator)).Roots()
-	if err != nil {
-		return Linear{}, err
-	}
-	adr, err := l.getDenRoots()
-	if err != nil {
-		return Linear{}, err
-	}
-	bdr, err := b.getDenRoots()
-	if err != nil {
-		return Linear{}, err
-	}
-	return FromRoots(r, adr.Mul(bdr)), nil
-}
-
-func (l Linear) Loop() (Linear, error) {
-	one := Linear{
-		Numerator:   Polynomial{1},
+func NewConst(c float64) *Linear {
+	return &Linear{
+		Numerator:   Polynomial{c},
 		Denominator: Polynomial{1},
 	}
-	d, err := l.Add(one)
-	if err != nil {
-		return Linear{}, err
-	}
-	return l.Div(d)
 }
 
-func (l Linear) MulFloat(f float64) Linear {
-	return Linear{
+func (l *Linear) Loop() (*Linear, error) {
+	d, err := l.Add(NewConst(1)).Reduce()
+	if err != nil {
+		return nil, fmt.Errorf("error in adding 1 to %v: %w", l, err)
+	}
+	return l.Div(d).Reduce()
+}
+
+func (l *Linear) Reduce() (*Linear, error) {
+	z, err := l.Zeros()
+	if err != nil {
+		return nil, err
+	}
+	p, err := l.Poles()
+	if err != nil {
+		return nil, err
+	}
+	if nz, np, ok := z.reduce(p); ok {
+		return (&Linear{
+			Numerator:   nz.Polynomial(),
+			Denominator: np.Polynomial(),
+			zeros:       nz,
+			poles:       np,
+		}).reduceFactor(), nil
+	}
+	return l.reduceFactor(), nil
+}
+
+func (l *Linear) reduceFactor() *Linear {
+	f := l.zeros.factor / l.poles.factor
+	roundF := math.Round(f)
+	if math.Abs(f-roundF) < eps {
+		nz := Roots{roots: l.zeros.roots, factor: f}
+		np := Roots{roots: l.poles.roots, factor: 1}
+		return &Linear{
+			Numerator:   nz.Polynomial(),
+			Denominator: np.Polynomial(),
+			zeros:       nz,
+			poles:       np,
+		}
+	}
+	return l
+}
+
+func (l *Linear) MulFloat(f float64) *Linear {
+	return &Linear{
 		Numerator:   l.Numerator.MulFloat(f),
 		Denominator: l.Denominator,
 	}
 }
 
-func PID(kp, ti, td float64) Linear {
-	denom := Roots{factor: 1 / ti, roots: []complex128{0}}
-	sq := 1/(4*td*td) - 1/(ti*td)
-	if sq < 0 {
-		return FromRoots(NewRoots(complex(-1/(2*td), math.Sqrt(-sq))), denom).MulFloat(kp)
-	} else {
-		return FromRoots(NewRoots(complex(-1/(2*td)-math.Sqrt(sq), 0), complex(-1/(2*td)+math.Sqrt(sq), 0)), denom).MulFloat(kp)
+func PID(kp, ti, td float64) *Linear {
+	n := Polynomial{kp, kp * ti, kp * ti * td}
+	d := Polynomial{0, ti}
+	zeros, _ := n.Roots()
+	poles, _ := d.Roots()
+	return &Linear{
+		Numerator:   n,
+		Denominator: d,
+		zeros:       zeros,
+		poles:       poles,
 	}
 }
