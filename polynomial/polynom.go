@@ -359,7 +359,7 @@ func (r Roots) StringToParse() string {
 
 func (r Roots) intString(parse bool) string {
 	var b strings.Builder
-	if r.factor != 1 {
+	if math.Abs(1-r.factor) > eps {
 		b.WriteString(fmt.Sprintf("%.6g", r.factor))
 	}
 	for _, root := range r.roots {

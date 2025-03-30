@@ -20,6 +20,10 @@ func (l *Linear) Equals(b *Linear) bool {
 	return l.Numerator.Equals(b.Numerator) && l.Denominator.Equals(b.Denominator)
 }
 
+func (l *Linear) StringPoly(parse bool) string {
+	return "(" + l.Numerator.intString(parse) + ")/(" + l.Denominator.intString(parse) + ")"
+}
+
 func (l *Linear) String() string {
 	return l.intString(false)
 }
@@ -125,6 +129,15 @@ func (l *Linear) Mul(b *Linear) *Linear {
 	}).reduce()
 }
 
+func (l *Linear) Inv() *Linear {
+	return &Linear{
+		Numerator:   l.Denominator,
+		Denominator: l.Numerator,
+		zeros:       l.poles,
+		poles:       l.zeros,
+	}
+}
+
 func (l *Linear) Div(b *Linear) *Linear {
 	var n Polynomial
 	var z Roots
@@ -170,6 +183,13 @@ func (l *Linear) Add(b *Linear) *Linear {
 			Denominator: d,
 		}
 	}
+}
+
+func (l *Linear) Pow(n int) *Linear {
+	return (&Linear{
+		Numerator:   l.Numerator.Pow(n),
+		Denominator: l.Denominator.Pow(n),
+	})
 }
 
 func NewConst(c float64) *Linear {
@@ -231,8 +251,13 @@ func (l *Linear) MulFloat(f float64) *Linear {
 }
 
 func PID(kp, ti, td float64) *Linear {
-	n := Polynomial{kp, kp * ti, kp * ti * td}
-	d := Polynomial{0, ti}
+	n := Polynomial{kp, kp * ti, kp * ti * td}.Canonical()
+	var d Polynomial
+	if ti == 0 {
+		d = Polynomial{1}
+	} else {
+		d = Polynomial{0, ti}
+	}
 	zeros, _ := n.Roots()
 	poles, _ := d.Roots()
 	return &Linear{
