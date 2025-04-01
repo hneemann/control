@@ -14,6 +14,10 @@ func (p Point) Sub(o Point) Point {
 	return Point{X: p.X - o.X, Y: p.Y - o.Y}
 }
 
+func (p Point) Add(d Point) Point {
+	return Point{X: p.X + d.X, Y: p.Y + d.Y}
+}
+
 type Color struct {
 	R, G, B, A uint8
 }
@@ -103,6 +107,14 @@ func (r Rect) Cut(inside Point, outside Point) Point {
 	return inside
 }
 
+func (r Rect) Width() float64 {
+	return r.Max.X - r.Min.X
+}
+
+func (r Rect) Height() float64 {
+	return r.Max.Y - r.Min.Y
+}
+
 func Line(p1, p2 Point) Polygon {
 	return Polygon{
 		Points: []Point{p1, p2},
@@ -146,4 +158,8 @@ func (t TransformCanvas) Size() Rect {
 
 func (t TransformCanvas) Context() *Context {
 	return t.parent.Context()
+}
+
+type Node interface {
+	Draw(canvas Canvas)
 }

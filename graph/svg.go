@@ -41,10 +41,10 @@ func (s *SVG) Polygon(polygon Polygon, style Style) {
 		} else {
 			s.w.WriteString("L ")
 		}
-		s.w.WriteString(fmt.Sprintf("%g,%g ", p.X, s.size.Max.Y-p.Y))
+		s.w.WriteString(fmt.Sprintf("%.2f,%.2f ", p.X, s.size.Max.Y-p.Y))
 	}
 	if polygon.Closed {
-		s.w.WriteString(" Z")
+		s.w.WriteString("Z")
 	}
 	s.w.WriteString("\"")
 	writeStyle(s.w, style, "")
