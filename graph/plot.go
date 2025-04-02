@@ -3,6 +3,8 @@ package graph
 type Plot struct {
 	XAxis   Axis
 	YAxis   Axis
+	XLabel  string
+	YLabel  string
 	Content []PlotContent
 }
 
@@ -15,7 +17,7 @@ func (p *Plot) DrawTo(canvas Canvas, _ *Style) {
 	rect := canvas.Rect()
 
 	innerRect := Rect{
-		Min: Point{rect.Min.X + c.TextSize*6, rect.Min.Y + c.TextSize*3},
+		Min: Point{rect.Min.X + c.TextSize*5, rect.Min.Y + c.TextSize*2},
 		Max: Point{rect.Max.X - c.TextSize, rect.Max.Y - c.TextSize},
 	}
 
@@ -44,6 +46,8 @@ func (p *Plot) DrawTo(canvas Canvas, _ *Style) {
 		canvas.Text(Point{xp, innerRect.Min.Y - c.TextSize}, tick.Label, Top|HCenter, text, c.TextSize)
 		canvas.Path(NewLine(Point{xp, innerRect.Min.Y - c.TextSize/2}, Point{xp, innerRect.Min.Y}), Black)
 	}
+	border := c.TextSize / 4
+	canvas.Text(Point{innerRect.Max.X - border, innerRect.Min.Y + border}, p.XLabel, Bottom|Right, text, c.TextSize)
 
 	yTicks := p.YAxis.Ticks(innerRect.Min.Y, innerRect.Max.Y, func(width float64, vks, nks int) bool {
 		return width > c.TextSize*3
@@ -53,14 +57,11 @@ func (p *Plot) DrawTo(canvas Canvas, _ *Style) {
 		canvas.Text(Point{innerRect.Min.X - c.TextSize, yp}, tick.Label, Right|VCenter, text, c.TextSize)
 		canvas.Path(NewLine(Point{innerRect.Min.X - c.TextSize/2, yp}, Point{innerRect.Min.X, yp}), Black)
 	}
+	canvas.Text(Point{innerRect.Min.X + border, innerRect.Max.Y - border}, p.YLabel, Top|Left, text, c.TextSize)
 
 	for _, plotContent := range p.Content {
 		plotContent.Draw(p, inner)
 	}
-}
-
-func NewPlot(x, y Axis, content ...PlotContent) *Plot {
-	return &Plot{XAxis: x, YAxis: y, Content: content}
 }
 
 type PlotContent interface {
