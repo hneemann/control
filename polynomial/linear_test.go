@@ -212,7 +212,7 @@ func Test_Evans3(t *testing.T) {
 
 	g0 := g.Mul(pid)
 
-	pl, err := g0.CreateEvans(30)
+	pl, err := g0.CreateEvans(150)
 	assert.NoError(t, err)
 	pl.XAxis = graph.NewLinear(-6, 3)
 	pl.YAxis = graph.NewLinear(-4, 4)

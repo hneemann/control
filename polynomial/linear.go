@@ -289,15 +289,23 @@ func (l *Linear) CreateEvans(kMax float64) (*graph.Plot, error) {
 	var pointsSet [][]graph.Point
 
 	k := 0.001
-	const kMult = 1.2
+	kMult := 1.2
 	for k < kMax {
 		err = l.addPoles(&pointsSet, k, kMult, poleCount)
-		if err != nil {
+		if err == distToHighError {
+			k = k / kMult
+			kMult = math.Sqrt(kMult)
+			fmt.Println("k=", k, "p=", len(pointsSet))
+		} else if err == distToLowError {
+			k = k / kMult
+			kMult *= kMult
+			fmt.Println("k=", k, "p=", len(pointsSet))
+		} else if err != nil {
 			return nil, err
 		}
 		k = k * kMult
 	}
-	err = l.addPoles(&pointsSet, kMax, kMult, poleCount)
+	err = l.addPoles(&pointsSet, kMax, 0, poleCount)
 	if err != nil {
 		return nil, err
 	}
@@ -333,10 +341,22 @@ func (l *Linear) CreateEvans(kMax float64) (*graph.Plot, error) {
 	}, nil
 }
 
+var (
+	distToHighError = fmt.Errorf("distance to high")
+	distToLowError  = fmt.Errorf("distance to low")
+)
+
 func (l *Linear) addPoles(pointsSet *[][]graph.Point, k, kMult float64, poleCount int) error {
-	points, split, err := l.getPoles(pointsSet, k, poleCount)
+	points, split, maxDist, err := l.getPoles(pointsSet, k, poleCount)
 	if err != nil {
 		return fmt.Errorf("error in getting poles for k=%g: %w", k, err)
+	}
+	if kMult != 0 {
+		if maxDist > 0.1 {
+			return distToHighError
+		} else if maxDist != 0 && maxDist < 0.01 {
+			return distToLowError
+		}
 	}
 
 	if split {
@@ -354,7 +374,7 @@ func (l *Linear) find(set *[][]graph.Point, k0, k1 float64, poleCount, depth int
 		return nil
 	}
 	km := (k0 + k1) / 2
-	points, split, err := l.getPoles(set, km, poleCount)
+	points, split, _, err := l.getPoles(set, km, poleCount)
 	if err != nil {
 		return err
 	}
@@ -374,32 +394,34 @@ func (l *Linear) find(set *[][]graph.Point, k0, k1 float64, poleCount, depth int
 	return nil
 }
 
-func (l *Linear) getPoles(pointsSet *[][]graph.Point, k float64, poleCount int) ([]graph.Point, bool, error) {
+func (l *Linear) getPoles(pointsSet *[][]graph.Point, k float64, poleCount int) ([]graph.Point, bool, float64, error) {
 	gw, err := l.MulFloat(k).Loop()
 	if err != nil {
-		return nil, false, err
+		return nil, false, 0, err
 	}
 	poles, err := gw.Poles()
 	if err != nil {
-		return nil, false, err
+		return nil, false, 0, err
 	}
 
 	points := poles.ToPoints()
 
 	if len(points) != poleCount {
-		return nil, false, fmt.Errorf("unexpected pole count: %d", len(points))
+		return nil, false, 0, fmt.Errorf("unexpected pole count: %d", len(points))
 	}
 
 	split := false
+	var maxDist float64
 	if len(*pointsSet) > 0 {
-		split = order((*pointsSet)[len(*pointsSet)-1], points)
+		split, maxDist = order((*pointsSet)[len(*pointsSet)-1], points)
 	}
 
-	return points, split, nil
+	return points, split, maxDist, nil
 }
 
-func order(base []graph.Point, points []graph.Point) bool {
+func order(base []graph.Point, points []graph.Point) (bool, float64) {
 	split := false
+	var maxDist float64
 	for i := range base {
 		var best int
 		bestDist := math.Inf(1)
@@ -413,9 +435,14 @@ func order(base []graph.Point, points []graph.Point) bool {
 		if best != i {
 			points[i], points[best] = points[best], points[i]
 		}
+		d := base[i].DistTo(points[i])
+		if d > maxDist {
+			maxDist = d
+		}
+
 		if (math.Abs(base[i].Y) < 1e-6) != (math.Abs(points[i].Y) < 1e-6) {
 			split = true
 		}
 	}
-	return split
+	return split, maxDist
 }
