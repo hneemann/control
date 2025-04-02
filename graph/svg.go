@@ -8,85 +8,93 @@ import (
 )
 
 type SVG struct {
-	size    Rect
+	rect    Rect
 	w       *bufio.Writer
 	context *Context
+	err     error
 }
 
-func NewSVG(width, height, textsize float64, writer io.Writer) *SVG {
+func NewSVG(width, height, textSize float64, writer io.Writer) *SVG {
 	var w *bufio.Writer
 	if bw, ok := writer.(*bufio.Writer); ok {
 		w = bw
 	} else {
 		w = bufio.NewWriter(writer)
 	}
-	w.WriteString("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n")
-	w.WriteString(fmt.Sprintf("<svg xmlns:svg=\"http://www.w3.org/2000/svg\"\n   xmlns=\"http://www.w3.org/2000/svg\"\n   width=\"%g\"\n   height=\"%g\"\n   viewBox=\"0 0 %g %g\">\n",
-		width, height, width, height))
-	return &SVG{size: Rect{
+	s := &SVG{rect: Rect{
 		Point{0, 0},
 		Point{width, height},
-	}, w: w, context: &Context{TextSize: textsize}}
+	}, w: w, context: &Context{TextSize: textSize}}
+
+	s.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n")
+	s.write(fmt.Sprintf("<svg xmlns:svg=\"http://www.w3.org/2000/svg\"\n   xmlns=\"http://www.w3.org/2000/svg\"\n   width=\"%g\"\n   height=\"%g\"\n   viewBox=\"0 0 %g %g\">\n",
+		width, height, width, height))
+
+	return s
 }
 
-func (s *SVG) Close() {
-	s.w.WriteString("</svg>")
-	s.w.Flush()
+func (s *SVG) Close() error {
+	s.write("</svg>")
+	e := s.w.Flush()
+	if s.err == nil {
+		s.err = e
+	}
+	return s.err
 }
 
 func (s *SVG) Path(polygon Path, style *Style) {
-	s.w.WriteString("  <path d=\"")
+	s.write("  <path d=\"")
 	for _, p := range polygon.Elements {
-		s.w.WriteRune(p.Mode)
-		s.w.WriteRune(' ')
-		s.w.WriteString(fmt.Sprintf("%.2f,%.2f ", p.X, s.size.Max.Y-p.Y))
+		s.writeRune(p.Mode)
+		s.writeRune(' ')
+		s.write(fmt.Sprintf("%.2f,%.2f ", p.X, s.rect.Max.Y-p.Y))
 	}
 	if polygon.Closed {
-		s.w.WriteString("Z")
+		s.write("Z")
 	}
-	s.w.WriteString("\"")
-	writeStyle(s.w, style, "")
-	s.w.WriteString("/>\n")
+	s.write("\"")
+	s.writeStyle(style, "")
+	s.write("/>\n")
 }
 
 func (s *SVG) Shape(a Point, shape Shape, style *Style) {
-	shape.DrawTo(TransformCanvas{transform: Translate(a), parent: s, size: s.size}, style)
+	shape.DrawTo(TransformCanvas{transform: Translate(a), parent: s, size: s.rect}, style)
 }
 
-func writeStyle(w *bufio.Writer, style *Style, extra string) {
-	w.WriteString(" style=\"")
+func (s *SVG) writeStyle(style *Style, extra string) {
+	s.write(" style=\"")
 	if style.Stroke {
-		w.WriteString("stroke:")
-		w.WriteString(style.Color.Color())
-		w.WriteString(";stroke-opacity:")
-		w.WriteString(style.Color.Opacity())
-		w.WriteString(";stroke-width:")
-		w.WriteString(fmt.Sprintf("%0.2g", style.StrokeWidth))
-		w.WriteString(";stroke-linejoin:round")
+		s.write("stroke:")
+		s.write(style.Color.Color())
+		s.write(";stroke-opacity:")
+		s.write(style.Color.Opacity())
+		s.write(";stroke-width:")
+		s.write(fmt.Sprintf("%0.2g", style.StrokeWidth))
+		s.write(";stroke-linejoin:round")
 	} else {
-		w.WriteString("stroke:none")
+		s.write("stroke:none")
 	}
 	if style.Fill {
-		w.WriteString(";fill:")
-		w.WriteString(style.FillColor.Color())
-		w.WriteString(";fill-opacity:")
-		w.WriteString(style.FillColor.Opacity())
-		w.WriteString(";fill-rule:evenodd")
+		s.write(";fill:")
+		s.write(style.FillColor.Color())
+		s.write(";fill-opacity:")
+		s.write(style.FillColor.Opacity())
+		s.write(";fill-rule:evenodd")
 	} else {
-		w.WriteString(";fill:none")
+		s.write(";fill:none")
 	}
 	if extra != "" {
-		w.WriteString(";" + extra)
+		s.write(";" + extra)
 	}
-	w.WriteString("\"")
+	s.write("\"")
 }
 
 func (s *SVG) Circle(a Point, b Point, style *Style) {
-	s.w.WriteString("  <ellipse ")
-	s.w.WriteString(fmt.Sprintf("cx=\"%0.2f\" cy=\"%0.2f\" ", (a.X+b.X)/2, s.size.Max.Y-(a.Y+b.Y)/2))
-	s.w.WriteString(fmt.Sprintf("rx=\"%0.2f\" ry=\"%0.2f\"", math.Abs(a.X-b.X)/2, math.Abs(a.Y-b.Y)/2))
-	writeStyle(s.w, style, "")
-	s.w.WriteString("/>\n")
+	s.write("  <ellipse ")
+	s.write(fmt.Sprintf("cx=\"%0.2f\" cy=\"%0.2f\" ", (a.X+b.X)/2, s.rect.Max.Y-(a.Y+b.Y)/2))
+	s.write(fmt.Sprintf("rx=\"%0.2f\" ry=\"%0.2f\"", math.Abs(a.X-b.X)/2, math.Abs(a.Y-b.Y)/2))
+	s.writeStyle(style, "")
+	s.write("/>\n")
 }
 
 func (s *SVG) Text(a Point, text string, orientation Orientation, style *Style, textSize float64) {
@@ -104,12 +112,12 @@ func (s *SVG) Text(a Point, text string, orientation Orientation, style *Style, 
 		st += ";dominant-baseline:hanging"
 	}
 
-	s.w.WriteString("  <text ")
-	s.w.WriteString(fmt.Sprintf("x=\"%0.2f\" y=\"%0.2f\" ", a.X, s.size.Max.Y-a.Y))
-	writeStyle(s.w, style, st)
-	s.w.WriteString(">")
-	s.w.WriteString(text)
-	s.w.WriteString("</text>\n")
+	s.write("  <text ")
+	s.write(fmt.Sprintf("x=\"%0.2f\" y=\"%0.2f\" ", a.X, s.rect.Max.Y-a.Y))
+	s.writeStyle(style, st)
+	s.write(">")
+	s.write(text)
+	s.write("</text>\n")
 }
 
 func (s *SVG) Context() *Context {
@@ -117,5 +125,19 @@ func (s *SVG) Context() *Context {
 }
 
 func (s *SVG) Rect() Rect {
-	return s.size
+	return s.rect
+}
+
+func (s *SVG) write(str string) {
+	_, e := s.w.WriteString(str)
+	if s.err == nil {
+		s.err = e
+	}
+}
+
+func (s *SVG) writeRune(mode rune) {
+	_, e := s.w.WriteRune(mode)
+	if s.err == nil {
+		s.err = e
+	}
 }
