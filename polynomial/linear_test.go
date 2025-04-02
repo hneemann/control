@@ -164,25 +164,30 @@ func Test_Integration(t *testing.T) {
 
 	g0 := g.Mul(k)
 	gw, err := g0.Loop()
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	p, err := gw.Poles()
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	// externally checked
 	expected := NewRoots(complex(-1.4838920018993484, 3.04283839228145), -0.6814635644285129+0i, complex(-0.42537621588638014, 0.5755095234855198))
 	assert.True(t, expected.Equals(p))
+}
 
-	pl, err := g0.CreateEvans(2)
-	assert.Nil(t, err)
+func Test_Evans(t *testing.T) {
+
+	n := NewRoots(complex(-3, 0), complex(-4, 0))
+	d := NewRoots(complex(-2, 0), complex(-1, 0))
+	g0 := FromRoots(n, d)
+
+	pl, err := g0.CreateEvans(15)
+	assert.NoError(t, err)
 
 	f, _ := os.Create("/home/hneemann/temp/z.svg")
 	defer f.Close()
 	c := graph.NewSVG(800, 600, 15, f)
 
-	a, b := graph.SplitHorizontally(c)
-	pl.DrawTo(a, nil)
-	pl.DrawTo(b, nil)
+	pl.DrawTo(c, nil)
 	c.Close()
 
 }

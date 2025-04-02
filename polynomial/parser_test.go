@@ -21,7 +21,7 @@ func TestLinear(t *testing.T) {
 		{name: "simple", exp: "let s=lin(); string(12*(1+1/(1.5*s)+2*s))", res: value.String("(36x²+18x+12)/(1.5x)")},
 		{name: "pid", exp: "let kp=12;let ti=1.5;let td=2;let s=pid(kp,ti,td); string(s)", res: value.String("36*(x²+0.5x+0.333333)/(1.5*(x))")},
 
-		{name: "loop", exp: "let s=lin(); let g=(s+1)/(s^2+4*s+5); string(g.loop())", res: value.String("(x+1)/((x+3)*(x+2))")},
+		{name: "loop", exp: "let s=lin(); let g=(s+1)/(s^2+4*s+5); string(g.loop())", res: value.String("(x+1)/(x²+5x+6)")},
 
 		{name: "int", exp: `
 let kp=10;

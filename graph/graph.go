@@ -74,14 +74,14 @@ type Canvas interface {
 	Text(Point, string, Orientation, *Style, float64)
 	Shape(Point, Shape, *Style)
 	Context() *Context
-	Size() Rect
+	Rect() Rect
 }
 
 func SplitHorizontally(C Canvas) (Canvas, Canvas) {
-	size := C.Size()
-	half := (size.Min.Y + size.Max.Y) / 2
-	a := TransformCanvas{transform: Translate(Point{0, 0}), parent: C, size: Rect{Min: size.Min, Max: Point{size.Max.X, half}}}
-	b := TransformCanvas{transform: Translate(Point{0, 0}), parent: C, size: Rect{Min: Point{size.Min.X, half}, Max: size.Max}}
+	r := C.Rect()
+	half := (r.Min.Y + r.Max.Y) / 2
+	a := TransformCanvas{transform: Translate(Point{0, 0}), parent: C, size: Rect{Min: r.Min, Max: Point{r.Max.X, half}}}
+	b := TransformCanvas{transform: Translate(Point{0, 0}), parent: C, size: Rect{Min: Point{r.Min.X, half}, Max: r.Max}}
 	return a, b
 }
 
@@ -166,10 +166,6 @@ type Shape interface {
 	DrawTo(Canvas, *Style)
 }
 
-func DrawShapeTo(pos Point, s Shape, c Canvas, style *Style) {
-	s.DrawTo(TransformCanvas{transform: Translate(pos), parent: c, size: c.Size()}, style)
-}
-
 type Transform func(Point) Point
 
 func Translate(p Point) Transform {
@@ -204,7 +200,7 @@ func (t TransformCanvas) Text(a Point, s string, orientation Orientation, style 
 	t.parent.Text(t.transform(a), s, orientation, style, testSize)
 }
 
-func (t TransformCanvas) Size() Rect {
+func (t TransformCanvas) Rect() Rect {
 	return t.size
 }
 

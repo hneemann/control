@@ -116,6 +116,6 @@ func (s *SVG) Context() *Context {
 	return s.context
 }
 
-func (s *SVG) Size() Rect {
+func (s *SVG) Rect() Rect {
 	return s.size
 }

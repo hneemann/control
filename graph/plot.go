@@ -12,11 +12,11 @@ var text = &Style{Stroke: false, FillColor: Color{0, 0, 0, 255}, Fill: true}
 
 func (p *Plot) DrawTo(canvas Canvas, _ *Style) {
 	c := canvas.Context()
-	cs := canvas.Size()
+	rect := canvas.Rect()
 
 	innerRect := Rect{
-		Min: Point{cs.Min.X + c.TextSize*6, cs.Min.Y + c.TextSize*3},
-		Max: Point{cs.Max.X - c.TextSize, cs.Max.Y - c.TextSize},
+		Min: Point{rect.Min.X + c.TextSize*6, rect.Min.Y + c.TextSize*3},
+		Max: Point{rect.Max.X - c.TextSize, rect.Max.Y - c.TextSize},
 	}
 
 	xMin, xMax, xTrans := p.XAxis.Create(innerRect.Min.X, innerRect.Max.X)
@@ -54,8 +54,8 @@ func (p *Plot) DrawTo(canvas Canvas, _ *Style) {
 		canvas.Path(NewLine(Point{innerRect.Min.X - c.TextSize/2, yp}, Point{innerRect.Min.X, yp}), Black)
 	}
 
-	for _, node := range p.Content {
-		node.Draw(p, inner)
+	for _, plotContent := range p.Content {
+		plotContent.Draw(p, inner)
 	}
 }
 
@@ -70,21 +70,21 @@ type PlotContent interface {
 type Function func(x float64) float64
 
 func (f Function) Draw(plot *Plot, canvas Canvas) {
-	size := canvas.Size()
+	rect := canvas.Rect()
 	const steps = 100
 
 	p := NewPath(false)
 	var last Point
 	for i := 0; i <= steps; i++ {
-		x := size.Min.X + (size.Max.X-size.Min.X)*float64(i)/steps
+		x := rect.Min.X + (rect.Max.X-rect.Min.X)*float64(i)/steps
 		point := Point{x, f(x)}
-		inside := size.Inside(point)
+		inside := rect.Inside(point)
 		if p.Size() > 0 && !inside {
-			p = p.Add(size.Cut(p.Last(), point))
+			p = p.Add(rect.Cut(p.Last(), point))
 			canvas.Path(p, Black)
 			p = NewPath(false)
 		} else if p.Size() == 0 && inside && i > 0 {
-			p = p.Add(size.Cut(point, last))
+			p = p.Add(rect.Cut(point, last))
 		} else if inside {
 			p = p.Add(point)
 		}
@@ -102,7 +102,7 @@ type Scatter struct {
 }
 
 func (s Scatter) Draw(plot *Plot, canvas Canvas) {
-	rect := canvas.Size()
+	rect := canvas.Rect()
 	for _, p := range s.Points {
 		if rect.Inside(p) {
 			canvas.Shape(p, s.Shape, s.Style)
@@ -116,18 +116,18 @@ type Curve struct {
 }
 
 func (c Curve) Draw(plot *Plot, canvas Canvas) {
-	size := canvas.Size()
+	rect := canvas.Rect()
 	p := NewPath(false)
 	var last Point
 	for i, e := range c.Path.Elements {
 		point := e.Point
-		inside := size.Inside(point)
+		inside := rect.Inside(point)
 		if p.Size() > 0 && !inside {
-			p = p.Add(size.Cut(p.Last(), point))
+			p = p.Add(rect.Cut(p.Last(), point))
 			canvas.Path(p, c.Style)
 			p = NewPath(false)
 		} else if p.Size() == 0 && inside && i > 0 {
-			p = p.Add(size.Cut(point, last))
+			p = p.Add(rect.Cut(point, last))
 		} else if inside {
 			p = p.Add(point)
 		}
