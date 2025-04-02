@@ -5,6 +5,7 @@ import (
 	"github.com/hneemann/control/graph"
 	"github.com/stretchr/testify/assert"
 	"os"
+	"path/filepath"
 	"testing"
 )
 
@@ -174,8 +175,9 @@ func Test_Integration(t *testing.T) {
 	assert.True(t, expected.Equals(p))
 }
 
-func Test_Evans(t *testing.T) {
+const testFolder = "/home/hneemann/temp"
 
+func Test_Evans1(t *testing.T) {
 	n := NewRoots(complex(-3, 0), complex(-4, 0))
 	d := NewRoots(complex(-2, 0), complex(-1, 0))
 	g0 := FromRoots(n, d)
@@ -183,11 +185,46 @@ func Test_Evans(t *testing.T) {
 	pl, err := g0.CreateEvans(15)
 	assert.NoError(t, err)
 
-	f, _ := os.Create("/home/hneemann/temp/z.svg")
+	err = exportPlot(pl, "wok1.svg")
+	assert.NoError(t, err)
+}
+
+func Test_Evans2(t *testing.T) {
+	n := NewRoots(complex(0.9, 0), complex(-0.5, 0))
+	d := NewRoots(complex(1, 0), complex(2, 0))
+	g0 := FromRoots(n, d)
+
+	pl, err := g0.CreateEvans(25)
+	assert.NoError(t, err)
+	pl.XAxis = graph.NewLinear(-1, 3)
+	pl.YAxis = graph.NewLinear(-1.5, 1.5)
+
+	err = exportPlot(pl, "wok2.svg")
+	assert.NoError(t, err)
+}
+
+func Test_Evans3(t *testing.T) {
+	n := NewRoots()
+	d := NewRoots(complex(1, 0), complex(2, 0))
+	g := FromRoots(n, d)
+
+	pid := PID(1, 0.7, 0.45)
+
+	g0 := g.Mul(pid)
+
+	pl, err := g0.CreateEvans(30)
+	assert.NoError(t, err)
+	pl.XAxis = graph.NewLinear(-6, 3)
+	pl.YAxis = graph.NewLinear(-4, 4)
+
+	err = exportPlot(pl, "wok3.svg")
+	assert.NoError(t, err)
+}
+
+func exportPlot(pl *graph.Plot, name string) error {
+	f, _ := os.Create(filepath.Join(testFolder, name))
 	defer f.Close()
 	c := graph.NewSVG(800, 600, 15, f)
-
 	pl.DrawTo(c, nil)
-	c.Close()
-
+	return c.Close()
 }
