@@ -326,11 +326,11 @@ func (l *Linear) CreateEvans(kMax float64) (*graph.Plot, error) {
 		},
 	)
 
-	return graph.NewPlot(
-		graph.NewLinear(-5, 0.2),
-		graph.NewLinear(-2, 2),
-		curveList...,
-	), nil
+	return &graph.Plot{
+		XAxis:   graph.NewLinear(-5, 0.2),
+		YAxis:   graph.NewLinear(-2, 2),
+		Content: curveList,
+	}, nil
 }
 
 func (l *Linear) addPoles(pointsSet *[][]graph.Point, k, kMult float64, poleCount int) error {
