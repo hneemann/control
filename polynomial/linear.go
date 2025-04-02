@@ -2,6 +2,7 @@ package polynomial
 
 import (
 	"fmt"
+	"github.com/hneemann/control/graph"
 	"math"
 )
 
@@ -223,8 +224,9 @@ func (l *Linear) Reduce() (*Linear, error) {
 			zeros:       nz,
 			poles:       np,
 		}).reduceFactor(), nil
+	} else {
+		return l.reduceFactor(), nil
 	}
-	return l.reduceFactor(), nil
 }
 
 func (l *Linear) reduceFactor() *Linear {
@@ -265,5 +267,94 @@ func PID(kp, ti, td float64) *Linear {
 		Denominator: d,
 		zeros:       zeros,
 		poles:       poles,
+	}
+}
+
+func (l *Linear) CreateEvans(kMax float64) (*graph.Plot, error) {
+	p, err := l.Poles()
+	if err != nil {
+		return nil, err
+	}
+	z, err := l.Zeros()
+	if err != nil {
+		return nil, err
+	}
+
+	poleCount := p.Count()
+
+	var pointsSet [][]graph.Point
+
+	k := 0.011
+	for k < kMax {
+
+		gw, err := l.MulFloat(k).Loop()
+		if err != nil {
+			return nil, err
+		}
+		poles, err := gw.Poles()
+		if err != nil {
+			return nil, err
+		}
+
+		points := poles.ToPoints()
+
+		if len(points) != poleCount {
+			return nil, fmt.Errorf("unexpected pole count: %d", len(points))
+		}
+
+		if len(pointsSet) > 0 {
+			order(pointsSet[len(pointsSet)-1], points)
+		}
+
+		pointsSet = append(pointsSet, points)
+
+		k = k * 1.2
+	}
+
+	pathList := make([]graph.Path, poleCount)
+	for _, pl := range pointsSet {
+		for i := range poleCount {
+			pathList[i] = pathList[i].Add(pl[i])
+		}
+	}
+
+	curveList := make([]graph.PlotContent, 0, len(pathList)+2)
+	for _, pa := range pathList {
+		curveList = append(curveList, graph.Curve{Path: pa, Style: graph.Black})
+	}
+	curveList = append(curveList,
+		graph.Scatter{
+			Points: p.ToPoints(),
+			Shape:  graph.NewCrossMarker(4),
+			Style:  graph.Black,
+		},
+		graph.Scatter{
+			Points: z.ToPoints(),
+			Shape:  graph.NewCircleMarker(4),
+			Style:  graph.Black,
+		},
+	)
+
+	return graph.NewPlot(
+		graph.NewLinear(-1.8, 0.2),
+		graph.NewLinear(-2, 2),
+		curveList...,
+	), nil
+}
+
+func order(base []graph.Point, points []graph.Point) {
+	for i := range base {
+		var best int
+		bestDist := math.Inf(1)
+		for j := i; j < len(points); j++ {
+			d := base[i].DistTo(points[j])
+			if d < bestDist {
+				best = j
+				bestDist = d
+			}
+		}
+		if best != i {
+			points[i], points[best] = points[best], points[i]
+		}
 	}
 }

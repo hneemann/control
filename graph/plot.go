@@ -3,13 +3,14 @@ package graph
 type Plot struct {
 	XAxis   Axis
 	YAxis   Axis
-	Content []Node
+	Content []PlotContent
 }
 
-var Black = Style{Stroke: true, Color: Color{0, 0, 0, 255}, Fill: false, StrokeWidth: 1}
-var text = Style{Stroke: false, FillColor: Color{0, 0, 0, 255}, Fill: true}
+var Black = &Style{Stroke: true, Color: Color{0, 0, 0, 255}, Fill: false, StrokeWidth: 1}
+var Red = &Style{Stroke: true, Color: Color{255, 0, 0, 255}, Fill: false, StrokeWidth: 1}
+var text = &Style{Stroke: false, FillColor: Color{0, 0, 0, 255}, Fill: true}
 
-func (p Plot) Draw(canvas Canvas) {
+func (p *Plot) DrawTo(canvas Canvas, _ *Style) {
 	c := canvas.Context()
 	cs := canvas.Size()
 
@@ -34,14 +35,14 @@ func (p Plot) Draw(canvas Canvas) {
 		},
 	}
 
-	canvas.Polygon(innerRect.Poly(), Black)
+	canvas.Path(innerRect.Poly(), Black)
 	xTicks := p.XAxis.Ticks(innerRect.Min.X, innerRect.Max.X, func(width float64, vks, nks int) bool {
 		return width > c.TextSize*float64(vks+nks)
 	})
 	for _, tick := range xTicks {
 		xp := xTrans(tick.Position)
 		canvas.Text(Point{xp, innerRect.Min.Y - c.TextSize}, tick.Label, Top|HCenter, text, c.TextSize)
-		canvas.Polygon(Line(Point{xp, innerRect.Min.Y - c.TextSize/2}, Point{xp, innerRect.Min.Y}), Black)
+		canvas.Path(NewLine(Point{xp, innerRect.Min.Y - c.TextSize/2}, Point{xp, innerRect.Min.Y}), Black)
 	}
 
 	yTicks := p.YAxis.Ticks(innerRect.Min.Y, innerRect.Max.Y, func(width float64, vks, nks int) bool {
@@ -50,50 +51,111 @@ func (p Plot) Draw(canvas Canvas) {
 	for _, tick := range yTicks {
 		yp := yTrans(tick.Position)
 		canvas.Text(Point{innerRect.Min.X - c.TextSize, yp}, tick.Label, Right|VCenter, text, c.TextSize)
-		canvas.Polygon(Line(Point{innerRect.Min.X - c.TextSize/2, yp}, Point{innerRect.Min.X, yp}), Black)
+		canvas.Path(NewLine(Point{innerRect.Min.X - c.TextSize/2, yp}, Point{innerRect.Min.X, yp}), Black)
 	}
 
 	for _, node := range p.Content {
-		node.Draw(inner)
+		node.Draw(p, inner)
 	}
+}
+
+func NewPlot(x, y Axis, content ...PlotContent) *Plot {
+	return &Plot{XAxis: x, YAxis: y, Content: content}
+}
+
+type PlotContent interface {
+	Draw(plot *Plot, canvas Canvas)
 }
 
 type Function func(x float64) float64
 
-func (f Function) Draw(canvas Canvas) {
+func (f Function) Draw(plot *Plot, canvas Canvas) {
 	size := canvas.Size()
 	const steps = 100
 
-	p := NewPolygon(false)
+	p := NewPath(false)
 	var last Point
 	for i := 0; i <= steps; i++ {
 		x := size.Min.X + (size.Max.X-size.Min.X)*float64(i)/steps
 		point := Point{x, f(x)}
 		inside := size.Inside(point)
 		if p.Size() > 0 && !inside {
-			p.Add(size.Cut(p.Last(), point))
-			canvas.Polygon(p, Black)
-			p = NewPolygon(false)
+			p = p.Add(size.Cut(p.Last(), point))
+			canvas.Path(p, Black)
+			p = NewPath(false)
 		} else if p.Size() == 0 && inside && i > 0 {
-			p.Add(size.Cut(point, last))
+			p = p.Add(size.Cut(point, last))
 		} else if inside {
-			p.Add(point)
+			p = p.Add(point)
 		}
 		last = point
 	}
 	if p.Size() > 1 {
-		canvas.Polygon(p, Black)
+		canvas.Path(p, Black)
 	}
 }
 
 type Scatter struct {
 	Points []Point
-	Style  Style
+	Shape  Shape
+	Style  *Style
 }
 
-func (s Scatter) Draw(canvas Canvas) {
-	d := Point{canvas.Size().Width() / 200, canvas.Size().Height() / 200}
+func (s Scatter) Draw(plot *Plot, canvas Canvas) {
+	rect := canvas.Size()
 	for _, p := range s.Points {
-		canvas.Circle(p.Sub(d), p.Add(d), s.Style)
+		if rect.Inside(p) {
+			canvas.Shape(p, s.Shape, s.Style)
+		}
 	}
+}
+
+type Curve struct {
+	Path  Path
+	Style *Style
+}
+
+func (c Curve) Draw(plot *Plot, canvas Canvas) {
+	size := canvas.Size()
+	p := NewPath(false)
+	var last Point
+	for i, e := range c.Path.Elements {
+		point := e.Point
+		inside := size.Inside(point)
+		if p.Size() > 0 && !inside {
+			p = p.Add(size.Cut(p.Last(), point))
+			canvas.Path(p, c.Style)
+			p = NewPath(false)
+		} else if p.Size() == 0 && inside && i > 0 {
+			p = p.Add(size.Cut(point, last))
+		} else if inside {
+			p = p.Add(point)
+		}
+		last = point
+	}
+	if p.Size() > 1 {
+		canvas.Path(p, c.Style)
+	}
+}
+
+type circleMarker struct {
+	p1, p2 Point
+}
+
+func NewCircleMarker(r float64) Shape {
+	p1 := Point{X: -r, Y: -r}
+	p2 := Point{X: r, Y: r}
+	return circleMarker{p1: p1, p2: p2}
+}
+
+func (c circleMarker) DrawTo(canvas Canvas, style *Style) {
+	canvas.Circle(c.p1, c.p2, style)
+}
+
+func NewCrossMarker(r float64) Path {
+	return NewPath(false).
+		AddMode('M', Point{-r, -r}).
+		AddMode('L', Point{r, r}).
+		AddMode('M', Point{-r, r}).
+		AddMode('L', Point{r, -r})
 }

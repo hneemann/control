@@ -2,8 +2,9 @@ package polynomial
 
 import (
 	"fmt"
+	"github.com/hneemann/control/graph"
 	"github.com/stretchr/testify/assert"
-	"math"
+	"os"
 	"testing"
 )
 
@@ -172,19 +173,16 @@ func Test_Integration(t *testing.T) {
 	expected := NewRoots(complex(-1.4838920018993484, 3.04283839228145), -0.6814635644285129+0i, complex(-0.42537621588638014, 0.5755095234855198))
 	assert.True(t, expected.Equals(p))
 
-	fac := math.Sqrt(10)
-	kp := 0.001
-	for range 13 {
+	pl, err := g0.CreateEvans(2)
+	assert.Nil(t, err)
 
-		k := PID(kp, 1.5, 1)
+	f, _ := os.Create("/home/hneemann/temp/z.svg")
+	defer f.Close()
+	c := graph.NewSVG(800, 600, 15, f)
 
-		g0 := k.Mul(g)
+	a, b := graph.SplitHorizontally(c)
+	pl.DrawTo(a, nil)
+	pl.DrawTo(b, nil)
+	c.Close()
 
-		gw, err := g0.Loop()
-		assert.Nil(t, err)
-
-		_, err3 := gw.Poles()
-		assert.Nil(t, err3)
-		kp *= fac
-	}
 }

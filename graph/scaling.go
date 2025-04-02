@@ -60,10 +60,12 @@ func (l *LinearAxis) Ticks(minParent, maxParent float64, ctw CheckTextWidth) []T
 
 	l.delta *= FINER[l.fineStep]
 
+	format := fmt.Sprintf("%%%d.%df", vks, l.getNks())
+
 	tick := math.Ceil(l.min/l.delta) * l.delta
 	ticks := []Tick{}
 	for tick <= l.max {
-		ticks = append(ticks, Tick{tick, fmt.Sprintf("%1.2g", tick)})
+		ticks = append(ticks, Tick{tick, fmt.Sprintf(format, tick)})
 		tick += l.delta
 	}
 	return ticks

@@ -3,6 +3,7 @@ package polynomial
 import (
 	"errors"
 	"fmt"
+	"github.com/hneemann/control/graph"
 	"math"
 	"math/cmplx"
 	"strings"
@@ -292,8 +293,8 @@ func FromRoot(zero complex128) Polynomial {
 }
 
 func Equals(a, b complex128) bool {
-	return math.Abs(real(a)-real(b)) < eps &&
-		math.Abs(imag(a)-imag(b)) < eps
+	return math.Abs(real(a)-real(b)) < 1e-6 &&
+		math.Abs(imag(a)-imag(b)) < 1e-6
 }
 
 func (r Roots) Valid() bool {
@@ -408,7 +409,7 @@ func (r Roots) reduce(poles Roots) (Roots, Roots, bool) {
 				break
 			}
 		}
-		if found == -1 {
+		if found < 0 {
 			nZeros.roots = append(nZeros.roots, z)
 		} else {
 			nPoles.roots = append(nPoles.roots[:found], nPoles.roots[found+1:]...)
@@ -416,4 +417,27 @@ func (r Roots) reduce(poles Roots) (Roots, Roots, bool) {
 		}
 	}
 	return nZeros, nPoles, success
+}
+
+func (r Roots) Count() int {
+	c := 0
+	for _, root := range r.roots {
+		if math.Abs(imag(root)) < eps {
+			c++
+		} else {
+			c += 2
+		}
+	}
+	return c
+}
+
+func (r Roots) ToPoints() []graph.Point {
+	var points []graph.Point
+	for _, ro := range r.roots {
+		points = append(points, graph.Point{X: real(ro), Y: imag(ro)})
+		if math.Abs(imag(ro)) > eps {
+			points = append(points, graph.Point{X: real(ro), Y: -imag(ro)})
+		}
+	}
+	return points
 }

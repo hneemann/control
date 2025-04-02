@@ -8,11 +8,12 @@ import (
 )
 
 type SVG struct {
-	size Rect
-	w    *bufio.Writer
+	size    Rect
+	w       *bufio.Writer
+	context *Context
 }
 
-func NewSVG(width, height float64, writer io.Writer) *SVG {
+func NewSVG(width, height, textsize float64, writer io.Writer) *SVG {
 	var w *bufio.Writer
 	if bw, ok := writer.(*bufio.Writer); ok {
 		w = bw
@@ -25,7 +26,7 @@ func NewSVG(width, height float64, writer io.Writer) *SVG {
 	return &SVG{size: Rect{
 		Point{0, 0},
 		Point{width, height},
-	}, w: w}
+	}, w: w, context: &Context{TextSize: textsize}}
 }
 
 func (s *SVG) Close() {
@@ -33,14 +34,11 @@ func (s *SVG) Close() {
 	s.w.Flush()
 }
 
-func (s *SVG) Polygon(polygon Polygon, style Style) {
+func (s *SVG) Path(polygon Path, style *Style) {
 	s.w.WriteString("  <path d=\"")
-	for i, p := range polygon.Points {
-		if i == 0 {
-			s.w.WriteString("M ")
-		} else {
-			s.w.WriteString("L ")
-		}
+	for _, p := range polygon.Elements {
+		s.w.WriteRune(p.Mode)
+		s.w.WriteRune(' ')
 		s.w.WriteString(fmt.Sprintf("%.2f,%.2f ", p.X, s.size.Max.Y-p.Y))
 	}
 	if polygon.Closed {
@@ -51,7 +49,11 @@ func (s *SVG) Polygon(polygon Polygon, style Style) {
 	s.w.WriteString("/>\n")
 }
 
-func writeStyle(w *bufio.Writer, style Style, extra string) {
+func (s *SVG) Shape(a Point, shape Shape, style *Style) {
+	shape.DrawTo(TransformCanvas{transform: Translate(a), parent: s, size: s.size}, style)
+}
+
+func writeStyle(w *bufio.Writer, style *Style, extra string) {
 	w.WriteString(" style=\"")
 	if style.Stroke {
 		w.WriteString("stroke:")
@@ -79,7 +81,7 @@ func writeStyle(w *bufio.Writer, style Style, extra string) {
 	w.WriteString("\"")
 }
 
-func (s *SVG) Circle(a Point, b Point, style Style) {
+func (s *SVG) Circle(a Point, b Point, style *Style) {
 	s.w.WriteString("  <ellipse ")
 	s.w.WriteString(fmt.Sprintf("cx=\"%0.2f\" cy=\"%0.2f\" ", (a.X+b.X)/2, s.size.Max.Y-(a.Y+b.Y)/2))
 	s.w.WriteString(fmt.Sprintf("rx=\"%0.2f\" ry=\"%0.2f\"", math.Abs(a.X-b.X)/2, math.Abs(a.Y-b.Y)/2))
@@ -87,7 +89,7 @@ func (s *SVG) Circle(a Point, b Point, style Style) {
 	s.w.WriteString("/>\n")
 }
 
-func (s *SVG) Text(a Point, text string, orientation Orientation, style Style, textSize float64) {
+func (s *SVG) Text(a Point, text string, orientation Orientation, style *Style, textSize float64) {
 	st := fmt.Sprintf("font-size:%0.2gpx", textSize)
 	switch orientation & 3 {
 	case 1:
@@ -111,7 +113,7 @@ func (s *SVG) Text(a Point, text string, orientation Orientation, style Style, t
 }
 
 func (s *SVG) Context() *Context {
-	return &Context{TextSize: 20}
+	return s.context
 }
 
 func (s *SVG) Size() Rect {

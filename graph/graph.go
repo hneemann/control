@@ -1,6 +1,9 @@
 package graph
 
-import "fmt"
+import (
+	"fmt"
+	"math"
+)
 
 type Point struct {
 	X, Y float64
@@ -16,6 +19,18 @@ func (p Point) Sub(o Point) Point {
 
 func (p Point) Add(d Point) Point {
 	return Point{X: p.X + d.X, Y: p.Y + d.Y}
+}
+
+func (p Point) DistTo(b Point) float64 {
+	ds := sqr(p.X-b.X) + sqr(p.Y-b.Y)
+	if ds <= 0 { // numerical instability
+		return 0
+	}
+	return math.Sqrt(ds)
+}
+
+func sqr(x float64) float64 {
+	return x * x
 }
 
 type Color struct {
@@ -54,39 +69,64 @@ type Context struct {
 }
 
 type Canvas interface {
-	Polygon(Polygon, Style)
-	Circle(Point, Point, Style)
-	Text(Point, string, Orientation, Style, float64)
+	Path(Path, *Style)
+	Circle(Point, Point, *Style)
+	Text(Point, string, Orientation, *Style, float64)
+	Shape(Point, Shape, *Style)
 	Context() *Context
 	Size() Rect
 }
 
-type Polygon struct {
-	Points []Point
-	Closed bool
+func SplitHorizontally(C Canvas) (Canvas, Canvas) {
+	size := C.Size()
+	half := (size.Min.Y + size.Max.Y) / 2
+	a := TransformCanvas{transform: Translate(Point{0, 0}), parent: C, size: Rect{Min: size.Min, Max: Point{size.Max.X, half}}}
+	b := TransformCanvas{transform: Translate(Point{0, 0}), parent: C, size: Rect{Min: Point{size.Min.X, half}, Max: size.Max}}
+	return a, b
 }
 
-func (p *Polygon) Add(point Point) {
-	p.Points = append(p.Points, point)
+type PathElement struct {
+	Mode rune
+	Point
+}
+type Path struct {
+	Elements []PathElement
+	Closed   bool
 }
 
-func (p *Polygon) Size() int {
-	return len(p.Points)
+func (p Path) DrawTo(canvas Canvas, style *Style) {
+	canvas.Path(p, style)
 }
 
-func (p *Polygon) Last() Point {
-	return p.Points[len(p.Points)-1]
+func (p Path) Add(point Point) Path {
+	if len(p.Elements) == 0 {
+		return Path{append(p.Elements, PathElement{Mode: 'M', Point: point}), p.Closed}
+	} else {
+		return Path{append(p.Elements, PathElement{Mode: 'L', Point: point}), p.Closed}
+	}
 }
 
-func NewPolygon(closed bool) Polygon {
-	return Polygon{Closed: closed}
+func (p Path) AddMode(mode rune, point Point) Path {
+	return Path{append(p.Elements, PathElement{Mode: mode, Point: point}), p.Closed}
 }
 
-func (r Rect) Poly() Polygon {
-	return Polygon{
-		Points: []Point{
-			r.Min, {r.Max.X, r.Min.Y},
-			r.Max, {r.Min.X, r.Max.Y}},
+func (p *Path) Size() int {
+	return len(p.Elements)
+}
+
+func (p *Path) Last() Point {
+	return p.Elements[len(p.Elements)-1].Point
+}
+
+func NewPath(closed bool) Path {
+	return Path{Closed: closed}
+}
+
+func (r Rect) Poly() Path {
+	return Path{
+		Elements: []PathElement{
+			{'M', r.Min}, {'L', Point{r.Max.X, r.Min.Y}},
+			{'L', r.Max}, {'L', Point{r.Min.X, r.Max.Y}}},
 		Closed: true,
 	}
 }
@@ -115,11 +155,19 @@ func (r Rect) Height() float64 {
 	return r.Max.Y - r.Min.Y
 }
 
-func Line(p1, p2 Point) Polygon {
-	return Polygon{
-		Points: []Point{p1, p2},
-		Closed: false,
+func NewLine(p1, p2 Point) Path {
+	return Path{
+		Elements: []PathElement{{'M', p1}, {'L', p2}},
+		Closed:   false,
 	}
+}
+
+type Shape interface {
+	DrawTo(Canvas, *Style)
+}
+
+func DrawShapeTo(pos Point, s Shape, c Canvas, style *Style) {
+	s.DrawTo(TransformCanvas{transform: Translate(pos), parent: c, size: c.Size()}, style)
 }
 
 type Transform func(Point) Point
@@ -136,19 +184,23 @@ type TransformCanvas struct {
 	size      Rect
 }
 
-func (t TransformCanvas) Polygon(polygon Polygon, style Style) {
-	points := make([]Point, len(polygon.Points))
-	for i, p := range polygon.Points {
-		points[i] = t.transform(p)
+func (t TransformCanvas) Path(polygon Path, style *Style) {
+	el := make([]PathElement, len(polygon.Elements))
+	for i, p := range polygon.Elements {
+		el[i] = PathElement{p.Mode, t.transform(p.Point)}
 	}
-	t.parent.Polygon(Polygon{Points: points, Closed: polygon.Closed}, style)
+	t.parent.Path(Path{Elements: el, Closed: polygon.Closed}, style)
 }
 
-func (t TransformCanvas) Circle(a Point, b Point, style Style) {
+func (t TransformCanvas) Shape(point Point, shape Shape, style *Style) {
+	t.parent.Shape(t.transform(point), shape, style)
+}
+
+func (t TransformCanvas) Circle(a Point, b Point, style *Style) {
 	t.parent.Circle(t.transform(a), t.transform(b), style)
 }
 
-func (t TransformCanvas) Text(a Point, s string, orientation Orientation, style Style, testSize float64) {
+func (t TransformCanvas) Text(a Point, s string, orientation Orientation, style *Style, testSize float64) {
 	t.parent.Text(t.transform(a), s, orientation, style, testSize)
 }
 
@@ -158,8 +210,4 @@ func (t TransformCanvas) Size() Rect {
 
 func (t TransformCanvas) Context() *Context {
 	return t.parent.Context()
-}
-
-type Node interface {
-	Draw(canvas Canvas)
 }
