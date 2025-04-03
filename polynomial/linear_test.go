@@ -183,7 +183,7 @@ func Test_Evans1(t *testing.T) {
 	d := NewRoots(complex(-2, 0), complex(-1, 0))
 	g0 := FromRoots(n, d)
 
-	pl, err := g0.CreateEvans(1)
+	pl, err := g0.CreateEvans(15)
 	assert.NoError(t, err)
 	if pl != nil {
 		err = exportPlot(pl, "wok1.svg")
