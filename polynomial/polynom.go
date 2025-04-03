@@ -441,3 +441,13 @@ func (r Roots) ToPoints() []graph.Point {
 	}
 	return points
 }
+
+func (r Roots) OnlyReal() []float64 {
+	var f []float64
+	for _, r := range r.roots {
+		if math.Abs(imag(r)) < eps {
+			f = append(f, real(r))
+		}
+	}
+	return f
+}

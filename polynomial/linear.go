@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/hneemann/control/graph"
 	"math"
+	"sort"
 )
 
 type Linear struct {
@@ -274,6 +275,75 @@ func PID(kp, ti, td float64) *Linear {
 	}
 }
 
+type evansPoint struct {
+	points []graph.Point
+	gain   float64
+}
+
+func (e evansPoint) dist(other evansPoint) float64 {
+	var maxDist float64
+	op := other.points
+	for i, ep := range e.points {
+		var best int
+		bestDist := math.Inf(1)
+		for j := i; j < len(op); j++ {
+			d := ep.DistTo(op[j])
+			if d < bestDist {
+				best = j
+				bestDist = d
+			}
+		}
+		if best != i {
+			op[i], op[best] = op[best], op[i]
+		}
+		d := ep.DistTo(op[i])
+		if d > maxDist {
+			maxDist = d
+		}
+	}
+	return maxDist
+}
+
+type evansPoints []evansPoint
+
+func (e evansPoints) Len() int {
+	return len(e)
+}
+
+func (e evansPoints) Less(i, j int) bool {
+	return e[i].gain < e[j].gain
+}
+
+func (e evansPoints) Swap(i, j int) {
+	e[i], e[j] = e[j], e[i]
+}
+
+type Asymptotes struct {
+	Point graph.Point
+	Order int
+}
+
+func (a Asymptotes) Draw(plot *graph.Plot, canvas graph.Canvas) {
+	r := canvas.Rect()
+	if r.Inside(a.Point) {
+		w := r.Width()
+		h := r.Height()
+		d := math.Sqrt(w*w + h*h)
+
+		dAlpha := 2 * math.Pi / float64(a.Order)
+		alpha := dAlpha / 2
+		for i := 0; i < a.Order; i++ {
+			x := a.Point.X + d*math.Cos(alpha)
+			y := a.Point.Y + d*math.Sin(alpha)
+
+			l := graph.NewLine(a.Point, r.Cut(a.Point, graph.Point{X: x, Y: y}))
+			canvas.Path(l, graph.Gray)
+
+			alpha += dAlpha
+		}
+	}
+}
+
 func (l *Linear) CreateEvans(kMax float64) (*graph.Plot, error) {
 	p, err := l.Poles()
 	if err != nil {
@@ -284,43 +354,68 @@ func (l *Linear) CreateEvans(kMax float64) (*graph.Plot, error) {
 		return nil, err
 	}
 
+	var evPoints evansPoints
+	evPoints = append(evPoints, evansPoint{points: p.ToPoints(), gain: 0})
+
 	poleCount := p.Count()
 
-	var pointsSet [][]graph.Point
-
-	k := 0.001
-	kMult := 1.2
-	for k < kMax {
-		err = l.addPoles(&pointsSet, k, kMult, poleCount)
-		if err == distToHighError {
-			k = k / kMult
-			kMult = math.Sqrt(kMult)
-			fmt.Println("k=", k, "p=", len(pointsSet))
-		} else if err == distToLowError {
-			k = k / kMult
-			kMult *= kMult
-			fmt.Println("k=", k, "p=", len(pointsSet))
-		} else if err != nil {
-			return nil, err
-		}
-		k = k * kMult
+	points, err := l.getPoles(kMax, poleCount)
+	if err != nil {
+		return nil, err
 	}
-	err = l.addPoles(&pointsSet, kMax, 0, poleCount)
+	evPoints = append(evPoints, evansPoint{points: points, gain: kMax})
+
+	splitGains, err := l.EvansSplitGains()
 	if err != nil {
 		return nil, err
 	}
 
+	for _, k := range splitGains {
+		if k < kMax {
+			points, err = l.getPoles(k, poleCount)
+			if err != nil {
+				return nil, err
+			}
+			evPoints = append(evPoints, evansPoint{points: points, gain: k})
+		}
+	}
+
+	sort.Sort(evPoints)
+
+	le := len(evPoints)
+	for i := 1; i < le; i++ {
+		err = l.refine(evPoints[i-1], evPoints[i], &evPoints, poleCount)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	sort.Sort(evPoints)
+	for i := 1; i < len(evPoints); i++ {
+		evPoints[i].dist(evPoints[i])
+	}
+
 	pathList := make([]graph.Path, poleCount)
-	for _, pl := range pointsSet {
+	for _, pl := range evPoints {
 		for i := range poleCount {
-			pathList[i] = pathList[i].Add(pl[i])
+			pathList[i] = pathList[i].Add(pl.points[i])
 		}
 	}
 
 	curveList := make([]graph.PlotContent, 0, len(pathList)+2)
-	for _, pa := range pathList {
-		curveList = append(curveList, graph.Curve{Path: pa, Style: graph.Black})
+
+	as, order, err := l.EvansAsymptotesIntersect()
+	if err != nil {
+		return nil, err
 	}
+	if order > 0 {
+		curveList = append(curveList, Asymptotes{Point: graph.Point{X: as, Y: 0}, Order: order})
+	}
+
+	for _, pa := range pathList {
+		curveList = append(curveList, graph.Curve{Path: pa, Style: graph.Black.SetStrokeWidth(2)})
+	}
+
 	curveList = append(curveList,
 		graph.Scatter{
 			Points: p.ToPoints(),
@@ -337,56 +432,28 @@ func (l *Linear) CreateEvans(kMax float64) (*graph.Plot, error) {
 	return &graph.Plot{
 		XAxis:   graph.NewLinear(-5, 0.2),
 		YAxis:   graph.NewLinear(-2, 2),
+		XLabel:  "Re",
+		YLabel:  "Im",
 		Content: curveList,
 	}, nil
+
 }
-
-var (
-	distToHighError = fmt.Errorf("distance to high")
-	distToLowError  = fmt.Errorf("distance to low")
-)
-
-func (l *Linear) addPoles(pointsSet *[][]graph.Point, k, kMult float64, poleCount int) error {
-	points, split, maxDist, err := l.getPoles(pointsSet, k, poleCount)
-	if err != nil {
-		return fmt.Errorf("error in getting poles for k=%g: %w", k, err)
-	}
-	if kMult != 0 {
-		if maxDist > 0.1 {
-			return distToHighError
-		} else if maxDist != 0 && maxDist < 0.01 {
-			return distToLowError
-		}
-	}
-
-	if split {
-		err = l.find(pointsSet, k/kMult, k, poleCount, 8)
+func (l *Linear) refine(p1 evansPoint, p2 evansPoint, e *evansPoints, poleCount int) error {
+	dist := p1.dist(p2)
+	if dist > 0.1 {
+		nk := (p1.gain + p2.gain) / 2
+		points, err := l.getPoles(nk, poleCount)
 		if err != nil {
 			return err
 		}
-	}
-	*pointsSet = append(*pointsSet, points)
-	return nil
-}
+		evPoint := evansPoint{points: points, gain: nk}
+		*e = append(*e, evPoint)
 
-func (l *Linear) find(set *[][]graph.Point, k0, k1 float64, poleCount, depth int) error {
-	if depth == 0 {
-		return nil
-	}
-	km := (k0 + k1) / 2
-	points, split, _, err := l.getPoles(set, km, poleCount)
-	if err != nil {
-		return err
-	}
-	if split {
-		err = l.find(set, k0, km, poleCount, depth-1)
+		err = l.refine(p1, evPoint, e, poleCount)
 		if err != nil {
 			return err
 		}
-		*set = append(*set, points)
-	} else {
-		*set = append(*set, points)
-		err = l.find(set, km, k1, poleCount, depth-1)
+		err = l.refine(evPoint, p2, e, poleCount)
 		if err != nil {
 			return err
 		}
@@ -394,55 +461,102 @@ func (l *Linear) find(set *[][]graph.Point, k0, k1 float64, poleCount, depth int
 	return nil
 }
 
-func (l *Linear) getPoles(pointsSet *[][]graph.Point, k float64, poleCount int) ([]graph.Point, bool, float64, error) {
+func (l *Linear) getPoles(k float64, poleCount int) ([]graph.Point, error) {
 	gw, err := l.MulFloat(k).Loop()
 	if err != nil {
-		return nil, false, 0, err
+		return nil, err
 	}
 	poles, err := gw.Poles()
 	if err != nil {
-		return nil, false, 0, err
+		return nil, err
 	}
 
 	points := poles.ToPoints()
 
 	if len(points) != poleCount {
-		return nil, false, 0, fmt.Errorf("unexpected pole count: %d", len(points))
+		return nil, fmt.Errorf("unexpected pole count: %d", len(points))
 	}
 
-	split := false
-	var maxDist float64
-	if len(*pointsSet) > 0 {
-		split, maxDist = order((*pointsSet)[len(*pointsSet)-1], points)
-	}
-
-	return points, split, maxDist, nil
+	return points, nil
 }
 
-func order(base []graph.Point, points []graph.Point) (bool, float64) {
-	split := false
-	var maxDist float64
-	for i := range base {
-		var best int
-		bestDist := math.Inf(1)
-		for j := i; j < len(points); j++ {
-			d := base[i].DistTo(points[j])
-			if d < bestDist {
-				best = j
-				bestDist = d
-			}
-		}
-		if best != i {
-			points[i], points[best] = points[best], points[i]
-		}
-		d := base[i].DistTo(points[i])
-		if d > maxDist {
-			maxDist = d
-		}
-
-		if (math.Abs(base[i].Y) < 1e-6) != (math.Abs(points[i].Y) < 1e-6) {
-			split = true
+func (l *Linear) EvansAsymptotesIntersect() (float64, int, error) {
+	p, err := l.Poles()
+	if err != nil {
+		return 0, 0, err
+	}
+	z, err := l.Zeros()
+	if err != nil {
+		return 0, 0, err
+	}
+	order := p.Count() - z.Count()
+	if order == 0 {
+		return 0, 0, nil
+	}
+	var s float64
+	for _, z := range p.roots {
+		if math.Abs(imag(z)) < eps {
+			s += real(z)
+		} else {
+			s += real(z) * 2
 		}
 	}
-	return split, maxDist
+	for _, z := range z.roots {
+		if math.Abs(imag(z)) < eps {
+			s -= real(z)
+		} else {
+			s -= real(z) * 2
+		}
+	}
+	return s / float64(order), order, nil
+}
+
+func (l *Linear) EvansSplitPoints() ([]float64, error) {
+	a := l.Numerator.Mul(l.Denominator.Derivative())
+	b := l.Denominator.Mul(l.Numerator.Derivative())
+	g := a.Add(b.MulFloat(-1)).Canonical()
+
+	r, err := g.Roots()
+	if err != nil {
+		return nil, err
+	}
+
+	p, err := l.Poles()
+	if err != nil {
+		return nil, err
+	}
+
+	z, err := l.Zeros()
+	if err != nil {
+		return nil, err
+	}
+
+	sp := append(p.OnlyReal(), z.OnlyReal()...)
+	sort.Float64s(sp)
+
+	var f []float64
+	for _, can := range r.OnlyReal() {
+		n := 0
+		for _, s := range sp {
+			if can < s {
+				n++
+			}
+		}
+		if n&1 == 1 {
+			f = append(f, can)
+		}
+	}
+
+	return f, nil
+}
+
+func (l *Linear) EvansSplitGains() ([]float64, error) {
+	f, err := l.EvansSplitPoints()
+	if err != nil {
+		return nil, err
+	}
+	for i, sp := range f {
+		f[i] = -l.Denominator.Eval(sp) / l.Numerator.Eval(sp)
+	}
+	return f, nil
 }

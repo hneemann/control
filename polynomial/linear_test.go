@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/hneemann/control/graph"
 	"github.com/stretchr/testify/assert"
+	"math"
 	"os"
 	"path/filepath"
 	"testing"
@@ -175,18 +176,19 @@ func Test_Integration(t *testing.T) {
 	assert.True(t, expected.Equals(p))
 }
 
-const testFolder = "/home/hneemann/temp"
+const testFolder = "/home/hneemann/temp/control"
 
 func Test_Evans1(t *testing.T) {
 	n := NewRoots(complex(-3, 0), complex(-4, 0))
 	d := NewRoots(complex(-2, 0), complex(-1, 0))
 	g0 := FromRoots(n, d)
 
-	pl, err := g0.CreateEvans(15)
+	pl, err := g0.CreateEvans(1)
 	assert.NoError(t, err)
-
-	err = exportPlot(pl, "wok1.svg")
-	assert.NoError(t, err)
+	if pl != nil {
+		err = exportPlot(pl, "wok1.svg")
+		assert.NoError(t, err)
+	}
 }
 
 func Test_Evans2(t *testing.T) {
@@ -196,11 +198,13 @@ func Test_Evans2(t *testing.T) {
 
 	pl, err := g0.CreateEvans(25)
 	assert.NoError(t, err)
-	pl.XAxis = graph.NewLinear(-1, 3)
-	pl.YAxis = graph.NewLinear(-1.5, 1.5)
+	if pl != nil {
+		pl.XAxis = graph.NewLinear(-1, 3)
+		pl.YAxis = graph.NewLinear(-1.5, 1.5)
 
-	err = exportPlot(pl, "wok2.svg")
-	assert.NoError(t, err)
+		err = exportPlot(pl, "wok2.svg")
+		assert.NoError(t, err)
+	}
 }
 
 func Test_Evans3(t *testing.T) {
@@ -212,19 +216,78 @@ func Test_Evans3(t *testing.T) {
 
 	g0 := g.Mul(pid)
 
-	pl, err := g0.CreateEvans(150)
+	pl, err := g0.CreateEvans(100)
 	assert.NoError(t, err)
-	pl.XAxis = graph.NewLinear(-6, 3)
-	pl.YAxis = graph.NewLinear(-4, 4)
+	if pl != nil {
+		pl.XAxis = graph.NewLinear(-6, 3)
+		pl.YAxis = graph.NewLinear(-4, 4)
 
-	err = exportPlot(pl, "wok3.svg")
+		err = exportPlot(pl, "wok3.svg")
+		assert.NoError(t, err)
+	}
+}
+
+func Test_Evans4(t *testing.T) {
+	n := Must(NewRoots().Real(1.5, 1))
+	d := Must(Must(Must(NewRoots().Real(2, 1)).Real(1, 1)).Complex(1, 3, 3.1))
+	g := FromRoots(n, d)
+
+	pid := PID(1, 1.5, 1)
+
+	g0 := g.Mul(pid)
+
+	pl, err := g0.CreateEvans(10)
 	assert.NoError(t, err)
+	if pl != nil {
+		pl.XAxis = graph.NewLinear(-2, 0.5)
+		pl.YAxis = graph.NewLinear(-3, 3)
+
+		err = exportPlot(pl, "wok4.svg")
+		assert.NoError(t, err)
+	}
+}
+
+func Test_Evans5(t *testing.T) {
+	n := Must(NewRoots().Real(1.5, 1))
+	d := Must(Must(Must(NewRoots().Real(2, 1)).Real(1, 1)).Complex(1, 3, 3.1))
+	g0 := FromRoots(n, d)
+
+	pl, err := g0.CreateEvans(10)
+	assert.NoError(t, err)
+	if pl != nil {
+		pl.XAxis = graph.NewLinear(-2, 0.5)
+		pl.YAxis = graph.NewLinear(-2, 2)
+
+		err = exportPlot(pl, "wok5.svg")
+		assert.NoError(t, err)
+	}
 }
 
 func exportPlot(pl *graph.Plot, name string) error {
 	f, _ := os.Create(filepath.Join(testFolder, name))
 	defer f.Close()
-	c := graph.NewSVG(800, 600, 15, f)
+	c := graph.NewSVG(800, 600, 20, f)
 	pl.DrawTo(c, nil)
 	return c.Close()
+}
+
+func TestLinear_EvansSplitPoints(t *testing.T) {
+	tests := []struct {
+		name string
+		lin  Linear
+		want []float64
+	}{
+		{"simple", Linear{Numerator: Polynomial{3, 1}, Denominator: Polynomial{2, 3, 1}}, []float64{math.Sqrt(2) - 3, -math.Sqrt(2) - 3}},
+		{"cplx", Linear{Numerator: Polynomial{3, 1}, Denominator: Polynomial{2, 2, 1}}, []float64{-math.Sqrt(5) - 3}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := tt.lin.EvansSplitPoints()
+			assert.NoError(t, err)
+			assert.Equal(t, len(tt.want), len(got))
+			for i, w := range tt.want {
+				assert.InDelta(t, w, got[i], 1e-6)
+			}
+		})
+	}
 }

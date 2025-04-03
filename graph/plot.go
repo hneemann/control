@@ -9,6 +9,7 @@ type Plot struct {
 }
 
 var Black = &Style{Stroke: true, Color: Color{0, 0, 0, 255}, Fill: false, StrokeWidth: 1}
+var Gray = &Style{Stroke: true, Color: Color{192, 192, 192, 255}, Fill: false, StrokeWidth: 1}
 var Red = &Style{Stroke: true, Color: Color{255, 0, 0, 255}, Fill: false, StrokeWidth: 1}
 var text = &Style{Stroke: false, FillColor: Color{0, 0, 0, 255}, Fill: true}
 
@@ -37,7 +38,7 @@ func (p *Plot) DrawTo(canvas Canvas, _ *Style) {
 		},
 	}
 
-	canvas.Path(innerRect.Poly(), Black)
+	canvas.Path(innerRect.Poly(), Black.SetStrokeWidth(2))
 	xTicks := p.XAxis.Ticks(innerRect.Min.X, innerRect.Max.X, func(width float64, vks, nks int) bool {
 		return width > c.TextSize*float64(vks+nks)
 	})

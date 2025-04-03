@@ -52,6 +52,13 @@ type Style struct {
 	StrokeWidth float64
 }
 
+func (s *Style) SetStrokeWidth(sw float64) *Style {
+	var style Style
+	style = *s
+	style.StrokeWidth = sw
+	return &style
+}
+
 type Orientation int
 
 const (
