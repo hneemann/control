@@ -263,11 +263,11 @@ func Test_Evans5(t *testing.T) {
 	}
 }
 
-func exportPlot(pl *graph.Plot, name string) error {
+func exportPlot(pl graph.Image, name string) error {
 	f, _ := os.Create(filepath.Join(testFolder, name))
 	defer f.Close()
 	c := graph.NewSVG(800, 600, 20, f)
-	pl.DrawTo(c, nil)
+	pl.DrawTo(c)
 	return c.Close()
 }
 
@@ -290,4 +290,16 @@ func TestLinear_EvansSplitPoints(t *testing.T) {
 			}
 		})
 	}
+}
+
+func Test_Bode1(t *testing.T) {
+	n := NewRoots()
+	d := Must(Must(NewRoots().Real(1, 1)).Real(0.01, 1))
+	g := FromRoots(n, d)
+
+	pl := g.CreateBode(0.1, 1000)
+
+	err := exportPlot(pl, "bode1.svg")
+	assert.NoError(t, err)
+
 }

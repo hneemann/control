@@ -42,7 +42,7 @@ func (s *SVG) Close() error {
 	return s.err
 }
 
-func (s *SVG) Path(polygon Path, style *Style) {
+func (s *SVG) DrawPath(polygon Path, style *Style) {
 	s.write("  <path d=\"")
 	for _, p := range polygon.Elements {
 		s.writeRune(p.Mode)
@@ -57,7 +57,7 @@ func (s *SVG) Path(polygon Path, style *Style) {
 	s.write("/>\n")
 }
 
-func (s *SVG) Shape(a Point, shape Shape, style *Style) {
+func (s *SVG) DrawShape(a Point, shape Shape, style *Style) {
 	shape.DrawTo(TransformCanvas{transform: Translate(a), parent: s, size: s.rect}, style)
 }
 
@@ -89,7 +89,7 @@ func (s *SVG) writeStyle(style *Style, extra string) {
 	s.write("\"")
 }
 
-func (s *SVG) Circle(a Point, b Point, style *Style) {
+func (s *SVG) DrawCircle(a Point, b Point, style *Style) {
 	s.write("  <ellipse ")
 	s.write(fmt.Sprintf("cx=\"%0.2f\" cy=\"%0.2f\" ", (a.X+b.X)/2, s.rect.Max.Y-(a.Y+b.Y)/2))
 	s.write(fmt.Sprintf("rx=\"%0.2f\" ry=\"%0.2f\"", math.Abs(a.X-b.X)/2, math.Abs(a.Y-b.Y)/2))
@@ -97,7 +97,7 @@ func (s *SVG) Circle(a Point, b Point, style *Style) {
 	s.write("/>\n")
 }
 
-func (s *SVG) Text(a Point, text string, orientation Orientation, style *Style, textSize float64) {
+func (s *SVG) DrawText(a Point, text string, orientation Orientation, style *Style, textSize float64) {
 	st := fmt.Sprintf("font-size:%0.2gpx", textSize)
 	switch orientation & 3 {
 	case 1:

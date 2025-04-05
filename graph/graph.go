@@ -1,5 +1,6 @@
 package graph
 
+import "C"
 import (
 	"fmt"
 	"math"
@@ -7,10 +8,6 @@ import (
 
 type Point struct {
 	X, Y float64
-}
-
-type Rect struct {
-	Min, Max Point
 }
 
 func (p Point) Sub(o Point) Point {
@@ -33,100 +30,8 @@ func sqr(x float64) float64 {
 	return x * x
 }
 
-type Color struct {
-	R, G, B, A uint8
-}
-
-func (c Color) Color() string {
-	return fmt.Sprintf("#%02x%02x%02x", c.R, c.G, c.B)
-}
-func (c Color) Opacity() string {
-	return fmt.Sprintf("%0.2f", float64(c.A)/255)
-}
-
-type Style struct {
-	Stroke      bool
-	Color       Color
-	Fill        bool
-	FillColor   Color
-	StrokeWidth float64
-}
-
-func (s *Style) SetStrokeWidth(sw float64) *Style {
-	var style Style
-	style = *s
-	style.StrokeWidth = sw
-	return &style
-}
-
-type Orientation int
-
-const (
-	Left    Orientation = 0
-	HCenter Orientation = 1
-	Right   Orientation = 2
-
-	Top     Orientation = 8
-	VCenter Orientation = 4
-	Bottom  Orientation = 0
-)
-
-type Context struct {
-	TextSize float64
-}
-
-type Canvas interface {
-	Path(Path, *Style)
-	Circle(Point, Point, *Style)
-	Text(Point, string, Orientation, *Style, float64)
-	Shape(Point, Shape, *Style)
-	Context() *Context
-	Rect() Rect
-}
-
-func SplitHorizontally(C Canvas) (Canvas, Canvas) {
-	r := C.Rect()
-	half := (r.Min.Y + r.Max.Y) / 2
-	a := TransformCanvas{transform: Translate(Point{0, 0}), parent: C, size: Rect{Min: r.Min, Max: Point{r.Max.X, half}}}
-	b := TransformCanvas{transform: Translate(Point{0, 0}), parent: C, size: Rect{Min: Point{r.Min.X, half}, Max: r.Max}}
-	return a, b
-}
-
-type PathElement struct {
-	Mode rune
-	Point
-}
-type Path struct {
-	Elements []PathElement
-	Closed   bool
-}
-
-func (p Path) DrawTo(canvas Canvas, style *Style) {
-	canvas.Path(p, style)
-}
-
-func (p Path) Add(point Point) Path {
-	if len(p.Elements) == 0 {
-		return Path{append(p.Elements, PathElement{Mode: 'M', Point: point}), p.Closed}
-	} else {
-		return Path{append(p.Elements, PathElement{Mode: 'L', Point: point}), p.Closed}
-	}
-}
-
-func (p Path) AddMode(mode rune, point Point) Path {
-	return Path{append(p.Elements, PathElement{Mode: mode, Point: point}), p.Closed}
-}
-
-func (p *Path) Size() int {
-	return len(p.Elements)
-}
-
-func (p *Path) Last() Point {
-	return p.Elements[len(p.Elements)-1].Point
-}
-
-func NewPath(closed bool) Path {
-	return Path{Closed: closed}
+type Rect struct {
+	Min, Max Point
 }
 
 func (r Rect) Poly() Path {
@@ -162,6 +67,114 @@ func (r Rect) Height() float64 {
 	return r.Max.Y - r.Min.Y
 }
 
+type Color struct {
+	R, G, B, A uint8
+}
+
+func (c Color) Color() string {
+	return fmt.Sprintf("#%02x%02x%02x", c.R, c.G, c.B)
+}
+
+func (c Color) Opacity() string {
+	return fmt.Sprintf("%0.2f", float64(c.A)/255)
+}
+
+type Style struct {
+	Stroke      bool
+	Color       Color
+	Fill        bool
+	FillColor   Color
+	StrokeWidth float64
+}
+
+func (s *Style) SetStrokeWidth(sw float64) *Style {
+	var style Style
+	style = *s
+	style.StrokeWidth = sw
+	return &style
+}
+
+type Orientation int
+
+const (
+	Left    Orientation = 0
+	HCenter Orientation = 1
+	Right   Orientation = 2
+
+	Top     Orientation = 8
+	VCenter Orientation = 4
+	Bottom  Orientation = 0
+)
+
+type Context struct {
+	TextSize float64
+}
+
+type Image interface {
+	DrawTo(canvas Canvas)
+}
+
+type Canvas interface {
+	DrawPath(Path, *Style)
+	DrawCircle(Point, Point, *Style)
+	DrawText(Point, string, Orientation, *Style, float64)
+	DrawShape(Point, Shape, *Style)
+	Context() *Context
+	Rect() Rect
+}
+
+type SplitImage struct {
+	Top    Image
+	Bottom Image
+}
+
+func (s SplitImage) DrawTo(canvas Canvas) {
+	r := canvas.Rect()
+	half := (r.Min.Y + r.Max.Y) / 2
+	bottom := TransformCanvas{transform: Translate(Point{0, 0}), parent: canvas, size: Rect{Min: r.Min, Max: Point{r.Max.X, half}}}
+	top := TransformCanvas{transform: Translate(Point{0, 0}), parent: canvas, size: Rect{Min: Point{r.Min.X, half}, Max: r.Max}}
+
+	s.Top.DrawTo(top)
+	s.Bottom.DrawTo(bottom)
+}
+
+type PathElement struct {
+	Mode rune
+	Point
+}
+type Path struct {
+	Elements []PathElement
+	Closed   bool
+}
+
+func (p Path) DrawTo(canvas Canvas, style *Style) {
+	canvas.DrawPath(p, style)
+}
+
+func (p Path) Add(point Point) Path {
+	if len(p.Elements) == 0 {
+		return Path{append(p.Elements, PathElement{Mode: 'M', Point: point}), p.Closed}
+	} else {
+		return Path{append(p.Elements, PathElement{Mode: 'L', Point: point}), p.Closed}
+	}
+}
+
+func (p Path) AddMode(mode rune, point Point) Path {
+	return Path{append(p.Elements, PathElement{Mode: mode, Point: point}), p.Closed}
+}
+
+func (p *Path) Size() int {
+	return len(p.Elements)
+}
+
+func (p *Path) Last() Point {
+	return p.Elements[len(p.Elements)-1].Point
+}
+
+func NewPath(closed bool) Path {
+	return Path{Closed: closed}
+}
+
 func NewLine(p1, p2 Point) Path {
 	return Path{
 		Elements: []PathElement{{'M', p1}, {'L', p2}},
@@ -187,24 +200,24 @@ type TransformCanvas struct {
 	size      Rect
 }
 
-func (t TransformCanvas) Path(polygon Path, style *Style) {
+func (t TransformCanvas) DrawPath(polygon Path, style *Style) {
 	el := make([]PathElement, len(polygon.Elements))
 	for i, p := range polygon.Elements {
 		el[i] = PathElement{p.Mode, t.transform(p.Point)}
 	}
-	t.parent.Path(Path{Elements: el, Closed: polygon.Closed}, style)
+	t.parent.DrawPath(Path{Elements: el, Closed: polygon.Closed}, style)
 }
 
-func (t TransformCanvas) Shape(point Point, shape Shape, style *Style) {
-	t.parent.Shape(t.transform(point), shape, style)
+func (t TransformCanvas) DrawShape(point Point, shape Shape, style *Style) {
+	t.parent.DrawShape(t.transform(point), shape, style)
 }
 
-func (t TransformCanvas) Circle(a Point, b Point, style *Style) {
-	t.parent.Circle(t.transform(a), t.transform(b), style)
+func (t TransformCanvas) DrawCircle(a Point, b Point, style *Style) {
+	t.parent.DrawCircle(t.transform(a), t.transform(b), style)
 }
 
-func (t TransformCanvas) Text(a Point, s string, orientation Orientation, style *Style, testSize float64) {
-	t.parent.Text(t.transform(a), s, orientation, style, testSize)
+func (t TransformCanvas) DrawText(a Point, s string, orientation Orientation, style *Style, testSize float64) {
+	t.parent.DrawText(t.transform(a), s, orientation, style, testSize)
 }
 
 func (t TransformCanvas) Rect() Rect {
@@ -213,4 +226,8 @@ func (t TransformCanvas) Rect() Rect {
 
 func (t TransformCanvas) Context() *Context {
 	return t.parent.Context()
+}
+
+func (t TransformCanvas) String() string {
+	return fmt.Sprintf("Transform: %v", t.transform)
 }

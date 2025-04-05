@@ -27,12 +27,12 @@ func (p Polynomial) Eval(x float64) float64 {
 	return result
 }
 
-func (p Polynomial) EvalCplx(x complex128) complex128 {
+func (p Polynomial) EvalCplx(s complex128) complex128 {
 	var result complex128
-	var xPower complex128 = 1
+	var sPower complex128 = 1
 	for _, c := range p {
-		result += complex(c, 0) * xPower
-		xPower *= x
+		result += complex(c, 0) * sPower
+		sPower *= s
 	}
 	return result
 }

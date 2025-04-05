@@ -114,3 +114,24 @@ func exp10(log int) float64 {
 	}
 	return e10
 }
+
+type LogAxis struct {
+	min, max float64
+}
+
+func NewLog(min, max float64) Axis {
+	return &LogAxis{min: min, max: max}
+}
+
+func (l *LogAxis) Create(minParent, maxParent float64) (float64, float64, func(v float64) float64) {
+	logMin := math.Log10(l.min)
+	logMax := math.Log10(l.max)
+	return l.min, l.max, func(v float64) float64 {
+		f := (math.Log10(v) - logMin) / (logMax - logMin)
+		return f*(maxParent-minParent) + minParent
+	}
+}
+
+func (l *LogAxis) Ticks(minParent, maxParent float64, ctw CheckTextWidth) []Tick {
+	return []Tick{}
+}

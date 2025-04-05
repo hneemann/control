@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/hneemann/control/graph"
 	"math"
+	"math/cmplx"
 	"sort"
 )
 
@@ -337,7 +338,7 @@ func (a Asymptotes) Draw(plot *graph.Plot, canvas graph.Canvas) {
 			y := a.Point.Y + d*math.Sin(alpha)
 
 			l := graph.NewLine(a.Point, r.Cut(a.Point, graph.Point{X: x, Y: y}))
-			canvas.Path(l, graph.Gray)
+			canvas.DrawPath(l, graph.Gray)
 
 			alpha += dAlpha
 		}
@@ -559,4 +560,36 @@ func (l *Linear) EvansSplitGains() ([]float64, error) {
 		f[i] = -l.Denominator.Eval(sp) / l.Numerator.Eval(sp)
 	}
 	return f, nil
+}
+
+func (l *Linear) CreateBode(wMin, wMax float64) graph.Image {
+	wMult := math.Pow(wMax/wMin, 0.01)
+	amplitude := graph.NewPath(false)
+	phase := graph.NewPath(false)
+	w := wMin
+	for i := 0; i <= 100; i++ {
+		c := l.Eval(complex(0, w))
+		amp := cmplx.Abs(c)
+		ang := cmplx.Phase(c) / math.Pi * 180
+		amplitude = amplitude.Add(graph.Point{X: w, Y: 20 * math.Log10(amp)})
+		phase = phase.Add(graph.Point{X: w, Y: ang})
+		w *= wMult
+	}
+	return graph.SplitImage{
+		Top: &graph.Plot{
+			XAxis:   graph.NewLog(wMin, wMax),
+			YAxis:   graph.NewLinear(-80, 10),
+			XLabel:  "w [rad/s]",
+			YLabel:  "Amplitude [dB]",
+			Content: []graph.PlotContent{graph.Curve{Path: amplitude, Style: graph.Black}},
+		},
+		Bottom: &graph.Plot{
+			XAxis:   graph.NewLog(wMin, wMax),
+			YAxis:   graph.NewLinear(-180, 0),
+			XLabel:  "w [rad/s]",
+			YLabel:  "Phase [°]",
+			Content: []graph.PlotContent{graph.Curve{Path: phase, Style: graph.Black}},
+		},
+	}
+
 }

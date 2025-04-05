@@ -13,7 +13,7 @@ var Gray = &Style{Stroke: true, Color: Color{192, 192, 192, 255}, Fill: false, S
 var Red = &Style{Stroke: true, Color: Color{255, 0, 0, 255}, Fill: false, StrokeWidth: 1}
 var text = &Style{Stroke: false, FillColor: Color{0, 0, 0, 255}, Fill: true}
 
-func (p *Plot) DrawTo(canvas Canvas, _ *Style) {
+func (p *Plot) DrawTo(canvas Canvas) {
 	c := canvas.Context()
 	rect := canvas.Rect()
 
@@ -38,27 +38,27 @@ func (p *Plot) DrawTo(canvas Canvas, _ *Style) {
 		},
 	}
 
-	canvas.Path(innerRect.Poly(), Black.SetStrokeWidth(2))
+	canvas.DrawPath(innerRect.Poly(), Black.SetStrokeWidth(2))
 	xTicks := p.XAxis.Ticks(innerRect.Min.X, innerRect.Max.X, func(width float64, vks, nks int) bool {
 		return width > c.TextSize*float64(vks+nks)
 	})
 	for _, tick := range xTicks {
 		xp := xTrans(tick.Position)
-		canvas.Text(Point{xp, innerRect.Min.Y - c.TextSize}, tick.Label, Top|HCenter, text, c.TextSize)
-		canvas.Path(NewLine(Point{xp, innerRect.Min.Y - c.TextSize/2}, Point{xp, innerRect.Min.Y}), Black)
+		canvas.DrawText(Point{xp, innerRect.Min.Y - c.TextSize}, tick.Label, Top|HCenter, text, c.TextSize)
+		canvas.DrawPath(NewLine(Point{xp, innerRect.Min.Y - c.TextSize/2}, Point{xp, innerRect.Min.Y}), Black)
 	}
 	border := c.TextSize / 4
-	canvas.Text(Point{innerRect.Max.X - border, innerRect.Min.Y + border}, p.XLabel, Bottom|Right, text, c.TextSize)
+	canvas.DrawText(Point{innerRect.Max.X - border, innerRect.Min.Y + border}, p.XLabel, Bottom|Right, text, c.TextSize)
 
 	yTicks := p.YAxis.Ticks(innerRect.Min.Y, innerRect.Max.Y, func(width float64, vks, nks int) bool {
 		return width > c.TextSize*3
 	})
 	for _, tick := range yTicks {
 		yp := yTrans(tick.Position)
-		canvas.Text(Point{innerRect.Min.X - c.TextSize, yp}, tick.Label, Right|VCenter, text, c.TextSize)
-		canvas.Path(NewLine(Point{innerRect.Min.X - c.TextSize/2, yp}, Point{innerRect.Min.X, yp}), Black)
+		canvas.DrawText(Point{innerRect.Min.X - c.TextSize, yp}, tick.Label, Right|VCenter, text, c.TextSize)
+		canvas.DrawPath(NewLine(Point{innerRect.Min.X - c.TextSize/2, yp}, Point{innerRect.Min.X, yp}), Black)
 	}
-	canvas.Text(Point{innerRect.Min.X + border, innerRect.Max.Y - border}, p.YLabel, Top|Left, text, c.TextSize)
+	canvas.DrawText(Point{innerRect.Min.X + border, innerRect.Max.Y - border}, p.YLabel, Top|Left, text, c.TextSize)
 
 	for _, plotContent := range p.Content {
 		plotContent.Draw(p, inner)
@@ -83,7 +83,7 @@ func (f Function) Draw(plot *Plot, canvas Canvas) {
 		inside := rect.Inside(point)
 		if p.Size() > 0 && !inside {
 			p = p.Add(rect.Cut(p.Last(), point))
-			canvas.Path(p, Black)
+			canvas.DrawPath(p, Black)
 			p = NewPath(false)
 		} else if p.Size() == 0 && inside && i > 0 {
 			p = p.Add(rect.Cut(point, last))
@@ -93,7 +93,7 @@ func (f Function) Draw(plot *Plot, canvas Canvas) {
 		last = point
 	}
 	if p.Size() > 1 {
-		canvas.Path(p, Black)
+		canvas.DrawPath(p, Black)
 	}
 }
 
@@ -107,7 +107,7 @@ func (s Scatter) Draw(plot *Plot, canvas Canvas) {
 	rect := canvas.Rect()
 	for _, p := range s.Points {
 		if rect.Inside(p) {
-			canvas.Shape(p, s.Shape, s.Style)
+			canvas.DrawShape(p, s.Shape, s.Style)
 		}
 	}
 }
@@ -126,7 +126,7 @@ func (c Curve) Draw(plot *Plot, canvas Canvas) {
 		inside := rect.Inside(point)
 		if p.Size() > 0 && !inside {
 			p = p.Add(rect.Cut(p.Last(), point))
-			canvas.Path(p, c.Style)
+			canvas.DrawPath(p, c.Style)
 			p = NewPath(false)
 		} else if p.Size() == 0 && inside && i > 0 {
 			p = p.Add(rect.Cut(point, last))
@@ -136,7 +136,7 @@ func (c Curve) Draw(plot *Plot, canvas Canvas) {
 		last = point
 	}
 	if p.Size() > 1 {
-		canvas.Path(p, c.Style)
+		canvas.DrawPath(p, c.Style)
 	}
 }
 
@@ -151,7 +151,7 @@ func NewCircleMarker(r float64) Shape {
 }
 
 func (c circleMarker) DrawTo(canvas Canvas, style *Style) {
-	canvas.Circle(c.p1, c.p2, style)
+	canvas.DrawCircle(c.p1, c.p2, style)
 }
 
 func NewCrossMarker(r float64) Path {
