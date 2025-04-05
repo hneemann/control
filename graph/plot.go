@@ -30,9 +30,9 @@ func (p *Plot) DrawTo(canvas Canvas) {
 	xBounds := p.XBounds
 	yBounds := p.YBounds
 
-	if !(xBounds.Avail && yBounds.Avail) {
-		mergeX := !xBounds.Avail
-		mergeY := !yBounds.Avail
+	if !(xBounds.avail && yBounds.avail) {
+		mergeX := !xBounds.avail
+		mergeY := !yBounds.avail
 		for _, plotContent := range p.Content {
 			x, y := plotContent.PreferredBounds()
 			if mergeX {
@@ -113,19 +113,22 @@ func (p *Plot) AddContent(content PlotContent) {
 }
 
 type Bounds struct {
-	Avail    bool
+	avail    bool
 	Min, Max float64
 }
 
 func NewBounds(min, max float64) Bounds {
+	if min > max {
+		min, max = max, min
+	}
 	return Bounds{true, min, max}
 }
 
 func (b *Bounds) MergeBounds(other Bounds) {
-	if other.Avail {
+	if other.avail {
 		// other is available
-		if !b.Avail {
-			b.Avail = true
+		if !b.avail {
+			b.avail = true
 			b.Min = other.Min
 			b.Max = other.Max
 		} else {
@@ -141,8 +144,8 @@ func (b *Bounds) MergeBounds(other Bounds) {
 }
 
 func (b *Bounds) Merge(p float64) {
-	if !b.Avail {
-		b.Avail = true
+	if !b.avail {
+		b.avail = true
 		b.Min = p
 		b.Max = p
 	} else {
