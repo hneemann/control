@@ -254,15 +254,15 @@ func div(st funcGen.Stack[value.Value], a value.Value, b value.Value) (value.Val
 func sub(st funcGen.Stack[value.Value], a value.Value, b value.Value) (value.Value, error) {
 	if aLin, ok := a.(*Linear); ok {
 		if bLin, ok := b.(*Linear); ok {
-			return aLin.Add(bLin.MulFloat(-1)), nil
+			return aLin.Add(bLin.MulFloat(-1))
 		} else {
 			if bFl, ok := b.ToFloat(); ok {
-				return aLin.Add(NewConst(-bFl)), nil
+				return aLin.Add(NewConst(-bFl))
 			}
 		}
 	} else if bLin, ok := b.(*Linear); ok {
 		if aFl, ok := a.ToFloat(); ok {
-			return NewConst(aFl).Add(bLin.MulFloat(-1)), nil
+			return NewConst(aFl).Add(bLin.MulFloat(-1))
 		}
 	}
 
@@ -382,10 +382,10 @@ var parser = value.New().
 	AddOp("^", false, exp).
 	AddOp("+", true, complexOperation("+", linOperation("+", value.Add,
 		func(a, b *Linear) (value.Value, error) {
-			return a.Add(b), nil
+			return a.Add(b)
 		},
 		func(a *Linear, f float64) (value.Value, error) {
-			return a.Add(NewConst(f)), nil
+			return a.Add(NewConst(f))
 		}), func(a, b Complex) (value.Value, error) {
 		return a + b, nil
 	},

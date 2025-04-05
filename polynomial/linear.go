@@ -11,12 +11,17 @@ import (
 type Linear struct {
 	Numerator   Polynomial
 	Denominator Polynomial
+	Latency     float64
 	zeros       Roots
 	poles       Roots
 }
 
 func (l *Linear) Eval(s complex128) complex128 {
-	return l.Numerator.EvalCplx(s) / l.Denominator.EvalCplx(s)
+	c := l.Numerator.EvalCplx(s) / l.Denominator.EvalCplx(s)
+	if l.Latency > 0 {
+		c *= cmplx.Exp(-complex(l.Latency, 0) * s)
+	}
+	return c
 }
 
 func (l *Linear) Equals(b *Linear) bool {
@@ -24,7 +29,11 @@ func (l *Linear) Equals(b *Linear) bool {
 }
 
 func (l *Linear) StringPoly(parse bool) string {
-	return "(" + l.Numerator.intString(parse) + ")/(" + l.Denominator.intString(parse) + ")"
+	s := "(" + l.Numerator.intString(parse) + ")/(" + l.Denominator.intString(parse) + ")"
+	if l.Latency > 0 {
+		s += fmt.Sprintf("*exp(-%gs)", l.Latency)
+	}
+	return s
 }
 
 func (l *Linear) String() string {
@@ -48,7 +57,11 @@ func (l *Linear) intString(parse bool) string {
 	} else {
 		d = l.Denominator.intString(parse)
 	}
-	return fmt.Sprintf("%s/(%s)", n, d)
+	sp := fmt.Sprintf("%s/(%s)", n, d)
+	if l.Latency > 0 {
+		sp += fmt.Sprintf("*exp(-%gs)", l.Latency)
+	}
+	return sp
 }
 
 func (l *Linear) zerosCalculated() bool {
@@ -129,6 +142,7 @@ func (l *Linear) Mul(b *Linear) *Linear {
 		Denominator: d,
 		zeros:       z,
 		poles:       p,
+		Latency:     l.Latency + b.Latency,
 	}).reduce()
 }
 
@@ -138,6 +152,7 @@ func (l *Linear) Inv() *Linear {
 		Denominator: l.Numerator,
 		zeros:       l.poles,
 		poles:       l.zeros,
+		Latency:     -l.Latency,
 	}
 }
 
@@ -165,10 +180,14 @@ func (l *Linear) Div(b *Linear) *Linear {
 		Denominator: d,
 		zeros:       z,
 		poles:       p,
+		Latency:     l.Latency - b.Latency,
 	}).reduce()
 }
 
-func (l *Linear) Add(b *Linear) *Linear {
+func (l *Linear) Add(b *Linear) (*Linear, error) {
+	if l.Latency != 0 || b.Latency != 0 {
+		return nil, fmt.Errorf("cannot add linear systems with latency")
+	}
 	n := l.Numerator.Mul(b.Denominator).Add(b.Numerator.Mul(l.Denominator))
 	if l.polesCalculated() && b.polesCalculated() {
 		adr, _ := l.Poles()
@@ -178,21 +197,21 @@ func (l *Linear) Add(b *Linear) *Linear {
 			Numerator:   n,
 			Denominator: d.Polynomial(),
 			poles:       d,
-		}
+		}, nil
 	} else {
 		d := l.Denominator.Mul(b.Denominator)
 		return &Linear{
 			Numerator:   n,
 			Denominator: d,
-		}
+		}, nil
 	}
 }
 
 func (l *Linear) Pow(n int) *Linear {
-	return (&Linear{
+	return &Linear{
 		Numerator:   l.Numerator.Pow(n),
 		Denominator: l.Denominator.Pow(n),
-	})
+	}
 }
 
 func NewConst(c float64) *Linear {
@@ -203,6 +222,10 @@ func NewConst(c float64) *Linear {
 }
 
 func (l *Linear) Loop() (*Linear, error) {
+	if l.Latency != 0 {
+		return nil, fmt.Errorf("cannot close the loop if linear system has a latency")
+	}
+
 	l, err := l.Reduce()
 	if err != nil {
 		return nil, err
@@ -229,6 +252,7 @@ func (l *Linear) Reduce() (*Linear, error) {
 			Denominator: np.Polynomial(),
 			zeros:       nz,
 			poles:       np,
+			Latency:     l.Latency,
 		}).reduceFactor(), nil
 	} else {
 		return l.reduceFactor(), nil
@@ -246,6 +270,7 @@ func (l *Linear) reduceFactor() *Linear {
 			Denominator: np.Polynomial(),
 			zeros:       nz,
 			poles:       np,
+			Latency:     l.Latency,
 		}
 	}
 	return l
@@ -255,6 +280,7 @@ func (l *Linear) MulFloat(f float64) *Linear {
 	return &Linear{
 		Numerator:   l.Numerator.MulFloat(f),
 		Denominator: l.Denominator,
+		Latency:     l.Latency,
 	}
 }
 
@@ -350,6 +376,10 @@ func (a Asymptotes) DrawTo(canvas graph.Canvas) {
 }
 
 func (l *Linear) CreateEvans(kMax float64) (*graph.Plot, error) {
+	if l.Latency != 0 {
+		return nil, fmt.Errorf("cannot create Evans plot for linear system with latency")
+	}
+
 	p, err := l.Poles()
 	if err != nil {
 		return nil, err

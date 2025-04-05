@@ -62,7 +62,11 @@ func TestLinear_Add(t *testing.T) {
 		Denominator: Polynomial{-16, -8, 8, 12, 4},
 	}
 
-	testOperation(t, l1, l2, (*Linear).Add, expected)
+	testOperation(t, l1, l2, func(a, b *Linear) *Linear {
+		r, err := a.Add(b)
+		assert.NoError(t, err)
+		return r
+	}, expected)
 }
 
 func testOperation(t *testing.T, a, b *Linear, op func(a, b *Linear) *Linear, expected *Linear) {
