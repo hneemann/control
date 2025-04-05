@@ -106,6 +106,10 @@ func (p *Plot) DrawTo(canvas Canvas) {
 	}
 }
 
+func (p *Plot) AddContent(content PlotContent) {
+	p.Content = append(p.Content, content)
+}
+
 type Bounds struct {
 	Avail    bool
 	Min, Max float64

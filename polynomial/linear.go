@@ -566,38 +566,67 @@ func (l *Linear) EvansSplitGains() ([]float64, error) {
 	return f, nil
 }
 
-func (l *Linear) CreateBode(wMin, wMax float64) graph.Image {
-	wMult := math.Pow(wMax/wMin, 0.01)
+type BodeImage struct {
+	wMin, wMax float64
+	amplitude  *graph.Plot
+	phase      *graph.Plot
+	bode       graph.SplitImage
+}
+
+func (b *BodeImage) DrawTo(canvas graph.Canvas) {
+	b.bode.DrawTo(canvas)
+}
+
+func (l *Linear) AddToBode(b *BodeImage, style *graph.Style) {
+	cZero := l.Eval(complex(0, 0))
+	lastAngle := 0.0
+	if real(cZero) < 0 {
+		lastAngle = -180
+	}
+
+	wMult := math.Pow(b.wMax/b.wMin, 0.01)
 	amplitude := graph.NewPath(false)
 	phase := graph.NewPath(false)
-	w := wMin
+	angleOffset := 0.0
+	w := b.wMin
 	for i := 0; i <= 100; i++ {
 		c := l.Eval(complex(0, w))
 		amp := cmplx.Abs(c)
-		ang := cmplx.Phase(c) / math.Pi * 180
+		angle := cmplx.Phase(c) / math.Pi * 180
+		if lastAngle-angle > 180 {
+			angleOffset += 360
+		}
+		if lastAngle-angle < -180 {
+			angleOffset -= 360
+		}
+
+		lastAngle = angle
 		amplitude = amplitude.Add(graph.Point{X: w, Y: 20 * math.Log10(amp)})
-		phase = phase.Add(graph.Point{X: w, Y: ang})
+		phase = phase.Add(graph.Point{X: w, Y: angle + angleOffset})
 		w *= wMult
 	}
-	return graph.SplitImage{
-		Top: &graph.Plot{
-			XBounds: graph.NewBounds(wMin, wMax),
-			XAxis:   graph.LogAxis,
-			YBounds: graph.NewBounds(-80, 10),
-			Grid:    graph.Gray,
-			XLabel:  "w [rad/s]",
-			YLabel:  "Amplitude [dB]",
-			Content: []graph.PlotContent{graph.Curve{Path: amplitude, Style: graph.Black}},
-		},
-		Bottom: &graph.Plot{
-			XBounds: graph.NewBounds(wMin, wMax),
-			XAxis:   graph.LogAxis,
-			YBounds: graph.NewBounds(-180, 0),
-			Grid:    graph.Gray,
-			XLabel:  "w [rad/s]",
-			YLabel:  "Phase [°]",
-			Content: []graph.PlotContent{graph.Curve{Path: phase, Style: graph.Black}},
-		},
-	}
 
+	b.amplitude.AddContent(graph.Curve{Path: amplitude, Style: style})
+	b.phase.AddContent(graph.Curve{Path: phase, Style: style})
+}
+
+func NewBode(wMin, wMax float64) *BodeImage {
+	amplitude := &graph.Plot{
+		XBounds: graph.NewBounds(wMin, wMax),
+		XAxis:   graph.LogAxis,
+		Grid:    graph.Gray,
+		XLabel:  "ω [rad/s]",
+		YLabel:  "Amplitude [dB]",
+	}
+	phase := &graph.Plot{
+		XBounds: graph.NewBounds(wMin, wMax),
+		XAxis:   graph.LogAxis,
+		Grid:    graph.Gray,
+		XLabel:  "ω [rad/s]",
+		YLabel:  "Phase [°]",
+	}
+	b := BodeImage{wMin, wMax,
+		amplitude, phase,
+		graph.SplitImage{Top: amplitude, Bottom: phase}}
+	return &b
 }

@@ -297,7 +297,12 @@ func Test_Bode1(t *testing.T) {
 	d := Must(Must(NewRoots().Real(1, 1)).Real(0.01, 1))
 	g := FromRoots(n, d)
 
-	pl := g.CreateBode(0.1, 1000)
+	d2 := Must(Must(Must(NewRoots().Real(1, 1)).Real(0.01, 1)).Real(0.1, 1))
+	g2 := FromRoots(n, d2)
+
+	pl := NewBode(0.1, 1000)
+	g.AddToBode(pl, graph.Black)
+	g2.AddToBode(pl, graph.Red)
 
 	err := exportPlot(pl, "bode1.svg")
 	assert.NoError(t, err)
