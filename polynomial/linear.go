@@ -18,8 +18,8 @@ type Linear struct {
 
 func (l *Linear) Eval(s complex128) complex128 {
 	c := l.Numerator.EvalCplx(s) / l.Denominator.EvalCplx(s)
-	if l.Latency > 0 {
-		c *= cmplx.Exp(-complex(l.Latency, 0) * s)
+	if l.Latency != 0 {
+		c *= cmplx.Exp(complex(-l.Latency, 0) * s)
 	}
 	return c
 }
@@ -58,7 +58,7 @@ func (l *Linear) intString(parse bool) string {
 		d = l.Denominator.intString(parse)
 	}
 	sp := fmt.Sprintf("%s/(%s)", n, d)
-	if l.Latency > 0 {
+	if l.Latency != 0 {
 		sp += fmt.Sprintf("*exp(-%gs)", l.Latency)
 	}
 	return sp
