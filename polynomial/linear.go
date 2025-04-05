@@ -614,6 +614,7 @@ func NewBode(wMin, wMax float64) *BodeImage {
 	amplitude := &graph.Plot{
 		XBounds: graph.NewBounds(wMin, wMax),
 		XAxis:   graph.LogAxis,
+		YAxis:   graph.CreateFixedStepAxis(20),
 		Grid:    graph.Gray,
 		XLabel:  "ω [rad/s]",
 		YLabel:  "Amplitude [dB]",
@@ -621,6 +622,7 @@ func NewBode(wMin, wMax float64) *BodeImage {
 	phase := &graph.Plot{
 		XBounds: graph.NewBounds(wMin, wMax),
 		XAxis:   graph.LogAxis,
+		YAxis:   graph.CreateFixedStepAxis(45),
 		Grid:    graph.Gray,
 		XLabel:  "ω [rad/s]",
 		YLabel:  "Phase [°]",

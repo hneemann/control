@@ -57,7 +57,7 @@ func (p *Plot) DrawTo(canvas Canvas) {
 		return width > c.TextSize*float64(vks+nks)
 	}, xBounds)
 	yTrans, yTicks, yBounds := yAxis(innerRect.Min.Y, innerRect.Max.Y, func(width float64, vks, nks int) bool {
-		return width > c.TextSize*3
+		return width > c.TextSize*2
 	}, yBounds)
 
 	trans := func(p Point) Point {
@@ -153,6 +153,10 @@ func (b *Bounds) Merge(p float64) {
 			b.Max = p
 		}
 	}
+}
+
+func (b *Bounds) Width() float64 {
+	return b.Max - b.Min
 }
 
 type PlotContent interface {

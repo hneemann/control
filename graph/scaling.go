@@ -5,6 +5,7 @@ import (
 	"math"
 )
 
+// CheckTextWidth returns true if the specified number (vks.nks) fits in the given space width
 type CheckTextWidth func(width float64, vks, nks int) bool
 
 type Tick struct {
@@ -152,4 +153,48 @@ func CreateLogTicks(logMin, parentMin, parentMax float64, tr func(v float64) flo
 		}
 		m++
 	}
+}
+
+func CreateFixedStepAxis(step float64) Axis {
+	return func(minParent, maxParent float64, ctw CheckTextWidth, bounds Bounds) (func(v float64) float64, []Tick, Bounds) {
+		tr, ticks, b := LinearAxis(minParent, maxParent, ctw, bounds)
+
+		width := b.Width()
+		if width < step*2 || width > step*20 {
+			return tr, ticks, b
+		}
+
+		delta := step
+		var start float64
+		for {
+			start = math.Floor(bounds.Min/delta) * delta
+			next := start + delta
+
+			widthAvail := tr(next) - tr(start)
+			if ctw(widthAvail, 3, 0) {
+				break
+			}
+			delta *= 2
+		}
+
+		ticks = []Tick{}
+		pos := math.Ceil(bounds.Min/step) * step
+
+		for pos > start {
+			start += delta
+		}
+
+		for pos <= bounds.Max {
+			if math.Abs(pos-start) < 1e-6 {
+				ticks = append(ticks, Tick{pos, fmt.Sprintf("%g", pos)})
+				start += delta
+			} else {
+				ticks = append(ticks, Tick{Position: pos})
+			}
+			pos += step
+		}
+
+		return tr, ticks, b
+	}
+
 }
