@@ -14,6 +14,8 @@ type Plot struct {
 var Black = &Style{Stroke: true, Color: Color{0, 0, 0, 255}, Fill: false, StrokeWidth: 1}
 var Gray = &Style{Stroke: true, Color: Color{192, 192, 192, 255}, Fill: false, StrokeWidth: 1}
 var Red = &Style{Stroke: true, Color: Color{255, 0, 0, 255}, Fill: false, StrokeWidth: 1}
+var Green = &Style{Stroke: true, Color: Color{0, 255, 0, 255}, Fill: false, StrokeWidth: 1}
+var Blue = &Style{Stroke: true, Color: Color{0, 0, 255, 255}, Fill: false, StrokeWidth: 1}
 var text = &Style{Stroke: false, FillColor: Color{0, 0, 0, 255}, Fill: true}
 
 func (p *Plot) DrawTo(canvas Canvas) {
