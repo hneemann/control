@@ -199,8 +199,8 @@ func Test_Evans2(t *testing.T) {
 	pl, err := g0.CreateEvans(25)
 	assert.NoError(t, err)
 	if pl != nil {
-		pl.XAxis = graph.NewLinear(-1, 3)
-		pl.YAxis = graph.NewLinear(-1.5, 1.5)
+		pl.XAxis = graph.NewLinearAxis(-1, 3)
+		pl.YAxis = graph.NewLinearAxis(-1.5, 1.5)
 
 		err = exportPlot(pl, "wok2.svg")
 		assert.NoError(t, err)
@@ -219,8 +219,8 @@ func Test_Evans3(t *testing.T) {
 	pl, err := g0.CreateEvans(100)
 	assert.NoError(t, err)
 	if pl != nil {
-		pl.XAxis = graph.NewLinear(-6, 3)
-		pl.YAxis = graph.NewLinear(-4, 4)
+		pl.XAxis = graph.NewLinearAxis(-6, 3)
+		pl.YAxis = graph.NewLinearAxis(-4, 4)
 
 		err = exportPlot(pl, "wok3.svg")
 		assert.NoError(t, err)
@@ -239,8 +239,8 @@ func Test_Evans4(t *testing.T) {
 	pl, err := g0.CreateEvans(10)
 	assert.NoError(t, err)
 	if pl != nil {
-		pl.XAxis = graph.NewLinear(-2, 0.5)
-		pl.YAxis = graph.NewLinear(-3, 3)
+		pl.XAxis = graph.NewLinearAxis(-2, 0.5)
+		pl.YAxis = graph.NewLinearAxis(-3, 3)
 
 		err = exportPlot(pl, "wok4.svg")
 		assert.NoError(t, err)
@@ -255,8 +255,8 @@ func Test_Evans5(t *testing.T) {
 	pl, err := g0.CreateEvans(10)
 	assert.NoError(t, err)
 	if pl != nil {
-		pl.XAxis = graph.NewLinear(-2, 0.5)
-		pl.YAxis = graph.NewLinear(-2, 2)
+		pl.XAxis = graph.NewLinearAxis(-2, 0.5)
+		pl.YAxis = graph.NewLinearAxis(-2, 2)
 
 		err = exportPlot(pl, "wok5.svg")
 		assert.NoError(t, err)

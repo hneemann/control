@@ -324,7 +324,11 @@ type Asymptotes struct {
 	Order int
 }
 
-func (a Asymptotes) Draw(plot *graph.Plot, canvas graph.Canvas) {
+func (a Asymptotes) PreferredSize() graph.PreferredSize {
+	return graph.PreferredSize{}
+}
+
+func (a Asymptotes) DrawTo(canvas graph.Canvas) {
 	r := canvas.Rect()
 	if r.Inside(a.Point) {
 		w := r.Width()
@@ -431,8 +435,8 @@ func (l *Linear) CreateEvans(kMax float64) (*graph.Plot, error) {
 	)
 
 	return &graph.Plot{
-		XAxis:   graph.NewLinear(-5, 0.2),
-		YAxis:   graph.NewLinear(-2, 2),
+		XAxis:   graph.NewLinearAxis(-5, 0.2),
+		YAxis:   graph.NewLinearAxis(-2, 2),
 		XLabel:  "Re",
 		YLabel:  "Im",
 		Content: curveList,
@@ -577,15 +581,17 @@ func (l *Linear) CreateBode(wMin, wMax float64) graph.Image {
 	}
 	return graph.SplitImage{
 		Top: &graph.Plot{
-			XAxis:   graph.NewLog(wMin, wMax),
-			YAxis:   graph.NewLinear(-80, 10),
+			XAxis:   graph.NewLogAxis(wMin, wMax),
+			YAxis:   graph.NewLinearAxis(-80, 10),
+			Grid:    graph.Gray,
 			XLabel:  "w [rad/s]",
 			YLabel:  "Amplitude [dB]",
 			Content: []graph.PlotContent{graph.Curve{Path: amplitude, Style: graph.Black}},
 		},
 		Bottom: &graph.Plot{
-			XAxis:   graph.NewLog(wMin, wMax),
-			YAxis:   graph.NewLinear(-180, 0),
+			XAxis:   graph.NewLogAxis(wMin, wMax),
+			YAxis:   graph.NewLinearAxis(-180, 0),
+			Grid:    graph.Gray,
 			XLabel:  "w [rad/s]",
 			YLabel:  "Phase [°]",
 			Content: []graph.PlotContent{graph.Curve{Path: phase, Style: graph.Black}},
