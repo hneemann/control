@@ -306,5 +306,22 @@ func Test_Bode1(t *testing.T) {
 
 	err := exportPlot(pl, "bode1.svg")
 	assert.NoError(t, err)
+}
 
+func Test_Nyquist1(t *testing.T) {
+	n := Must(NewRoots().Real(6, 6))
+	d := Must(Must(NewRoots().Real(1, -1)).Real(1, -3))
+	g := FromRoots(n, d)
+
+	err := exportPlot(g.Nyquist(), "nyquist1.svg")
+	assert.NoError(t, err)
+}
+
+func Test_Nyquist2(t *testing.T) {
+	n := Must(NewRoots().Real(1, 0.2)).MulFloat(70)
+	d := Must(Must(Must(NewRoots().Complex(1, 2, 10)).Real(1, 4)).Complex(1, 0.2, 0.1))
+	g := FromRoots(n, d)
+
+	err := exportPlot(g.Nyquist(), "nyquist2.svg")
+	assert.NoError(t, err)
 }

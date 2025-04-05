@@ -435,8 +435,6 @@ func (l *Linear) CreateEvans(kMax float64) (*graph.Plot, error) {
 	)
 
 	return &graph.Plot{
-		XBounds: graph.NewBounds(-5, 0.2),
-		YBounds: graph.NewBounds(-2, 2),
 		XLabel:  "Re",
 		YLabel:  "Im",
 		Content: curveList,
@@ -566,18 +564,18 @@ func (l *Linear) EvansSplitGains() ([]float64, error) {
 	return f, nil
 }
 
-type BodeImage struct {
+type BodePlot struct {
 	wMin, wMax float64
 	amplitude  *graph.Plot
 	phase      *graph.Plot
 	bode       graph.SplitImage
 }
 
-func (b *BodeImage) DrawTo(canvas graph.Canvas) {
+func (b *BodePlot) DrawTo(canvas graph.Canvas) {
 	b.bode.DrawTo(canvas)
 }
 
-func (l *Linear) AddToBode(b *BodeImage, style *graph.Style) {
+func (l *Linear) AddToBode(b *BodePlot, style *graph.Style) {
 	cZero := l.Eval(complex(0, 0))
 	lastAngle := 0.0
 	if real(cZero) < 0 {
@@ -610,7 +608,7 @@ func (l *Linear) AddToBode(b *BodeImage, style *graph.Style) {
 	b.phase.AddContent(graph.Curve{Path: phase, Style: style})
 }
 
-func NewBode(wMin, wMax float64) *BodeImage {
+func NewBode(wMin, wMax float64) *BodePlot {
 	amplitude := &graph.Plot{
 		XBounds: graph.NewBounds(wMin, wMax),
 		XAxis:   graph.LogAxis,
@@ -627,8 +625,57 @@ func NewBode(wMin, wMax float64) *BodeImage {
 		XLabel:  "ω [rad/s]",
 		YLabel:  "Phase [°]",
 	}
-	b := BodeImage{wMin, wMax,
+	b := BodePlot{wMin, wMax,
 		amplitude, phase,
 		graph.SplitImage{Top: amplitude, Bottom: phase}}
 	return &b
+}
+
+func (l *Linear) Nyquist() *graph.Plot {
+	cZero := l.Eval(complex(0, 0))
+	pZero := graph.Point{X: real(cZero), Y: imag(cZero)}
+
+	path := graph.NewPath(false).Add(pZero)
+
+	wMult := 1.25
+	lastW := 0.0
+	lastP := pZero
+	w := 1.0 / 128
+	for range 100 {
+		c := l.Eval(complex(0, w))
+		p := graph.Point{X: real(c), Y: imag(c)}
+		l.refineNy(lastW, lastP, w, p, &path)
+		path = path.Add(p)
+
+		lastP = p
+		lastW = w
+		w *= wMult
+	}
+
+	pathNeg := graph.NewPath(false).Add(pZero)
+	for _, pe := range path.Elements {
+		pathNeg = pathNeg.Add(graph.Point{X: pe.X, Y: -pe.Y})
+	}
+
+	return &graph.Plot{
+		XLabel: "Re",
+		YLabel: "Im",
+		Content: []graph.PlotContent{
+			graph.Cross{Style: graph.Gray},
+			graph.Curve{Path: path, Style: graph.Black.SetStrokeWidth(2)},
+			graph.Curve{Path: pathNeg, Style: graph.Black.SetDash(4, 4).SetStrokeWidth(2)},
+			graph.Scatter{Points: []graph.Point{{X: -1, Y: 0}}, Shape: graph.NewCrossMarker(4), Style: graph.Red},
+			graph.Scatter{Points: []graph.Point{pZero}, Shape: graph.NewCircleMarker(4), Style: graph.Black},
+		}}
+}
+
+func (l *Linear) refineNy(w0 float64, p0 graph.Point, w1 float64, p1 graph.Point, path *graph.Path) {
+	if p0.DistTo(p1) > 0.05 {
+		w := (w0 + w1) / 2
+		c := l.Eval(complex(0, w))
+		p := graph.Point{X: real(c), Y: imag(c)}
+		l.refineNy(w0, p0, w, p, path)
+		*path = path.Add(p)
+		l.refineNy(w, p, w1, p1, path)
+	}
 }

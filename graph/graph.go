@@ -85,12 +85,20 @@ type Style struct {
 	Fill        bool
 	FillColor   Color
 	StrokeWidth float64
+	Dash        []float64
 }
 
 func (s *Style) SetStrokeWidth(sw float64) *Style {
 	var style Style
 	style = *s
 	style.StrokeWidth = sw
+	return &style
+}
+
+func (s *Style) SetDash(d ...float64) *Style {
+	var style Style
+	style = *s
+	style.Dash = d
 	return &style
 }
 
@@ -157,6 +165,10 @@ func (p Path) Add(point Point) Path {
 	} else {
 		return Path{append(p.Elements, PathElement{Mode: 'L', Point: point}), p.Closed}
 	}
+}
+
+func (p Path) MoveTo(point Point) Path {
+	return Path{append(p.Elements, PathElement{Mode: 'M', Point: point}), p.Closed}
 }
 
 func (p Path) AddMode(mode rune, point Point) Path {

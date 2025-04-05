@@ -278,3 +278,22 @@ func NewCrossMarker(r float64) Path {
 		AddMode('M', Point{-r, r}).
 		AddMode('L', Point{r, -r})
 }
+
+type Cross struct {
+	Style *Style
+}
+
+func (c Cross) PreferredBounds() (Bounds, Bounds) {
+	return Bounds{}, Bounds{}
+}
+
+func (c Cross) DrawTo(canvas Canvas) {
+	r := canvas.Rect()
+	if r.Inside(Point{0, 0}) {
+		canvas.DrawPath(NewPath(false).
+			Add(Point{r.Min.X, 0}).
+			Add(Point{r.Max.X, 0}).
+			MoveTo(Point{0, r.Min.Y}).
+			Add(Point{0, r.Max.Y}), c.Style)
+	}
+}

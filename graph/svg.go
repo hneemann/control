@@ -71,6 +71,15 @@ func (s *SVG) writeStyle(style *Style, extra string) {
 		s.write(";stroke-width:")
 		s.write(fmt.Sprintf("%0.2g", style.StrokeWidth))
 		s.write(";stroke-linejoin:round")
+		if len(style.Dash) > 0 {
+			s.write(";stroke-dasharray:")
+			for i, d := range style.Dash {
+				if i > 0 {
+					s.write(",")
+				}
+				s.write(fmt.Sprintf("%0.2f", d))
+			}
+		}
 	} else {
 		s.write("stroke:none")
 	}
