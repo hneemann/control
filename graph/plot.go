@@ -3,6 +3,8 @@ package graph
 type Plot struct {
 	XAxis   Axis
 	YAxis   Axis
+	XBounds Bounds
+	YBounds Bounds
 	Grid    *Style
 	XLabel  string
 	YLabel  string
@@ -23,15 +25,38 @@ func (p *Plot) DrawTo(canvas Canvas) {
 		Max: Point{rect.Max.X - c.TextSize, rect.Max.Y - c.TextSize},
 	}
 
-	xMin, xMax, _ := p.XAxis.Bounds()
-	yMin, yMax, _ := p.YAxis.Bounds()
+	xBounds := p.XBounds
+	yBounds := p.YBounds
 
-	xTrans, xTicks := p.XAxis.Create(innerRect.Min.X, innerRect.Max.X, func(width float64, vks, nks int) bool {
+	if !(xBounds.Avail && yBounds.Avail) {
+		mergeX := !xBounds.Avail
+		mergeY := !yBounds.Avail
+		for _, plotContent := range p.Content {
+			x, y := plotContent.PreferredBounds()
+			if mergeX {
+				xBounds.MergeBounds(x)
+			}
+			if mergeY {
+				yBounds.MergeBounds(y)
+			}
+		}
+	}
+
+	xAxis := p.XAxis
+	if xAxis == nil {
+		xAxis = LinearAxis
+	}
+	yAxis := p.YAxis
+	if yAxis == nil {
+		yAxis = LinearAxis
+	}
+
+	xTrans, xTicks := xAxis(innerRect.Min.X, innerRect.Max.X, func(width float64, vks, nks int) bool {
 		return width > c.TextSize*float64(vks+nks)
-	})
-	yTrans, yTicks := p.YAxis.Create(innerRect.Min.Y, innerRect.Max.Y, func(width float64, vks, nks int) bool {
+	}, xBounds)
+	yTrans, yTicks := yAxis(innerRect.Min.Y, innerRect.Max.Y, func(width float64, vks, nks int) bool {
 		return width > c.TextSize*3
-	})
+	}, yBounds)
 
 	trans := func(p Point) Point {
 		return Point{xTrans(p.X), yTrans(p.Y)}
@@ -41,8 +66,8 @@ func (p *Plot) DrawTo(canvas Canvas) {
 		transform: trans,
 		parent:    canvas,
 		size: Rect{
-			Min: Point{xMin, yMin},
-			Max: Point{xMax, yMax},
+			Min: Point{xBounds.Min, yBounds.Min},
+			Max: Point{xBounds.Max, yBounds.Max},
 		},
 	}
 
@@ -81,21 +106,61 @@ func (p *Plot) DrawTo(canvas Canvas) {
 	}
 }
 
-type PreferredSize struct {
-	XAvail     bool
-	XMin, XMax float64
-	YAvail     bool
-	YMin, YMax float64
+type Bounds struct {
+	Avail    bool
+	Min, Max float64
+}
+
+func NewBounds(min, max float64) Bounds {
+	return Bounds{true, min, max}
+}
+
+func (b *Bounds) MergeBounds(other Bounds) {
+	if other.Avail {
+		// other is available
+		if !b.Avail {
+			b.Avail = true
+			b.Min = other.Min
+			b.Max = other.Max
+		} else {
+			// both are available
+			if b.Min > other.Min {
+				b.Min = other.Min
+			}
+			if b.Max < other.Max {
+				b.Max = other.Max
+			}
+		}
+	}
+}
+
+func (b *Bounds) Merge(p float64) {
+	if !b.Avail {
+		b.Avail = true
+		b.Min = p
+		b.Max = p
+	} else {
+		if p < b.Min {
+			b.Min = p
+		}
+		if p > b.Max {
+			b.Max = p
+		}
+	}
 }
 
 type PlotContent interface {
 	Image
-	PreferredSize() PreferredSize
+	PreferredBounds() (x, y Bounds)
 }
 
 type Function func(x float64) float64
 
-func (f Function) Draw(plot *Plot, canvas Canvas) {
+func (f Function) PreferredBounds() (x, y Bounds) {
+	return Bounds{}, Bounds{}
+}
+
+func (f Function) DrawTo(canvas Canvas) {
 	rect := canvas.Rect()
 	const steps = 100
 
@@ -127,31 +192,13 @@ type Scatter struct {
 	Style  *Style
 }
 
-func (s Scatter) PreferredSize() PreferredSize {
-	var xMin, xMax, yMin, yMax float64
-	for i, p := range s.Points {
-		if i == 0 {
-			xMin, yMin = p.X, p.Y
-			xMax, yMax = p.X, p.Y
-		} else {
-			if xMin > p.X {
-				xMin = p.X
-			}
-			if xMax < p.X {
-				xMax = p.X
-			}
-			if yMin > p.Y {
-				yMin = p.Y
-			}
-			if yMax < p.Y {
-				yMax = p.Y
-			}
-		}
+func (s Scatter) PreferredBounds() (Bounds, Bounds) {
+	var x, y Bounds
+	for _, p := range s.Points {
+		x.Merge(p.X)
+		y.Merge(p.Y)
 	}
-	return PreferredSize{
-		XAvail: true, XMin: xMin, XMax: xMax,
-		YAvail: true, YMin: yMin, YMax: yMax,
-	}
+	return x, y
 }
 
 func (s Scatter) DrawTo(canvas Canvas) {
@@ -168,31 +215,13 @@ type Curve struct {
 	Style *Style
 }
 
-func (c Curve) PreferredSize() PreferredSize {
-	var xMin, xMax, yMin, yMax float64
-	for i, e := range c.Path.Elements {
-		if i == 0 {
-			xMin, yMin = e.X, e.Y
-			xMax, yMax = e.X, e.Y
-		} else {
-			if xMin > e.X {
-				xMin = e.X
-			}
-			if xMax < e.X {
-				xMax = e.X
-			}
-			if yMin > e.Y {
-				yMin = e.Y
-			}
-			if yMax < e.Y {
-				yMax = e.Y
-			}
-		}
+func (c Curve) PreferredBounds() (Bounds, Bounds) {
+	var x, y Bounds
+	for _, e := range c.Path.Elements {
+		x.Merge(e.Point.X)
+		y.Merge(e.Point.Y)
 	}
-	return PreferredSize{
-		XAvail: true, XMin: xMin, XMax: xMax,
-		YAvail: true, YMin: yMin, YMax: yMax,
-	}
+	return x, y
 }
 
 func (c Curve) DrawTo(canvas Canvas) {

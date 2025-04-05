@@ -12,39 +12,19 @@ type Tick struct {
 	Label    string
 }
 
-type Axis interface {
-	WithMinMax(min, max float64) Axis
-	Bounds() (min, max float64, set bool)
-	Create(minParent, maxParent float64, ctw CheckTextWidth) (func(v float64) float64, []Tick)
-}
+const expand = 0.02
 
-type LinearAxis struct {
-	boundsSet bool
-	min, max  float64
-}
+type Axis func(minParent, maxParent float64, ctw CheckTextWidth, bounds Bounds) (func(v float64) float64, []Tick)
 
-func NewLinearAxis(xMin, xMax float64) Axis {
-	return LinearAxis{min: xMin, max: xMax, boundsSet: true}
-}
-
-func (l LinearAxis) WithMinMax(min, max float64) Axis {
-	return LinearAxis{min: min, max: max, boundsSet: true}
-}
-
-func (l LinearAxis) Bounds() (min, max float64, set bool) {
-	return l.min, l.max, l.boundsSet
-}
-
-func (l LinearAxis) Create(minParent, maxParent float64, ctw CheckTextWidth) (func(v float64) float64, []Tick) {
-	ticks := CreateLinearTicks(l.min, l.max, minParent, maxParent, ctw)
+func LinearAxis(minParent, maxParent float64, ctw CheckTextWidth, bounds Bounds) (func(v float64) float64, []Tick) {
+	delta := (bounds.Max - bounds.Min) * expand
+	eMin := bounds.Min - delta
+	eMax := bounds.Max + delta
+	l := linTickCreator{min: eMin, max: eMax}
+	ticks := l.ticks(minParent, maxParent, ctw)
 	return func(v float64) float64 {
-		return (v-l.min)/(l.max-l.min)*(maxParent-minParent) + minParent
+		return (v-eMin)/(eMax-eMin)*(maxParent-minParent) + minParent
 	}, ticks
-}
-
-func CreateLinearTicks(min, max, parentMin, parentMax float64, ctw CheckTextWidth) []Tick {
-	l := linTickCreator{min: min, max: max}
-	return l.ticks(parentMin, parentMax, ctw)
 }
 
 type linTickCreator struct {
@@ -135,26 +115,12 @@ func exp10(log int) float64 {
 	return e10
 }
 
-type LogAxis struct {
-	boundsSet bool
-	min, max  float64
-}
-
-func NewLogAxis(xMin, xMax float64) Axis {
-	return LogAxis{min: xMin, max: xMax, boundsSet: true}
-}
-
-func (l LogAxis) WithMinMax(min, max float64) Axis {
-	return LogAxis{min: min, max: max, boundsSet: true}
-}
-
-func (l LogAxis) Bounds() (min, max float64, set bool) {
-	return l.min, l.max, l.boundsSet
-}
-
-func (l LogAxis) Create(minParent, maxParent float64, ctw CheckTextWidth) (func(v float64) float64, []Tick) {
-	logMin := math.Log10(l.min)
-	logMax := math.Log10(l.max)
+func LogAxis(minParent, maxParent float64, ctw CheckTextWidth, bounds Bounds) (func(v float64) float64, []Tick) {
+	logMin := math.Log10(bounds.Min)
+	logMax := math.Log10(bounds.Max)
+	delta := (logMax - logMin) * expand
+	logMin -= delta
+	logMax += delta
 
 	tr := func(v float64) float64 {
 		f := (math.Log10(v) - logMin) / (logMax - logMin)

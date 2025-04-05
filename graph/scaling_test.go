@@ -7,15 +7,15 @@ import (
 
 func Test_Axis(t *testing.T) {
 	tests := []struct {
-		name string
-		axis Axis
-		min  float64
-		max  float64
-		ctw  CheckTextWidth
-		want []Tick
+		name   string
+		bounds Bounds
+		min    float64
+		max    float64
+		ctw    CheckTextWidth
+		want   []Tick
 	}{
 		{"Linear",
-			NewLinear(-4, 4),
+			NewBounds(-4, 4),
 			0, 100,
 			func(width float64, vks, nks int) bool {
 				return width > 10
@@ -25,7 +25,7 @@ func Test_Axis(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ti := tt.axis.Ticks(tt.min, tt.max, tt.ctw)
+			_, ti := LinearAxis(tt.min, tt.max, tt.ctw, tt.bounds)
 			assert.EqualValues(t, tt.want, ti)
 		})
 	}
