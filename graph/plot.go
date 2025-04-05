@@ -51,10 +51,10 @@ func (p *Plot) DrawTo(canvas Canvas) {
 		yAxis = LinearAxis
 	}
 
-	xTrans, xTicks := xAxis(innerRect.Min.X, innerRect.Max.X, func(width float64, vks, nks int) bool {
+	xTrans, xTicks, xBounds := xAxis(innerRect.Min.X, innerRect.Max.X, func(width float64, vks, nks int) bool {
 		return width > c.TextSize*float64(vks+nks)
 	}, xBounds)
-	yTrans, yTicks := yAxis(innerRect.Min.Y, innerRect.Max.Y, func(width float64, vks, nks int) bool {
+	yTrans, yTicks, yBounds := yAxis(innerRect.Min.Y, innerRect.Max.Y, func(width float64, vks, nks int) bool {
 		return width > c.TextSize*3
 	}, yBounds)
 
