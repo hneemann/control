@@ -96,6 +96,15 @@ func (c Color) Opacity() string {
 	return fmt.Sprintf("%0.2f", float64(c.A)/255)
 }
 
+func (c Color) Darken() Color {
+	return Color{ //ToDo : use a better algorithm: RGB->HSV->Darken->RGB
+		R: c.R / 3 * 2,
+		G: c.G / 3 * 2,
+		B: c.B / 3 * 2,
+		A: c.A,
+	}
+}
+
 type Style struct {
 	Stroke      bool
 	Color       Color
@@ -116,6 +125,13 @@ func (s *Style) SetDash(d ...float64) *Style {
 	var style Style
 	style = *s
 	style.Dash = d
+	return &style
+}
+
+func (s *Style) Darken() *Style {
+	var style Style
+	style = *s
+	style.Color = s.Color.Darken()
 	return &style
 }
 

@@ -443,6 +443,12 @@ func (a Asymptotes) DrawTo(_ *graph.Plot, canvas graph.Canvas) {
 	}
 }
 
+var styleList = []*graph.Style{
+	graph.Red.SetStrokeWidth(2).Darken(),
+	graph.Green.SetStrokeWidth(2).Darken(),
+	graph.Blue.SetStrokeWidth(2).Darken(),
+}
+
 func (l *Linear) CreateEvans(kMax float64) (*graph.Plot, error) {
 	if l.Latency != 0 {
 		return nil, fmt.Errorf("cannot create Evans plot for linear system with latency")
@@ -495,7 +501,7 @@ func (l *Linear) CreateEvans(kMax float64) (*graph.Plot, error) {
 
 	sort.Sort(evPoints)
 	for i := 1; i < len(evPoints); i++ {
-		evPoints[i].dist(evPoints[i])
+		evPoints[i-1].dist(evPoints[i])
 	}
 
 	pathList := make([]graph.Path, poleCount)
@@ -516,8 +522,8 @@ func (l *Linear) CreateEvans(kMax float64) (*graph.Plot, error) {
 		curveList = append(curveList, Asymptotes{Point: graph.Point{X: as, Y: 0}, Order: order})
 	}
 
-	for _, pa := range pathList {
-		curveList = append(curveList, graph.Curve{Path: pa, Style: graph.Black.SetStrokeWidth(2)})
+	for i, pa := range pathList {
+		curveList = append(curveList, graph.Curve{Path: pa, Style: styleList[i%len(styleList)]})
 	}
 
 	curveList = append(curveList,
