@@ -1,6 +1,5 @@
 package graph
 
-import "C"
 import (
 	"bytes"
 	"fmt"
@@ -47,7 +46,7 @@ func (c Color) Opacity() string {
 	return fmt.Sprintf("%0.2f", float64(c.A)/255)
 }
 
-func (c Color) Darken() Color {
+func (c Color) Darker() Color {
 	return Color{ //ToDo : use a better algorithm: RGB->HSV->Darken->RGB
 		R: c.R / 3 * 2,
 		G: c.G / 3 * 2,
@@ -98,7 +97,7 @@ func (s *Style) SetDash(d ...float64) *Style {
 func (s *Style) Darker() *Style {
 	var style Style
 	style = *s
-	style.Color = s.Color.Darken()
+	style.Color = s.Color.Darker()
 	return &style
 }
 
