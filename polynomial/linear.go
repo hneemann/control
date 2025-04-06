@@ -345,16 +345,84 @@ func (e evansPoints) Swap(i, j int) {
 	e[i], e[j] = e[j], e[i]
 }
 
+type Polar struct{}
+
+func (p Polar) String() string {
+	return "Polar Grid"
+}
+
+func (p Polar) PreferredBounds(_, _ graph.Bounds) (x, y graph.Bounds) {
+	return graph.Bounds{}, graph.Bounds{}
+}
+
+func (p Polar) DrawTo(plot *graph.Plot, canvas graph.Canvas) {
+	r := canvas.Rect()
+	textSize := canvas.Context().TextSize * 0.75
+	var zero graph.Point
+	if r.Inside(zero) {
+		radius := math.Max(r.Width(), r.Height())
+		path := graph.NewPath(false)
+		for angle := 90; angle <= 270; angle += 15 {
+			if angle != 180 {
+				x := radius * math.Cos(float64(angle)*math.Pi/180)
+				y := radius * math.Sin(float64(angle)*math.Pi/180)
+				ep := r.Cut(zero, graph.Point{X: x, Y: y})
+				var o graph.Orientation
+				if r.IsNearTop(ep) {
+					o |= graph.Top
+				} else if r.IsNearBottom(ep) {
+					o |= graph.Bottom
+				} else {
+					if ep.Y > 0 {
+						o |= graph.Bottom
+					} else {
+						o |= graph.Top
+					}
+				}
+				if r.IsNearLeft(ep) {
+					o |= graph.Left
+				} else {
+					o |= graph.Right
+				}
+				path = path.MoveTo(zero).LineTo(ep)
+				canvas.DrawText(ep, fmt.Sprintf("%d°", 180-angle), o, graph.Gray, textSize)
+			}
+		}
+		canvas.DrawPath(path, graph.Gray.SetDash(4, 4))
+
+		path = graph.NewPath(false)
+		for _, t := range plot.GetXTicks() {
+			radius = -t.Position
+			if radius > 0 {
+				for angle := 90; angle <= 270; angle += 5 {
+					x := radius * math.Cos(float64(angle)*math.Pi/180)
+					y := radius * math.Sin(float64(angle)*math.Pi/180)
+					if angle == 90 {
+						path = path.MoveTo(graph.Point{X: x, Y: y})
+					} else {
+						path = path.LineTo(graph.Point{X: x, Y: y})
+					}
+				}
+			}
+		}
+		canvas.DrawPath(path.Intersect(r), graph.Gray.SetDash(4, 4))
+	}
+}
+
 type Asymptotes struct {
 	Point graph.Point
 	Order int
 }
 
-func (a Asymptotes) PreferredBounds() (graph.Bounds, graph.Bounds) {
+func (a Asymptotes) String() string {
+	return "Asymptotes"
+}
+
+func (a Asymptotes) PreferredBounds(_, _ graph.Bounds) (graph.Bounds, graph.Bounds) {
 	return graph.Bounds{}, graph.Bounds{}
 }
 
-func (a Asymptotes) DrawTo(canvas graph.Canvas) {
+func (a Asymptotes) DrawTo(_ *graph.Plot, canvas graph.Canvas) {
 	r := canvas.Rect()
 	if r.Inside(a.Point) {
 		w := r.Width()
@@ -368,7 +436,7 @@ func (a Asymptotes) DrawTo(canvas graph.Canvas) {
 			y := a.Point.Y + d*math.Sin(alpha)
 
 			l := graph.NewLine(a.Point, r.Cut(a.Point, graph.Point{X: x, Y: y}))
-			canvas.DrawPath(l, graph.Gray)
+			canvas.DrawPath(l, graph.Gray.SetStrokeWidth(2))
 
 			alpha += dAlpha
 		}
@@ -438,6 +506,7 @@ func (l *Linear) CreateEvans(kMax float64) (*graph.Plot, error) {
 	}
 
 	curveList := make([]graph.PlotContent, 0, len(pathList)+2)
+	curveList = append(curveList, Polar{})
 
 	as, order, err := l.EvansAsymptotesIntersect()
 	if err != nil {
@@ -682,7 +751,7 @@ func (l *Linear) Nyquist() *graph.Plot {
 		w *= wMult
 	}
 
-	pathNeg := graph.NewPath(false).Add(pZero)
+	pathNeg := graph.NewPath(false)
 	for _, pe := range path.Elements {
 		pathNeg = pathNeg.Add(graph.Point{X: pe.X, Y: -pe.Y})
 	}

@@ -7,6 +7,53 @@ import (
 	"github.com/hneemann/parser2/value"
 )
 
+type Wrapper[T any] struct {
+	val   T
+	vType value.Type
+}
+
+func (w Wrapper[T]) ToList() (*value.List, bool) {
+	return nil, false
+}
+
+func (w Wrapper[T]) ToMap() (value.Map, bool) {
+	return value.Map{}, false
+}
+
+func (w Wrapper[T]) ToInt() (int, bool) {
+	return 0, false
+}
+
+func (w Wrapper[T]) ToFloat() (float64, bool) {
+	return 0, false
+}
+
+func (w Wrapper[T]) ToString(st funcGen.Stack[value.Value]) (string, error) {
+	return fmt.Sprint(w.val), nil
+}
+
+func (w Wrapper[T]) ToBool() (bool, bool) {
+	return false, false
+}
+
+func (w Wrapper[T]) ToClosure() (funcGen.Function[value.Value], bool) {
+	return funcGen.Function[value.Value]{}, false
+}
+
+func (w Wrapper[T]) GetType() value.Type {
+	return w.vType
+}
+
+func (w Wrapper[T]) GetValue() T {
+	return w.val
+}
+
+func CreateWrapper[T any](val T, typ value.Type) Wrapper[T] {
+	return Wrapper[T]{val: val, vType: typ}
+}
+
+const PlotValueType value.Type = 16
+
 const ComplexValueType value.Type = 17
 
 type Complex complex128
@@ -44,57 +91,6 @@ func (c Complex) ToClosure() (funcGen.Function[value.Value], bool) {
 
 func (c Complex) GetType() value.Type {
 	return ComplexValueType
-}
-
-const ConsoleValueType value.Type = 17
-
-type Console struct {
-	console []value.Value
-}
-
-func (c *Console) ToList() (*value.List, bool) {
-	return value.NewListConvert(func(v value.Value) value.Value {
-		return v
-	}, c.console), true
-}
-
-func (c *Console) ToMap() (value.Map, bool) {
-	return value.Map{}, false
-}
-
-func (c *Console) ToInt() (int, bool) {
-	return 0, false
-}
-
-func (c *Console) ToFloat() (float64, bool) {
-	return 0, false
-}
-
-func (c *Console) ToString(st funcGen.Stack[value.Value]) (string, error) {
-	var con string
-	for _, v := range c.console {
-		s, err := v.ToString(st)
-		if err != nil {
-			return "", err
-		}
-		if con != "" {
-			con += "\n"
-		}
-		con += s
-	}
-	return con, nil
-}
-
-func (c *Console) ToBool() (bool, bool) {
-	return false, false
-}
-
-func (c *Console) ToClosure() (funcGen.Function[value.Value], bool) {
-	return funcGen.Function[value.Value]{}, false
-}
-
-func (c *Console) GetType() value.Type {
-	return ConsoleValueType
 }
 
 const PolynomialValueType value.Type = 18
@@ -280,7 +276,6 @@ func exp(st funcGen.Stack[value.Value], a value.Value, b value.Value) (value.Val
 }
 
 var parser = value.New().
-	RegisterMethods(ConsoleValueType, consoleMethods()).
 	RegisterMethods(LinearValueType, linMethods()).
 	AddStaticFunction("lin", funcGen.Function[value.Value]{
 		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
@@ -317,13 +312,6 @@ var parser = value.New().
 		Args:   2,
 		IsPure: true,
 	}.SetDescription("re", "im", "creates a complex value")).
-	AddStaticFunction("console", funcGen.Function[value.Value]{
-		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
-			return &Console{}, nil
-		},
-		Args:   0,
-		IsPure: true,
-	}.SetDescription("creates a console")).
 	AddStaticFunction("poly", funcGen.Function[value.Value]{
 		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
 			var p Polynomial
@@ -391,54 +379,35 @@ var parser = value.New().
 	},
 	))
 
-func consoleMethods() value.MethodMap {
-	return value.MethodMap{
-		"disp": funcGen.Function[value.Value]{
-			Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
-				if c, ok := stack.Get(0).(*Console); ok {
-					v := stack.Get(1)
-					c.console = append(c.console, v)
-					return v, nil
-				}
-				return nil, errors.New("out requires a console")
-			},
-			Args:   2,
-			IsPure: true,
-		},
-	}
-}
-
 func linMethods() value.MethodMap {
 	return value.MethodMap{
-		"loop": funcGen.Function[value.Value]{
-			Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
-				if lin, ok := stack.Get(0).(*Linear); ok {
-					return lin.Loop()
+		"loop": value.MethodAtType(0, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
+			return lin.Loop()
+		}).SetMethodDescription("closes the loop"),
+		"reduce": value.MethodAtType(0, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
+			if lin, ok := st.Get(0).(*Linear); ok {
+				return lin.Reduce()
+			}
+			return nil, fmt.Errorf("loop requires a linear system")
+		}).SetMethodDescription("reduces the linear system"),
+		"stringPoly": value.MethodAtType(0, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
+			if lin, ok := st.Get(0).(*Linear); ok {
+				return value.String(lin.StringPoly(false)), nil
+			}
+			return nil, fmt.Errorf("stringPoly requires a linear system")
+		}).SetMethodDescription("creates a string representation of the linear system"),
+		"evans": value.MethodAtType(1, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
+			if k, ok := st.Get(1).ToFloat(); ok {
+				plot, err := lin.CreateEvans(k)
+				if err != nil {
+					return nil, err
 				}
-				return nil, fmt.Errorf("loop requires a linear system")
-			},
-			Args:   0,
-			IsPure: true,
-		}.SetDescription("closes the loop"),
-		"reduce": funcGen.Function[value.Value]{
-			Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
-				if lin, ok := stack.Get(0).(*Linear); ok {
-					return lin.Reduce()
-				}
-				return nil, fmt.Errorf("loop requires a linear system")
-			},
-			Args:   0,
-			IsPure: true,
-		}.SetDescription("reduces the linear system"),
-		"stringPoly": funcGen.Function[value.Value]{
-			Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
-				if lin, ok := stack.Get(0).(*Linear); ok {
-					return value.String(lin.StringPoly(false)), nil
-				}
-				return nil, fmt.Errorf("stringPoly requires a linear system")
-			},
-			Args:   0,
-			IsPure: true,
-		}.SetDescription("reduces the linear system"),
+				return CreateWrapper(plot, PlotValueType), nil
+			}
+			return nil, fmt.Errorf("evans requires a float")
+		}).SetMethodDescription("k_max", "creates an evans plot"),
+		"nyquist": value.MethodAtType(0, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
+			return CreateWrapper(lin.Nyquist(), PlotValueType), nil
+		}).SetMethodDescription("creates a nyquist plot"),
 	}
 }

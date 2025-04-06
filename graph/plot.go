@@ -1,5 +1,10 @@
 package graph
 
+import (
+	"bytes"
+	"fmt"
+)
+
 type Plot struct {
 	XAxis   Axis
 	YAxis   Axis
@@ -9,6 +14,8 @@ type Plot struct {
 	XLabel  string
 	YLabel  string
 	Content []PlotContent
+	xTicks  []Tick
+	yTicks  []Tick
 }
 
 var Black = &Style{Stroke: true, Color: Color{0, 0, 0, 255}, Fill: false, StrokeWidth: 1}
@@ -34,7 +41,7 @@ func (p *Plot) DrawTo(canvas Canvas) {
 		mergeX := !xBounds.avail
 		mergeY := !yBounds.avail
 		for _, plotContent := range p.Content {
-			x, y := plotContent.PreferredBounds()
+			x, y := plotContent.PreferredBounds(p.XBounds, p.YBounds)
 			if mergeX {
 				xBounds.MergeBounds(x)
 			}
@@ -42,6 +49,13 @@ func (p *Plot) DrawTo(canvas Canvas) {
 				yBounds.MergeBounds(y)
 			}
 		}
+	}
+
+	if !xBounds.avail {
+		xBounds = NewBounds(0, 1)
+	}
+	if !yBounds.avail {
+		yBounds = NewBounds(0, 1)
 	}
 
 	xAxis := p.XAxis
@@ -53,12 +67,17 @@ func (p *Plot) DrawTo(canvas Canvas) {
 		yAxis = LinearAxis
 	}
 
-	xTrans, xTicks, xBounds := xAxis(innerRect.Min.X, innerRect.Max.X, func(width float64, vks, nks int) bool {
-		return width > c.TextSize*float64(vks+nks)
-	}, xBounds)
-	yTrans, yTicks, yBounds := yAxis(innerRect.Min.Y, innerRect.Max.Y, func(width float64, vks, nks int) bool {
-		return width > c.TextSize*2
-	}, yBounds)
+	xTrans, xTicks, xBounds := xAxis(innerRect.Min.X, innerRect.Max.X, xBounds,
+		func(width float64, digits int) bool {
+			return width > c.TextSize*float64(digits)*0.75
+		})
+	yTrans, yTicks, yBounds := yAxis(innerRect.Min.Y, innerRect.Max.Y, yBounds,
+		func(width float64, _ int) bool {
+			return width > c.TextSize*2
+		})
+
+	p.xTicks = xTicks
+	p.yTicks = yTicks
 
 	trans := func(p Point) Point {
 		return Point{xTrans(p.X), yTrans(p.Y)}
@@ -104,12 +123,32 @@ func (p *Plot) DrawTo(canvas Canvas) {
 	canvas.DrawPath(innerRect.Poly(), Black.SetStrokeWidth(2))
 
 	for _, plotContent := range p.Content {
-		plotContent.DrawTo(inner)
+		plotContent.DrawTo(p, inner)
 	}
+}
+
+func (p *Plot) GetXTicks() []Tick {
+	return p.xTicks
+}
+
+func (p *Plot) GetYTicks() []Tick {
+	return p.yTicks
 }
 
 func (p *Plot) AddContent(content PlotContent) {
 	p.Content = append(p.Content, content)
+}
+
+func (p *Plot) String() string {
+	bu := bytes.Buffer{}
+	bu.WriteString("Plot: ")
+	for i, content := range p.Content {
+		if i > 0 {
+			bu.WriteString(", ")
+		}
+		bu.WriteString(fmt.Sprint(content))
+	}
+	return bu.String()
 }
 
 type Bounds struct {
@@ -122,6 +161,10 @@ func NewBounds(min, max float64) Bounds {
 		min, max = max, min
 	}
 	return Bounds{true, min, max}
+}
+
+func (b *Bounds) Avail() bool {
+	return b.avail
 }
 
 func (b *Bounds) MergeBounds(other Bounds) {
@@ -163,24 +206,35 @@ func (b *Bounds) Width() float64 {
 }
 
 type PlotContent interface {
-	Image
-	PreferredBounds() (x, y Bounds)
+	DrawTo(*Plot, Canvas)
+	PreferredBounds(xGiven, yGiven Bounds) (x, y Bounds)
 }
 
 type Function func(x float64) float64
 
-func (f Function) PreferredBounds() (x, y Bounds) {
+const functionSteps = 100
+
+func (f Function) PreferredBounds(knownX, _ Bounds) (Bounds, Bounds) {
+	if knownX.avail {
+		yBounds := Bounds{}
+		width := knownX.Width()
+		for i := 0; i <= functionSteps; i++ {
+			x := knownX.Min + width*float64(i)/functionSteps
+			yBounds.Merge(f(x))
+		}
+		return Bounds{}, yBounds
+	}
 	return Bounds{}, Bounds{}
 }
 
-func (f Function) DrawTo(canvas Canvas) {
+func (f Function) DrawTo(_ *Plot, canvas Canvas) {
 	rect := canvas.Rect()
-	const steps = 100
 
 	p := NewPath(false)
 	var last Point
-	for i := 0; i <= steps; i++ {
-		x := rect.Min.X + (rect.Max.X-rect.Min.X)*float64(i)/steps
+	width := rect.Width()
+	for i := 0; i <= functionSteps; i++ {
+		x := rect.Min.X + width*float64(i)/functionSteps
 		point := Point{x, f(x)}
 		inside := rect.Inside(point)
 		if p.Size() > 0 && !inside {
@@ -205,7 +259,11 @@ type Scatter struct {
 	Style  *Style
 }
 
-func (s Scatter) PreferredBounds() (Bounds, Bounds) {
+func (s Scatter) String() string {
+	return fmt.Sprintf("Scatter with %d points", len(s.Points))
+}
+
+func (s Scatter) PreferredBounds(_, _ Bounds) (Bounds, Bounds) {
 	var x, y Bounds
 	for _, p := range s.Points {
 		x.Merge(p.X)
@@ -214,7 +272,7 @@ func (s Scatter) PreferredBounds() (Bounds, Bounds) {
 	return x, y
 }
 
-func (s Scatter) DrawTo(canvas Canvas) {
+func (s Scatter) DrawTo(_ *Plot, canvas Canvas) {
 	rect := canvas.Rect()
 	for _, p := range s.Points {
 		if rect.Inside(p) {
@@ -228,7 +286,11 @@ type Curve struct {
 	Style *Style
 }
 
-func (c Curve) PreferredBounds() (Bounds, Bounds) {
+func (c Curve) String() string {
+	return fmt.Sprintf("Curve with %d points", c.Path.Size())
+}
+
+func (c Curve) PreferredBounds(_, _ Bounds) (Bounds, Bounds) {
 	var x, y Bounds
 	for _, e := range c.Path.Elements {
 		x.Merge(e.Point.X)
@@ -237,7 +299,7 @@ func (c Curve) PreferredBounds() (Bounds, Bounds) {
 	return x, y
 }
 
-func (c Curve) DrawTo(canvas Canvas) {
+func (c Curve) DrawTo(_ *Plot, canvas Canvas) {
 	rect := canvas.Rect()
 	p := NewPath(false)
 	var last Point
@@ -286,11 +348,15 @@ type Cross struct {
 	Style *Style
 }
 
-func (c Cross) PreferredBounds() (Bounds, Bounds) {
+func (c Cross) String() string {
+	return "coordinate cross"
+}
+
+func (c Cross) PreferredBounds(_, _ Bounds) (Bounds, Bounds) {
 	return Bounds{}, Bounds{}
 }
 
-func (c Cross) DrawTo(canvas Canvas) {
+func (c Cross) DrawTo(_ *Plot, canvas Canvas) {
 	r := canvas.Rect()
 	if r.Inside(Point{0, 0}) {
 		canvas.DrawPath(NewPath(false).

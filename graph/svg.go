@@ -26,7 +26,7 @@ func NewSVG(width, height, textSize float64, writer io.Writer) *SVG {
 		Point{width, height},
 	}, w: w, context: &Context{TextSize: textSize}}
 
-	s.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n")
+	//s.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n")
 	s.write(fmt.Sprintf("<svg xmlns:svg=\"http://www.w3.org/2000/svg\"\n   xmlns=\"http://www.w3.org/2000/svg\"\n   width=\"%g\"\n   height=\"%g\"\n   viewBox=\"0 0 %g %g\">\n",
 		width, height, width, height))
 
@@ -43,18 +43,20 @@ func (s *SVG) Close() error {
 }
 
 func (s *SVG) DrawPath(polygon Path, style *Style) {
-	s.write("  <path d=\"")
-	for _, p := range polygon.Elements {
-		s.writeRune(p.Mode)
-		s.writeRune(' ')
-		s.write(fmt.Sprintf("%.2f,%.2f ", p.X, s.rect.Max.Y-p.Y))
+	if polygon.Size() > 1 {
+		s.write("  <path d=\"")
+		for _, p := range polygon.Elements {
+			s.writeRune(p.Mode)
+			s.writeRune(' ')
+			s.write(fmt.Sprintf("%.2f,%.2f ", p.X, s.rect.Max.Y-p.Y))
+		}
+		if polygon.Closed {
+			s.write("Z")
+		}
+		s.write("\"")
+		s.writeStyle(style, "")
+		s.write("/>\n")
 	}
-	if polygon.Closed {
-		s.write("Z")
-	}
-	s.write("\"")
-	s.writeStyle(style, "")
-	s.write("/>\n")
 }
 
 func (s *SVG) DrawShape(a Point, shape Shape, style *Style) {

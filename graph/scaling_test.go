@@ -17,7 +17,7 @@ func Test_Axis(t *testing.T) {
 		{"Linear",
 			NewBounds(-4, 4),
 			0, 100,
-			func(width float64, vks, nks int) bool {
+			func(width float64, _ int) bool {
 				return width > 10
 			},
 			[]Tick{{-4, "-4"}, {-3, "-3"}, {-2, "-2"}, {-1, "-1"},
@@ -25,7 +25,7 @@ func Test_Axis(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, ti, _ := LinearAxis(tt.min, tt.max, tt.ctw, tt.bounds)
+			_, ti, _ := LinearAxis(tt.min, tt.max, tt.bounds, tt.ctw)
 			assert.EqualValues(t, tt.want, ti)
 		})
 	}

@@ -1,10 +1,14 @@
 package polynomial
 
 import (
+	"bytes"
 	"fmt"
+	"github.com/hneemann/control/graph"
 	"github.com/hneemann/parser2/funcGen"
 	"github.com/hneemann/parser2/value"
+	"github.com/hneemann/parser2/value/export"
 	"github.com/stretchr/testify/assert"
+	"html/template"
 	"testing"
 )
 
@@ -34,6 +38,9 @@ let g0=(k*g).reduce();
 let gw=g0.loop();
 gw.stringPoly()
 `, res: value.String("(30x²+30x+15)/(4x⁴+18x³+62.4x²+54.6x+21.2)")}, // externally checked
+
+		{name: "evans", exp: "let s=lin(); let g=(s+1)/(s^2+4*s+5); string(g.evans(10))", res: value.String("Plot: Polar Grid, Asymptotes, Curve with 157 points, Curve with 157 points, Scatter with 2 points, Scatter with 1 points")},
+		{name: "nyquist", exp: "let s=lin(); let g=(s+1)/(s^2+4*s+5); string(g.nyquist())", res: value.String("Plot: coordinate cross, Curve with 101 points, Curve with 101 points, Scatter with 1 points, Scatter with 1 points")},
 	}
 
 	for _, test := range tests {
@@ -51,35 +58,6 @@ gw.stringPoly()
 					assert.InDelta(t, float64(expected), f, 1e-6, test.exp)
 				case *Linear:
 					fmt.Println(res)
-				default:
-					assert.Equal(t, test.res, res, test.exp)
-				}
-			}
-		})
-	}
-}
-
-func TestConsole(t *testing.T) {
-	tests := []struct {
-		name string
-		exp  string
-		res  any
-	}{
-		{name: "simple", exp: "let c=console(); let a=c.disp(1+2); string(c)", res: value.String("3")},
-	}
-	for _, test := range tests {
-		test := test
-		t.Run(test.name, func(t *testing.T) {
-			fu, err := parser.Generate(test.exp)
-			assert.NoError(t, err, test.exp)
-			if fu != nil {
-				res, err := fu(funcGen.NewEmptyStack[value.Value]())
-				assert.NoError(t, err, test.exp)
-				switch expected := test.res.(type) {
-				case value.Float:
-					f, ok := res.ToFloat()
-					assert.True(t, ok)
-					assert.InDelta(t, float64(expected), f, 1e-6, test.exp)
 				default:
 					assert.Equal(t, test.res, res, test.exp)
 				}
@@ -125,4 +103,45 @@ func TestComplex(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestSVGExport(t *testing.T) {
+	tests := []struct {
+		name string
+		exp  string
+		file string
+	}{
+		{name: "nyquist", exp: "let s=lin(); let g=(s+1)/(s^2+4*s+5); [\"Nyquist\",g.nyquist()]", file: "z.html"},
+	}
+	for _, test := range tests {
+		test := test
+		t.Run(test.name, func(t *testing.T) {
+			fu, err := parser.Generate(test.exp)
+			assert.NoError(t, err, test.exp)
+			if fu != nil {
+				res, err := fu(funcGen.NewEmptyStack[value.Value]())
+				assert.NoError(t, err, test.exp)
+
+				expHtmp, _, err := export.ToHtml(res, 50, customHtmlExport, true)
+				assert.NoError(t, err, test.exp)
+
+				fmt.Println(expHtmp)
+			}
+		})
+	}
+}
+
+func customHtmlExport(v value.Value) (template.HTML, bool, error) {
+	if p, ok := v.(Wrapper[*graph.Plot]); ok {
+		plot := p.GetValue()
+		var buffer bytes.Buffer
+		svg := graph.NewSVG(800, 600, 15, &buffer)
+		plot.DrawTo(svg)
+		err := svg.Close()
+		if err != nil {
+			return "", true, err
+		}
+		return template.HTML(buffer.String()), true, nil
+	}
+	return "", false, nil
 }

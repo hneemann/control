@@ -5,8 +5,8 @@ import (
 	"math"
 )
 
-// CheckTextWidth returns true if the specified number (vks.nks) fits in the given space width
-type CheckTextWidth func(width float64, vks, nks int) bool
+// CheckTextWidth returns true if a number with the given number of digits fits in the given space width
+type CheckTextWidth func(width float64, digits int) bool
 
 type Tick struct {
 	Position float64
@@ -15,9 +15,9 @@ type Tick struct {
 
 const expand = 0.02
 
-type Axis func(minParent, maxParent float64, ctw CheckTextWidth, bounds Bounds) (func(v float64) float64, []Tick, Bounds)
+type Axis func(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth) (func(v float64) float64, []Tick, Bounds)
 
-func LinearAxis(minParent, maxParent float64, ctw CheckTextWidth, bounds Bounds) (func(v float64) float64, []Tick, Bounds) {
+func LinearAxis(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth) (func(v float64) float64, []Tick, Bounds) {
 	delta := (bounds.Max - bounds.Min) * expand
 	eMin := bounds.Min - delta
 	eMax := bounds.Max + delta
@@ -54,7 +54,7 @@ func (l *linTickCreator) ticks(minParent, maxParent float64, ctw CheckTextWidth)
 	l.delta *= 10
 	l.log++ // sicher zu klein starten!
 
-	for ctw(l.getPixels(maxParent-minParent), vks, l.getNks()) {
+	for ctw(l.getPixels(maxParent-minParent), vks+l.getNks()) {
 		l.inc()
 	}
 	l.dec()
@@ -116,12 +116,12 @@ func exp10(log int) float64 {
 	return e10
 }
 
-func LogAxis(minParent, maxParent float64, ctw CheckTextWidth, bounds Bounds) (func(v float64) float64, []Tick, Bounds) {
+func LogAxis(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth) (func(v float64) float64, []Tick, Bounds) {
 	logMin := math.Log10(bounds.Min)
 	logMax := math.Log10(bounds.Max)
 
 	if logMax-logMin < 1 {
-		return LinearAxis(minParent, maxParent, ctw, bounds)
+		return LinearAxis(minParent, maxParent, bounds, ctw)
 	}
 
 	delta := (logMax - logMin) * expand
@@ -161,8 +161,8 @@ func CreateLogTicks(logMin, parentMin, parentMax float64, tr func(v float64) flo
 }
 
 func CreateFixedStepAxis(step float64) Axis {
-	return func(minParent, maxParent float64, ctw CheckTextWidth, bounds Bounds) (func(v float64) float64, []Tick, Bounds) {
-		tr, ticks, b := LinearAxis(minParent, maxParent, ctw, bounds)
+	return func(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth) (func(v float64) float64, []Tick, Bounds) {
+		tr, ticks, b := LinearAxis(minParent, maxParent, bounds, ctw)
 
 		width := b.Width()
 		if width < step*2 || width > step*20 {
@@ -176,7 +176,7 @@ func CreateFixedStepAxis(step float64) Axis {
 			next := start + delta
 
 			widthAvail := tr(next) - tr(start)
-			if ctw(widthAvail, 3, 0) {
+			if ctw(widthAvail, 3) {
 				break
 			}
 			delta *= 2

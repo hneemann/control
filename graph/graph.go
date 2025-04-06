@@ -2,6 +2,7 @@ package graph
 
 import "C"
 import (
+	"bytes"
 	"fmt"
 	"math"
 )
@@ -65,6 +66,22 @@ func (r Rect) Width() float64 {
 
 func (r Rect) Height() float64 {
 	return r.Max.Y - r.Min.Y
+}
+
+func (r Rect) IsNearTop(p Point) bool {
+	return math.Abs(r.Max.Y-p.Y) < r.Height()/10
+}
+
+func (r Rect) IsNearBottom(p Point) bool {
+	return math.Abs(r.Min.Y-p.Y) < r.Height()/10
+}
+
+func (r Rect) IsNearLeft(p Point) bool {
+	return math.Abs(r.Min.X-p.X) < r.Width()/10
+}
+
+func (r Rect) IsNearRight(p Point) bool {
+	return math.Abs(r.Max.X-p.X) < r.Width()/10
 }
 
 type Color struct {
@@ -155,6 +172,21 @@ type Path struct {
 	Closed   bool
 }
 
+func (p Path) String() string {
+	var b bytes.Buffer
+	for _, e := range p.Elements {
+		if b.Len() > 0 && e.Mode == 'M' {
+			b.WriteRune('\n')
+		}
+		b.WriteRune(e.Mode)
+		b.WriteString(fmt.Sprintf(" %0.1f,%0.1f ", e.X, e.Y))
+	}
+	if p.Closed {
+		b.WriteString("Z")
+	}
+	return b.String()
+}
+
 func (p Path) DrawTo(canvas Canvas, style *Style) {
 	canvas.DrawPath(p, style)
 }
@@ -165,6 +197,10 @@ func (p Path) Add(point Point) Path {
 	} else {
 		return Path{append(p.Elements, PathElement{Mode: 'L', Point: point}), p.Closed}
 	}
+}
+
+func (p Path) LineTo(point Point) Path {
+	return Path{append(p.Elements, PathElement{Mode: 'L', Point: point}), p.Closed}
 }
 
 func (p Path) MoveTo(point Point) Path {
@@ -181,6 +217,34 @@ func (p *Path) Size() int {
 
 func (p *Path) Last() Point {
 	return p.Elements[len(p.Elements)-1].Point
+}
+
+func (p Path) Intersect(r Rect) Path {
+	var path Path
+	var lastPoint Point
+	var lastInside bool
+	for _, e := range p.Elements {
+		inside := r.Inside(e.Point)
+		if e.Mode == 'M' {
+			if inside {
+				path = path.MoveTo(e.Point)
+			}
+		} else {
+			if !lastInside && inside {
+				path = path.MoveTo(r.Cut(e.Point, lastPoint))
+			} else if lastInside && !inside {
+				path = path.LineTo(r.Cut(lastPoint, e.Point))
+			} else if inside {
+				path = path.LineTo(e.Point)
+			}
+		}
+		lastPoint = e.Point
+		lastInside = inside
+	}
+	if len(path.Elements) > 0 {
+		path.Closed = p.Closed
+	}
+	return path
 }
 
 func NewPath(closed bool) Path {

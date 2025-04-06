@@ -188,6 +188,7 @@ func Test_Evans1(t *testing.T) {
 	g0 := FromRoots(n, d)
 
 	pl, err := g0.CreateEvans(15)
+	pl.XBounds = graph.NewBounds(-4, 0.1)
 	assert.NoError(t, err)
 	if pl != nil {
 		err = exportPlot(pl, "wok1.svg")
@@ -201,6 +202,7 @@ func Test_Evans2(t *testing.T) {
 	g0 := FromRoots(n, d)
 
 	pl, err := g0.CreateEvans(25)
+	fmt.Println(pl)
 	assert.NoError(t, err)
 	if pl != nil {
 		pl.XBounds = graph.NewBounds(-1, 3)
@@ -263,6 +265,19 @@ func Test_Evans5(t *testing.T) {
 		pl.YBounds = graph.NewBounds(-2, 2)
 
 		err = exportPlot(pl, "wok5.svg")
+		assert.NoError(t, err)
+	}
+}
+
+func Test_Evans6(t *testing.T) {
+	n := NewRoots(complex(-3, 0), complex(-4, 0.3))
+	d := NewRoots(complex(-2, 0), complex(-1, 0), complex(-4, 0))
+	g0 := FromRoots(n, d)
+
+	pl, err := g0.CreateEvans(20)
+	assert.NoError(t, err)
+	if pl != nil {
+		err = exportPlot(pl, "wok6.svg")
 		assert.NoError(t, err)
 	}
 }
