@@ -11,6 +11,10 @@ type Point struct {
 	X, Y float64
 }
 
+func (p Point) String() string {
+	return fmt.Sprintf("(%0.1f,%0.1f)", p.X, p.Y)
+}
+
 func (p Point) Sub(o Point) Point {
 	return Point{X: p.X - o.X, Y: p.Y - o.Y}
 }
@@ -29,59 +33,6 @@ func (p Point) DistTo(b Point) float64 {
 
 func sqr(x float64) float64 {
 	return x * x
-}
-
-type Rect struct {
-	Min, Max Point
-}
-
-func (r Rect) Poly() Path {
-	return Path{
-		Elements: []PathElement{
-			{'M', r.Min}, {'L', Point{r.Max.X, r.Min.Y}},
-			{'L', r.Max}, {'L', Point{r.Min.X, r.Max.Y}}},
-		Closed: true,
-	}
-}
-
-func (r Rect) Inside(p Point) bool {
-	return p.X >= r.Min.X && p.X <= r.Max.X && p.Y >= r.Min.Y && p.Y <= r.Max.Y
-}
-
-func (r Rect) Cut(inside Point, outside Point) Point {
-	for range 10 {
-		mid := Point{(inside.X + outside.X) / 2, (inside.Y + outside.Y) / 2}
-		if r.Inside(mid) {
-			inside = mid
-		} else {
-			outside = mid
-		}
-	}
-	return inside
-}
-
-func (r Rect) Width() float64 {
-	return r.Max.X - r.Min.X
-}
-
-func (r Rect) Height() float64 {
-	return r.Max.Y - r.Min.Y
-}
-
-func (r Rect) IsNearTop(p Point) bool {
-	return math.Abs(r.Max.Y-p.Y) < r.Height()/10
-}
-
-func (r Rect) IsNearBottom(p Point) bool {
-	return math.Abs(r.Min.Y-p.Y) < r.Height()/10
-}
-
-func (r Rect) IsNearLeft(p Point) bool {
-	return math.Abs(r.Min.X-p.X) < r.Width()/10
-}
-
-func (r Rect) IsNearRight(p Point) bool {
-	return math.Abs(r.Max.X-p.X) < r.Width()/10
 }
 
 type Color struct {

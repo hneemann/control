@@ -37,9 +37,9 @@ func (p *Plot) DrawTo(canvas Canvas) {
 	xBounds := p.XBounds
 	yBounds := p.YBounds
 
-	if !(xBounds.avail && yBounds.avail) {
-		mergeX := !xBounds.avail
-		mergeY := !yBounds.avail
+	if !(xBounds.valid && yBounds.valid) {
+		mergeX := !xBounds.valid
+		mergeY := !yBounds.valid
 		for _, plotContent := range p.Content {
 			x, y := plotContent.PreferredBounds(p.XBounds, p.YBounds)
 			if mergeX {
@@ -51,10 +51,10 @@ func (p *Plot) DrawTo(canvas Canvas) {
 		}
 	}
 
-	if !xBounds.avail {
+	if !xBounds.valid {
 		xBounds = NewBounds(0, 1)
 	}
-	if !yBounds.avail {
+	if !yBounds.valid {
 		yBounds = NewBounds(0, 1)
 	}
 
@@ -152,7 +152,7 @@ func (p *Plot) String() string {
 }
 
 type Bounds struct {
-	avail    bool
+	valid    bool
 	Min, Max float64
 }
 
@@ -163,15 +163,15 @@ func NewBounds(min, max float64) Bounds {
 	return Bounds{true, min, max}
 }
 
-func (b *Bounds) Avail() bool {
-	return b.avail
+func (b *Bounds) Valid() bool {
+	return b.valid
 }
 
 func (b *Bounds) MergeBounds(other Bounds) {
-	if other.avail {
+	if other.valid {
 		// other is available
-		if !b.avail {
-			b.avail = true
+		if !b.valid {
+			b.valid = true
 			b.Min = other.Min
 			b.Max = other.Max
 		} else {
@@ -187,8 +187,8 @@ func (b *Bounds) MergeBounds(other Bounds) {
 }
 
 func (b *Bounds) Merge(p float64) {
-	if !b.avail {
-		b.avail = true
+	if !b.valid {
+		b.valid = true
 		b.Min = p
 		b.Max = p
 	} else {
@@ -206,7 +206,12 @@ func (b *Bounds) Width() float64 {
 }
 
 type PlotContent interface {
+	// DrawTo draws the content to the given canvas
+	// The *Plot is passed to allow the content to access the plot's properties
 	DrawTo(*Plot, Canvas)
+	// PreferredBounds returns the preferred bounds for the content
+	// The first bounds is the x-axis, the second is the y-axis
+	// The given bounds are valid if they are set by the user
 	PreferredBounds(xGiven, yGiven Bounds) (x, y Bounds)
 }
 
@@ -214,12 +219,12 @@ type Function func(x float64) float64
 
 const functionSteps = 100
 
-func (f Function) PreferredBounds(knownX, _ Bounds) (Bounds, Bounds) {
-	if knownX.avail {
+func (f Function) PreferredBounds(xGiven, _ Bounds) (Bounds, Bounds) {
+	if xGiven.valid {
 		yBounds := Bounds{}
-		width := knownX.Width()
+		width := xGiven.Width()
 		for i := 0; i <= functionSteps; i++ {
-			x := knownX.Min + width*float64(i)/functionSteps
+			x := xGiven.Min + width*float64(i)/functionSteps
 			yBounds.Merge(f(x))
 		}
 		return Bounds{}, yBounds
@@ -231,26 +236,12 @@ func (f Function) DrawTo(_ *Plot, canvas Canvas) {
 	rect := canvas.Rect()
 
 	p := NewPath(false)
-	var last Point
 	width := rect.Width()
 	for i := 0; i <= functionSteps; i++ {
 		x := rect.Min.X + width*float64(i)/functionSteps
-		point := Point{x, f(x)}
-		inside := rect.Inside(point)
-		if p.Size() > 0 && !inside {
-			p = p.Add(rect.Cut(p.Last(), point))
-			canvas.DrawPath(p, Black)
-			p = NewPath(false)
-		} else if p.Size() == 0 && inside && i > 0 {
-			p = p.Add(rect.Cut(point, last))
-		} else if inside {
-			p = p.Add(point)
-		}
-		last = point
+		p = p.Add(Point{x, f(x)})
 	}
-	if p.Size() > 1 {
-		canvas.DrawPath(p, Black)
-	}
+	canvas.DrawPath(p.Intersect(rect), Black)
 }
 
 type Scatter struct {
@@ -300,26 +291,7 @@ func (c Curve) PreferredBounds(_, _ Bounds) (Bounds, Bounds) {
 }
 
 func (c Curve) DrawTo(_ *Plot, canvas Canvas) {
-	rect := canvas.Rect()
-	p := NewPath(false)
-	var last Point
-	for i, e := range c.Path.Elements {
-		point := e.Point
-		inside := rect.Inside(point)
-		if p.Size() > 0 && !inside {
-			p = p.Add(rect.Cut(p.Last(), point))
-			canvas.DrawPath(p, c.Style)
-			p = NewPath(false)
-		} else if p.Size() == 0 && inside && i > 0 {
-			p = p.Add(rect.Cut(point, last))
-		} else if inside {
-			p = p.Add(point)
-		}
-		last = point
-	}
-	if p.Size() > 1 {
-		canvas.DrawPath(p, c.Style)
-	}
+	canvas.DrawPath(c.Path.Intersect(canvas.Rect()), c.Style)
 }
 
 type circleMarker struct {

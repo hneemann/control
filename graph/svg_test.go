@@ -13,7 +13,7 @@ func Test_Simple(t *testing.T) {
 
 	p := Plot{
 		XBounds: NewBounds(-4.5, 4),
-		//YBounds: NewBounds(-3, 3),
+		YBounds: NewBounds(-3, 3),
 		Content: []PlotContent{Function(math.Sin), Function(math.Cos), Function(math.Tan)},
 	}
 	p.DrawTo(s)

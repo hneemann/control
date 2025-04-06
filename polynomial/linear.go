@@ -393,14 +393,18 @@ func (p Polar) DrawTo(plot *graph.Plot, canvas graph.Canvas) {
 		path = graph.NewPath(false)
 		for _, t := range plot.GetXTicks() {
 			radius = -t.Position
-			if radius > 0 {
+			if radius > 1e-5 {
 				for angle := 90; angle <= 270; angle += 5 {
 					x := radius * math.Cos(float64(angle)*math.Pi/180)
 					y := radius * math.Sin(float64(angle)*math.Pi/180)
+					point := graph.Point{X: x, Y: y}
 					if angle == 90 {
-						path = path.MoveTo(graph.Point{X: x, Y: y})
+						if r.Inside(point) {
+							canvas.DrawText(point, t.Label, graph.VCenter|graph.Left, graph.Gray, textSize)
+						}
+						path = path.MoveTo(point)
 					} else {
-						path = path.LineTo(graph.Point{X: x, Y: y})
+						path = path.LineTo(point)
 					}
 				}
 			}
@@ -435,8 +439,8 @@ func (a Asymptotes) DrawTo(_ *graph.Plot, canvas graph.Canvas) {
 			x := a.Point.X + d*math.Cos(alpha)
 			y := a.Point.Y + d*math.Sin(alpha)
 
-			l := graph.NewLine(a.Point, r.Cut(a.Point, graph.Point{X: x, Y: y}))
-			canvas.DrawPath(l, graph.Gray.SetStrokeWidth(2))
+			l := graph.NewPath(false).Add(a.Point).Add(graph.Point{X: x, Y: y})
+			canvas.DrawPath(l.Intersect(r), graph.Gray.SetStrokeWidth(2))
 
 			alpha += dAlpha
 		}

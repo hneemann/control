@@ -12,9 +12,9 @@ func TestBounds_Merge(t *testing.T) {
 		v    float64
 		want Bounds
 	}{
-		{name: "empty", b: Bounds{}, v: 1, want: Bounds{avail: true, Min: 1, Max: 1}},
-		{name: "max", b: Bounds{avail: true, Min: 1, Max: 1}, v: 2, want: Bounds{avail: true, Min: 1, Max: 2}},
-		{name: "min", b: Bounds{avail: true, Min: 1, Max: 1}, v: 0, want: Bounds{avail: true, Min: 0, Max: 1}},
+		{name: "empty", b: Bounds{}, v: 1, want: Bounds{valid: true, Min: 1, Max: 1}},
+		{name: "max", b: Bounds{valid: true, Min: 1, Max: 1}, v: 2, want: Bounds{valid: true, Min: 1, Max: 2}},
+		{name: "min", b: Bounds{valid: true, Min: 1, Max: 1}, v: 0, want: Bounds{valid: true, Min: 0, Max: 1}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -31,7 +31,7 @@ func TestBounds_MergeBounds(t *testing.T) {
 		other Bounds
 		want  Bounds
 	}{
-		{name: "empty", b: Bounds{}, other: Bounds{}, want: Bounds{avail: false}},
+		{name: "empty", b: Bounds{}, other: Bounds{}, want: Bounds{valid: false}},
 		{name: "this empty", b: Bounds{}, other: Bounds{true, 1, 2}, want: Bounds{true, 1, 2}},
 		{name: "other empty", b: Bounds{true, 1, 2}, other: Bounds{}, want: Bounds{true, 1, 2}},
 		{name: "both", b: Bounds{true, 1, 2}, other: Bounds{true, 0, 3}, want: Bounds{true, 0, 3}},

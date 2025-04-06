@@ -25,7 +25,7 @@ func LinearAxis(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth)
 	ticks := l.ticks(minParent, maxParent, ctw)
 	return func(v float64) float64 {
 		return (v-eMin)/(eMax-eMin)*(maxParent-minParent) + minParent
-	}, ticks, Bounds{bounds.avail, eMin, eMax}
+	}, ticks, Bounds{bounds.valid, eMin, eMax}
 }
 
 type linTickCreator struct {
@@ -133,7 +133,7 @@ func LogAxis(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth) (f
 		return f*(maxParent-minParent) + minParent
 	}
 	ticks := CreateLogTicks(logMin, minParent, maxParent, tr, ctw)
-	return tr, ticks, Bounds{bounds.avail, math.Pow(10, logMin), math.Pow(10, logMax)}
+	return tr, ticks, Bounds{bounds.valid, math.Pow(10, logMin), math.Pow(10, logMax)}
 }
 
 func CreateLogTicks(logMin, parentMin, parentMax float64, tr func(v float64) float64, ctw CheckTextWidth) []Tick {
