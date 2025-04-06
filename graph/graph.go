@@ -56,6 +56,22 @@ func (c Color) Darken() Color {
 	}
 }
 
+func NewStyle(r, g, b uint8) *Style {
+	return &Style{Stroke: true, Color: Color{r, g, b, 255}, Fill: false, FillColor: Color{r, g, b, 255}, StrokeWidth: 1}
+}
+
+var (
+	Black   = NewStyle(0, 0, 0)
+	Gray    = NewStyle(190, 190, 190)
+	Red     = NewStyle(255, 0, 0)
+	Green   = NewStyle(0, 255, 0)
+	Blue    = NewStyle(0, 0, 255)
+	Cyan    = NewStyle(0, 255, 255)
+	Magenta = NewStyle(255, 0, 255)
+	Yellow  = NewStyle(255, 255, 0)
+	White   = NewStyle(255, 255, 255)
+)
+
 type Style struct {
 	Stroke      bool
 	Color       Color
@@ -79,10 +95,21 @@ func (s *Style) SetDash(d ...float64) *Style {
 	return &style
 }
 
-func (s *Style) Darken() *Style {
+func (s *Style) Darker() *Style {
 	var style Style
 	style = *s
 	style.Color = s.Color.Darken()
+	return &style
+}
+
+func (s *Style) Text() *Style {
+	if !s.Stroke && s.Fill {
+		return s
+	}
+	var style Style
+	style = *s
+	style.Fill = true
+	style.Stroke = false
 	return &style
 }
 

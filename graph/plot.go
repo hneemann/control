@@ -18,16 +18,10 @@ type Plot struct {
 	yTicks  []Tick
 }
 
-var Black = &Style{Stroke: true, Color: Color{0, 0, 0, 255}, Fill: false, StrokeWidth: 1}
-var Gray = &Style{Stroke: true, Color: Color{192, 192, 192, 255}, Fill: false, StrokeWidth: 1}
-var Red = &Style{Stroke: true, Color: Color{255, 0, 0, 255}, Fill: false, StrokeWidth: 1}
-var Green = &Style{Stroke: true, Color: Color{0, 255, 0, 255}, Fill: false, StrokeWidth: 1}
-var Blue = &Style{Stroke: true, Color: Color{0, 0, 255, 255}, Fill: false, StrokeWidth: 1}
-var text = &Style{Stroke: false, FillColor: Color{0, 0, 0, 255}, Fill: true}
-
 func (p *Plot) DrawTo(canvas Canvas) {
 	c := canvas.Context()
 	rect := canvas.Rect()
+	textStyle := Black.Text()
 
 	innerRect := Rect{
 		Min: Point{rect.Min.X + c.TextSize*5, rect.Min.Y + c.TextSize*2},
@@ -92,33 +86,35 @@ func (p *Plot) DrawTo(canvas Canvas) {
 		},
 	}
 
+	large := c.TextSize / 2
+	small := c.TextSize / 4
+
 	for _, tick := range xTicks {
 		xp := xTrans(tick.Position)
 		if tick.Label == "" {
-			canvas.DrawPath(NewLine(Point{xp, innerRect.Min.Y - c.TextSize/4}, Point{xp, innerRect.Min.Y}), Black)
+			canvas.DrawPath(NewLine(Point{xp, innerRect.Min.Y - small}, Point{xp, innerRect.Min.Y}), Black)
 		} else {
-			canvas.DrawText(Point{xp, innerRect.Min.Y - c.TextSize}, tick.Label, Top|HCenter, text, c.TextSize)
-			canvas.DrawPath(NewLine(Point{xp, innerRect.Min.Y - c.TextSize/2}, Point{xp, innerRect.Min.Y}), Black)
+			canvas.DrawText(Point{xp, innerRect.Min.Y - large}, tick.Label, Top|HCenter, textStyle, c.TextSize)
+			canvas.DrawPath(NewLine(Point{xp, innerRect.Min.Y - large}, Point{xp, innerRect.Min.Y}), Black)
 		}
 		if p.Grid != nil {
 			canvas.DrawPath(NewLine(Point{xp, innerRect.Min.Y}, Point{xp, innerRect.Max.Y}), p.Grid)
 		}
 	}
-	border := c.TextSize / 4
-	canvas.DrawText(Point{innerRect.Max.X - border, innerRect.Min.Y + border}, p.XLabel, Bottom|Right, text, c.TextSize)
+	canvas.DrawText(Point{innerRect.Max.X - small, innerRect.Min.Y + small}, p.XLabel, Bottom|Right, textStyle, c.TextSize)
 	for _, tick := range yTicks {
 		yp := yTrans(tick.Position)
 		if tick.Label == "" {
-			canvas.DrawPath(NewLine(Point{innerRect.Min.X - c.TextSize/4, yp}, Point{innerRect.Min.X, yp}), Black)
+			canvas.DrawPath(NewLine(Point{innerRect.Min.X - small, yp}, Point{innerRect.Min.X, yp}), Black)
 		} else {
-			canvas.DrawText(Point{innerRect.Min.X - c.TextSize, yp}, tick.Label, Right|VCenter, text, c.TextSize)
-			canvas.DrawPath(NewLine(Point{innerRect.Min.X - c.TextSize/2, yp}, Point{innerRect.Min.X, yp}), Black)
+			canvas.DrawText(Point{innerRect.Min.X - large, yp}, tick.Label, Right|VCenter, textStyle, c.TextSize)
+			canvas.DrawPath(NewLine(Point{innerRect.Min.X - large, yp}, Point{innerRect.Min.X, yp}), Black)
 		}
 		if p.Grid != nil {
 			canvas.DrawPath(NewLine(Point{innerRect.Min.X, yp}, Point{innerRect.Max.X, yp}), p.Grid)
 		}
 	}
-	canvas.DrawText(Point{innerRect.Min.X + border, innerRect.Max.Y - border}, p.YLabel, Top|Left, text, c.TextSize)
+	canvas.DrawText(Point{innerRect.Min.X + small, innerRect.Max.Y - small}, p.YLabel, Top|Left, textStyle, c.TextSize)
 
 	canvas.DrawPath(innerRect.Poly(), Black.SetStrokeWidth(2))
 

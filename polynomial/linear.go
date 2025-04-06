@@ -357,10 +357,12 @@ func (p Polar) PreferredBounds(_, _ graph.Bounds) (x, y graph.Bounds) {
 
 func (p Polar) DrawTo(plot *graph.Plot, canvas graph.Canvas) {
 	r := canvas.Rect()
-	textSize := canvas.Context().TextSize * 0.75
+	text := graph.Gray.Text()
+
+	textSize := canvas.Context().TextSize * 0.8
 	var zero graph.Point
 	if r.Inside(zero) {
-		radius := math.Max(r.Width(), r.Height())
+		radius := r.Diagonal()
 		path := graph.NewPath(false)
 		for angle := 90; angle <= 270; angle += 15 {
 			if angle != 180 {
@@ -385,7 +387,7 @@ func (p Polar) DrawTo(plot *graph.Plot, canvas graph.Canvas) {
 					o |= graph.Right
 				}
 				path = path.MoveTo(zero).LineTo(ep)
-				canvas.DrawText(ep, fmt.Sprintf("%d°", 180-angle), o, graph.Gray, textSize)
+				canvas.DrawText(ep, fmt.Sprintf("%d°", 180-angle), o, text, textSize)
 			}
 		}
 		canvas.DrawPath(path, graph.Gray.SetDash(4, 4))
@@ -400,7 +402,7 @@ func (p Polar) DrawTo(plot *graph.Plot, canvas graph.Canvas) {
 					point := graph.Point{X: x, Y: y}
 					if angle == 90 {
 						if r.Inside(point) {
-							canvas.DrawText(point, t.Label, graph.VCenter|graph.Left, graph.Gray, textSize)
+							canvas.DrawText(point, t.Label, graph.VCenter|graph.Left, text, textSize)
 						}
 						path = path.MoveTo(point)
 					} else {
@@ -429,9 +431,7 @@ func (a Asymptotes) PreferredBounds(_, _ graph.Bounds) (graph.Bounds, graph.Boun
 func (a Asymptotes) DrawTo(_ *graph.Plot, canvas graph.Canvas) {
 	r := canvas.Rect()
 	if r.Inside(a.Point) {
-		w := r.Width()
-		h := r.Height()
-		d := math.Sqrt(w*w + h*h)
+		d := r.Diagonal()
 
 		dAlpha := 2 * math.Pi / float64(a.Order)
 		alpha := dAlpha / 2
@@ -448,9 +448,12 @@ func (a Asymptotes) DrawTo(_ *graph.Plot, canvas graph.Canvas) {
 }
 
 var styleList = []*graph.Style{
-	graph.Red.SetStrokeWidth(2).Darken(),
-	graph.Green.SetStrokeWidth(2).Darken(),
-	graph.Blue.SetStrokeWidth(2).Darken(),
+	graph.Red.SetStrokeWidth(2).Darker(),
+	graph.Green.SetStrokeWidth(2).Darker(),
+	graph.Blue.SetStrokeWidth(2).Darker(),
+	graph.Cyan.SetStrokeWidth(2).Darker(),
+	graph.Magenta.SetStrokeWidth(2).Darker(),
+	graph.Yellow.SetStrokeWidth(2).Darker(),
 }
 
 func (l *Linear) CreateEvans(kMax float64) (*graph.Plot, error) {

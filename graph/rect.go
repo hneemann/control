@@ -148,20 +148,26 @@ func (r Rect) Height() float64 {
 	return r.Max.Y - r.Min.Y
 }
 
+func (r Rect) Diagonal() float64 {
+	return math.Sqrt(sqr(r.Max.Y-r.Min.Y) + sqr(r.Max.X-r.Min.X))
+}
+
+const nearDiv = 20
+
 func (r Rect) IsNearTop(p Point) bool {
-	return math.Abs(r.Max.Y-p.Y) < r.Height()/10
+	return math.Abs(r.Max.Y-p.Y) < r.Height()/nearDiv
 }
 
 func (r Rect) IsNearBottom(p Point) bool {
-	return math.Abs(r.Min.Y-p.Y) < r.Height()/10
+	return math.Abs(r.Min.Y-p.Y) < r.Height()/nearDiv
 }
 
 func (r Rect) IsNearLeft(p Point) bool {
-	return math.Abs(r.Min.X-p.X) < r.Width()/10
+	return math.Abs(r.Min.X-p.X) < r.Width()/nearDiv
 }
 
 func (r Rect) IsNearRight(p Point) bool {
-	return math.Abs(r.Max.X-p.X) < r.Width()/10
+	return math.Abs(r.Max.X-p.X) < r.Width()/nearDiv
 }
 
 func (r Rect) getFlags(p0 Point) int {

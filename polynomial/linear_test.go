@@ -270,11 +270,11 @@ func Test_Evans5(t *testing.T) {
 }
 
 func Test_Evans6(t *testing.T) {
-	n := NewRoots(complex(-3, 0), complex(-4, 0.3))
-	d := NewRoots(complex(-2, 0), complex(-1, 0), complex(-4, 0))
+	n := NewRoots(complex(-1, 0), complex(-2, 0.3))
+	d := NewRoots(complex(0, 0), complex(1, 0), complex(-2, 0))
 	g0 := FromRoots(n, d)
 
-	pl, err := g0.CreateEvans(20)
+	pl, err := g0.CreateEvans(50)
 	assert.NoError(t, err)
 	if pl != nil {
 		err = exportPlot(pl, "wok6.svg")

@@ -111,16 +111,22 @@ func (s *SVG) DrawCircle(a Point, b Point, style *Style) {
 func (s *SVG) DrawText(a Point, text string, orientation Orientation, style *Style, textSize float64) {
 	st := fmt.Sprintf("font-size:%0.2gpx", textSize)
 	switch orientation & 3 {
+	case 0:
+		a.X += textSize / 4
 	case 1:
 		st += ";text-anchor:middle"
 	case 2:
 		st += ";text-anchor:end"
+		a.X -= textSize / 4
 	}
 	switch (orientation >> 2) & 3 {
+	case 0:
+		a.Y += textSize / 4
 	case 1:
 		st += ";dominant-baseline:middle"
 	case 2:
 		st += ";dominant-baseline:hanging"
+		a.Y -= textSize / 4
 	}
 
 	s.write("  <text ")
