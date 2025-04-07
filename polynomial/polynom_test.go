@@ -32,11 +32,11 @@ func TestPolynom_String(t *testing.T) {
 		p    Polynomial
 		want string
 	}{
-		{"Simple", Polynomial{1, 2, 3}, "3x²+2x+1"},
-		{"SimpleN", Polynomial{1, -2, 3}, "3x²-2x+1"},
-		{"SimpleN2", Polynomial{-1, -2, 3}, "3x²-2x-1"},
-		{"SimpleN3", Polynomial{-1, -2, -3}, "-3x²-2x-1"},
-		{"one", Polynomial{-1, -2, 1}, "x²-2x-1"},
+		{"Simple", Polynomial{1, 2, 3}, "3s²+2s+1"},
+		{"SimpleN", Polynomial{1, -2, 3}, "3s²-2s+1"},
+		{"SimpleN2", Polynomial{-1, -2, 3}, "3s²-2s-1"},
+		{"SimpleN3", Polynomial{-1, -2, -3}, "-3s²-2s-1"},
+		{"one", Polynomial{-1, -2, 1}, "s²-2s-1"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

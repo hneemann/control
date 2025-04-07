@@ -70,33 +70,33 @@ func (p Polynomial) intString(parser bool) string {
 				switch n {
 				case 0:
 				case 1:
-					result += "x"
+					result += "s"
 				default:
-					result += fmt.Sprintf("x^%d", n)
+					result += fmt.Sprintf("s^%d", n)
 				}
 			} else {
 				switch n {
 				case 0:
 				case 1:
-					result += "x"
+					result += "s"
 				case 2:
-					result += "x²"
+					result += "s²"
 				case 3:
-					result += "x³"
+					result += "s³"
 				case 4:
-					result += "x⁴"
+					result += "s⁴"
 				case 5:
-					result += "x⁵"
+					result += "s⁵"
 				case 6:
-					result += "x⁶"
+					result += "s⁶"
 				case 7:
-					result += "x⁷"
+					result += "s⁷"
 				case 8:
-					result += "x⁸"
+					result += "s⁸"
 				case 9:
-					result += "x⁹"
+					result += "s⁹"
 				default:
-					result += fmt.Sprintf("x^%d", n)
+					result += fmt.Sprintf("s^%d", n)
 				}
 			}
 		}
@@ -367,10 +367,14 @@ func (r Roots) intString(parse bool) string {
 		if b.Len() > 0 {
 			b.WriteString("*")
 		}
-		p := FromRoot(root)
-		b.WriteString("(")
-		b.WriteString(p.intString(parse))
-		b.WriteString(")")
+		if cmplx.Abs(root) < eps {
+			b.WriteString("s")
+		} else {
+			p := FromRoot(root)
+			b.WriteString("(")
+			b.WriteString(p.intString(parse))
+			b.WriteString(")")
+		}
 	}
 	return b.String()
 }

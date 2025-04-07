@@ -115,11 +115,11 @@ func TestFromRoots(t *testing.T) {
 		{"simple",
 			NewRoots(complex(-2, 0), complex(1, 0)),
 			NewRoots(complex(-1, 0), complex(2, 0)),
-			"(x+2)*(x-1)/((x+1)*(x-2))"},
+			"(s+2)*(s-1)/((s+1)*(s-2))"},
 		{"reduce",
 			NewRoots(complex(-2, 0), complex(1, 0)),
 			NewRoots(complex(-1, 0), complex(1, 0)),
-			"(x+2)/((x+1))"},
+			"(s+2)/((s+1))"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

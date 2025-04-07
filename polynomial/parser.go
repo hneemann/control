@@ -3,56 +3,11 @@ package polynomial
 import (
 	"errors"
 	"fmt"
+	"github.com/hneemann/control/graph"
+	"github.com/hneemann/control/graph/grParser"
 	"github.com/hneemann/parser2/funcGen"
 	"github.com/hneemann/parser2/value"
 )
-
-type Wrapper[T any] struct {
-	val   T
-	vType value.Type
-}
-
-func (w Wrapper[T]) ToList() (*value.List, bool) {
-	return nil, false
-}
-
-func (w Wrapper[T]) ToMap() (value.Map, bool) {
-	return value.Map{}, false
-}
-
-func (w Wrapper[T]) ToInt() (int, bool) {
-	return 0, false
-}
-
-func (w Wrapper[T]) ToFloat() (float64, bool) {
-	return 0, false
-}
-
-func (w Wrapper[T]) ToString(st funcGen.Stack[value.Value]) (string, error) {
-	return fmt.Sprint(w.val), nil
-}
-
-func (w Wrapper[T]) ToBool() (bool, bool) {
-	return false, false
-}
-
-func (w Wrapper[T]) ToClosure() (funcGen.Function[value.Value], bool) {
-	return funcGen.Function[value.Value]{}, false
-}
-
-func (w Wrapper[T]) GetType() value.Type {
-	return w.vType
-}
-
-func (w Wrapper[T]) GetValue() T {
-	return w.val
-}
-
-func CreateWrapper[T any](val T, typ value.Type) Wrapper[T] {
-	return Wrapper[T]{val: val, vType: typ}
-}
-
-const PlotValueType value.Type = 16
 
 const ComplexValueType value.Type = 17
 
@@ -277,6 +232,7 @@ func exp(st funcGen.Stack[value.Value], a value.Value, b value.Value) (value.Val
 
 var parser = value.New().
 	RegisterMethods(LinearValueType, linMethods()).
+	AddFinalizerValue(grParser.Setup).
 	AddStaticFunction("lin", funcGen.Function[value.Value]{
 		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
 			if stack.Size() == 0 {
@@ -402,12 +358,12 @@ func linMethods() value.MethodMap {
 				if err != nil {
 					return nil, err
 				}
-				return CreateWrapper(plot, PlotValueType), nil
+				return grParser.PlotValue{grParser.Dummy[*graph.Plot]{plot}}, nil
 			}
 			return nil, fmt.Errorf("evans requires a float")
 		}).SetMethodDescription("k_max", "creates an evans plot"),
 		"nyquist": value.MethodAtType(0, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
-			return CreateWrapper(lin.Nyquist(), PlotValueType), nil
+			return grParser.PlotValue{grParser.Dummy[*graph.Plot]{lin.Nyquist()}}, nil
 		}).SetMethodDescription("creates a nyquist plot"),
 	}
 }

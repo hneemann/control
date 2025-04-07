@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/hneemann/control/graph"
+	"github.com/hneemann/control/graph/grParser"
 	"github.com/hneemann/parser2/funcGen"
 	"github.com/hneemann/parser2/value"
 	"github.com/hneemann/parser2/value/export"
@@ -18,14 +19,14 @@ func TestLinear(t *testing.T) {
 		exp  string
 		res  any
 	}{
-		{name: "poly", exp: "let p=poly(1,2,3); string(p)", res: value.String("3x²+2x+1")},
-		{name: "linPoly", exp: "let n=poly(1,2); let d=poly(1,2,3);string(lin(n,d))", res: value.String("(2x+1)/(3x²+2x+1)")},
-		{name: "linPoly2", exp: "let n=poly(2,3,1); let d=poly(24,26,9,1);string(lin(n,d).reduce())", res: value.String("(x+1)/((x+3)*(x+4))")},
+		{name: "poly", exp: "let p=poly(1,2,3); string(p)", res: value.String("3s²+2s+1")},
+		{name: "linPoly", exp: "let n=poly(1,2); let d=poly(1,2,3);string(lin(n,d))", res: value.String("(2s+1)/(3s²+2s+1)")},
+		{name: "linPoly2", exp: "let n=poly(2,3,1); let d=poly(24,26,9,1);string(lin(n,d).reduce())", res: value.String("(s+1)/((s+3)*(s+4))")},
 
-		{name: "simple", exp: "let s=lin(); string(12*(1+1/(1.5*s)+2*s))", res: value.String("(36x²+18x+12)/(1.5x)")},
-		{name: "pid", exp: "let kp=12;let ti=1.5;let td=2;let s=pid(kp,ti,td); string(s)", res: value.String("36*(x²+0.5x+0.333333)/(1.5*(x))")},
+		{name: "simple", exp: "let s=lin(); string(12*(1+1/(1.5*s)+2*s))", res: value.String("(36s²+18s+12)/(1.5s)")},
+		{name: "pid", exp: "let kp=12;let ti=1.5;let td=2;let s=pid(kp,ti,td); string(s)", res: value.String("36*(s²+0.5s+0.333333)/(1.5*s)")},
 
-		{name: "loop", exp: "let s=lin(); let g=(s+1)/(s^2+4*s+5); string(g.loop())", res: value.String("(x+1)/(x²+5x+6)")},
+		{name: "loop", exp: "let s=lin(); let g=(s+1)/(s^2+4*s+5); string(g.loop())", res: value.String("(s+1)/(s²+5s+6)")},
 
 		{name: "int", exp: `
 let kp=10;
@@ -34,10 +35,10 @@ let td=1;
 let k=pid(kp,ti,td);
 let s=lin();
 let g=(1.5*s)/((2*s+1)*(s+1)*(s^2+3*s+3.1));
-let g0=(k*g).reduce();
+let g0=k*g;
 let gw=g0.loop();
-gw.stringPoly()
-`, res: value.String("(30x²+30x+15)/(4x⁴+18x³+62.4x²+54.6x+21.2)")}, // externally checked
+string(gw)
+`, res: value.String("30*(s²+s+0.5)/(4s⁴+18s³+62.4s²+54.6s+21.2)")}, // externally checked
 
 		{name: "evans", exp: "let s=lin(); let g=(s+1)/(s^2+4*s+5); string(g.evans(10))", res: value.String("Plot: Polar Grid, Asymptotes, Curve with 157 points, Curve with 157 points, Scatter with 2 points, Scatter with 1 points")},
 		{name: "nyquist", exp: "let s=lin(); let g=(s+1)/(s^2+4*s+5); string(g.nyquist())", res: value.String("Plot: coordinate cross, Curve with 101 points, Curve with 101 points, Scatter with 1 points, Scatter with 1 points")},
@@ -112,6 +113,7 @@ func TestSVGExport(t *testing.T) {
 		file string
 	}{
 		{name: "nyquist", exp: "let s=lin(); let g=(s+1)/(s^2+4*s+5); [\"Nyquist\",g.nyquist()]", file: "z.html"},
+		{name: "test", exp: "let p=list(10).map(i->[i,i*i]); plot([scatter(p),curve(p)])", file: "z.html"},
 	}
 	for _, test := range tests {
 		test := test
@@ -132,8 +134,8 @@ func TestSVGExport(t *testing.T) {
 }
 
 func customHtmlExport(v value.Value) (template.HTML, bool, error) {
-	if p, ok := v.(Wrapper[*graph.Plot]); ok {
-		plot := p.GetValue()
+	if p, ok := v.(grParser.PlotValue); ok {
+		plot := p.Value
 		var buffer bytes.Buffer
 		svg := graph.NewSVG(800, 600, 15, &buffer)
 		plot.DrawTo(svg)
