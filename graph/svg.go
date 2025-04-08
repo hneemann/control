@@ -28,7 +28,7 @@ func NewSVG(width, height, textSize float64, writer io.Writer) *SVG {
 	}, w: w, context: &Context{TextSize: textSize}}
 
 	//s.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n")
-	s.write(fmt.Sprintf("<svg xmlns:svg=\"http://www.w3.org/2000/svg\"\n   xmlns=\"http://www.w3.org/2000/svg\"\n   width=\"%g\"\n   height=\"%g\"\n   viewBox=\"0 0 %g %g\">\n",
+	s.write(fmt.Sprintf("<svg class=\"svg\" xmlns:svg=\"http://www.w3.org/2000/svg\"\n   xmlns=\"http://www.w3.org/2000/svg\"\n   width=\"%g\"\n   height=\"%g\"\n   viewBox=\"0 0 %g %g\">\n",
 		width, height, width, height))
 
 	return s

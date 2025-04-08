@@ -44,7 +44,7 @@ string(gw)
 	for _, test := range tests {
 		test := test
 		t.Run(test.name, func(t *testing.T) {
-			fu, err := parser.Generate(test.exp)
+			fu, err := Parser.Generate(test.exp)
 			assert.NoError(t, err, test.exp)
 			if fu != nil {
 				res, err := fu(funcGen.NewEmptyStack[value.Value]())
@@ -80,7 +80,7 @@ func TestComplex(t *testing.T) {
 	for _, test := range tests {
 		test := test
 		t.Run(test.name, func(t *testing.T) {
-			fu, err := parser.Generate(test.exp)
+			fu, err := Parser.Generate(test.exp)
 			assert.NoError(t, err, test.exp)
 			if fu != nil {
 				res, err := fu(funcGen.NewEmptyStack[value.Value]())
@@ -116,7 +116,7 @@ func TestSVGExport(t *testing.T) {
 	for _, test := range tests {
 		test := test
 		t.Run(test.name, func(t *testing.T) {
-			fu, err := parser.Generate(test.exp)
+			fu, err := Parser.Generate(test.exp)
 			assert.NoError(t, err, test.exp)
 			if fu != nil {
 				res, err := fu(funcGen.NewEmptyStack[value.Value]())

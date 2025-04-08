@@ -229,7 +229,7 @@ func exp(st funcGen.Stack[value.Value], a value.Value, b value.Value) (value.Val
 	return value.Pow(st, a, b)
 }
 
-var parser = value.New().
+var Parser = value.New().
 	RegisterMethods(LinearValueType, linMethods()).
 	AddFinalizerValue(grParser.Setup).
 	AddStaticFunction("lin", funcGen.Function[value.Value]{
