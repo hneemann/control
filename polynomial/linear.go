@@ -420,6 +420,8 @@ type Asymptotes struct {
 	Order int
 }
 
+var asymptotesStyle = graph.Gray.SetStrokeWidth(2)
+
 func (a Asymptotes) String() string {
 	return "Asymptotes"
 }
@@ -440,7 +442,7 @@ func (a Asymptotes) DrawTo(_ *graph.Plot, canvas graph.Canvas) {
 			y := a.Point.Y + d*math.Sin(alpha)
 
 			l := graph.NewPath(false).Add(a.Point).Add(graph.Point{X: x, Y: y})
-			canvas.DrawPath(l.Intersect(r), graph.Gray.SetStrokeWidth(2))
+			canvas.DrawPath(l.Intersect(r), asymptotesStyle)
 
 			alpha += dAlpha
 		}
@@ -520,6 +522,7 @@ func (l *Linear) CreateEvans(kMax float64) (*graph.Plot, error) {
 
 	curveList := make([]graph.PlotContent, 0, len(pathList)+2)
 	curveList = append(curveList, Polar{})
+	var legend []graph.Legend
 
 	as, order, err := l.EvansAsymptotesIntersect()
 	if err != nil {
@@ -533,23 +536,54 @@ func (l *Linear) CreateEvans(kMax float64) (*graph.Plot, error) {
 		curveList = append(curveList, graph.Curve{Path: pa, Style: styleList[i%len(styleList)]})
 	}
 
-	curveList = append(curveList,
-		graph.Scatter{
-			Points: p.ToPoints(),
-			Shape:  graph.NewCrossMarker(4),
-			Style:  graph.Black,
-		},
-		graph.Scatter{
-			Points: z.ToPoints(),
-			Shape:  graph.NewCircleMarker(4),
-			Style:  graph.Black,
-		},
-	)
+	markerStyle := graph.Black.SetStrokeWidth(2)
+	if poleCount > 0 {
+		polesMarker := graph.NewCrossMarker(4)
+		curveList = append(curveList,
+			graph.Scatter{
+				Points: p.ToPoints(),
+				Shape:  polesMarker,
+				Style:  markerStyle,
+			},
+		)
+		legend = append(legend,
+			graph.Legend{
+				Name:       "Poles",
+				Shape:      polesMarker,
+				ShapeStyle: markerStyle,
+			},
+		)
+	}
+	if z.Count() > 0 {
+		zeroMarker := graph.NewCircleMarker(4)
+		curveList = append(curveList,
+			graph.Scatter{
+				Points: z.ToPoints(),
+				Shape:  zeroMarker,
+				Style:  markerStyle,
+			},
+		)
+		legend = append(legend,
+			graph.Legend{
+				Name:       "Zeros",
+				Shape:      zeroMarker,
+				ShapeStyle: markerStyle,
+			},
+		)
+	}
+
+	if order > 0 {
+		legend = append(legend, graph.Legend{
+			Name:      "Asymptotes",
+			LineStyle: asymptotesStyle,
+		})
+	}
 
 	return &graph.Plot{
 		XLabel:  "Re",
 		YLabel:  "Im",
 		Content: curveList,
+		Legend:  legend,
 	}, nil
 
 }
@@ -769,16 +803,26 @@ func (l *Linear) Nyquist() *graph.Plot {
 		pathNeg = pathNeg.Add(graph.Point{X: pe.X, Y: -pe.Y})
 	}
 
+	posStyle := graph.Black.SetStrokeWidth(2)
+	negStyle := graph.Black.SetDash(4, 4).SetStrokeWidth(2)
+
+	zeroMarker := graph.NewCircleMarker(4)
 	return &graph.Plot{
 		XLabel: "Re",
 		YLabel: "Im",
 		Content: []graph.PlotContent{
 			graph.Cross{Style: graph.Gray},
-			graph.Curve{Path: path, Style: graph.Black.SetStrokeWidth(2)},
-			graph.Curve{Path: pathNeg, Style: graph.Black.SetDash(4, 4).SetStrokeWidth(2)},
+			graph.Curve{Path: path, Style: posStyle},
+			graph.Curve{Path: pathNeg, Style: negStyle},
 			graph.Scatter{Points: []graph.Point{{X: -1, Y: 0}}, Shape: graph.NewCrossMarker(4), Style: graph.Red},
-			graph.Scatter{Points: []graph.Point{pZero}, Shape: graph.NewCircleMarker(4), Style: graph.Black},
-		}}
+			graph.Scatter{Points: []graph.Point{pZero}, Shape: zeroMarker, Style: graph.Black},
+		},
+		Legend: []graph.Legend{
+			{Name: "k>0", LineStyle: posStyle},
+			{Name: "k=0", Shape: zeroMarker, ShapeStyle: graph.Black},
+			{Name: "k<0", LineStyle: negStyle},
+		},
+	}
 }
 
 func (l *Linear) refineNy(w0 float64, p0 graph.Point, w1 float64, p1 graph.Point, path *graph.Path) {

@@ -282,6 +282,20 @@ func Test_Evans6(t *testing.T) {
 	}
 }
 
+func Test_Evans7(t *testing.T) {
+	n := NewRoots()
+	d := NewRoots(complex(-1, 1))
+	g0 := FromRoots(n, d)
+
+	pl, err := g0.CreateEvans(5)
+	assert.NoError(t, err)
+	pl.XBounds = graph.NewBounds(-2, 0.2)
+	if pl != nil {
+		err = exportPlot(pl, "wok7.svg")
+		assert.NoError(t, err)
+	}
+}
+
 func exportPlot(pl graph.Image, name string) error {
 	f, _ := os.Create(filepath.Join(testFolder, name))
 	defer f.Close()
@@ -342,5 +356,17 @@ func Test_Nyquist2(t *testing.T) {
 	g := FromRoots(n, d)
 
 	err := exportPlot(g.Nyquist(), "nyquist2.svg")
+	assert.NoError(t, err)
+}
+
+func Test_Nyquist3(t *testing.T) {
+	n := NewRoots().MulFloat(8)
+	d := Must(Must(Must(Must(Must(NewRoots().Real(1, 1)).Real(1, 1)).Real(1, 1)).Real(1, 1)).Real(1, 1))
+	g := FromRoots(n, d)
+
+	pl := g.Nyquist()
+	//pl.BoundsModifier = graph.Zoom(graph.Point{}, 100)
+
+	err := exportPlot(pl, "nyquist3.svg")
 	assert.NoError(t, err)
 }

@@ -5,17 +5,44 @@ import (
 	"fmt"
 )
 
+type Legend struct {
+	Name       string
+	LineStyle  *Style
+	Shape      Shape
+	ShapeStyle *Style
+}
+
+type BoundsModifier func(xBounds, yBounds Bounds, p *Plot, canvas Canvas) (Bounds, Bounds)
+
+func Zoom(p Point, f float64) BoundsModifier {
+	return func(xBounds, yBounds Bounds, _ *Plot, canvas Canvas) (Bounds, Bounds) {
+		if xBounds.valid {
+			xBounds.Min = p.X + (xBounds.Min-p.X)/f
+			xBounds.Max = p.X + (xBounds.Max-p.X)/f
+		}
+		if yBounds.valid {
+			yBounds.Min = p.Y + (yBounds.Min-p.Y)/f
+			yBounds.Max = p.Y + (yBounds.Max-p.Y)/f
+		}
+		return xBounds, yBounds
+	}
+}
+
 type Plot struct {
-	XAxis   Axis
-	YAxis   Axis
-	XBounds Bounds
-	YBounds Bounds
-	Grid    *Style
-	XLabel  string
-	YLabel  string
-	Content []PlotContent
-	xTicks  []Tick
-	yTicks  []Tick
+	XAxis          Axis
+	YAxis          Axis
+	XBounds        Bounds
+	YBounds        Bounds
+	Grid           *Style
+	XLabel         string
+	YLabel         string
+	Content        []PlotContent
+	xTicks         []Tick
+	yTicks         []Tick
+	legendPosGiven bool
+	legendPos      Point
+	Legend         []Legend
+	BoundsModifier BoundsModifier
 }
 
 func (p *Plot) DrawTo(canvas Canvas) {
@@ -43,6 +70,10 @@ func (p *Plot) DrawTo(canvas Canvas) {
 				yBounds.MergeBounds(y)
 			}
 		}
+	}
+
+	if p.BoundsModifier != nil {
+		xBounds, yBounds = p.BoundsModifier(xBounds, yBounds, p, canvas)
 	}
 
 	if !xBounds.valid {
@@ -121,6 +152,26 @@ func (p *Plot) DrawTo(canvas Canvas) {
 	for _, plotContent := range p.Content {
 		plotContent.DrawTo(p, inner)
 	}
+
+	if len(p.Legend) > 0 {
+		var lp Point
+		if p.legendPosGiven {
+			lp = Point{xTrans(p.legendPos.X), yTrans(p.legendPos.Y)}
+		} else {
+			lp = Point{innerRect.Min.X + c.TextSize*4, innerRect.Min.Y + c.TextSize*float64(len(p.Legend))*1.5}
+		}
+		for _, leg := range p.Legend {
+			canvas.DrawText(lp, leg.Name, Left|VCenter, textStyle, c.TextSize)
+			if leg.Shape != nil && leg.ShapeStyle != nil {
+				canvas.DrawShape(lp.Add(Point{-2 * c.TextSize, 0}), leg.Shape, leg.ShapeStyle)
+			}
+			if leg.LineStyle != nil {
+				canvas.DrawPath(NewLine(lp.Add(Point{-3 * c.TextSize, 0}), lp.Add(Point{-1 * c.TextSize, 0})), leg.LineStyle)
+			}
+			lp = lp.Add(Point{0, -c.TextSize * 1.5})
+		}
+
+	}
 }
 
 func (p *Plot) GetXTicks() []Tick {
@@ -133,6 +184,20 @@ func (p *Plot) GetYTicks() []Tick {
 
 func (p *Plot) AddContent(content PlotContent) {
 	p.Content = append(p.Content, content)
+}
+
+func (p *Plot) AddLegend(name string, lineStyle *Style, shape Shape, shapeStyle *Style) {
+	p.Legend = append(p.Legend, Legend{
+		Name:       name,
+		LineStyle:  lineStyle,
+		Shape:      shape,
+		ShapeStyle: shapeStyle,
+	})
+}
+
+func (p *Plot) SetLegendPosition(pos Point) {
+	p.legendPosGiven = true
+	p.legendPos = pos
 }
 
 func (p *Plot) String() string {

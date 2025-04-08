@@ -3,6 +3,7 @@ package graph
 import (
 	"bufio"
 	"fmt"
+	"html"
 	"io"
 	"math"
 )
@@ -64,6 +65,9 @@ func (s *SVG) DrawShape(a Point, shape Shape, style *Style) {
 }
 
 func (s *SVG) writeStyle(style *Style, extra string) {
+	if style == nil {
+		style = Black
+	}
 	s.write(" style=\"")
 	if style.Stroke {
 		s.write("stroke:")
@@ -133,7 +137,7 @@ func (s *SVG) DrawText(a Point, text string, orientation Orientation, style *Sty
 	s.write(fmt.Sprintf("x=\"%0.2f\" y=\"%0.2f\" ", a.X, s.rect.Max.Y-a.Y))
 	s.writeStyle(style, st)
 	s.write(">")
-	s.write(text)
+	s.write(html.EscapeString(text))
 	s.write("</text>\n")
 }
 
