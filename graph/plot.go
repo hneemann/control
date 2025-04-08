@@ -158,15 +158,15 @@ func (p *Plot) DrawTo(canvas Canvas) {
 		if p.legendPosGiven {
 			lp = Point{xTrans(p.legendPos.X), yTrans(p.legendPos.Y)}
 		} else {
-			lp = Point{innerRect.Min.X + c.TextSize*4, innerRect.Min.Y + c.TextSize*float64(len(p.Legend))*1.5}
+			lp = Point{innerRect.Min.X + c.TextSize*3, innerRect.Min.Y + c.TextSize*(float64(len(p.Legend))*1.5-0.5)}
 		}
 		for _, leg := range p.Legend {
 			canvas.DrawText(lp, leg.Name, Left|VCenter, textStyle, c.TextSize)
 			if leg.Shape != nil && leg.ShapeStyle != nil {
-				canvas.DrawShape(lp.Add(Point{-2 * c.TextSize, 0}), leg.Shape, leg.ShapeStyle)
+				canvas.DrawShape(lp.Add(Point{-1*c.TextSize - small, 0}), leg.Shape, leg.ShapeStyle)
 			}
 			if leg.LineStyle != nil {
-				canvas.DrawPath(NewLine(lp.Add(Point{-3 * c.TextSize, 0}), lp.Add(Point{-1 * c.TextSize, 0})), leg.LineStyle)
+				canvas.DrawPath(NewLine(lp.Add(Point{-2*c.TextSize - small, 0}), lp.Add(Point{-small, 0})), leg.LineStyle)
 			}
 			lp = lp.Add(Point{0, -c.TextSize * 1.5})
 		}
