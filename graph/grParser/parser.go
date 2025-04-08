@@ -50,10 +50,11 @@ const (
 
 type PlotValue struct {
 	Holder[*graph.Plot]
+	Legend value.String
 }
 
 func NewPlotValue(plot *graph.Plot) PlotValue {
-	return PlotValue{Holder[*graph.Plot]{plot}}
+	return PlotValue{Holder[*graph.Plot]{plot}, ""}
 }
 
 func (p PlotValue) GetType() value.Type {
@@ -63,6 +64,9 @@ func (p PlotValue) GetType() value.Type {
 func (p PlotValue) add(pc value.Value) error {
 	if c, ok := pc.(PlotContentValue); ok {
 		p.Holder.Value.AddContent(c.Value)
+		if c.legend.Name != "" {
+			p.Holder.Value.AddLegend(c.legend.Name, c.legend.LineStyle, c.legend.Shape, c.legend.ShapeStyle)
+		}
 		return nil
 	}
 	return errors.New("value is not a plot content")
@@ -112,6 +116,9 @@ func createPlotMethods() value.MethodMap {
 		"add": value.MethodAtType(1, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if pc, ok := stack.Get(1).(PlotContentValue); ok {
 				plot.Value.AddContent(pc.Value)
+				if pc.legend.Name != "" {
+					plot.Value.AddLegend(pc.legend.Name, pc.legend.LineStyle, pc.legend.Shape, pc.legend.ShapeStyle)
+				}
 			} else {
 				return nil, fmt.Errorf("add requires a plot content")
 			}
@@ -154,8 +161,22 @@ func createPlotMethods() value.MethodMap {
 	}
 }
 
+func createPlotContentMethods() value.MethodMap {
+	return value.MethodMap{
+		"legend": value.MethodAtType(1, func(plot PlotContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			if leg, ok := stack.Get(1).(value.String); ok {
+				plot.legend.Name = string(leg)
+			} else {
+				return nil, fmt.Errorf("legend requires a string")
+			}
+			return plot, nil
+		}).SetMethodDescription("str", "sets a legend"),
+	}
+}
+
 type PlotContentValue struct {
 	Holder[graph.PlotContent]
+	legend graph.Legend
 }
 
 func (p PlotContentValue) GetType() value.Type {
@@ -172,6 +193,7 @@ func (p StyleValue) GetType() value.Type {
 
 func Setup(fg *value.FunctionGenerator) {
 	fg.RegisterMethods(PlotType, createPlotMethods())
+	fg.RegisterMethods(PlotContentType, createPlotContentMethods())
 	fg.RegisterMethods(StyleType, createStyleMethods())
 	fg.AddConstant("black", StyleValue{Holder[*graph.Style]{graph.Black}})
 	fg.AddConstant("green", StyleValue{Holder[*graph.Style]{graph.Green}})
@@ -232,7 +254,7 @@ func Setup(fg *value.FunctionGenerator) {
 				return nil, err
 			}
 			s := graph.Scatter{Points: points, Shape: marker, Style: style}
-			return PlotContentValue{Holder[graph.PlotContent]{s}}, nil
+			return PlotContentValue{Holder[graph.PlotContent]{s}, graph.Legend{Shape: marker, ShapeStyle: style}}, nil
 		},
 		Args:   3,
 		IsPure: true,
@@ -254,7 +276,39 @@ func Setup(fg *value.FunctionGenerator) {
 				path = path.Add(p)
 			}
 			s := graph.Curve{Path: path, Style: style}
-			return PlotContentValue{Holder[graph.PlotContent]{s}}, nil
+			return PlotContentValue{Holder[graph.PlotContent]{s}, graph.Legend{LineStyle: style}}, nil
+		},
+		Args:   2,
+		IsPure: true,
+	}.SetDescription("data", "style", "Creates a new scatter dataset"))
+	fg.AddStaticFunction("function", funcGen.Function[value.Value]{
+		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
+			var style *graph.Style
+			if styleVal, ok := st.Get(1).(StyleValue); ok {
+				style = styleVal.Value
+			} else {
+				return nil, fmt.Errorf("function requires a style as second argument")
+			}
+
+			var f func(x float64) float64
+			if cl, ok := st.Get(0).ToClosure(); ok {
+				if cl.Args != 1 {
+					return nil, fmt.Errorf("function requires a function with one argument")
+				}
+				stack := funcGen.NewEmptyStack[value.Value]()
+				f = func(x float64) float64 {
+					y, err := cl.Eval(stack, value.Float(x))
+					if err != nil {
+						return 0
+					}
+					if fl, ok := y.ToFloat(); ok {
+						return fl
+					}
+					return 0
+				}
+			}
+			gf := graph.Function{Function: f, Style: style}
+			return PlotContentValue{Holder[graph.PlotContent]{gf}, graph.Legend{LineStyle: style}}, nil
 		},
 		Args:   2,
 		IsPure: true,

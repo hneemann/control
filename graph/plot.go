@@ -276,7 +276,10 @@ type PlotContent interface {
 	PreferredBounds(xGiven, yGiven Bounds) (x, y Bounds)
 }
 
-type Function func(x float64) float64
+type Function struct {
+	Function func(x float64) float64
+	Style    *Style
+}
 
 const functionSteps = 100
 
@@ -286,7 +289,7 @@ func (f Function) PreferredBounds(xGiven, _ Bounds) (Bounds, Bounds) {
 		width := xGiven.Width()
 		for i := 0; i <= functionSteps; i++ {
 			x := xGiven.Min + width*float64(i)/functionSteps
-			yBounds.Merge(f(x))
+			yBounds.Merge(f.Function(x))
 		}
 		return Bounds{}, yBounds
 	}
@@ -300,9 +303,9 @@ func (f Function) DrawTo(_ *Plot, canvas Canvas) {
 	width := rect.Width()
 	for i := 0; i <= functionSteps; i++ {
 		x := rect.Min.X + width*float64(i)/functionSteps
-		p = p.Add(Point{x, f(x)})
+		p = p.Add(Point{x, f.Function(x)})
 	}
-	canvas.DrawPath(p.Intersect(rect), Black)
+	canvas.DrawPath(p.Intersect(rect), f.Style)
 }
 
 type Scatter struct {
