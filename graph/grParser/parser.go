@@ -1,11 +1,13 @@
 package grParser
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"github.com/hneemann/control/graph"
 	"github.com/hneemann/parser2/funcGen"
 	"github.com/hneemann/parser2/value"
+	"html/template"
 )
 
 type Holder[T any] struct {
@@ -286,4 +288,19 @@ func toPointsList(st funcGen.Stack[value.Value]) ([]graph.Point, error) {
 		return points, err
 	}
 	return nil, fmt.Errorf("scatter requires a list of points")
+}
+
+func HtmlExport(v value.Value) (template.HTML, bool, error) {
+	if p, ok := v.(PlotValue); ok {
+		plot := p.Value
+		var buffer bytes.Buffer
+		svg := graph.NewSVG(800, 600, 15, &buffer)
+		plot.DrawTo(svg)
+		err := svg.Close()
+		if err != nil {
+			return "", true, err
+		}
+		return template.HTML(buffer.String()), true, nil
+	}
+	return "", false, nil
 }

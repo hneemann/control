@@ -1,15 +1,12 @@
 package polynomial
 
 import (
-	"bytes"
 	"fmt"
-	"github.com/hneemann/control/graph"
 	"github.com/hneemann/control/graph/grParser"
 	"github.com/hneemann/parser2/funcGen"
 	"github.com/hneemann/parser2/value"
 	"github.com/hneemann/parser2/value/export"
 	"github.com/stretchr/testify/assert"
-	"html/template"
 	"testing"
 )
 
@@ -124,26 +121,11 @@ func TestSVGExport(t *testing.T) {
 				res, err := fu(funcGen.NewEmptyStack[value.Value]())
 				assert.NoError(t, err, test.exp)
 
-				expHtmp, _, err := export.ToHtml(res, 50, customHtmlExport, true)
+				expHtmp, _, err := export.ToHtml(res, 50, grParser.HtmlExport, true)
 				assert.NoError(t, err, test.exp)
 
 				fmt.Println(expHtmp)
 			}
 		})
 	}
-}
-
-func customHtmlExport(v value.Value) (template.HTML, bool, error) {
-	if p, ok := v.(grParser.PlotValue); ok {
-		plot := p.Value
-		var buffer bytes.Buffer
-		svg := graph.NewSVG(800, 600, 15, &buffer)
-		plot.DrawTo(svg)
-		err := svg.Close()
-		if err != nil {
-			return "", true, err
-		}
-		return template.HTML(buffer.String()), true, nil
-	}
-	return "", false, nil
 }
