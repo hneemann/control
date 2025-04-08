@@ -3,7 +3,6 @@ package polynomial
 import (
 	"errors"
 	"fmt"
-	"github.com/hneemann/control/graph"
 	"github.com/hneemann/control/graph/grParser"
 	"github.com/hneemann/parser2/funcGen"
 	"github.com/hneemann/parser2/value"
@@ -358,12 +357,12 @@ func linMethods() value.MethodMap {
 				if err != nil {
 					return nil, err
 				}
-				return grParser.PlotValue{grParser.Dummy[*graph.Plot]{plot}}, nil
+				return grParser.NewPlotValue(plot), nil
 			}
 			return nil, fmt.Errorf("evans requires a float")
 		}).SetMethodDescription("k_max", "creates an evans plot"),
 		"nyquist": value.MethodAtType(0, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
-			return grParser.PlotValue{grParser.Dummy[*graph.Plot]{lin.Nyquist()}}, nil
+			return grParser.NewPlotValue(lin.Nyquist()), nil
 		}).SetMethodDescription("creates a nyquist plot"),
 	}
 }

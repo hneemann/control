@@ -8,46 +8,50 @@ import (
 	"github.com/hneemann/parser2/value"
 )
 
-type Dummy[T any] struct {
+type Holder[T any] struct {
 	Value T
 }
 
-func (w Dummy[T]) ToList() (*value.List, bool) {
+func (w Holder[T]) ToList() (*value.List, bool) {
 	return nil, false
 }
 
-func (w Dummy[T]) ToMap() (value.Map, bool) {
+func (w Holder[T]) ToMap() (value.Map, bool) {
 	return value.Map{}, false
 }
 
-func (w Dummy[T]) ToInt() (int, bool) {
+func (w Holder[T]) ToInt() (int, bool) {
 	return 0, false
 }
 
-func (w Dummy[T]) ToFloat() (float64, bool) {
+func (w Holder[T]) ToFloat() (float64, bool) {
 	return 0, false
 }
 
-func (w Dummy[T]) ToString(st funcGen.Stack[value.Value]) (string, error) {
+func (w Holder[T]) ToString(st funcGen.Stack[value.Value]) (string, error) {
 	return fmt.Sprint(w.Value), nil
 }
 
-func (w Dummy[T]) ToBool() (bool, bool) {
+func (w Holder[T]) ToBool() (bool, bool) {
 	return false, false
 }
 
-func (w Dummy[T]) ToClosure() (funcGen.Function[value.Value], bool) {
+func (w Holder[T]) ToClosure() (funcGen.Function[value.Value], bool) {
 	return funcGen.Function[value.Value]{}, false
 }
 
 const (
-	PlotType     value.Type = 10
-	PlotListType value.Type = 11
-	PointType    value.Type = 12
+	PlotType        value.Type = 10
+	PlotContentType value.Type = 11
+	StyleType       value.Type = 12
 )
 
 type PlotValue struct {
-	Dummy[*graph.Plot]
+	Holder[*graph.Plot]
+}
+
+func NewPlotValue(plot *graph.Plot) PlotValue {
+	return PlotValue{Holder[*graph.Plot]{plot}}
 }
 
 func (p PlotValue) GetType() value.Type {
@@ -56,10 +60,49 @@ func (p PlotValue) GetType() value.Type {
 
 func (p PlotValue) add(pc value.Value) error {
 	if c, ok := pc.(PlotContentValue); ok {
-		p.Dummy.Value.AddContent(c.Value)
+		p.Holder.Value.AddContent(c.Value)
 		return nil
 	}
 	return errors.New("value is not a plot content")
+}
+
+func createStyleMethods() value.MethodMap {
+	return value.MethodMap{
+		"dash": value.MethodAtType(1, func(styleValue StyleValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			style := styleValue.Value
+			floatList, err := toFloatList(stack, stack.Get(1))
+			if err != nil {
+				return nil, fmt.Errorf("dash requires a float array")
+			}
+			style = style.SetDash(floatList...)
+			return StyleValue{Holder[*graph.Style]{style}}, nil
+		}).SetMethodDescription("def", "Sets the dash style"),
+		"darker": value.MethodAtType(0, func(styleValue StyleValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			style := styleValue.Value
+			return StyleValue{Holder[*graph.Style]{style.Darker()}}, nil
+		}).SetMethodDescription("Makes the color darker"),
+		"brighter": value.MethodAtType(0, func(styleValue StyleValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			style := styleValue.Value
+			return StyleValue{Holder[*graph.Style]{style.Brighter()}}, nil
+		}).SetMethodDescription("Makes the color brighter"),
+	}
+}
+
+func toFloatList(stack funcGen.Stack[value.Value], val value.Value) ([]float64, error) {
+	if list, ok := val.ToList(); ok {
+		var floatList []float64
+		err := list.Iterate(stack, func(v value.Value) error {
+			if f, ok := v.ToFloat(); ok {
+				floatList = append(floatList, f)
+			} else {
+				return fmt.Errorf("list elements need to be floats")
+			}
+			return nil
+		})
+		return floatList, err
+	} else {
+		return nil, fmt.Errorf("dash requires a list of floats")
+	}
 }
 
 func createPlotMethods() value.MethodMap {
@@ -110,26 +153,36 @@ func createPlotMethods() value.MethodMap {
 }
 
 type PlotContentValue struct {
-	Dummy[graph.PlotContent]
+	Holder[graph.PlotContent]
 }
 
 func (p PlotContentValue) GetType() value.Type {
-	return PlotListType
+	return PlotContentType
 }
 
-type PointValue struct {
-	Dummy[graph.Point]
+type StyleValue struct {
+	Holder[*graph.Style]
 }
 
-func (p PointValue) GetType() value.Type {
-	return PointType
+func (p StyleValue) GetType() value.Type {
+	return StyleType
 }
 
 func Setup(fg *value.FunctionGenerator) {
 	fg.RegisterMethods(PlotType, createPlotMethods())
+	fg.RegisterMethods(StyleType, createStyleMethods())
+	fg.AddConstant("black", StyleValue{Holder[*graph.Style]{graph.Black}})
+	fg.AddConstant("green", StyleValue{Holder[*graph.Style]{graph.Green}})
+	fg.AddConstant("red", StyleValue{Holder[*graph.Style]{graph.Red}})
+	fg.AddConstant("blue", StyleValue{Holder[*graph.Style]{graph.Blue}})
+	fg.AddConstant("gray", StyleValue{Holder[*graph.Style]{graph.Gray}})
+	fg.AddConstant("white", StyleValue{Holder[*graph.Style]{graph.White}})
+	fg.AddConstant("cyan", StyleValue{Holder[*graph.Style]{graph.Cyan}})
+	fg.AddConstant("magenta", StyleValue{Holder[*graph.Style]{graph.Magenta}})
+	fg.AddConstant("yellow", StyleValue{Holder[*graph.Style]{graph.Yellow}})
 	fg.AddStaticFunction("plot", funcGen.Function[value.Value]{
 		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
-			p := PlotValue{Dummy[*graph.Plot]{&graph.Plot{}}}
+			p := NewPlotValue(&graph.Plot{})
 			if list, ok := st.Get(0).ToList(); ok {
 				slice, err := list.ToSlice(st)
 				if err != nil {
@@ -154,18 +207,42 @@ func Setup(fg *value.FunctionGenerator) {
 	}.SetDescription("content", "Creates a new plot"))
 	fg.AddStaticFunction("scatter", funcGen.Function[value.Value]{
 		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
+			var style *graph.Style
+			if styleVal, ok := st.Get(1).(StyleValue); ok {
+				style = styleVal.Value
+			} else {
+				return nil, fmt.Errorf("scatter requires a style as second argument")
+			}
+			var marker graph.Shape
+			if markerInt, ok := st.Get(2).ToInt(); ok {
+				switch markerInt {
+				case 1:
+					marker = graph.NewCircleMarker(4)
+				default:
+					marker = graph.NewCrossMarker(4)
+				}
+			} else {
+				return nil, fmt.Errorf("scatter requires a int as third argument")
+			}
+
 			points, err := toPointsList(st)
 			if err != nil {
 				return nil, err
 			}
-			s := graph.Scatter{Points: points, Shape: graph.NewCrossMarker(4), Style: graph.Black}
-			return PlotContentValue{Dummy[graph.PlotContent]{s}}, nil
+			s := graph.Scatter{Points: points, Shape: marker, Style: style}
+			return PlotContentValue{Holder[graph.PlotContent]{s}}, nil
 		},
-		Args:   1,
+		Args:   3,
 		IsPure: true,
-	}.SetDescription("data", "Creates a new scatter dataset"))
+	}.SetDescription("data", "color", "markerType", "Creates a new scatter dataset"))
 	fg.AddStaticFunction("curve", funcGen.Function[value.Value]{
 		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
+			var style *graph.Style
+			if styleVal, ok := st.Get(1).(StyleValue); ok {
+				style = styleVal.Value
+			} else {
+				return nil, fmt.Errorf("curve requires a style as second argument")
+			}
 			points, err := toPointsList(st)
 			if err != nil {
 				return nil, err
@@ -174,12 +251,12 @@ func Setup(fg *value.FunctionGenerator) {
 			for _, p := range points {
 				path = path.Add(p)
 			}
-			s := graph.Curve{Path: path, Style: graph.Black}
-			return PlotContentValue{Dummy[graph.PlotContent]{s}}, nil
+			s := graph.Curve{Path: path, Style: style}
+			return PlotContentValue{Holder[graph.PlotContent]{s}}, nil
 		},
-		Args:   1,
+		Args:   2,
 		IsPure: true,
-	}.SetDescription("data", "Creates a new scatter dataset"))
+	}.SetDescription("data", "style", "Creates a new scatter dataset"))
 }
 
 func toPointsList(st funcGen.Stack[value.Value]) ([]graph.Point, error) {

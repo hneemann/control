@@ -113,7 +113,7 @@ func TestSVGExport(t *testing.T) {
 		file string
 	}{
 		{name: "nyquist", exp: "let s=lin(); let g=(s+1)/(s^2+4*s+5); [\"Nyquist\",g.nyquist()]", file: "z.html"},
-		{name: "test", exp: "let p=list(10).map(i->[i,i*i]); plot([scatter(p),curve(p)])", file: "z.html"},
+		{name: "test", exp: "let p=list(10).map(i->[i,i*i]); plot([scatter(p,red,1),curve(p,green.darker().dash([10,10,2,10]))])", file: "z.html"},
 	}
 	for _, test := range tests {
 		test := test

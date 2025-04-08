@@ -48,10 +48,26 @@ func (c Color) Opacity() string {
 
 func (c Color) Darker() Color {
 	return Color{ //ToDo : use a better algorithm: RGB->HSV->Darken->RGB
-		R: c.R / 3 * 2,
-		G: c.G / 3 * 2,
-		B: c.B / 3 * 2,
+		R: dmax(int(c.R) * 2 / 3),
+		G: dmax(int(c.G) * 2 / 3),
+		B: dmax(int(c.B) * 2 / 3),
 		A: c.A,
+	}
+}
+func (c Color) Brighter() Color {
+	return Color{ //ToDo : use a better algorithm: RGB->HSV->Brighten->RGB
+		R: dmax(int(c.R) * 3 / 2),
+		G: dmax(int(c.G) * 3 / 2),
+		B: dmax(int(c.B) * 3 / 2),
+		A: c.A,
+	}
+}
+
+func dmax(u int) uint8 {
+	if u > 255 {
+		return 255
+	} else {
+		return uint8(u)
 	}
 }
 
@@ -98,6 +114,13 @@ func (s *Style) Darker() *Style {
 	var style Style
 	style = *s
 	style.Color = s.Color.Darker()
+	return &style
+}
+
+func (s *Style) Brighter() *Style {
+	var style Style
+	style = *s
+	style.Color = s.Color.Brighter()
 	return &style
 }
 
