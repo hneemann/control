@@ -19,6 +19,9 @@ type Axis func(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth) 
 
 func LinearAxis(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth) (func(v float64) float64, []Tick, Bounds) {
 	delta := (bounds.Max - bounds.Min) * expand
+	if delta < 1e-10 {
+		delta = 1 + expand
+	}
 	eMin := bounds.Min - delta
 	eMax := bounds.Max + delta
 	l := linTickCreator{min: eMin, max: eMax}
@@ -120,6 +123,10 @@ func exp10(log int) float64 {
 }
 
 func LogAxis(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth) (func(v float64) float64, []Tick, Bounds) {
+	if bounds.Min <= 0 {
+		return LinearAxis(minParent, maxParent, bounds, ctw)
+	}
+
 	logMin := math.Log10(bounds.Min)
 	logMax := math.Log10(bounds.Max)
 
