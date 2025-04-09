@@ -8,15 +8,16 @@
   <script type="text/javascript" src="/assets/main.js"></script>
 </head>
 <body>
-<div id="result"></div>
+<div id="result" onclick="runSource();"></div>
 <div>
-<textarea class="source" rows="10" type="text" id="source" placeholder="Enter script here">let s=lin();
+  <div >
+    <textarea class="source" rows="15" type="text" id="source" placeholder="Enter script here">let s=lin();
 let g=3/((s+1)*(s+2));
 g.nyquist()</textarea>
-</div>
-<div>
-  <button id="run" onclick="runSource();">Run</button>
-  <button id="clear">Clear</button>
+  </div>
+  <div>
+    <button id="run" onclick="runSource();">Run</button>
+  </div>
 </div>
 </body>
 </html>

@@ -16,18 +16,41 @@
     }
 }
 
+@media (orientation: landscape) {
+    body {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+    }
+    textarea.source {
+        width: 100%;
+        height: 90%;
+    }
+    svg.svg {
+        width: 100%;
+        height: 100%;
+    }
+}
+
+@media (orientation: portrait) {
+    body {
+        display: grid;
+        grid-template-columns: 1fr;
+    }
+    textarea.source {
+        width: 100%;
+    }
+    svg.svg {
+        width: 100%;
+        height: 100%;
+    }
+}
+
 textarea.source {
     font-size: inherit;
     white-space: nowrap;
-    width: 100%;
     overflow: auto;
 }
 
 button {
     font-size: inherit;
-}
-
-svg.svg {
-    width: 100%;
-    height: 100%;
 }
