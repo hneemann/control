@@ -777,8 +777,13 @@ func NewBode(wMin, wMax float64) *BodePlot {
 	return &b
 }
 
-func (l *Linear) Nyquist() *graph.Plot {
+func (l *Linear) Nyquist() (*graph.Plot, error) {
 	cZero := l.Eval(complex(0, 0))
+
+	if math.IsNaN(real(cZero)) || math.IsNaN(imag(cZero)) {
+		return nil, fmt.Errorf("Nyquist plot not possible for %s", l)
+	}
+
 	pZero := graph.Point{X: real(cZero), Y: imag(cZero)}
 
 	path := graph.NewPath(false).Add(pZero)
@@ -822,7 +827,7 @@ func (l *Linear) Nyquist() *graph.Plot {
 			{Name: "k=0", Shape: zeroMarker, ShapeStyle: graph.Black},
 			{Name: "k<0", LineStyle: negStyle},
 		},
-	}
+	}, nil
 }
 
 func (l *Linear) refineNy(w0 float64, p0 graph.Point, w1 float64, p1 graph.Point, path *graph.Path) {

@@ -346,7 +346,9 @@ func Test_Nyquist1(t *testing.T) {
 	d := Must(Must(NewRoots().Real(1, -1)).Real(1, -3))
 	g := FromRoots(n, d)
 
-	err := exportPlot(g.Nyquist(), "nyquist1.svg")
+	pl, err := g.Nyquist()
+	assert.NoError(t, err)
+	err = exportPlot(pl, "nyquist1.svg")
 	assert.NoError(t, err)
 }
 
@@ -355,7 +357,9 @@ func Test_Nyquist2(t *testing.T) {
 	d := Must(Must(Must(NewRoots().Complex(1, 2, 10)).Real(1, 4)).Complex(1, 0.2, 0.1))
 	g := FromRoots(n, d)
 
-	err := exportPlot(g.Nyquist(), "nyquist2.svg")
+	pl, err := g.Nyquist()
+	assert.NoError(t, err)
+	err = exportPlot(pl, "nyquist2.svg")
 	assert.NoError(t, err)
 }
 
@@ -364,9 +368,10 @@ func Test_Nyquist3(t *testing.T) {
 	d := Must(Must(Must(Must(Must(NewRoots().Real(1, 1)).Real(1, 1)).Real(1, 1)).Real(1, 1)).Real(1, 1))
 	g := FromRoots(n, d)
 
-	pl := g.Nyquist()
+	pl, err := g.Nyquist()
+	assert.NoError(t, err)
 	//pl.BoundsModifier = graph.Zoom(graph.Point{}, 100)
 
-	err := exportPlot(pl, "nyquist3.svg")
+	err = exportPlot(pl, "nyquist3.svg")
 	assert.NoError(t, err)
 }

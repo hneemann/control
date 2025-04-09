@@ -362,7 +362,11 @@ func linMethods() value.MethodMap {
 			return nil, fmt.Errorf("evans requires a float")
 		}).SetMethodDescription("k_max", "creates an evans plot"),
 		"nyquist": value.MethodAtType(0, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
-			return grParser.NewPlotValue(lin.Nyquist()), nil
+			plot, err := lin.Nyquist()
+			if err != nil {
+				return nil, err
+			}
+			return grParser.NewPlotValue(plot), nil
 		}).SetMethodDescription("creates a nyquist plot"),
 	}
 }
