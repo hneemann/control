@@ -158,6 +158,20 @@ func createPlotMethods() value.MethodMap {
 			}
 			return nil, fmt.Errorf("bounds need to be float values")
 		}).SetMethodDescription("yMin", "yMax", "Sets the y-bounds"),
+		"zoom": value.MethodAtType(3, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			if x, ok := stack.Get(1).ToFloat(); ok {
+				if y, ok := stack.Get(2).ToFloat(); ok {
+					if f, ok := stack.Get(3).ToFloat(); ok {
+						if f <= 0 {
+							return nil, fmt.Errorf("factor need to be greater than 0")
+						}
+						plot.Value.BoundsModifier = graph.Zoom(graph.Point{x, y}, f)
+						return plot, nil
+					}
+				}
+			}
+			return nil, fmt.Errorf("bounds need to be float values")
+		}).SetMethodDescription("x", "y", "factor", "Zoom at given point point"),
 	}
 }
 
