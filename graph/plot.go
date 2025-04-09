@@ -3,6 +3,7 @@ package graph
 import (
 	"bytes"
 	"fmt"
+	"math"
 )
 
 type Legend struct {
@@ -17,12 +18,14 @@ type BoundsModifier func(xBounds, yBounds Bounds, p *Plot, canvas Canvas) (Bound
 func Zoom(p Point, f float64) BoundsModifier {
 	return func(xBounds, yBounds Bounds, _ *Plot, canvas Canvas) (Bounds, Bounds) {
 		if xBounds.valid {
-			xBounds.Min = p.X + (xBounds.Min-p.X)/f
-			xBounds.Max = p.X + (xBounds.Max-p.X)/f
+			d := xBounds.Width() / (2 * f)
+			xBounds.Min = p.X - d
+			xBounds.Max = p.X + d
 		}
 		if yBounds.valid {
-			yBounds.Min = p.Y + (yBounds.Min-p.Y)/f
-			yBounds.Max = p.Y + (yBounds.Max-p.Y)/f
+			d := yBounds.Width() / (2 * f)
+			yBounds.Min = p.Y - d
+			yBounds.Max = p.Y + d
 		}
 		return xBounds, yBounds
 	}
@@ -43,6 +46,7 @@ type Plot struct {
 	legendPos      Point
 	Legend         []Legend
 	BoundsModifier BoundsModifier
+	trans          Transform
 }
 
 func (p *Plot) DrawTo(canvas Canvas) {
@@ -77,10 +81,10 @@ func (p *Plot) DrawTo(canvas Canvas) {
 	}
 
 	if !xBounds.valid {
-		xBounds = NewBounds(0, 1)
+		xBounds = NewBounds(-1, 1)
 	}
 	if !yBounds.valid {
-		yBounds = NewBounds(0, 1)
+		yBounds = NewBounds(-1, 1)
 	}
 
 	xAxis := p.XAxis
@@ -104,12 +108,12 @@ func (p *Plot) DrawTo(canvas Canvas) {
 	p.xTicks = xTicks
 	p.yTicks = yTicks
 
-	trans := func(p Point) Point {
+	p.trans = func(p Point) Point {
 		return Point{xTrans(p.X), yTrans(p.Y)}
 	}
 
 	inner := TransformCanvas{
-		transform: trans,
+		transform: p.trans,
 		parent:    canvas,
 		size: Rect{
 			Min: Point{xBounds.Min, yBounds.Min},
@@ -210,6 +214,10 @@ func (p *Plot) String() string {
 		bu.WriteString(fmt.Sprint(content))
 	}
 	return bu.String()
+}
+
+func (p *Plot) Dist(p1, p2 Point) float64 {
+	return p.trans(p1).DistTo(p.trans(p2))
 }
 
 type Bounds struct {
@@ -400,5 +408,81 @@ func (c Cross) DrawTo(_ *Plot, canvas Canvas) {
 			Add(Point{r.Max.X, 0}).
 			MoveTo(Point{0, r.Min.Y}).
 			Add(Point{0, r.Max.Y}), c.Style)
+	}
+}
+
+type ParameterFunc struct {
+	Func     func(t float64) Point
+	Points   int
+	InitialT float64
+	NextT    func(float64) float64
+	Style    *Style
+}
+
+func NewLinearParameterFunc(tMin, tMax float64) *ParameterFunc {
+	delta := (tMax - tMin) / float64(functionSteps)
+	return &ParameterFunc{
+		Points:   functionSteps,
+		InitialT: tMin,
+		NextT: func(t float64) float64 {
+			return t + delta
+		},
+	}
+}
+
+func NewLogParameterFunc(tMin, tMax float64) *ParameterFunc {
+	f := math.Pow(tMax/tMin, 1/float64(functionSteps))
+	return &ParameterFunc{
+		Points:   functionSteps,
+		InitialT: tMin,
+		NextT: func(t float64) float64 {
+			return t * f
+		},
+	}
+}
+
+func (p *ParameterFunc) String() string {
+	return fmt.Sprintf("Parameter curve with %d points", p.Points)
+}
+
+func (p *ParameterFunc) PreferredBounds(_, _ Bounds) (Bounds, Bounds) {
+	xb, yb := Bounds{}, Bounds{}
+	t := p.InitialT
+	for i := 0; i <= p.Points; i++ {
+		point := p.Func(t)
+		xb.Merge(point.X)
+		yb.Merge(point.Y)
+		t = p.NextT(t)
+	}
+	return xb, yb
+}
+
+func (p *ParameterFunc) DrawTo(plot *Plot, canvas Canvas) {
+	r := canvas.Rect()
+	t0 := p.InitialT
+	p0 := p.Func(t0)
+	path := NewPath(false)
+	path = path.Add(p0)
+	t1 := t0
+	for i := 1; i <= p.Points; i++ {
+		t1 = p.NextT(t1)
+		p1 := p.Func(t1)
+		if r.Inside(p1) || r.Inside(p0) {
+			p.refine(t0, p0, t1, p1, &path, plot, 10)
+		}
+		path = path.Add(p1)
+		t0 = t1
+		p0 = p1
+	}
+	canvas.DrawPath(path.Intersect(canvas.Rect()), p.Style)
+}
+
+func (p *ParameterFunc) refine(w0 float64, p0 Point, w1 float64, p1 Point, path *Path, plot *Plot, depth int) {
+	if plot.Dist(p0, p1) > 5 && depth > 0 {
+		w := (w0 + w1) / 2
+		point := p.Func(w)
+		p.refine(w0, p0, w, point, path, plot, depth-1)
+		*path = path.Add(point)
+		p.refine(w, point, w1, p1, path, plot, depth-1)
 	}
 }

@@ -779,64 +779,54 @@ func NewBode(wMin, wMax float64) *BodePlot {
 
 func (l *Linear) Nyquist() (*graph.Plot, error) {
 	cZero := l.Eval(complex(0, 0))
-
-	if math.IsNaN(real(cZero)) || math.IsNaN(imag(cZero)) {
-		return nil, fmt.Errorf("Nyquist plot not possible for %s", l)
-	}
-
-	pZero := graph.Point{X: real(cZero), Y: imag(cZero)}
-
-	path := graph.NewPath(false).Add(pZero)
-
-	wMult := 1.25
-	lastW := 0.0
-	lastP := pZero
-	w := 1.0 / 128
-	for range 100 {
-		c := l.Eval(complex(0, w))
-		p := graph.Point{X: real(c), Y: imag(c)}
-		l.refineNy(lastW, lastP, w, p, &path)
-		path = path.Add(p)
-
-		lastP = p
-		lastW = w
-		w *= wMult
-	}
-
-	pathNeg := graph.NewPath(false)
-	for _, pe := range path.Elements {
-		pathNeg = pathNeg.Add(graph.Point{X: pe.X, Y: -pe.Y})
-	}
+	isZero := !(math.IsNaN(real(cZero)) || math.IsNaN(imag(cZero)))
 
 	posStyle := graph.Black.SetStrokeWidth(2)
 	negStyle := graph.Black.SetDash(4, 4).SetStrokeWidth(2)
 
+	var cp []graph.PlotContent
+	cp = append(cp, graph.Cross{Style: graph.Gray})
+	pfPos := graph.NewLogParameterFunc(0.001, 100)
+	pfPos.Func = func(w float64) graph.Point {
+		c := l.Eval(complex(0, w))
+		return graph.Point{X: real(c), Y: imag(c)}
+	}
+	pfPos.Style = posStyle
+	pfNeg := graph.NewLogParameterFunc(0.001, 100)
+	pfNeg.Func = func(w float64) graph.Point {
+		c := l.Eval(complex(0, -w))
+		return graph.Point{X: real(c), Y: imag(c)}
+	}
+	pfNeg.Style = negStyle
+	cp = append(cp, pfPos, pfNeg)
+	cp = append(cp, graph.Scatter{Points: []graph.Point{{X: -1, Y: 0}}, Shape: graph.NewCrossMarker(4), Style: graph.Red})
 	zeroMarker := graph.NewCircleMarker(4)
+	if isZero {
+		cp = append(cp, graph.Scatter{Points: []graph.Point{{X: real(cZero), Y: imag(cZero)}}, Shape: zeroMarker, Style: graph.Black})
+	}
+
+	var legend []graph.Legend
+	legend = append(legend, graph.Legend{Name: "k>0", LineStyle: posStyle})
+	if isZero {
+		legend = append(legend, graph.Legend{Name: "k=0", Shape: zeroMarker, ShapeStyle: graph.Black})
+	}
+	legend = append(legend, graph.Legend{Name: "k<0", LineStyle: negStyle})
+
 	return &graph.Plot{
-		XLabel: "Re",
-		YLabel: "Im",
-		Content: []graph.PlotContent{
-			graph.Cross{Style: graph.Gray},
-			graph.Curve{Path: path, Style: posStyle},
-			graph.Curve{Path: pathNeg, Style: negStyle},
-			graph.Scatter{Points: []graph.Point{{X: -1, Y: 0}}, Shape: graph.NewCrossMarker(4), Style: graph.Red},
-			graph.Scatter{Points: []graph.Point{pZero}, Shape: zeroMarker, Style: graph.Black},
-		},
-		Legend: []graph.Legend{
-			{Name: "k>0", LineStyle: posStyle},
-			{Name: "k=0", Shape: zeroMarker, ShapeStyle: graph.Black},
-			{Name: "k<0", LineStyle: negStyle},
-		},
+		XLabel:  "Re",
+		YLabel:  "Im",
+		Content: cp,
+		Legend:  legend,
 	}, nil
 }
 
-func (l *Linear) refineNy(w0 float64, p0 graph.Point, w1 float64, p1 graph.Point, path *graph.Path) {
-	if p0.DistTo(p1) > 0.05 {
+func (l *Linear) refineNy(w0 float64, p0 graph.Point, w1 float64, p1 graph.Point, path *graph.Path, depth int) {
+	if p0.DistTo(p1) > 0.05 && depth > 0 {
 		w := (w0 + w1) / 2
 		c := l.Eval(complex(0, w))
 		p := graph.Point{X: real(c), Y: imag(c)}
-		l.refineNy(w0, p0, w, p, path)
+		l.refineNy(w0, p0, w, p, path, depth-1)
 		*path = path.Add(p)
-		l.refineNy(w, p, w1, p1, path)
+		l.refineNy(w, p, w1, p1, path, depth-1)
 	}
 }

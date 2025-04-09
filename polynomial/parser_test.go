@@ -38,7 +38,7 @@ string(gw)
 `, res: value.String("30*(s²+s+0.5)/(4s⁴+18s³+62.4s²+54.6s+21.2)")}, // externally checked
 
 		{name: "evans", exp: "let s=lin(); let g=(s+1)/(s^2+4*s+5); string(g.evans(10))", res: value.String("Plot: Polar Grid, Asymptotes, Curve with 157 points, Curve with 157 points, Scatter with 2 points, Scatter with 1 points")},
-		{name: "nyquist", exp: "let s=lin(); let g=(s+1)/(s^2+4*s+5); string(g.nyquist())", res: value.String("Plot: coordinate cross, Curve with 101 points, Curve with 101 points, Scatter with 1 points, Scatter with 1 points")},
+		{name: "nyquist", exp: "let s=lin(); let g=(s+1)/(s^2+4*s+5); string(g.nyquist())", res: value.String("Plot: coordinate cross, Parameter curve with 100 points, Parameter curve with 100 points, Scatter with 1 points, Scatter with 1 points")},
 	}
 
 	for _, test := range tests {
@@ -110,6 +110,8 @@ func TestSVGExport(t *testing.T) {
 		file string
 	}{
 		{name: "nyquist", exp: "let s=lin(); let g=(s+1)/(s^2+4*s+5); [\"Nyquist\",g.nyquist()]", file: "z.html"},
+		{name: "nyquist2", exp: "pid(1,1,1).nyquist()", file: "z.html"},
+		{name: "nyquist3", exp: "let s=lin();let g=60/((s+1)*(s+2)*(s+3)*(s+4));g.nyquist().zoom(0,0,10)", file: "z.html"},
 		{name: "test", exp: "let p=list(10).map(i->[i,i*i]); plot([scatter(p,red,1),curve(p,green.darker().dash([10,10,2,10]))])", file: "z.html"},
 		{name: "func", exp: "plot([function(x->sin(x),black).legend(\"sin\"),function(x->cos(x),red).legend(\"cos\")]).xBounds(0,2*pi)", file: "z.html"},
 	}
@@ -122,10 +124,10 @@ func TestSVGExport(t *testing.T) {
 				res, err := fu(funcGen.NewEmptyStack[value.Value]())
 				assert.NoError(t, err, test.exp)
 
-				expHtmp, _, err := export.ToHtml(res, 50, grParser.HtmlExport, true)
+				_, _, err = export.ToHtml(res, 50, grParser.HtmlExport, true)
 				assert.NoError(t, err, test.exp)
 
-				fmt.Println(expHtmp)
+				//fmt.Println(expHtmp)
 			}
 		})
 	}
