@@ -126,7 +126,7 @@ func createPlotMethods() value.MethodMap {
 				return nil, fmt.Errorf("add requires a plot content")
 			}
 			return plot, nil
-		}).SetMethodDescription("plotContent", "Add a plot content to the plot"),
+		}).SetMethodDescription("plotContent", "Adds a plot content to the plot"),
 		"xLabel": value.MethodAtType(1, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if str, ok := stack.Get(1).(value.String); ok {
 				plot.Value.XLabel = string(str)
@@ -150,7 +150,7 @@ func createPlotMethods() value.MethodMap {
 					return plot, nil
 				}
 			}
-			return nil, fmt.Errorf("bounds need to be float values")
+			return nil, fmt.Errorf("xBounds requires two float values")
 		}).SetMethodDescription("xMin", "xMax", "Sets the x-bounds"),
 		"yBounds": value.MethodAtType(2, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if vmin, ok := stack.Get(1).ToFloat(); ok {
@@ -159,22 +159,22 @@ func createPlotMethods() value.MethodMap {
 					return plot, nil
 				}
 			}
-			return nil, fmt.Errorf("bounds need to be float values")
+			return nil, fmt.Errorf("yBounds requires two float values")
 		}).SetMethodDescription("yMin", "yMax", "Sets the y-bounds"),
 		"zoom": value.MethodAtType(3, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if x, ok := stack.Get(1).ToFloat(); ok {
 				if y, ok := stack.Get(2).ToFloat(); ok {
 					if f, ok := stack.Get(3).ToFloat(); ok {
 						if f <= 0 {
-							return nil, fmt.Errorf("factor need to be greater than 0")
+							return nil, fmt.Errorf("factor needs to be greater than 0")
 						}
 						plot.Value.BoundsModifier = graph.Zoom(graph.Point{x, y}, f)
 						return plot, nil
 					}
 				}
 			}
-			return nil, fmt.Errorf("bounds need to be float values")
-		}).SetMethodDescription("x", "y", "factor", "Zoom at given point point"),
+			return nil, fmt.Errorf("zoom requires three float values")
+		}).SetMethodDescription("x", "y", "factor", "Zoom at the given point point"),
 	}
 }
 
