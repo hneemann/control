@@ -54,6 +54,17 @@ func (c Complex) GetType() value.Type {
 	return ComplexValueType
 }
 
+func cmplxMethods() value.MethodMap {
+	return value.MethodMap{
+		"real": value.MethodAtType(0, func(c Complex, st funcGen.Stack[value.Value]) (value.Value, error) {
+			return value.Float(real(c)), nil
+		}).SetMethodDescription("returns the real component"),
+		"imag": value.MethodAtType(0, func(c Complex, st funcGen.Stack[value.Value]) (value.Value, error) {
+			return value.Float(imag(c)), nil
+		}).SetMethodDescription("returns the imaginary component"),
+	}
+}
+
 func complexOperation(name string,
 	def func(st funcGen.Stack[value.Value], a value.Value, b value.Value) (value.Value, error),
 	f func(a, b Complex) (value.Value, error)) func(st funcGen.Stack[value.Value], a value.Value, b value.Value) (value.Value, error) {
@@ -186,6 +197,18 @@ func linMethods() value.MethodMap {
 			}
 			return grParser.NewPlotValue(plot), nil
 		}).SetMethodDescription("creates a nyquist plot"),
+		"eval": value.MethodAtType(1, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
+			var s complex128
+			if sc, ok := st.Get(1).(Complex); ok {
+				s = complex128(sc)
+			} else if sf, ok := st.Get(1).ToFloat(); ok {
+				s = complex(sf, 0)
+			} else {
+				return nil, fmt.Errorf("eval requires a complex value")
+			}
+			r := lin.Eval(s)
+			return Complex(r), nil
+		}).SetMethodDescription("s", "evaluates the linear system"),
 	}
 }
 
@@ -303,6 +326,7 @@ func bodeMethods() value.MethodMap {
 var Parser = value.New().
 	RegisterMethods(LinearValueType, linMethods()).
 	RegisterMethods(BodeValueType, bodeMethods()).
+	RegisterMethods(ComplexValueType, cmplxMethods()).
 	AddFinalizerValue(grParser.Setup).
 	AddStaticFunction("lin", funcGen.Function[value.Value]{
 		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
