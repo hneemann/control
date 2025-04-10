@@ -3,12 +3,18 @@ package polynomial
 import (
 	"errors"
 	"fmt"
+	"github.com/hneemann/control/graph"
 	"github.com/hneemann/control/graph/grParser"
 	"github.com/hneemann/parser2/funcGen"
 	"github.com/hneemann/parser2/value"
 )
 
-const ComplexValueType value.Type = 17
+const (
+	BodeValueType       value.Type = 16
+	ComplexValueType    value.Type = 17
+	PolynomialValueType value.Type = 18
+	LinearValueType     value.Type = 19
+)
 
 type Complex complex128
 
@@ -47,7 +53,37 @@ func (c Complex) GetType() value.Type {
 	return ComplexValueType
 }
 
-const PolynomialValueType value.Type = 18
+func complexOperation(name string,
+	def func(st funcGen.Stack[value.Value], a value.Value, b value.Value) (value.Value, error),
+	f func(a, b Complex) (value.Value, error)) func(st funcGen.Stack[value.Value], a value.Value, b value.Value) (value.Value, error) {
+	return func(st funcGen.Stack[value.Value], a value.Value, b value.Value) (value.Value, error) {
+		if ae, ok := a.(Complex); ok {
+			if be, ok := b.(Complex); ok {
+				// both are error values
+				return f(ae, be)
+			} else {
+				// a is Complex value, b is'nt
+				if bf, ok := b.ToFloat(); ok {
+					return f(ae, Complex(complex(bf, 0)))
+				} else {
+					return nil, fmt.Errorf("%s operation not allowed with %v and %v ", name, a, b)
+				}
+			}
+		} else {
+			if be, ok := b.(Complex); ok {
+				// b is complex value, a is'nt
+				if af, ok := a.ToFloat(); ok {
+					return f(Complex(complex(af, 0)), be)
+				} else {
+					return nil, fmt.Errorf("%s operation not allowed with %v and %v ", name, a, b)
+				}
+			} else {
+				// no error value at all
+				return def(st, a, b)
+			}
+		}
+	}
+}
 
 func (p Polynomial) ToList() (*value.List, bool) {
 	return value.NewListConvert(func(i float64) value.Value {
@@ -83,8 +119,6 @@ func (p Polynomial) GetType() value.Type {
 	return PolynomialValueType
 }
 
-const LinearValueType value.Type = 19
-
 func (l *Linear) ToList() (*value.List, bool) {
 	return nil, false
 }
@@ -117,35 +151,40 @@ func (l *Linear) GetType() value.Type {
 	return LinearValueType
 }
 
-func complexOperation(name string,
-	def func(st funcGen.Stack[value.Value], a value.Value, b value.Value) (value.Value, error),
-	f func(a, b Complex) (value.Value, error)) func(st funcGen.Stack[value.Value], a value.Value, b value.Value) (value.Value, error) {
-	return func(st funcGen.Stack[value.Value], a value.Value, b value.Value) (value.Value, error) {
-		if ae, ok := a.(Complex); ok {
-			if be, ok := b.(Complex); ok {
-				// both are error values
-				return f(ae, be)
-			} else {
-				// a is Complex value, b is'nt
-				if bf, ok := b.ToFloat(); ok {
-					return f(ae, Complex(complex(bf, 0)))
-				} else {
-					return nil, fmt.Errorf("%s operation not allowed with %v and %v ", name, a, b)
-				}
+func linMethods() value.MethodMap {
+	return value.MethodMap{
+		"loop": value.MethodAtType(0, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
+			return lin.Loop()
+		}).SetMethodDescription("closes the loop"),
+		"reduce": value.MethodAtType(0, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
+			if lin, ok := st.Get(0).(*Linear); ok {
+				return lin.Reduce()
 			}
-		} else {
-			if be, ok := b.(Complex); ok {
-				// b is complex value, a is'nt
-				if af, ok := a.ToFloat(); ok {
-					return f(Complex(complex(af, 0)), be)
-				} else {
-					return nil, fmt.Errorf("%s operation not allowed with %v and %v ", name, a, b)
-				}
-			} else {
-				// no error value at all
-				return def(st, a, b)
+			return nil, fmt.Errorf("loop requires a linear system")
+		}).SetMethodDescription("reduces the linear system"),
+		"stringPoly": value.MethodAtType(0, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
+			if lin, ok := st.Get(0).(*Linear); ok {
+				return value.String(lin.StringPoly(false)), nil
 			}
-		}
+			return nil, fmt.Errorf("stringPoly requires a linear system")
+		}).SetMethodDescription("creates a string representation of the linear system"),
+		"evans": value.MethodAtType(1, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
+			if k, ok := st.Get(1).ToFloat(); ok {
+				plot, err := lin.CreateEvans(k)
+				if err != nil {
+					return nil, err
+				}
+				return grParser.NewPlotValue(plot), nil
+			}
+			return nil, fmt.Errorf("evans requires a float")
+		}).SetMethodDescription("k_max", "creates an evans plot"),
+		"nyquist": value.MethodAtType(0, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
+			plot, err := lin.Nyquist()
+			if err != nil {
+				return nil, err
+			}
+			return grParser.NewPlotValue(plot), nil
+		}).SetMethodDescription("creates a nyquist plot"),
 	}
 }
 
@@ -229,8 +268,40 @@ func exp(st funcGen.Stack[value.Value], a value.Value, b value.Value) (value.Val
 	return value.Pow(st, a, b)
 }
 
+type BodePlotValue struct {
+	grParser.Holder[*BodePlot]
+}
+
+func (b BodePlotValue) DrawTo(canvas graph.Canvas) {
+	b.Value.DrawTo(canvas)
+}
+
+func (b BodePlotValue) GetType() value.Type {
+	return BodeValueType
+}
+
+func bodeMethods() value.MethodMap {
+	return value.MethodMap{
+		"add": value.MethodAtType(3, func(bode BodePlotValue, st funcGen.Stack[value.Value]) (value.Value, error) {
+			if linVal, ok := st.Get(1).(*Linear); ok {
+				if styleVal, ok := st.Get(2).(grParser.StyleValue); ok {
+					if legVal, ok := st.Get(3).(value.String); ok {
+						linVal.AddToBode(bode.Value, styleVal.Value)
+						if legVal != "" {
+							bode.Value.AddLegend(string(legVal), styleVal.Value)
+						}
+						return bode, nil
+					}
+				}
+			}
+			return nil, errors.New("add requires a linear system, a color and a legend")
+		}).SetMethodDescription("lin", "color", "label", "adds a linear system to the bode plot"),
+	}
+}
+
 var Parser = value.New().
 	RegisterMethods(LinearValueType, linMethods()).
+	RegisterMethods(BodeValueType, bodeMethods()).
 	AddFinalizerValue(grParser.Setup).
 	AddStaticFunction("lin", funcGen.Function[value.Value]{
 		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
@@ -306,6 +377,19 @@ var Parser = value.New().
 		Args:   3,
 		IsPure: true,
 	}.SetDescription("k_p", "T_I", "T_D", "a PID linear system")).
+	AddStaticFunction("bode", funcGen.Function[value.Value]{
+		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
+			if wMin, ok := stack.Get(0).ToFloat(); ok {
+				if wMax, ok := stack.Get(1).ToFloat(); ok {
+					b := NewBode(wMin, wMax)
+					return BodePlotValue{grParser.Holder[*BodePlot]{b}}, nil
+				}
+			}
+			return nil, fmt.Errorf("boded requires 2 float values")
+		},
+		Args:   2,
+		IsPure: true,
+	}.SetDescription("wMin", "wMax", "creates a bode plot")).
 	AddOp("*", true, complexOperation("*", linOperation("*", value.Mul,
 		func(a, b *Linear) (value.Value, error) {
 			return a.Mul(b), nil
@@ -333,40 +417,3 @@ var Parser = value.New().
 		return a + b, nil
 	},
 	))
-
-func linMethods() value.MethodMap {
-	return value.MethodMap{
-		"loop": value.MethodAtType(0, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
-			return lin.Loop()
-		}).SetMethodDescription("closes the loop"),
-		"reduce": value.MethodAtType(0, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
-			if lin, ok := st.Get(0).(*Linear); ok {
-				return lin.Reduce()
-			}
-			return nil, fmt.Errorf("loop requires a linear system")
-		}).SetMethodDescription("reduces the linear system"),
-		"stringPoly": value.MethodAtType(0, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
-			if lin, ok := st.Get(0).(*Linear); ok {
-				return value.String(lin.StringPoly(false)), nil
-			}
-			return nil, fmt.Errorf("stringPoly requires a linear system")
-		}).SetMethodDescription("creates a string representation of the linear system"),
-		"evans": value.MethodAtType(1, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
-			if k, ok := st.Get(1).ToFloat(); ok {
-				plot, err := lin.CreateEvans(k)
-				if err != nil {
-					return nil, err
-				}
-				return grParser.NewPlotValue(plot), nil
-			}
-			return nil, fmt.Errorf("evans requires a float")
-		}).SetMethodDescription("k_max", "creates an evans plot"),
-		"nyquist": value.MethodAtType(0, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
-			plot, err := lin.Nyquist()
-			if err != nil {
-				return nil, err
-			}
-			return grParser.NewPlotValue(plot), nil
-		}).SetMethodDescription("creates a nyquist plot"),
-	}
-}

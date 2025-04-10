@@ -721,6 +721,10 @@ func (b *BodePlot) DrawTo(canvas graph.Canvas) {
 	b.bode.DrawTo(canvas)
 }
 
+func (b *BodePlot) AddLegend(s string, style *graph.Style) {
+	b.amplitude.AddLegend(s, style, nil, nil)
+}
+
 func (l *Linear) AddToBode(b *BodePlot, style *graph.Style) {
 	cZero := l.Eval(complex(0, 0))
 	lastAngle := 0.0

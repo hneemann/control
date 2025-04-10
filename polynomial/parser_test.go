@@ -7,6 +7,7 @@ import (
 	"github.com/hneemann/parser2/value"
 	"github.com/hneemann/parser2/value/export"
 	"github.com/stretchr/testify/assert"
+	"strings"
 	"testing"
 )
 
@@ -112,6 +113,7 @@ func TestSVGExport(t *testing.T) {
 		{name: "nyquist", exp: "let s=lin(); let g=(s+1)/(s^2+4*s+5); [\"Nyquist\",g.nyquist()]", file: "z.html"},
 		{name: "nyquist2", exp: "pid(1,1,1).nyquist()", file: "z.html"},
 		{name: "nyquist3", exp: "let s=lin();let g=60/((s+1)*(s+2)*(s+3)*(s+4));g.nyquist().zoom(0,0,10)", file: "z.html"},
+		{name: "bode", exp: "let s=lin();\nlet g=(1.5*s+1)/((2*s+1)*(s+1)*(s^2+3*s+3.1));\nlet k=pid(12,1.5,1);\nbode(0.01,100)\n  .add(g,green,\"g\")\n  .add(k,blue,\"k\")\n  .add(k*g,black,\"k*g\")", file: "z.html"},
 		{name: "test", exp: "let p=list(10).map(i->[i,i*i]); plot([scatter(p,red,1),curve(p,green.darker().dash([10,10,2,10]))])", file: "z.html"},
 		{name: "func", exp: "plot([function(x->sin(x),black).legend(\"sin\"),function(x->cos(x),red).legend(\"cos\")]).xBounds(0,2*pi)", file: "z.html"},
 	}
@@ -124,10 +126,13 @@ func TestSVGExport(t *testing.T) {
 				res, err := fu(funcGen.NewEmptyStack[value.Value]())
 				assert.NoError(t, err, test.exp)
 
-				_, _, err = export.ToHtml(res, 50, grParser.HtmlExport, true)
+				expHtml, _, err := export.ToHtml(res, 50, grParser.HtmlExport, true)
 				assert.NoError(t, err, test.exp)
 
-				//fmt.Println(expHtmp)
+				// needs to contain a svg image
+				assert.True(t, strings.Contains(string(expHtml), "<svg class=\"svg\""), test.exp)
+
+				//fmt.Println(expHtml)
 			}
 		})
 	}

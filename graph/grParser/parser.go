@@ -52,6 +52,10 @@ type PlotValue struct {
 	Holder[*graph.Plot]
 }
 
+func (p PlotValue) DrawTo(canvas graph.Canvas) {
+	p.Holder.Value.DrawTo(canvas)
+}
+
 func NewPlotValue(plot *graph.Plot) PlotValue {
 	return PlotValue{Holder[*graph.Plot]{plot}}
 }
@@ -358,11 +362,10 @@ func toPointsList(st funcGen.Stack[value.Value]) ([]graph.Point, error) {
 }
 
 func HtmlExport(v value.Value) (template.HTML, bool, error) {
-	if p, ok := v.(PlotValue); ok {
-		plot := p.Value
+	if p, ok := v.(graph.Image); ok {
 		var buffer bytes.Buffer
 		svg := graph.NewSVG(800, 600, 15, &buffer)
-		plot.DrawTo(svg)
+		p.DrawTo(svg)
 		err := svg.Close()
 		if err != nil {
 			return "", true, err
