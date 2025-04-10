@@ -50,11 +50,10 @@ const (
 
 type PlotValue struct {
 	Holder[*graph.Plot]
-	Legend value.String
 }
 
 func NewPlotValue(plot *graph.Plot) PlotValue {
-	return PlotValue{Holder[*graph.Plot]{plot}, ""}
+	return PlotValue{Holder[*graph.Plot]{plot}}
 }
 
 func (p PlotValue) GetType() value.Type {
