@@ -64,6 +64,13 @@ func (l *Linear) intString(parse bool) string {
 	return sp
 }
 
+func (l *Linear) ToMathML() string {
+	result := "<mfrac>"
+	result += l.Numerator.ToMathML()
+	result += l.Denominator.ToMathML()
+	return result + "</mfrac>"
+}
+
 func (l *Linear) zerosCalculated() bool {
 	return l.zeros.Valid()
 }
@@ -810,11 +817,11 @@ func (l *Linear) Nyquist() (*graph.Plot, error) {
 	}
 
 	var legend []graph.Legend
-	legend = append(legend, graph.Legend{Name: "k>0", LineStyle: posStyle})
+	legend = append(legend, graph.Legend{Name: "ω>0", LineStyle: posStyle})
 	if isZero {
-		legend = append(legend, graph.Legend{Name: "k=0", Shape: zeroMarker, ShapeStyle: graph.Black})
+		legend = append(legend, graph.Legend{Name: "ω=0", Shape: zeroMarker, ShapeStyle: graph.Black})
 	}
-	legend = append(legend, graph.Legend{Name: "k<0", LineStyle: negStyle})
+	legend = append(legend, graph.Legend{Name: "ω<0", LineStyle: negStyle})
 
 	return &graph.Plot{
 		XLabel:  "Re",

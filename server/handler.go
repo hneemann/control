@@ -2,7 +2,6 @@ package server
 
 import (
 	"embed"
-	"github.com/hneemann/control/graph/grParser"
 	"github.com/hneemann/control/polynomial"
 	"github.com/hneemann/parser2/funcGen"
 	"github.com/hneemann/parser2/value"
@@ -40,7 +39,7 @@ func Execute(writer http.ResponseWriter, request *http.Request) {
 			var res value.Value
 			res, err = fu(funcGen.NewEmptyStack[value.Value]())
 			if err == nil {
-				resHtml, _, err = export.ToHtml(res, 50, grParser.HtmlExport, true)
+				resHtml, _, err = export.ToHtml(res, 50, polynomial.HtmlExport, true)
 			}
 		}
 		if err != nil {

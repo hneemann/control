@@ -7,6 +7,7 @@ import (
 	"github.com/hneemann/control/graph/grParser"
 	"github.com/hneemann/parser2/funcGen"
 	"github.com/hneemann/parser2/value"
+	"html/template"
 )
 
 const (
@@ -417,3 +418,16 @@ var Parser = value.New().
 		return a + b, nil
 	},
 	))
+
+func HtmlExport(v value.Value) (template.HTML, bool, error) {
+	ret, ok, err := grParser.HtmlExport(v)
+	if ok {
+		return ret, ok, err
+	}
+	if lin, ok := v.(*Linear); ok {
+		math := "<math xmlns=\"http://www.w3.org/1998/Math/MathML\">" + lin.ToMathML() + "</math>"
+		fmt.Println(math)
+		return template.HTML(math), true, nil
+	}
+	return "", false, nil
+}

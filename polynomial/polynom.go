@@ -104,6 +104,40 @@ func (p Polynomial) intString(parser bool) string {
 	return result
 }
 
+func (p Polynomial) ToMathML() string {
+	result := "<mrow>"
+	for i := range p {
+		n := len(p) - i - 1
+		c := p[n]
+		if math.Abs(c) > eps {
+			neg := false
+			if c < 0 {
+				neg = true
+			}
+			c = math.Abs(c)
+			if neg || i > 0 {
+				if neg {
+					result += "<mo>-</mo>"
+				} else {
+					result += "<mo>+</mo>"
+				}
+			}
+			if c != 1 || n == 0 {
+				result += fmt.Sprintf("<mn>%.6g</mn>", c)
+			}
+			switch n {
+			case 0:
+			case 1:
+				result += "<mi>s</mi>"
+			default:
+				result += fmt.Sprintf("<msup><mi>s</mi><mn>%d</mn></msup>", n)
+			}
+		}
+	}
+	result += "</mrow>"
+	return result
+}
+
 func (p Polynomial) Derivative() Polynomial {
 	if len(p) == 0 {
 		return Polynomial{}
