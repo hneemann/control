@@ -426,7 +426,6 @@ func HtmlExport(v value.Value) (template.HTML, bool, error) {
 	}
 	if lin, ok := v.(*Linear); ok {
 		math := "<math xmlns=\"http://www.w3.org/1998/Math/MathML\">" + lin.ToMathML() + "</math>"
-		fmt.Println(math)
 		return template.HTML(math), true, nil
 	}
 	return "", false, nil
