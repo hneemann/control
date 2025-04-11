@@ -156,7 +156,22 @@ func (l *Linear) ToBool() (bool, bool) {
 }
 
 func (l *Linear) ToClosure() (funcGen.Function[value.Value], bool) {
-	return funcGen.Function[value.Value]{}, false
+	return funcGen.Function[value.Value]{
+		Func: func(st funcGen.Stack[value.Value], _ []value.Value) (value.Value, error) {
+			var s complex128
+			if sc, ok := st.Get(0).(Complex); ok {
+				s = complex128(sc)
+			} else if sf, ok := st.Get(0).ToFloat(); ok {
+				s = complex(sf, 0)
+			} else {
+				return nil, fmt.Errorf("eval requires a complex value")
+			}
+			r := l.Eval(s)
+			return Complex(r), nil
+		},
+		Args:   1,
+		IsPure: true,
+	}, true
 }
 
 func (l *Linear) GetType() value.Type {
@@ -197,18 +212,6 @@ func linMethods() value.MethodMap {
 			}
 			return grParser.NewPlotValue(plot), nil
 		}).SetMethodDescription("creates a nyquist plot"),
-		"eval": value.MethodAtType(1, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
-			var s complex128
-			if sc, ok := st.Get(1).(Complex); ok {
-				s = complex128(sc)
-			} else if sf, ok := st.Get(1).ToFloat(); ok {
-				s = complex(sf, 0)
-			} else {
-				return nil, fmt.Errorf("eval requires a complex value")
-			}
-			r := lin.Eval(s)
-			return Complex(r), nil
-		}).SetMethodDescription("s", "evaluates the linear system"),
 	}
 }
 
