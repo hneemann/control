@@ -135,6 +135,14 @@ func (s *Style) Text() *Style {
 	return &style
 }
 
+func (s *Style) SetFill(other *Style) *Style {
+	var style Style
+	style = *s
+	style.Fill = true
+	style.FillColor = other.Color
+	return &style
+}
+
 type Orientation int
 
 const (

@@ -1,3 +1,5 @@
 /.idea
 /localhost.key
 /localhost.pem
+/go.work
+/go.work.sum

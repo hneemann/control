@@ -307,12 +307,14 @@ func (b BodePlotValue) GetType() value.Type {
 	return BodeValueType
 }
 
+var defStyleValue = grParser.StyleValue{grParser.Holder[*graph.Style]{graph.Black}, 4}
+
 func bodeMethods() value.MethodMap {
 	return value.MethodMap{
-		"add": value.MethodAtType(3, func(bode BodePlotValue, st funcGen.Stack[value.Value]) (value.Value, error) {
+		"add": value.MethodAtType(-1, func(bode BodePlotValue, st funcGen.Stack[value.Value]) (value.Value, error) {
 			if linVal, ok := st.Get(1).(*Linear); ok {
-				if styleVal, ok := st.Get(2).(grParser.StyleValue); ok {
-					if legVal, ok := st.Get(3).(value.String); ok {
+				if styleVal, ok := st.GetOptional(2, defStyleValue).(grParser.StyleValue); ok {
+					if legVal, ok := st.GetOptional(3, value.String("")).(value.String); ok {
 						linVal.AddToBode(bode.Value, styleVal.Value)
 						if legVal != "" {
 							bode.Value.AddLegend(string(legVal), styleVal.Value)
@@ -322,7 +324,7 @@ func bodeMethods() value.MethodMap {
 				}
 			}
 			return nil, errors.New("add requires a linear system, a color and a legend")
-		}).SetMethodDescription("lin", "color", "label", "adds a linear system to the bode plot"),
+		}).SetMethodDescription("lin", "color", "label", "adds a linear system to the bode plot").VarArgsMethod(1, 3),
 	}
 }
 
@@ -331,6 +333,10 @@ var Parser = value.New().
 	RegisterMethods(BodeValueType, bodeMethods()).
 	RegisterMethods(ComplexValueType, cmplxMethods()).
 	AddFinalizerValue(grParser.Setup).
+	AddFinalizerValue(func(f *value.FunctionGenerator) {
+		p := f.GetParser()
+		p.AllowComments()
+	}).
 	AddStaticFunction("lin", funcGen.Function[value.Value]{
 		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
 			if stack.Size() == 0 {
@@ -451,8 +457,8 @@ func HtmlExport(v value.Value) (template.HTML, bool, error) {
 	if ok {
 		return ret, ok, err
 	}
-	if lin, ok := v.(*Linear); ok {
-		math := "<math xmlns=\"http://www.w3.org/1998/Math/MathML\">" + lin.ToMathML() + "</math>"
+	if lin, ok := v.(MathML); ok {
+		math := "<math xmlns=\"http://www.w3.org/1998/Math/MathML\"><mstyle displaystyle=\"true\" scriptlevel=\"0\">" + lin.ToMathML() + "</mstyle></math>"
 		return template.HTML(math), true, nil
 	}
 	return "", false, nil

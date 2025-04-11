@@ -83,17 +83,39 @@ func createStyleMethods() value.MethodMap {
 			if err != nil {
 				return nil, fmt.Errorf("dash requires a float array")
 			}
-			style = style.SetDash(floatList...)
-			return StyleValue{Holder[*graph.Style]{style}}, nil
+			return StyleValue{Holder[*graph.Style]{style.SetDash(floatList...)}, styleValue.Size}, nil
 		}).SetMethodDescription("def", "Sets the dash style"),
 		"darker": value.MethodAtType(0, func(styleValue StyleValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			style := styleValue.Value
-			return StyleValue{Holder[*graph.Style]{style.Darker()}}, nil
+			return StyleValue{Holder[*graph.Style]{style.Darker()}, styleValue.Size}, nil
 		}).SetMethodDescription("Makes the color darker"),
 		"brighter": value.MethodAtType(0, func(styleValue StyleValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			style := styleValue.Value
-			return StyleValue{Holder[*graph.Style]{style.Brighter()}}, nil
+			return StyleValue{Holder[*graph.Style]{style.Brighter()}, styleValue.Size}, nil
 		}).SetMethodDescription("Makes the color brighter"),
+		"stroke": value.MethodAtType(1, func(styleValue StyleValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			style := styleValue.Value
+			sw, ok := stack.Get(1).ToFloat()
+			if !ok {
+				return nil, fmt.Errorf("stroke requires a float")
+			}
+			return StyleValue{Holder[*graph.Style]{style.SetStrokeWidth(sw)}, styleValue.Size}, nil
+		}).SetMethodDescription("width", "Sets the stroke width"),
+		"size": value.MethodAtType(1, func(styleValue StyleValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			size, ok := stack.Get(1).ToFloat()
+			if !ok {
+				return nil, fmt.Errorf("size requires a float")
+			}
+			return StyleValue{Holder[*graph.Style]{styleValue.Value}, size}, nil
+		}).SetMethodDescription("width", "Sets the stroke width"),
+		"fill": value.MethodAtType(1, func(styleValue StyleValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			style := styleValue.Value
+			styleVal, ok := stack.Get(1).(StyleValue)
+			if !ok {
+				return nil, fmt.Errorf("fill requires a style")
+			}
+			return StyleValue{Holder[*graph.Style]{style.SetFill(styleVal.Value)}, styleValue.Size}, nil
+		}).SetMethodDescription("color", "The color used to fill"),
 	}
 }
 
@@ -202,88 +224,99 @@ func (p PlotContentValue) GetType() value.Type {
 
 type StyleValue struct {
 	Holder[*graph.Style]
+	Size float64
 }
 
 func (p StyleValue) GetType() value.Type {
 	return StyleType
 }
 
+var (
+	defStyle = StyleValue{Holder[*graph.Style]{graph.Black}, 0}
+)
+
+const defSize = 4
+
 func Setup(fg *value.FunctionGenerator) {
 	fg.RegisterMethods(PlotType, createPlotMethods())
 	fg.RegisterMethods(PlotContentType, createPlotContentMethods())
 	fg.RegisterMethods(StyleType, createStyleMethods())
-	fg.AddConstant("black", StyleValue{Holder[*graph.Style]{graph.Black}})
-	fg.AddConstant("green", StyleValue{Holder[*graph.Style]{graph.Green}})
-	fg.AddConstant("red", StyleValue{Holder[*graph.Style]{graph.Red}})
-	fg.AddConstant("blue", StyleValue{Holder[*graph.Style]{graph.Blue}})
-	fg.AddConstant("gray", StyleValue{Holder[*graph.Style]{graph.Gray}})
-	fg.AddConstant("white", StyleValue{Holder[*graph.Style]{graph.White}})
-	fg.AddConstant("cyan", StyleValue{Holder[*graph.Style]{graph.Cyan}})
-	fg.AddConstant("magenta", StyleValue{Holder[*graph.Style]{graph.Magenta}})
-	fg.AddConstant("yellow", StyleValue{Holder[*graph.Style]{graph.Yellow}})
+	fg.AddConstant("black", StyleValue{Holder[*graph.Style]{graph.Black}, defSize})
+	fg.AddConstant("green", StyleValue{Holder[*graph.Style]{graph.Green}, defSize})
+	fg.AddConstant("red", StyleValue{Holder[*graph.Style]{graph.Red}, defSize})
+	fg.AddConstant("blue", StyleValue{Holder[*graph.Style]{graph.Blue}, defSize})
+	fg.AddConstant("gray", StyleValue{Holder[*graph.Style]{graph.Gray}, defSize})
+	fg.AddConstant("white", StyleValue{Holder[*graph.Style]{graph.White}, defSize})
+	fg.AddConstant("cyan", StyleValue{Holder[*graph.Style]{graph.Cyan}, defSize})
+	fg.AddConstant("magenta", StyleValue{Holder[*graph.Style]{graph.Magenta}, defSize})
+	fg.AddConstant("yellow", StyleValue{Holder[*graph.Style]{graph.Yellow}, defSize})
 	fg.AddStaticFunction("plot", funcGen.Function[value.Value]{
 		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
 			p := NewPlotValue(&graph.Plot{})
-			if list, ok := st.Get(0).ToList(); ok {
-				slice, err := list.ToSlice(st)
-				if err != nil {
-					return nil, err
-				}
-				for _, pc := range slice {
-					err = p.add(pc)
-					if err != nil {
-						return nil, err
-					}
-				}
-			} else {
-				err := p.add(st.Get(0))
+			for i := 0; i < st.Size(); i++ {
+				err := p.add(st.Get(i))
 				if err != nil {
 					return nil, err
 				}
 			}
 			return p, nil
 		},
-		Args:   1,
+		Args:   -1,
 		IsPure: true,
 	}.SetDescription("content", "Creates a new plot"))
 	fg.AddStaticFunction("scatter", funcGen.Function[value.Value]{
 		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
-			var style *graph.Style
-			if styleVal, ok := st.Get(1).(StyleValue); ok {
-				style = styleVal.Value
-			} else {
+			styleVal, ok := st.GetOptional(1, defStyle).(StyleValue)
+			if !ok {
 				return nil, fmt.Errorf("scatter requires a style as second argument")
 			}
 			var marker graph.Shape
-			if markerInt, ok := st.Get(2).ToInt(); ok {
+			if markerInt, ok := st.GetOptional(2, value.Int(0)).ToInt(); ok {
 				switch markerInt {
 				case 1:
-					marker = graph.NewCircleMarker(4)
+					marker = graph.NewCircleMarker(styleVal.Size)
+				case 2:
+					marker = graph.NewSquareMarker(styleVal.Size)
+				case 3:
+					marker = graph.NewTriangleMarker(styleVal.Size)
 				default:
-					marker = graph.NewCrossMarker(4)
+					marker = graph.NewCrossMarker(styleVal.Size)
 				}
 			} else {
 				return nil, fmt.Errorf("scatter requires a int as third argument")
+			}
+			leg := ""
+			if legVal, ok := st.GetOptional(3, value.String("")).(value.String); ok {
+				leg = string(legVal)
+			} else {
+				return nil, fmt.Errorf("scatter requires a string as fourth argument")
 			}
 
 			points, err := toPointsList(st)
 			if err != nil {
 				return nil, err
 			}
-			s := graph.Scatter{Points: points, Shape: marker, Style: style}
-			return PlotContentValue{Holder[graph.PlotContent]{s}, graph.Legend{Shape: marker, ShapeStyle: style}}, nil
+			s := graph.Scatter{Points: points, Shape: marker, Style: styleVal.Value}
+			return PlotContentValue{Holder[graph.PlotContent]{s}, graph.Legend{Name: leg, Shape: marker, ShapeStyle: styleVal.Value}}, nil
 		},
-		Args:   3,
+		Args:   4,
 		IsPure: true,
-	}.SetDescription("data", "color", "markerType", "Creates a new scatter dataset"))
+	}.SetDescription("data", "color", "markerType", "legend", "Creates a new scatter dataset").VarArgs(1, 4))
 	fg.AddStaticFunction("curve", funcGen.Function[value.Value]{
 		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
 			var style *graph.Style
-			if styleVal, ok := st.Get(1).(StyleValue); ok {
+			if styleVal, ok := st.GetOptional(1, defStyle).(StyleValue); ok {
 				style = styleVal.Value
 			} else {
 				return nil, fmt.Errorf("curve requires a style as second argument")
 			}
+			leg := ""
+			if legVal, ok := st.GetOptional(2, value.String("")).(value.String); ok {
+				leg = string(legVal)
+			} else {
+				return nil, fmt.Errorf("curver requires a string as third argument")
+			}
+
 			points, err := toPointsList(st)
 			if err != nil {
 				return nil, err
@@ -293,18 +326,24 @@ func Setup(fg *value.FunctionGenerator) {
 				path = path.Add(p)
 			}
 			s := graph.Curve{Path: path, Style: style}
-			return PlotContentValue{Holder[graph.PlotContent]{s}, graph.Legend{LineStyle: style}}, nil
+			return PlotContentValue{Holder[graph.PlotContent]{s}, graph.Legend{Name: leg, LineStyle: style}}, nil
 		},
 		Args:   2,
 		IsPure: true,
-	}.SetDescription("data", "style", "Creates a new scatter dataset"))
+	}.SetDescription("data", "style", "Creates a new scatter dataset").VarArgs(1, 2))
 	fg.AddStaticFunction("function", funcGen.Function[value.Value]{
 		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
 			var style *graph.Style
-			if styleVal, ok := st.Get(1).(StyleValue); ok {
+			if styleVal, ok := st.GetOptional(1, defStyle).(StyleValue); ok {
 				style = styleVal.Value
 			} else {
 				return nil, fmt.Errorf("function requires a style as second argument")
+			}
+			leg := ""
+			if legVal, ok := st.GetOptional(2, value.String("")).(value.String); ok {
+				leg = string(legVal)
+			} else {
+				return nil, fmt.Errorf("curver requires a string as third argument")
 			}
 
 			var f func(x float64) float64
@@ -325,11 +364,11 @@ func Setup(fg *value.FunctionGenerator) {
 				}
 			}
 			gf := graph.Function{Function: f, Style: style}
-			return PlotContentValue{Holder[graph.PlotContent]{gf}, graph.Legend{LineStyle: style}}, nil
+			return PlotContentValue{Holder[graph.PlotContent]{gf}, graph.Legend{Name: leg, LineStyle: style}}, nil
 		},
-		Args:   2,
+		Args:   -1,
 		IsPure: true,
-	}.SetDescription("data", "style", "Creates a new scatter dataset"))
+	}.SetDescription("data", "style", "leg", "Creates a new scatter dataset").VarArgs(1, 3))
 }
 
 func toPointsList(st funcGen.Stack[value.Value]) ([]graph.Point, error) {

@@ -104,6 +104,10 @@ func (p Polynomial) intString(parser bool) string {
 	return result
 }
 
+type MathML interface {
+	ToMathML() string
+}
+
 func (p Polynomial) ToMathML() string {
 	result := "<mrow>"
 	for i := range p {

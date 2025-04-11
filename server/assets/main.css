@@ -54,3 +54,7 @@ textarea.source {
 button {
     font-size: inherit;
 }
+
+math {
+    font-size: 110%;
+}

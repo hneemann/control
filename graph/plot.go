@@ -98,7 +98,7 @@ func (p *Plot) DrawTo(canvas Canvas) {
 
 	xTrans, xTicks, xBounds := xAxis(innerRect.Min.X, innerRect.Max.X, xBounds,
 		func(width float64, digits int) bool {
-			return width > c.TextSize*float64(digits)*0.75
+			return width > c.TextSize*(float64(digits+2))*0.75
 		})
 	yTrans, yTicks, yBounds := yAxis(innerRect.Min.Y, innerRect.Max.Y, yBounds,
 		func(width float64, _ int) bool {
@@ -386,6 +386,21 @@ func NewCrossMarker(r float64) Path {
 		AddMode('L', Point{r, r}).
 		AddMode('M', Point{-r, r}).
 		AddMode('L', Point{r, -r})
+}
+
+func NewSquareMarker(r float64) Path {
+	return NewPath(true).
+		Add(Point{-r, -r}).
+		Add(Point{-r, r}).
+		Add(Point{r, r}).
+		Add(Point{r, -r})
+}
+
+func NewTriangleMarker(r float64) Path {
+	return NewPath(true).
+		Add(Point{0, r}).
+		Add(Point{-r, -r}).
+		Add(Point{r, -r})
 }
 
 type Cross struct {
