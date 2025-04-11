@@ -231,11 +231,11 @@ func (p StyleValue) GetType() value.Type {
 	return StyleType
 }
 
-var (
-	defStyle = StyleValue{Holder[*graph.Style]{graph.Black}, 0}
-)
-
 const defSize = 4
+
+var (
+	defStyle = StyleValue{Holder[*graph.Style]{graph.Black}, defSize}
+)
 
 func Setup(fg *value.FunctionGenerator) {
 	fg.RegisterMethods(PlotType, createPlotMethods())
