@@ -1,3 +1,5 @@
+
+
 let elementVisible = null
 let aCallOnHide = null
 
@@ -52,6 +54,8 @@ function loadExample(name) {
 function runSource() {
     let source = document.getElementById('source');
     let result = document.getElementById('result');
+
+    //result.innerHTML = generateOutput(source.value);
     fetchHelper("/execute/", source.value, a => result.innerHTML = a);
 }
 

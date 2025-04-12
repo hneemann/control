@@ -3,3 +3,5 @@
 /localhost.pem
 /go.work
 /go.work.sum
+/server/assets/generate.wasm
+/server/assets/wasm_exec.js
