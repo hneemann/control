@@ -266,6 +266,16 @@ func (l *Linear) Reduce() (*Linear, error) {
 	}
 }
 
+func (l *Linear) SetLatency(latency float64) *Linear {
+	return &Linear{
+		Numerator:   l.Numerator,
+		Denominator: l.Denominator,
+		zeros:       l.zeros,
+		poles:       l.poles,
+		Latency:     latency,
+	}
+}
+
 func (l *Linear) reduceFactor() *Linear {
 	f := l.zeros.factor / l.poles.factor
 	roundF := math.Round(f)
@@ -732,6 +742,14 @@ func (b *BodePlot) AddLegend(s string, style *graph.Style) {
 	b.amplitude.AddLegend(s, style, nil, nil)
 }
 
+func (b *BodePlot) SetAmplitudeBounds(min, max float64) {
+	b.amplitude.YBounds = graph.NewBounds(min, max)
+}
+
+func (b *BodePlot) SetPhaseBounds(min, max float64) {
+	b.phase.YBounds = graph.NewBounds(min, max)
+}
+
 func (l *Linear) AddToBode(b *BodePlot, style *graph.Style) {
 	cZero := l.Eval(complex(0, 0))
 	lastAngle := 0.0
@@ -788,7 +806,7 @@ func NewBode(wMin, wMax float64) *BodePlot {
 	return &b
 }
 
-func (l *Linear) Nyquist() (*graph.Plot, error) {
+func (l *Linear) Nyquist(alsoNeg bool) (*graph.Plot, error) {
 	cZero := l.Eval(complex(0, 0))
 	isZero := !(math.IsNaN(real(cZero)) || math.IsNaN(imag(cZero)))
 
@@ -797,20 +815,23 @@ func (l *Linear) Nyquist() (*graph.Plot, error) {
 
 	var cp []graph.PlotContent
 	cp = append(cp, graph.Cross{Style: graph.Gray})
-	pfPos := graph.NewLogParameterFunc(0.001, 100)
+	pfPos := graph.NewLogParameterFunc(0.001, 1000)
 	pfPos.Func = func(w float64) graph.Point {
 		c := l.Eval(complex(0, w))
 		return graph.Point{X: real(c), Y: imag(c)}
 	}
 	pfPos.Style = posStyle
-	pfNeg := graph.NewLogParameterFunc(0.001, 100)
-	pfNeg.Func = func(w float64) graph.Point {
-		c := l.Eval(complex(0, -w))
-		return graph.Point{X: real(c), Y: imag(c)}
+	cp = append(cp, pfPos)
+	if alsoNeg {
+		pfNeg := graph.NewLogParameterFunc(0.001, 1000)
+		pfNeg.Func = func(w float64) graph.Point {
+			c := l.Eval(complex(0, -w))
+			return graph.Point{X: real(c), Y: imag(c)}
+		}
+		pfNeg.Style = negStyle
+		cp = append(cp, pfNeg)
+		cp = append(cp, graph.Scatter{Points: []graph.Point{{X: -1, Y: 0}}, Shape: graph.NewCrossMarker(4), Style: graph.Red})
 	}
-	pfNeg.Style = negStyle
-	cp = append(cp, pfPos, pfNeg)
-	cp = append(cp, graph.Scatter{Points: []graph.Point{{X: -1, Y: 0}}, Shape: graph.NewCrossMarker(4), Style: graph.Red})
 	zeroMarker := graph.NewCircleMarker(4)
 	if isZero {
 		cp = append(cp, graph.Scatter{Points: []graph.Point{{X: real(cZero), Y: imag(cZero)}}, Shape: zeroMarker, Style: graph.Black})
@@ -821,7 +842,9 @@ func (l *Linear) Nyquist() (*graph.Plot, error) {
 	if isZero {
 		legend = append(legend, graph.Legend{Name: "ω=0", Shape: zeroMarker, ShapeStyle: graph.Black})
 	}
-	legend = append(legend, graph.Legend{Name: "ω<0", LineStyle: negStyle})
+	if alsoNeg {
+		legend = append(legend, graph.Legend{Name: "ω<0", LineStyle: negStyle})
+	}
 
 	return &graph.Plot{
 		XLabel:  "Re",

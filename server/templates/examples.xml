@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Examples>
+    <example name="Daten-Plot">let data = [
+  [0, 0],
+  [1, 1],
+  [2, 4],
+  [3, 9],
+  [4,16]
+];
+
+plot(
+ scatter( data )
+)</example>
+    <example name="Graph" desc="Funktionsplot">plot(
+ function( x->sin(pi*x) )
+)</example>
+    <example name="Graph 2" desc="Funktionsplotter">plot(
+ function( x->sin(pi*x), black, "sin(x)"),
+ function( x->cos(pi*x), blue,  "cos(x)")
+).xBounds(0,2).grid()</example>
+    <example name="Ortskurve" desc="Darstellung der Ortskurve">let s = lin();
+let g = 3/((s+1)*(s+2));
+
+g.nyquist()</example>
+    <example name="Ortskurve 2" desc="Darstellung der Ortskurve">let s = lin();
+let g = 3/((s+1)*(s+1.5)*(s+2));
+
+let w = 2;
+let c = g( cplx(0,w) );
+
+g.nyquist().add(scatter([[c.real(),c.imag()]],red,2,"ω="+w))</example>
+    <example name="Nyquist" desc="Anwendung des Nyquistkriteriums">let s = lin();
+let g = 6*(s+1)/((s-1)*(s-3));
+
+g.nyquist(true)</example>
+    <example name="Bode" desc="Darstellung eines Bode-Diagramms">let s = lin();
+let g = 3/((s+1)*(s+2));
+
+bode(0.01,100)
+  .add(g)</example>
+    <example name="Bode 2" desc="Darstellung mehrerer Kurven in einem Bode-Diagramm">let s = lin();
+let g = 3/((s+1)*(s+2));
+let k = 1.5*(1+1/(2.5*s));
+
+bode(0.01,100)
+  .add(g,   green, "G")
+  .add(k,   blue,  "K")
+  .add(k*g, black, "G0")</example>
+    <example name="pid" desc="Die pid-Funktion">[
+ ["pid(2,2)",   "=", pid(2,2)  ],
+ ["pid(2,3,1)", "=", pid(2,3,1)]
+]</example>
+    <example name="WOK" desc="Darstellung einer Wurzelortskurve">let s = lin();
+let g = 3/((s+1)*(s+2));
+let k = 1+1/(0.9*s);
+
+(k*g).evans(2)</example>
+
+</Examples>

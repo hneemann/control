@@ -19,9 +19,12 @@ func main() {
 	port := flag.Int("port", 8080, "port")
 	flag.Parse()
 
+	examples := server.ReadExamples()
+
 	http.Handle("/assets/", http.FileServer(http.FS(server.Assets)))
-	http.HandleFunc("/", server.MainView)
+	http.HandleFunc("/", server.CreateMain(examples))
 	http.HandleFunc("/execute/", server.Execute)
+	http.HandleFunc("/example/", server.CreateExamples(examples))
 
 	serv := &http.Server{Addr: ":" + strconv.Itoa(*port)}
 

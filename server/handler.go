@@ -2,6 +2,7 @@ package server
 
 import (
 	"embed"
+	"encoding/xml"
 	"github.com/hneemann/control/polynomial"
 	"github.com/hneemann/parser2/funcGen"
 	"github.com/hneemann/parser2/value"
@@ -10,6 +11,7 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"strings"
 )
 
 //go:embed assets/*
@@ -22,15 +24,57 @@ var templates = template.Must(template.New("").ParseFS(templateFS, "templates/*.
 
 var mainViewTemp = templates.Lookup("main.html")
 
-func MainView(writer http.ResponseWriter, request *http.Request) {
-	err := mainViewTemp.Execute(writer, nil)
+type Example struct {
+	Name string `xml:"name,attr"`
+	Desc string `xml:"desc,attr"`
+	Code string `xml:",chardata"`
+}
+
+type Examples struct {
+	Examples []Example `xml:"example"`
+}
+
+func ReadExamples() []Example {
+	file, err := templateFS.ReadFile("templates/examples.xml")
 	if err != nil {
-		log.Println(err)
+		panic(err)
+	}
+
+	var examples Examples
+	err = xml.Unmarshal(file, &examples)
+	if err != nil {
+		panic(err)
+	}
+
+	log.Printf("loaded %d examples", len(examples.Examples))
+
+	return examples.Examples
+}
+
+func CreateMain(examples []Example) http.HandlerFunc {
+	return func(writer http.ResponseWriter, request *http.Request) {
+		err := mainViewTemp.Execute(writer, examples)
+		if err != nil {
+			log.Println(err)
+		}
+	}
+}
+
+func CreateExamples(examples []Example) http.HandlerFunc {
+	return func(writer http.ResponseWriter, request *http.Request) {
+		name := strings.TrimSpace(request.FormValue("data"))
+		writer.Header().Set("Content-Type", "text; charset=utf-8")
+		for _, example := range examples {
+			if example.Name == name {
+				writer.Write([]byte(example.Code))
+				return
+			}
+		}
 	}
 }
 
 func Execute(writer http.ResponseWriter, request *http.Request) {
-	src := request.FormValue("src")
+	src := strings.TrimSpace(request.FormValue("data"))
 
 	var resHtml template.HTML
 	if src != "" {

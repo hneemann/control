@@ -165,6 +165,10 @@ func createPlotMethods() value.MethodMap {
 			}
 			return plot, nil
 		}).SetMethodDescription("label", "Sets the y-label"),
+		"grid": value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			plot.Value.Grid = graph.Gray
+			return plot, nil
+		}).SetMethodDescription("Adds a grid"),
 		"xBounds": value.MethodAtType(2, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if vmin, ok := stack.Get(1).ToFloat(); ok {
 				if vmax, ok := stack.Get(2).ToFloat(); ok {

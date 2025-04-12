@@ -58,3 +58,31 @@ button {
 math {
     font-size: 110%;
 }
+
+div.buttons {
+    display:flex;
+}
+
+.menu-content {
+    display: block;
+    visibility: hidden;
+    position: absolute;
+    top: 2ex;
+    right: 1ex;
+    background-color: #f1f1f1;
+    z-index: 1;
+}
+
+.menu-content a {
+    color: black;
+    padding: 1ex 2ex;
+    text-decoration: none;
+    display: block;
+    white-space: nowrap;
+    font-family: Arial, Helvetica, sans-serif;
+    z-index: 1;
+}
+
+.menu-content a:hover {
+    background-color: #ddd;
+}

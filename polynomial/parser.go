@@ -197,7 +197,11 @@ func linMethods() value.MethodMap {
 		}).SetMethodDescription("creates a string representation of the linear system"),
 		"evans": value.MethodAtType(1, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
 			if k, ok := st.Get(1).ToFloat(); ok {
-				plot, err := lin.CreateEvans(k)
+				red, err := lin.Reduce()
+				if err != nil {
+					return nil, err
+				}
+				plot, err := red.CreateEvans(k)
 				if err != nil {
 					return nil, err
 				}
@@ -205,13 +209,23 @@ func linMethods() value.MethodMap {
 			}
 			return nil, fmt.Errorf("evans requires a float")
 		}).SetMethodDescription("k_max", "creates an evans plot"),
-		"nyquist": value.MethodAtType(0, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
-			plot, err := lin.Nyquist()
+		"nyquist": value.MethodAtType(1, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
+			neg, ok := st.GetOptional(1, value.Bool(false)).ToBool()
+			if !ok {
+				return nil, fmt.Errorf("nyquist requires a boolean")
+			}
+			plot, err := lin.Nyquist(neg)
 			if err != nil {
 				return nil, err
 			}
 			return grParser.NewPlotValue(plot), nil
-		}).SetMethodDescription("creates a nyquist plot"),
+		}).SetMethodDescription("also negative", "creates a nyquist plot").VarArgsMethod(0, 1),
+		"setLatency": value.MethodAtType(1, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
+			if l, ok := st.Get(1).ToFloat(); ok {
+				return lin.SetLatency(l), nil
+			}
+			return nil, fmt.Errorf("addLatency requires a float")
+		}).SetMethodDescription("time", "sets the latency of the linear system"),
 	}
 }
 
@@ -325,6 +339,24 @@ func bodeMethods() value.MethodMap {
 			}
 			return nil, errors.New("add requires a linear system, a color and a legend")
 		}).SetMethodDescription("lin", "color", "label", "adds a linear system to the bode plot").VarArgsMethod(1, 3),
+		"aBounds": value.MethodAtType(2, func(bode BodePlotValue, st funcGen.Stack[value.Value]) (value.Value, error) {
+			if min, ok := st.Get(1).ToFloat(); ok {
+				if max, ok := st.Get(2).ToFloat(); ok {
+					bode.Value.SetAmplitudeBounds(min, max)
+					return bode, nil
+				}
+			}
+			return nil, errors.New("aBounds requires two float values")
+		}).SetMethodDescription("min", "max", "sets the amplitude bounds"),
+		"pBounds": value.MethodAtType(2, func(bode BodePlotValue, st funcGen.Stack[value.Value]) (value.Value, error) {
+			if min, ok := st.Get(1).ToFloat(); ok {
+				if max, ok := st.Get(2).ToFloat(); ok {
+					bode.Value.SetPhaseBounds(min, max)
+					return bode, nil
+				}
+			}
+			return nil, errors.New("pBounds requires two float values")
+		}).SetMethodDescription("min", "max", "sets the phase bounds"),
 	}
 }
 
@@ -401,7 +433,7 @@ var Parser = value.New().
 		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
 			if kp, ok := stack.Get(0).ToFloat(); ok {
 				if ti, ok := stack.Get(1).ToFloat(); ok {
-					if td, ok := stack.Get(2).ToFloat(); ok {
+					if td, ok := stack.GetOptional(2, value.Float(0)).ToFloat(); ok {
 						return PID(kp, ti, td), nil
 					}
 				}
@@ -410,7 +442,7 @@ var Parser = value.New().
 		},
 		Args:   3,
 		IsPure: true,
-	}.SetDescription("k_p", "T_I", "T_D", "a PID linear system")).
+	}.SetDescription("k_p", "T_I", "T_D", "a PID linear system").VarArgs(2, 3)).
 	AddStaticFunction("bode", funcGen.Function[value.Value]{
 		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
 			if wMin, ok := stack.Get(0).ToFloat(); ok {
