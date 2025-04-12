@@ -62,4 +62,18 @@ let k = 1+1/(0.9*s);
 
 (k*g).evans(2)</example>
 
+    <example name="Simulation" desc="Simulation des Systems">let s=lin();
+
+let g=70/((s+1)*(s+2)*(s+2.5));
+let k=0.2*(0.6*s+1)/(0.002*s+1);
+let k2=pid(0.09,2);
+let k3=pid(0.3,2,0.5);
+
+plot(
+  curve((k*g).loop().simStep(10),blue,"phasenanhebendes Korrekturglied"),
+  curve((k2*g).loop().simStep(10),black,"PI"),
+  curve((k3*g).loop().simStep(10),green,"PID")
+).xLabel("t").yLabel("y(t)").labelPos(5,0.87)</example>
+
+
 </Examples>

@@ -346,7 +346,7 @@ func Test_Nyquist1(t *testing.T) {
 	d := Must(Must(NewRoots().Real(1, -1)).Real(1, -3))
 	g := FromRoots(n, d)
 
-	pl, err := g.Nyquist()
+	pl, err := g.Nyquist(true)
 	assert.NoError(t, err)
 	err = exportPlot(pl, "nyquist1.svg")
 	assert.NoError(t, err)
@@ -357,7 +357,7 @@ func Test_Nyquist2(t *testing.T) {
 	d := Must(Must(Must(NewRoots().Complex(1, 2, 10)).Real(1, 4)).Complex(1, 0.2, 0.1))
 	g := FromRoots(n, d)
 
-	pl, err := g.Nyquist()
+	pl, err := g.Nyquist(true)
 	assert.NoError(t, err)
 	err = exportPlot(pl, "nyquist2.svg")
 	assert.NoError(t, err)
@@ -368,10 +368,95 @@ func Test_Nyquist3(t *testing.T) {
 	d := Must(Must(Must(Must(Must(NewRoots().Real(1, 1)).Real(1, 1)).Real(1, 1)).Real(1, 1)).Real(1, 1))
 	g := FromRoots(n, d)
 
-	pl, err := g.Nyquist()
+	pl, err := g.Nyquist(true)
 	assert.NoError(t, err)
 	//pl.BoundsModifier = graph.Zoom(graph.Point{}, 100)
 
 	err = exportPlot(pl, "nyquist3.svg")
 	assert.NoError(t, err)
+}
+
+func TestLinear_GetStateSpace_PT1(t *testing.T) {
+	type fields struct {
+	}
+	tests := []struct {
+		name  string
+		kp, T float64
+	}{
+		{"11", 1, 1},
+		{"21", 2, 1},
+		{"12", 1, 2},
+		{"22", 2, 2},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			lin := &Linear{
+				Numerator:   Polynomial{tt.kp},
+				Denominator: Polynomial{1, tt.T},
+			}
+			a, c, d, err := lin.GetStateSpaceRepresentation()
+			assert.NoError(t, err)
+			assert.EqualValues(t, Matrix{Vector{-1 / tt.T}}, a)
+			assert.EqualValues(t, Vector{tt.kp / tt.T}, c)
+			assert.EqualValues(t, 0, d)
+		})
+	}
+}
+
+func TestLinear_GetStateSpace_PT2(t *testing.T) {
+	type fields struct {
+	}
+	tests := []struct {
+		name     string
+		kp, T, d float64
+	}{
+		{"111", 1, 1, 1},
+		{"211", 2, 1, 1},
+		{"121", 1, 2, 1},
+		{"221", 2, 2, 1},
+		{"112", 1, 1, 2},
+		{"212", 2, 1, 2},
+		{"122", 1, 2, 2},
+		{"222", 2, 2, 2},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			lin := &Linear{
+				Numerator:   Polynomial{tt.kp},
+				Denominator: Polynomial{1, 2 * tt.d * tt.T, tt.T * tt.T},
+			}
+			a, c, d, err := lin.GetStateSpaceRepresentation()
+			assert.NoError(t, err)
+			assert.EqualValues(t, Matrix{Vector{0, 1}, Vector{-1 / (tt.T * tt.T), -2 * tt.d / tt.T}}, a)
+			assert.EqualValues(t, Vector{tt.kp / (tt.T * tt.T), 0}, c)
+			assert.EqualValues(t, 0, d)
+		})
+	}
+}
+
+func TestLinear_GetStateSpace_PHase(t *testing.T) {
+	type fields struct {
+	}
+	tests := []struct {
+		name   string
+		T1, T2 float64
+	}{
+		{"11", 1, 1},
+		{"21", 2, 1},
+		{"12", 1, 2},
+		{"22", 2, 2},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			lin := &Linear{
+				Numerator:   Polynomial{1, tt.T1},
+				Denominator: Polynomial{1, tt.T2},
+			}
+			a, c, d, err := lin.GetStateSpaceRepresentation()
+			assert.NoError(t, err)
+			assert.EqualValues(t, Matrix{Vector{-1 / tt.T2}}, a)
+			assert.EqualValues(t, Vector{1/tt.T2 - tt.T1/(tt.T2*tt.T2)}, c)
+			assert.EqualValues(t, tt.T1/tt.T2, d)
+		})
+	}
 }

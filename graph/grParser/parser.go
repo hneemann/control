@@ -187,6 +187,15 @@ func createPlotMethods() value.MethodMap {
 			}
 			return nil, fmt.Errorf("yBounds requires two float values")
 		}).SetMethodDescription("yMin", "yMax", "Sets the y-bounds"),
+		"labelPos": value.MethodAtType(2, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			if x, ok := stack.Get(1).ToFloat(); ok {
+				if y, ok := stack.Get(2).ToFloat(); ok {
+					plot.Value.SetLegendPosition(graph.Point{x, y})
+					return plot, nil
+				}
+			}
+			return nil, fmt.Errorf("yBounds requires two float values")
+		}).SetMethodDescription("yMin", "yMax", "Sets the y-bounds"),
 		"zoom": value.MethodAtType(3, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if x, ok := stack.Get(1).ToFloat(); ok {
 				if y, ok := stack.Get(2).ToFloat(); ok {
@@ -294,7 +303,7 @@ func Setup(fg *value.FunctionGenerator) {
 		},
 		Args:   4,
 		IsPure: true,
-	}.SetDescription("data", "color", "markerType", "legend", "Creates a new scatter dataset").VarArgs(1, 4))
+	}.SetDescription("data", "color", "markerType", "label", "Creates a new scatter dataset").VarArgs(1, 4))
 	fg.AddStaticFunction("curve", funcGen.Function[value.Value]{
 		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
 			var style *graph.Style
@@ -321,9 +330,9 @@ func Setup(fg *value.FunctionGenerator) {
 			s := graph.Curve{Path: path, Style: style}
 			return PlotContentValue{Holder[graph.PlotContent]{s}, graph.Legend{Name: leg, LineStyle: style}}, nil
 		},
-		Args:   2,
+		Args:   3,
 		IsPure: true,
-	}.SetDescription("data", "style", "Creates a new scatter dataset").VarArgs(1, 2))
+	}.SetDescription("data", "style", "label", "Creates a new scatter dataset").VarArgs(1, 3))
 	fg.AddStaticFunction("function", funcGen.Function[value.Value]{
 		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
 			var style *graph.Style
@@ -361,7 +370,7 @@ func Setup(fg *value.FunctionGenerator) {
 		},
 		Args:   -1,
 		IsPure: true,
-	}.SetDescription("data", "style", "leg", "Creates a new scatter dataset").VarArgs(1, 3))
+	}.SetDescription("data", "style", "label", "Creates a new scatter dataset").VarArgs(1, 3))
 	fg.AddStaticFunction("hint", funcGen.Function[value.Value]{
 		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
 			if x, ok := st.Get(0).ToFloat(); ok {

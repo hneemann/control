@@ -8,6 +8,7 @@ import (
 	"github.com/hneemann/parser2/funcGen"
 	"github.com/hneemann/parser2/value"
 	"html/template"
+	"math/cmplx"
 )
 
 const (
@@ -62,6 +63,9 @@ func cmplxMethods() value.MethodMap {
 		"imag": value.MethodAtType(0, func(c Complex, st funcGen.Stack[value.Value]) (value.Value, error) {
 			return value.Float(imag(c)), nil
 		}).SetMethodDescription("returns the imaginary component"),
+		"abs": value.MethodAtType(0, func(c Complex, st funcGen.Stack[value.Value]) (value.Value, error) {
+			return value.Float(cmplx.Abs(complex128(c))), nil
+		}).SetMethodDescription("returns the amplitude"),
 	}
 }
 
@@ -225,7 +229,38 @@ func linMethods() value.MethodMap {
 				return lin.SetLatency(l), nil
 			}
 			return nil, fmt.Errorf("addLatency requires a float")
-		}).SetMethodDescription("time", "sets the latency of the linear system"),
+		}).SetMethodDescription("time", "sets the latency of the transfer function"),
+		"simStep": value.MethodAtType(1, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
+			if tMax, ok := st.Get(1).ToFloat(); ok {
+				return lin.Simulate(tMax, func(t float64) float64 {
+					if t < 0 {
+						return 0
+					}
+					return 1
+				})
+			}
+			return nil, fmt.Errorf("sim requires a float")
+		}).SetMethodDescription("tMax", "simulates the transfer function with the step function as input signal"),
+		"sim": value.MethodAtType(2, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
+			if cl, ok := st.Get(1).ToClosure(); ok {
+				stack := funcGen.NewEmptyStack[value.Value]()
+				u := func(t float64) float64 {
+					r, err := cl.Eval(stack, value.Float(t))
+					if err != nil {
+						return 0
+					}
+					if c, ok := r.ToFloat(); ok {
+						return c
+					} else {
+						return 0
+					}
+				}
+				if tMax, ok := st.Get(2).ToFloat(); ok {
+					return lin.Simulate(tMax, u)
+				}
+			}
+			return nil, fmt.Errorf("sim requires a function and a float")
+		}).SetMethodDescription("u(t)", "tMax", "simulates the transfer function"),
 	}
 }
 

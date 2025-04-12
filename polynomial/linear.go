@@ -3,6 +3,7 @@ package polynomial
 import (
 	"fmt"
 	"github.com/hneemann/control/graph"
+	"github.com/hneemann/parser2/value"
 	"math"
 	"math/cmplx"
 	"sort"
@@ -862,5 +863,119 @@ func (l *Linear) refineNy(w0 float64, p0 graph.Point, w1 float64, p1 graph.Point
 		l.refineNy(w0, p0, w, p, path, depth-1)
 		*path = path.Add(p)
 		l.refineNy(w, p, w1, p1, path, depth-1)
+	}
+}
+
+func (l *Linear) Simulate(tMax float64, u func(float64) float64) (*value.List, error) {
+	if l.Latency != 0 {
+		return nil, fmt.Errorf("cannot simulate transfer function with latency")
+	}
+
+	if tMax <= 0 {
+		return nil, fmt.Errorf("tMax must be greater than 0")
+	}
+
+	a, c, d, err := l.GetStateSpaceRepresentation()
+	if err != nil {
+		return nil, err
+	}
+
+	const pointsVisible = 200
+	const pointsInternal = 10000
+	const skip = pointsInternal / pointsVisible
+	dt := tMax / pointsInternal
+	t := 0.0
+	n := len(l.Denominator) - 1
+	x := make(Vector, n)
+	xDot := make(Vector, n)
+
+	counter := 0
+
+	var li []value.Value
+	for t < tMax {
+		ut := u(t)
+		y := c.Mul(x) + d*ut
+		if counter%skip == 0 {
+			li = append(li, value.NewList(value.Float(t), value.Float(y)))
+		}
+		counter++
+		a.Mul(xDot, x)
+		xDot[n-1] += ut
+		x.Add(dt, xDot)
+		t += dt
+	}
+
+	return value.NewList(li...), nil
+}
+
+func (l *Linear) GetStateSpaceRepresentation() (Matrix, Vector, float64, error) {
+	n := len(l.Denominator) - 1
+
+	if len(l.Numerator) > n+1 {
+		return nil, nil, 0, fmt.Errorf("not a propper transfer function, numerator has higher order than denominator")
+	}
+
+	norm := l.Denominator[n]
+	a := NewMatrix(n, n)
+	for i := 1; i < n; i++ {
+		a[i-1][i] = 1
+	}
+	for i := 0; i < n; i++ {
+		a[n-1][i] = -l.Denominator[i] / norm
+	}
+	c := make(Vector, n)
+	d := 0.0
+	if len(l.Numerator) < n+1 {
+		for i := 0; i < len(l.Numerator); i++ {
+			c[i] = l.Numerator[i] / norm
+		}
+	} else {
+		d = l.Numerator[n] / norm
+		for i := 0; i < n; i++ {
+			c[i] = l.Numerator[i]/norm - d*l.Denominator[i]/norm
+		}
+	}
+
+	return a, c, d, nil
+}
+
+type Vector []float64
+
+func (v Vector) Mul(x Vector) float64 {
+	result := 0.0
+	for i := range v {
+		result += v[i] * x[i]
+	}
+	return result
+}
+
+func (v Vector) Add(dt float64, dot Vector) {
+	for i := range v {
+		v[i] += dt * dot[i]
+	}
+}
+
+type Matrix []Vector
+
+func NewMatrix(rows, cols int) Matrix {
+	m := make(Matrix, rows)
+	for i := range m {
+		m[i] = make(Vector, cols)
+	}
+	return m
+}
+
+func (m Matrix) String() string {
+	var str string
+	for _, row := range m {
+		str += fmt.Sprintf("%v\n", row)
+	}
+	return str
+
+}
+
+func (m Matrix) Mul(target Vector, x Vector) {
+	for i := 0; i < len(m); i++ {
+		target[i] = m[i].Mul(x)
 	}
 }
