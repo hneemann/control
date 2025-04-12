@@ -366,6 +366,49 @@ func (c Curve) DrawTo(_ *Plot, canvas Canvas) {
 	canvas.DrawPath(c.Path.Intersect(canvas.Rect()), c.Style)
 }
 
+type Hint struct {
+	Text        string
+	Pos         Point
+	Marker      Shape
+	MarkerStyle *Style
+}
+
+func (h Hint) PreferredBounds(xGiven, yGiven Bounds) (Bounds, Bounds) {
+	xGiven.Merge(h.Pos.X)
+	yGiven.Merge(h.Pos.Y)
+	return xGiven, yGiven
+}
+
+func (h Hint) DrawTo(_ *Plot, canvas Canvas) {
+	r := canvas.Rect()
+	if r.Inside(h.Pos) {
+		if h.Marker != nil && h.MarkerStyle != nil {
+			canvas.DrawShape(h.Pos, h.Marker, h.MarkerStyle)
+		}
+		tPos := h.Pos
+		var o Orientation
+		dx := r.Width() / 30
+		if r.IsInLeftHalf(h.Pos) {
+			o = Left
+			tPos = tPos.Add(Point{dx, 0})
+		} else {
+			o = Right
+			tPos = tPos.Add(Point{-dx, 0})
+		}
+		dy := r.Height() / 30
+		if r.IsInTopHalf(h.Pos) {
+			o |= Top
+			tPos = tPos.Add(Point{0, -dy})
+		} else {
+			o |= Bottom
+			tPos = tPos.Add(Point{0, dy})
+		}
+
+		canvas.DrawPath(NewLine(h.Pos, tPos), Black)
+		canvas.DrawText(tPos, h.Text, o, Black.Text(), canvas.Context().TextSize)
+	}
+}
+
 type circleMarker struct {
 	p1, p2 Point
 }

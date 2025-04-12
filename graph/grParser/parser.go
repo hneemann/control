@@ -274,20 +274,9 @@ func Setup(fg *value.FunctionGenerator) {
 			if !ok {
 				return nil, fmt.Errorf("scatter requires a style as second argument")
 			}
-			var marker graph.Shape
-			if markerInt, ok := st.GetOptional(2, value.Int(0)).ToInt(); ok {
-				switch markerInt {
-				case 1:
-					marker = graph.NewCircleMarker(styleVal.Size)
-				case 2:
-					marker = graph.NewSquareMarker(styleVal.Size)
-				case 3:
-					marker = graph.NewTriangleMarker(styleVal.Size)
-				default:
-					marker = graph.NewCrossMarker(styleVal.Size)
-				}
-			} else {
-				return nil, fmt.Errorf("scatter requires a int as third argument")
+			marker, err := getMarker(st, 2, styleVal.Size)
+			if err != nil {
+				return nil, err
 			}
 			leg := ""
 			if legVal, ok := st.GetOptional(3, value.String("")).(value.String); ok {
@@ -373,6 +362,55 @@ func Setup(fg *value.FunctionGenerator) {
 		Args:   -1,
 		IsPure: true,
 	}.SetDescription("data", "style", "leg", "Creates a new scatter dataset").VarArgs(1, 3))
+	fg.AddStaticFunction("hint", funcGen.Function[value.Value]{
+		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
+			if x, ok := st.Get(0).ToFloat(); ok {
+				if y, ok := st.Get(1).ToFloat(); ok {
+					if text, ok := st.Get(2).(value.String); ok {
+						hint := graph.Hint{
+							Text: string(text),
+							Pos:  graph.Point{x, y},
+						}
+						if st.Size() > 3 {
+							styleVal, ok := st.GetOptional(3, defStyle).(StyleValue)
+							if !ok {
+								return nil, fmt.Errorf("hint requires a style as fourth argument")
+							}
+							hint.MarkerStyle = styleVal.Value
+							marker, err := getMarker(st, 4, styleVal.Size)
+							if err != nil {
+								return nil, fmt.Errorf("hint requires a marker as fifth argument")
+							}
+							hint.Marker = marker
+						}
+						return PlotContentValue{Holder: Holder[graph.PlotContent]{hint}}, nil
+					}
+				}
+			}
+			return nil, fmt.Errorf("hint requires two floats and a string")
+		},
+		Args:   5,
+		IsPure: true,
+	}.SetDescription("x", "y", "text", "marker", "color", "Creates a new scatter dataset").VarArgs(3, 5))
+}
+
+func getMarker(st funcGen.Stack[value.Value], stPos int, size float64) (graph.Shape, error) {
+	var marker graph.Shape
+	if markerInt, ok := st.GetOptional(stPos, value.Int(0)).ToInt(); ok {
+		switch markerInt {
+		case 1:
+			marker = graph.NewCircleMarker(size)
+		case 2:
+			marker = graph.NewSquareMarker(size)
+		case 3:
+			marker = graph.NewTriangleMarker(size)
+		default:
+			marker = graph.NewCrossMarker(size)
+		}
+	} else {
+		return nil, fmt.Errorf("the marker is defined by an int")
+	}
+	return marker, nil
 }
 
 func toPointsList(st funcGen.Stack[value.Value]) ([]graph.Point, error) {

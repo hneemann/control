@@ -154,6 +154,14 @@ func (r Rect) Diagonal() float64 {
 
 const nearDiv = 20
 
+func (r Rect) IsInTopHalf(p Point) bool {
+	return p.Y > r.Min.Y+(r.Height()/2)
+}
+
+func (r Rect) IsInLeftHalf(p Point) bool {
+	return p.X < r.Min.X+(r.Width()/2)
+}
+
 func (r Rect) IsNearTop(p Point) bool {
 	return math.Abs(r.Max.Y-p.Y) < r.Height()/nearDiv
 }

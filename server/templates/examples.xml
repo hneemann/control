@@ -25,10 +25,16 @@ g.nyquist()</example>
     <example name="Ortskurve 2" desc="Darstellung der Ortskurve">let s = lin();
 let g = 3/((s+1)*(s+1.5)*(s+2));
 
-let w = 2;
-let c = g( cplx(0,w) );
+func h(w)
+  let c = g( cplx(0,w) );
+  hint(c.real(),c.imag(),"ω="+w,black,2);
 
-g.nyquist().add(scatter([[c.real(),c.imag()]],red,2,"ω="+w))</example>
+g.nyquist()
+  .add( h(0.1)  )
+  .add( h(0.25) )
+  .add( h(0.5)  )
+  .add( h(1)    )
+  .add( h(2)    )</example>
     <example name="Nyquist" desc="Anwendung des Nyquistkriteriums">let s = lin();
 let g = 6*(s+1)/((s-1)*(s-3));
 
