@@ -348,8 +348,8 @@ type BodePlotValue struct {
 	grParser.Holder[*BodePlot]
 }
 
-func (b BodePlotValue) DrawTo(canvas graph.Canvas) {
-	b.Value.DrawTo(canvas)
+func (b BodePlotValue) DrawTo(canvas graph.Canvas) error {
+	return b.Value.DrawTo(canvas)
 }
 
 func (b BodePlotValue) GetType() value.Type {

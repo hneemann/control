@@ -737,8 +737,8 @@ type BodePlot struct {
 	bode       graph.SplitImage
 }
 
-func (b *BodePlot) DrawTo(canvas graph.Canvas) {
-	b.bode.DrawTo(canvas)
+func (b *BodePlot) DrawTo(canvas graph.Canvas) error {
+	return b.bode.DrawTo(canvas)
 }
 
 func (b *BodePlot) AddLegend(s string, style *graph.Style) {
