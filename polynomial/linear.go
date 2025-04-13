@@ -866,7 +866,7 @@ func (l *Linear) refineNy(w0 float64, p0 graph.Point, w1 float64, p1 graph.Point
 	}
 }
 
-func (l *Linear) Simulate(tMax float64, u func(float64) float64) (*value.List, error) {
+func (l *Linear) Simulate(tMax float64, u func(float64) (float64, error)) (*value.List, error) {
 	if l.Latency != 0 {
 		return nil, fmt.Errorf("cannot simulate transfer function with latency")
 	}
@@ -881,7 +881,7 @@ func (l *Linear) Simulate(tMax float64, u func(float64) float64) (*value.List, e
 	}
 
 	const pointsVisible = 200
-	const pointsInternal = 10000
+	const pointsInternal = 40000
 	const skip = pointsInternal / pointsVisible
 	dt := tMax / pointsInternal
 	t := 0.0
@@ -893,7 +893,10 @@ func (l *Linear) Simulate(tMax float64, u func(float64) float64) (*value.List, e
 
 	var li []value.Value
 	for t < tMax {
-		ut := u(t)
+		ut, err := u(t)
+		if err != nil {
+			return nil, err
+		}
 		y := c.Mul(x) + d*ut
 		if counter%skip == 0 {
 			li = append(li, value.NewList(value.Float(t), value.Float(y)))
