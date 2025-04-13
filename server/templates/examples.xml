@@ -73,7 +73,24 @@ plot(
   curve((k*g).loop().simStep(10),blue,"phasenanhebendes Korrekturglied"),
   curve((k2*g).loop().simStep(10),black,"PI"),
   curve((k3*g).loop().simStep(10),green,"PID")
-).xLabel("t").yLabel("y(t)").labelPos(5,0.87)</example>
+).xLabel("t").yLabel("h(t)").labelPos(5,0.87)</example>
 
+        <example name="Simulation 2" desc="Simulation des Systems">func generateCalc(T,d)
+  t->if t&lt;0 then 0
+            else
+              let w0=1/T;
+              let we=w0*sqrt(1-d*d);
+              let phi=acos(d);
+              1-exp(-w0*d*t)/sqrt(1-d*d)*sin(we*t+phi);
+
+let s =lin();
+func generateSim(T,d)
+  let g=1/(T*T*s^2+2*T*d*s+1);
+  g.simStep(40);
+
+plot(
+ function( generateCalc(1,0.1), black, "calc"),
+ curve(    generateSim(1,0.1),  red,   "sim")
+)</example>
 
 </Examples>

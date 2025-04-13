@@ -369,11 +369,11 @@ func (p Polar) String() string {
 	return "Polar Grid"
 }
 
-func (p Polar) PreferredBounds(_, _ graph.Bounds) (x, y graph.Bounds) {
-	return graph.Bounds{}, graph.Bounds{}
+func (p Polar) PreferredBounds(_, _ graph.Bounds) (x, y graph.Bounds, e error) {
+	return graph.Bounds{}, graph.Bounds{}, nil
 }
 
-func (p Polar) DrawTo(plot *graph.Plot, canvas graph.Canvas) {
+func (p Polar) DrawTo(plot *graph.Plot, canvas graph.Canvas) error {
 	r := canvas.Rect()
 	text := graph.Gray.Text()
 
@@ -431,6 +431,7 @@ func (p Polar) DrawTo(plot *graph.Plot, canvas graph.Canvas) {
 		}
 		canvas.DrawPath(path.Intersect(r), graph.Gray.SetDash(4, 4))
 	}
+	return nil
 }
 
 type Asymptotes struct {
@@ -444,11 +445,11 @@ func (a Asymptotes) String() string {
 	return "Asymptotes"
 }
 
-func (a Asymptotes) PreferredBounds(_, _ graph.Bounds) (graph.Bounds, graph.Bounds) {
-	return graph.Bounds{}, graph.Bounds{}
+func (a Asymptotes) PreferredBounds(_, _ graph.Bounds) (graph.Bounds, graph.Bounds, error) {
+	return graph.Bounds{}, graph.Bounds{}, nil
 }
 
-func (a Asymptotes) DrawTo(_ *graph.Plot, canvas graph.Canvas) {
+func (a Asymptotes) DrawTo(_ *graph.Plot, canvas graph.Canvas) error {
 	r := canvas.Rect()
 	if r.Inside(a.Point) {
 		d := r.Diagonal()
@@ -465,6 +466,7 @@ func (a Asymptotes) DrawTo(_ *graph.Plot, canvas graph.Canvas) {
 			alpha += dAlpha
 		}
 	}
+	return nil
 }
 
 var styleList = []*graph.Style{
@@ -817,17 +819,17 @@ func (l *Linear) Nyquist(alsoNeg bool) (*graph.Plot, error) {
 	var cp []graph.PlotContent
 	cp = append(cp, graph.Cross{Style: graph.Gray})
 	pfPos := graph.NewLogParameterFunc(0.001, 1000)
-	pfPos.Func = func(w float64) graph.Point {
+	pfPos.Func = func(w float64) (graph.Point, error) {
 		c := l.Eval(complex(0, w))
-		return graph.Point{X: real(c), Y: imag(c)}
+		return graph.Point{X: real(c), Y: imag(c)}, nil
 	}
 	pfPos.Style = posStyle
 	cp = append(cp, pfPos)
 	if alsoNeg {
 		pfNeg := graph.NewLogParameterFunc(0.001, 1000)
-		pfNeg.Func = func(w float64) graph.Point {
+		pfNeg.Func = func(w float64) (graph.Point, error) {
 			c := l.Eval(complex(0, -w))
-			return graph.Point{X: real(c), Y: imag(c)}
+			return graph.Point{X: real(c), Y: imag(c)}, nil
 		}
 		pfNeg.Style = negStyle
 		cp = append(cp, pfNeg)

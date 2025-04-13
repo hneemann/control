@@ -78,6 +78,7 @@ func Execute(writer http.ResponseWriter, request *http.Request) {
 
 	var resHtml template.HTML
 	if src != "" {
+		log.Println("calculation on server")
 		fu, err := polynomial.Parser.Generate(src)
 		if err == nil {
 			var res value.Value

@@ -52,8 +52,8 @@ type PlotValue struct {
 	Holder[*graph.Plot]
 }
 
-func (p PlotValue) DrawTo(canvas graph.Canvas) {
-	p.Holder.Value.DrawTo(canvas)
+func (p PlotValue) DrawTo(canvas graph.Canvas) error {
+	return p.Holder.Value.DrawTo(canvas)
 }
 
 func NewPlotValue(plot *graph.Plot) PlotValue {
@@ -352,21 +352,21 @@ func Setup(fg *value.FunctionGenerator) {
 				return nil, fmt.Errorf("curver requires a string as third argument")
 			}
 
-			var f func(x float64) float64
+			var f func(x float64) (float64, error)
 			if cl, ok := st.Get(0).ToClosure(); ok {
 				if cl.Args != 1 {
 					return nil, fmt.Errorf("function requires a function with one argument")
 				}
 				stack := funcGen.NewEmptyStack[value.Value]()
-				f = func(x float64) float64 {
+				f = func(x float64) (float64, error) {
 					y, err := cl.Eval(stack, value.Float(x))
 					if err != nil {
-						return 0
+						return 0, err
 					}
 					if fl, ok := y.ToFloat(); ok {
-						return fl
+						return fl, nil
 					}
-					return 0
+					return 0, fmt.Errorf("function must return a float")
 				}
 			}
 			gf := graph.Function{Function: f, Style: style}
@@ -459,8 +459,11 @@ func HtmlExport(v value.Value) (template.HTML, bool, error) {
 	if p, ok := v.(graph.Image); ok {
 		var buffer bytes.Buffer
 		svg := graph.NewSVG(800, 600, 15, &buffer)
-		p.DrawTo(svg)
-		err := svg.Close()
+		err := p.DrawTo(svg)
+		if err != nil {
+			return "", true, err
+		}
+		err = svg.Close()
 		if err != nil {
 			return "", true, err
 		}

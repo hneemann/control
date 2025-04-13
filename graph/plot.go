@@ -49,7 +49,7 @@ type Plot struct {
 	trans          Transform
 }
 
-func (p *Plot) DrawTo(canvas Canvas) {
+func (p *Plot) DrawTo(canvas Canvas) error {
 	c := canvas.Context()
 	rect := canvas.Rect()
 	textStyle := Black.Text()
@@ -66,7 +66,10 @@ func (p *Plot) DrawTo(canvas Canvas) {
 		mergeX := !xBounds.valid
 		mergeY := !yBounds.valid
 		for _, plotContent := range p.Content {
-			x, y := plotContent.PreferredBounds(p.XBounds, p.YBounds)
+			x, y, err := plotContent.PreferredBounds(p.XBounds, p.YBounds)
+			if err != nil {
+				return err
+			}
 			if mergeX {
 				xBounds.MergeBounds(x)
 			}
@@ -154,7 +157,10 @@ func (p *Plot) DrawTo(canvas Canvas) {
 	canvas.DrawPath(innerRect.Poly(), Black.SetStrokeWidth(2))
 
 	for _, plotContent := range p.Content {
-		plotContent.DrawTo(p, inner)
+		err := plotContent.DrawTo(p, inner)
+		if err != nil {
+			return err
+		}
 	}
 
 	if len(p.Legend) > 0 {
@@ -176,6 +182,7 @@ func (p *Plot) DrawTo(canvas Canvas) {
 		}
 
 	}
+	return nil
 }
 
 func (p *Plot) GetXTicks() []Tick {
@@ -256,16 +263,18 @@ func (b *Bounds) MergeBounds(other Bounds) {
 }
 
 func (b *Bounds) Merge(p float64) {
-	if !b.valid {
-		b.valid = true
-		b.Min = p
-		b.Max = p
-	} else {
-		if p < b.Min {
+	if !math.IsNaN(p) {
+		if !b.valid {
+			b.valid = true
 			b.Min = p
-		}
-		if p > b.Max {
 			b.Max = p
+		} else {
+			if p < b.Min {
+				b.Min = p
+			}
+			if p > b.Max {
+				b.Max = p
+			}
 		}
 	}
 }
@@ -277,43 +286,56 @@ func (b *Bounds) Width() float64 {
 type PlotContent interface {
 	// DrawTo draws the content to the given canvas
 	// The *Plot is passed to allow the content to access the plot's properties
-	DrawTo(*Plot, Canvas)
+	DrawTo(*Plot, Canvas) error
 	// PreferredBounds returns the preferred bounds for the content
 	// The first bounds is the x-axis, the second is the y-axis
 	// The given bounds are valid if they are set by the user
-	PreferredBounds(xGiven, yGiven Bounds) (x, y Bounds)
+	PreferredBounds(xGiven, yGiven Bounds) (x, y Bounds, err error)
 }
 
 type Function struct {
-	Function func(x float64) float64
+	Function func(x float64) (float64, error)
 	Style    *Style
 }
 
-const functionSteps = 100
+const functionSteps = 200
 
-func (f Function) PreferredBounds(xGiven, _ Bounds) (Bounds, Bounds) {
+func (f Function) String() string {
+	return "Function"
+}
+
+func (f Function) PreferredBounds(xGiven, _ Bounds) (Bounds, Bounds, error) {
 	if xGiven.valid {
 		yBounds := Bounds{}
 		width := xGiven.Width()
 		for i := 0; i <= functionSteps; i++ {
 			x := xGiven.Min + width*float64(i)/functionSteps
-			yBounds.Merge(f.Function(x))
+			y, err := f.Function(x)
+			if err != nil {
+				return Bounds{}, Bounds{}, err
+			}
+			yBounds.Merge(y)
 		}
-		return Bounds{}, yBounds
+		return Bounds{}, yBounds, nil
 	}
-	return Bounds{}, Bounds{}
+	return Bounds{}, Bounds{}, nil
 }
 
-func (f Function) DrawTo(_ *Plot, canvas Canvas) {
+func (f Function) DrawTo(_ *Plot, canvas Canvas) error {
 	rect := canvas.Rect()
 
 	p := NewPath(false)
 	width := rect.Width()
 	for i := 0; i <= functionSteps; i++ {
 		x := rect.Min.X + width*float64(i)/functionSteps
-		p = p.Add(Point{x, f.Function(x)})
+		y, err := f.Function(x)
+		if err != nil {
+			return err
+		}
+		p = p.Add(Point{x, y})
 	}
 	canvas.DrawPath(p.Intersect(rect), f.Style)
+	return nil
 }
 
 type Scatter struct {
@@ -326,22 +348,23 @@ func (s Scatter) String() string {
 	return fmt.Sprintf("Scatter with %d points", len(s.Points))
 }
 
-func (s Scatter) PreferredBounds(_, _ Bounds) (Bounds, Bounds) {
+func (s Scatter) PreferredBounds(_, _ Bounds) (Bounds, Bounds, error) {
 	var x, y Bounds
 	for _, p := range s.Points {
 		x.Merge(p.X)
 		y.Merge(p.Y)
 	}
-	return x, y
+	return x, y, nil
 }
 
-func (s Scatter) DrawTo(_ *Plot, canvas Canvas) {
+func (s Scatter) DrawTo(_ *Plot, canvas Canvas) error {
 	rect := canvas.Rect()
 	for _, p := range s.Points {
 		if rect.Inside(p) {
 			canvas.DrawShape(p, s.Shape, s.Style)
 		}
 	}
+	return nil
 }
 
 type Curve struct {
@@ -353,17 +376,18 @@ func (c Curve) String() string {
 	return fmt.Sprintf("Curve with %d points", c.Path.Size())
 }
 
-func (c Curve) PreferredBounds(_, _ Bounds) (Bounds, Bounds) {
+func (c Curve) PreferredBounds(_, _ Bounds) (Bounds, Bounds, error) {
 	var x, y Bounds
 	for _, e := range c.Path.Elements {
 		x.Merge(e.Point.X)
 		y.Merge(e.Point.Y)
 	}
-	return x, y
+	return x, y, nil
 }
 
-func (c Curve) DrawTo(_ *Plot, canvas Canvas) {
+func (c Curve) DrawTo(_ *Plot, canvas Canvas) error {
 	canvas.DrawPath(c.Path.Intersect(canvas.Rect()), c.Style)
+	return nil
 }
 
 type Hint struct {
@@ -373,13 +397,13 @@ type Hint struct {
 	MarkerStyle *Style
 }
 
-func (h Hint) PreferredBounds(xGiven, yGiven Bounds) (Bounds, Bounds) {
+func (h Hint) PreferredBounds(xGiven, yGiven Bounds) (Bounds, Bounds, error) {
 	xGiven.Merge(h.Pos.X)
 	yGiven.Merge(h.Pos.Y)
-	return xGiven, yGiven
+	return xGiven, yGiven, nil
 }
 
-func (h Hint) DrawTo(_ *Plot, canvas Canvas) {
+func (h Hint) DrawTo(_ *Plot, canvas Canvas) error {
 	r := canvas.Rect()
 	if r.Inside(h.Pos) {
 		if h.Marker != nil && h.MarkerStyle != nil {
@@ -407,6 +431,7 @@ func (h Hint) DrawTo(_ *Plot, canvas Canvas) {
 		canvas.DrawPath(NewLine(h.Pos, tPos), Black)
 		canvas.DrawText(tPos, h.Text, o, Black.Text(), canvas.Context().TextSize)
 	}
+	return nil
 }
 
 type circleMarker struct {
@@ -454,11 +479,11 @@ func (c Cross) String() string {
 	return "coordinate cross"
 }
 
-func (c Cross) PreferredBounds(_, _ Bounds) (Bounds, Bounds) {
-	return Bounds{}, Bounds{}
+func (c Cross) PreferredBounds(_, _ Bounds) (Bounds, Bounds, error) {
+	return Bounds{}, Bounds{}, nil
 }
 
-func (c Cross) DrawTo(_ *Plot, canvas Canvas) {
+func (c Cross) DrawTo(_ *Plot, canvas Canvas) error {
 	r := canvas.Rect()
 	if r.Inside(Point{0, 0}) {
 		canvas.DrawPath(NewPath(false).
@@ -467,10 +492,11 @@ func (c Cross) DrawTo(_ *Plot, canvas Canvas) {
 			MoveTo(Point{0, r.Min.Y}).
 			Add(Point{0, r.Max.Y}), c.Style)
 	}
+	return nil
 }
 
 type ParameterFunc struct {
-	Func     func(t float64) Point
+	Func     func(t float64) (Point, error)
 	Points   int
 	InitialT float64
 	NextT    func(float64) float64
@@ -503,44 +529,67 @@ func (p *ParameterFunc) String() string {
 	return fmt.Sprintf("Parameter curve with %d points", p.Points)
 }
 
-func (p *ParameterFunc) PreferredBounds(_, _ Bounds) (Bounds, Bounds) {
+func (p *ParameterFunc) PreferredBounds(_, _ Bounds) (Bounds, Bounds, error) {
 	xb, yb := Bounds{}, Bounds{}
 	t := p.InitialT
 	for i := 0; i <= p.Points; i++ {
-		point := p.Func(t)
+		point, err := p.Func(t)
+		if err != nil {
+			return Bounds{}, Bounds{}, err
+		}
 		xb.Merge(point.X)
 		yb.Merge(point.Y)
 		t = p.NextT(t)
 	}
-	return xb, yb
+	return xb, yb, nil
 }
 
-func (p *ParameterFunc) DrawTo(plot *Plot, canvas Canvas) {
+func (p *ParameterFunc) DrawTo(plot *Plot, canvas Canvas) error {
 	r := canvas.Rect()
 	t0 := p.InitialT
-	p0 := p.Func(t0)
+	p0, err := p.Func(t0)
+	if err != nil {
+		return err
+	}
 	path := NewPath(false)
 	path = path.Add(p0)
 	t1 := t0
 	for i := 1; i <= p.Points; i++ {
 		t1 = p.NextT(t1)
-		p1 := p.Func(t1)
+		p1, err := p.Func(t1)
+		if err != nil {
+			return err
+		}
 		if r.Inside(p1) || r.Inside(p0) {
-			p.refine(t0, p0, t1, p1, &path, plot, 10)
+			err = p.refine(t0, p0, t1, p1, &path, plot, 10)
+			if err != nil {
+				return err
+			}
 		}
 		path = path.Add(p1)
 		t0 = t1
 		p0 = p1
 	}
 	canvas.DrawPath(path.Intersect(canvas.Rect()), p.Style)
+	return nil
 }
 
-func (p *ParameterFunc) refine(w0 float64, p0 Point, w1 float64, p1 Point, path *Path, plot *Plot, depth int) {
+func (p *ParameterFunc) refine(w0 float64, p0 Point, w1 float64, p1 Point, path *Path, plot *Plot, depth int) error {
 	if plot.Dist(p0, p1) > 5 && depth > 0 {
 		w := (w0 + w1) / 2
-		point := p.Func(w)
-		p.refine(w0, p0, w, point, path, plot, depth-1)
+		point, err := p.Func(w)
+		if err != nil {
+			return err
+		}
+		err = p.refine(w0, p0, w, point, path, plot, depth-1)
+		if err != nil {
+			return err
+		}
 		*path = path.Add(point)
-		p.refine(w, point, w1, p1, path, plot, depth-1)
+		err = p.refine(w, point, w1, p1, path, plot, depth-1)
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }

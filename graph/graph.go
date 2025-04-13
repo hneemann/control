@@ -160,7 +160,7 @@ type Context struct {
 }
 
 type Image interface {
-	DrawTo(canvas Canvas)
+	DrawTo(canvas Canvas) error
 }
 
 type Canvas interface {
@@ -177,14 +177,17 @@ type SplitImage struct {
 	Bottom Image
 }
 
-func (s SplitImage) DrawTo(canvas Canvas) {
+func (s SplitImage) DrawTo(canvas Canvas) error {
 	r := canvas.Rect()
 	half := (r.Min.Y + r.Max.Y) / 2
 	bottom := TransformCanvas{transform: Translate(Point{0, 0}), parent: canvas, size: Rect{Min: r.Min, Max: Point{r.Max.X, half}}}
 	top := TransformCanvas{transform: Translate(Point{0, 0}), parent: canvas, size: Rect{Min: Point{r.Min.X, half}, Max: r.Max}}
 
-	s.Top.DrawTo(top)
-	s.Bottom.DrawTo(bottom)
+	err := s.Top.DrawTo(top)
+	if err != nil {
+		return err
+	}
+	return s.Bottom.DrawTo(bottom)
 }
 
 type PathElement struct {
