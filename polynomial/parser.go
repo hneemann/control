@@ -232,11 +232,11 @@ func linMethods() value.MethodMap {
 		}).SetMethodDescription("time", "sets the latency of the transfer function"),
 		"simStep": value.MethodAtType(1, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
 			if tMax, ok := st.Get(1).ToFloat(); ok {
-				return lin.Simulate(tMax, func(t float64) float64 {
+				return lin.Simulate(tMax, func(t float64) (float64, error) {
 					if t < 0 {
-						return 0
+						return 0, nil
 					}
-					return 1
+					return 1, nil
 				})
 			}
 			return nil, fmt.Errorf("sim requires a float")
@@ -244,15 +244,15 @@ func linMethods() value.MethodMap {
 		"sim": value.MethodAtType(2, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
 			if cl, ok := st.Get(1).ToClosure(); ok {
 				stack := funcGen.NewEmptyStack[value.Value]()
-				u := func(t float64) float64 {
+				u := func(t float64) (float64, error) {
 					r, err := cl.Eval(stack, value.Float(t))
 					if err != nil {
-						return 0
+						return 0, err
 					}
 					if c, ok := r.ToFloat(); ok {
-						return c
+						return c, nil
 					} else {
-						return 0
+						return 0, fmt.Errorf("u(t) needs to return a float")
 					}
 				}
 				if tMax, ok := st.Get(2).ToFloat(); ok {
