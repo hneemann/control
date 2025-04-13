@@ -71,6 +71,10 @@ func (p PlotValue) add(pc value.Value) error {
 			p.Holder.Value.AddLegend(c.legend.Name, c.legend.LineStyle, c.legend.Shape, c.legend.ShapeStyle)
 		}
 		return nil
+	} else if l, ok := pc.ToList(); ok {
+		return l.Iterate(funcGen.NewEmptyStack[value.Value](), func(v value.Value) error {
+			return p.add(v)
+		})
 	}
 	return errors.New("value is not a plot content")
 }
