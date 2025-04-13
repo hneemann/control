@@ -39,7 +39,7 @@ string(gw)
 `, res: value.String("30*(s²+s+0.5)/(4s⁴+18s³+62.4s²+54.6s+21.2)")}, // externally checked
 
 		{name: "evans", exp: "let s=lin(); let g=(s+1)/(s^2+4*s+5); string(g.evans(10))", res: value.String("Plot: Polar Grid, Asymptotes, Curve with 157 points, Curve with 157 points, Scatter with 2 points, Scatter with 1 points")},
-		{name: "nyquist", exp: "let s=lin(); let g=(s+1)/(s^2+4*s+5); string(g.nyquist())", res: value.String("Plot: coordinate cross, Parameter curve with 100 points, Scatter with 1 points")},
+		{name: "nyquist", exp: "let s=lin(); let g=(s+1)/(s^2+4*s+5); string(g.nyquist())", res: value.String("Plot: coordinate cross, Parameter curve with 200 points, Scatter with 1 points")},
 	}
 
 	for _, test := range tests {
@@ -133,6 +133,43 @@ func TestSVGExport(t *testing.T) {
 				assert.True(t, strings.Contains(string(expHtml), "<svg class=\"svg\""), test.exp)
 
 				//fmt.Println(expHtml)
+			}
+		})
+	}
+}
+
+func TestNelderMead(t *testing.T) {
+	tests := []struct {
+		name string
+		exp  string
+		res  []float64
+	}{
+		{name: "simple", exp: "nelderMead((x,y)->sqr(x-2)+sqr(y-1),[0.1,0.1])", res: []float64{2, 1}},
+	}
+
+	for _, test := range tests {
+		test := test
+		t.Run(test.name, func(t *testing.T) {
+			fu, err := Parser.Generate(test.exp)
+			assert.NoError(t, err, test.exp)
+			if fu != nil {
+				stack := funcGen.NewEmptyStack[value.Value]()
+				res, err := fu(stack)
+				assert.NoError(t, err, test.exp)
+				m, ok := res.ToMap()
+				assert.True(t, ok, test.exp)
+				vec, ok := m.Get("vec")
+				assert.True(t, ok, test.exp)
+				vecList, ok := vec.ToList()
+				assert.True(t, ok, test.exp)
+				floatList, err := vecList.ToSlice(stack)
+				assert.NoError(t, err, test.exp)
+				assert.Equal(t, len(test.res), len(floatList), test.exp)
+				for i, v := range test.res {
+					f, ok := floatList[i].ToFloat()
+					assert.True(t, ok, test.exp)
+					assert.InDelta(t, v, f, 1e-6, test.exp)
+				}
 			}
 		})
 	}

@@ -93,4 +93,31 @@ plot(
  curve(    generateSim(1,0.1),  red,   "sim")
 )</example>
 
+            <example name="Nelder&amp;Mead" desc="Nichtlineare Optimierung">let s = lin();
+let g=70/((s+1)*(s+2)*(s+2.5));
+
+func getSim(kp,Ti,Td)
+  (pid(kp,Ti,Td)*g).loop().simStep(10);
+
+func targetMax(kp,Ti,Td)
+  let sim=getSim(kp,Ti,Td);
+  abs(sim.minMax(e->e[1]).max-1.04);
+
+func targetTime(kp,Ti,Td)
+  let sim=getSim(kp,Ti,Td);
+  sim.accept(e->abs(e[1]-1)>0.04).last()[0];
+
+func getCurve(kp,Ti,Td, color)
+  curve( getSim(kp,Ti,Td),color,sprintf("kp=%.2f, Ti=%.2f, Td=%.2f",kp,Ti,Td));
+
+let o1 = nelderMead(targetMax,[0.7,1,1]);
+let o2 = nelderMead(targetTime,o1.vec);
+
+[o2.min,
+plot(
+  getCurve(1.0,1.0,1.0,black),
+  getCurve(o1.vec[0],o1.vec[1],o1.vec[2],blue),
+  getCurve(o2.vec[0],o2.vec[1],o2.vec[2],red)
+).xLabel("t").yLabel("h(t)").grid()]</example>
+
 </Examples>

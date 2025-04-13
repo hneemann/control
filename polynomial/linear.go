@@ -882,7 +882,7 @@ func (l *Linear) Simulate(tMax float64, u func(float64) (float64, error)) (*valu
 		return nil, err
 	}
 
-	const pointsVisible = 200
+	const pointsVisible = 400
 	const pointsInternal = 40000
 	const skip = pointsInternal / pointsVisible
 	dt := tMax / pointsInternal

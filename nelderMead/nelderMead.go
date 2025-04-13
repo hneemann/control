@@ -87,14 +87,18 @@ func (s Simplex) size() float64 {
 	return delta
 }
 
-type Solvable func(Vector) float64
+type Solvable func(Vector) (float64, error)
 
-func (s Solvable) operate(ofs, a, b Vector, mul float64) SimplexPoint {
+func (s Solvable) operate(ofs, a, b Vector, mul float64) (SimplexPoint, error) {
 	x := ofs.Add(a.Sub(b).Mul(mul))
+	val, err := s(x)
+	if err != nil {
+		return SimplexPoint{}, err
+	}
 	return SimplexPoint{
 		x:   x,
-		val: s(x),
-	}
+		val: val,
+	}, nil
 }
 
 func NelderMead(f Solvable, initial []Vector, maxIter int) (Vector, float64, error) {
@@ -104,9 +108,13 @@ func NelderMead(f Solvable, initial []Vector, maxIter int) (Vector, float64, err
 func NelderMeadBase(f Solvable, initial []Vector, alpha, gamma, beta, sigma float64, maxIter int) (Vector, float64, error) {
 	s := make(Simplex, len(initial))
 	for i := range s {
+		val, err := f(initial[i])
+		if err != nil {
+			return nil, 0, err
+		}
 		s[i] = SimplexPoint{
 			x:   initial[i],
-			val: f(initial[i]),
+			val: val,
 		}
 	}
 	n := len(s) - 1
@@ -135,10 +143,16 @@ func NelderMeadBase(f Solvable, initial []Vector, alpha, gamma, beta, sigma floa
 		mid = mid.Mul(1 / float64(n))
 
 		// reflection
-		sr := f.operate(mid, mid, s[n].x, alpha)
+		sr, err := f.operate(mid, mid, s[n].x, alpha)
+		if err != nil {
+			return nil, 0, err
+		}
 		if sr.val < s[0].val {
 			// expansion
-			xe := f.operate(sr.x, sr.x, mid, gamma)
+			xe, err := f.operate(sr.x, sr.x, mid, gamma)
+			if err != nil {
+				return nil, 0, err
+			}
 			if xe.val < sr.val {
 				s[n] = xe
 			} else {
@@ -154,13 +168,19 @@ func NelderMeadBase(f Solvable, initial []Vector, alpha, gamma, beta, sigma floa
 					h = sr
 				}
 
-				sc := f.operate(h.x, mid, h.x, beta)
+				sc, err := f.operate(h.x, mid, h.x, beta)
+				if err != nil {
+					return nil, 0, err
+				}
 				if sc.val < s[n].val {
 					s[n] = sc
 				} else {
 					// shrink
 					for i := 1; i <= n; i++ {
-						s[i] = f.operate(s[i].x, s[0].x, s[i].x, sigma)
+						s[i], err = f.operate(s[i].x, s[0].x, s[i].x, sigma)
+						if err != nil {
+							return nil, 0, err
+						}
 					}
 				}
 			}

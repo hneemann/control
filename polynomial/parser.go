@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/hneemann/control/graph"
 	"github.com/hneemann/control/graph/grParser"
+	"github.com/hneemann/control/nelderMead"
 	"github.com/hneemann/parser2/funcGen"
 	"github.com/hneemann/parser2/value"
 	"html/template"
@@ -491,6 +492,22 @@ var Parser = value.New().
 		Args:   2,
 		IsPure: true,
 	}.SetDescription("wMin", "wMax", "creates a bode plot")).
+	AddStaticFunction("nelderMead", funcGen.Function[value.Value]{
+		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
+			if fu, ok := stack.Get(0).ToClosure(); ok {
+				if initial, ok := stack.Get(1).ToList(); ok {
+					if delta, ok := stack.GetOptional(2, value.NewList()).ToList(); ok {
+						if iter, ok := stack.GetOptional(3, value.Int(1000)).ToInt(); ok {
+							return NelderMead(fu, initial, delta, iter)
+						}
+					}
+				}
+			}
+			return nil, fmt.Errorf("nelderMead requires a function, two lists and an int")
+		},
+		Args:   4,
+		IsPure: true,
+	}.SetDescription("func", "initial", "delta", "iterations", "calculates a Nelder&Mead optimization").VarArgs(2, 4)).
 	AddOp("*", true, complexOperation("*", linOperation("*", value.Mul,
 		func(a, b *Linear) (value.Value, error) {
 			return a.Mul(b), nil
@@ -508,7 +525,7 @@ var Parser = value.New().
 		return a - b, nil
 	})).
 	AddOp("^", false, exp).
-	AddOp("+", true, complexOperation("+", linOperation("+", value.Add,
+	AddOp("+", false, complexOperation("+", linOperation("+", value.Add,
 		func(a, b *Linear) (value.Value, error) {
 			return a.Add(b)
 		},
@@ -518,6 +535,85 @@ var Parser = value.New().
 		return a + b, nil
 	},
 	))
+
+func NelderMead(fu funcGen.Function[value.Value], initial *value.List, delta *value.List, iter int) (value.Value, error) {
+	stack := funcGen.NewEmptyStack[value.Value]()
+	f := func(vector nelderMead.Vector) (float64, error) {
+		var args []value.Value
+		for _, v := range vector {
+			args = append(args, value.Float(v))
+		}
+		r, err := fu.EvalSt(stack, args...)
+		if err != nil {
+			return 0, err
+		}
+		if f, ok := r.ToFloat(); ok {
+			return f, nil
+		}
+		return 0, fmt.Errorf("function must return a float")
+	}
+
+	cent, err := initial.ToSlice(stack)
+	if err != nil {
+		return nil, err
+	}
+	delt, err := delta.ToSlice(stack)
+	if err != nil {
+		return nil, err
+	}
+	if len(cent) != fu.Args {
+		return nil, fmt.Errorf("initial vector must have %d elements", fu.Args)
+	}
+	if len(delt) > 0 && len(delt) != fu.Args {
+		return nil, fmt.Errorf("delta vector must have %d elements", fu.Args)
+	}
+	init := make(nelderMead.Vector, len(cent))
+	for i := 0; i < len(cent); i++ {
+		if f, ok := cent[i].ToFloat(); !ok {
+			return nil, fmt.Errorf("initial vector must have float elements")
+		} else {
+			init[i] = f
+		}
+	}
+	del := make(nelderMead.Vector, len(cent))
+	if len(delt) > 0 {
+		for i := 0; i < len(cent); i++ {
+			if f, ok := delt[i].ToFloat(); !ok {
+				return nil, fmt.Errorf("initial vector must have float elements")
+			} else {
+				del[i] = f
+			}
+		}
+	} else {
+		for i := 0; i < len(cent); i++ {
+			if init[i] == 0 {
+				del[i] = 0.1
+			} else {
+				del[i] = 0.1 * init[i]
+			}
+		}
+	}
+
+	initTable := make([]nelderMead.Vector, len(init)+1)
+	for i := 0; i <= len(init); i++ {
+		initTable[i] = make(nelderMead.Vector, len(init))
+		copy(initTable[i], init)
+		if i > 0 {
+			initTable[i][i-1] += del[i-1]
+		}
+	}
+
+	vec, minVal, err := nelderMead.NelderMead(f, initTable, iter)
+	if err != nil {
+		return nil, err
+	}
+
+	m := make(map[string]value.Value)
+	m["vec"] = value.NewListConvert(func(i float64) value.Value { return value.Float(i) }, vec)
+	m["min"] = value.Float(minVal)
+
+	return value.NewMap(value.RealMap(m)), nil
+}
 
 func HtmlExport(v value.Value) (template.HTML, bool, error) {
 	ret, ok, err := grParser.HtmlExport(v)

@@ -7,8 +7,8 @@ import (
 
 func TestNelderMead(t *testing.T) {
 
-	solvable := func(v Vector) float64 {
-		return sqr(v[0]-1) + sqr(v[1]-2) + 1
+	solvable := func(v Vector) (float64, error) {
+		return sqr(v[0]-1) + sqr(v[1]-2) + 1, nil
 	}
 	min, val, err := NelderMead(solvable, []Vector{{0, 0}, {0, 1}, {1, 0}}, 100)
 	assert.Nil(t, err)
