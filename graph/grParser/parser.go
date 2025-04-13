@@ -173,6 +173,13 @@ func createPlotMethods() value.MethodMap {
 			plot.Value.Grid = graph.Gray
 			return plot, nil
 		}).SetMethodDescription("Adds a grid"),
+		"leftBorder": value.MethodAtType(1, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			if b, ok := stack.Get(1).ToInt(); ok {
+				plot.Value.LeftBorder = b
+				return plot, nil
+			}
+			return nil, fmt.Errorf("leftBorder requires an int value")
+		}).SetMethodDescription("chars", "Sets the width of the left border measured in characters"),
 		"xBounds": value.MethodAtType(2, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if vmin, ok := stack.Get(1).ToFloat(); ok {
 				if vmax, ok := stack.Get(2).ToFloat(); ok {
@@ -213,7 +220,7 @@ func createPlotMethods() value.MethodMap {
 				}
 			}
 			return nil, fmt.Errorf("zoom requires three float values")
-		}).SetMethodDescription("x", "y", "factor", "Zoom at the given point point"),
+		}).SetMethodDescription("x", "y", "factor", "Zoom at the given point by the given factor"),
 	}
 }
 

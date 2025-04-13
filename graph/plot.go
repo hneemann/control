@@ -36,6 +36,7 @@ type Plot struct {
 	YAxis          Axis
 	XBounds        Bounds
 	YBounds        Bounds
+	LeftBorder     int
 	Grid           *Style
 	XLabel         string
 	YLabel         string
@@ -54,8 +55,13 @@ func (p *Plot) DrawTo(canvas Canvas) error {
 	rect := canvas.Rect()
 	textStyle := Black.Text()
 
+	b := p.LeftBorder
+	if b <= 0 {
+		b = 5
+	}
+
 	innerRect := Rect{
-		Min: Point{rect.Min.X + c.TextSize*5, rect.Min.Y + c.TextSize*2},
+		Min: Point{rect.Min.X + c.TextSize*float64(b)*0.75, rect.Min.Y + c.TextSize*2},
 		Max: Point{rect.Max.X - c.TextSize, rect.Max.Y - c.TextSize},
 	}
 
