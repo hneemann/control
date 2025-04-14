@@ -13,10 +13,10 @@ import (
 )
 
 const (
-	BodeValueType       value.Type = 16
-	ComplexValueType    value.Type = 17
-	PolynomialValueType value.Type = 18
-	LinearValueType     value.Type = 19
+	BodeValueType       value.Type = 30
+	ComplexValueType    value.Type = 31
+	PolynomialValueType value.Type = 32
+	LinearValueType     value.Type = 33
 )
 
 type Complex complex128

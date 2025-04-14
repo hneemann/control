@@ -43,9 +43,9 @@ func (w Holder[T]) ToClosure() (funcGen.Function[value.Value], bool) {
 }
 
 const (
-	PlotType        value.Type = 10
-	PlotContentType value.Type = 11
-	StyleType       value.Type = 12
+	PlotType        value.Type = 20
+	PlotContentType value.Type = 21
+	StyleType       value.Type = 22
 )
 
 type PlotValue struct {
