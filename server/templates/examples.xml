@@ -105,7 +105,8 @@ func targetMax(kp,Ti,Td)
 
 func targetTime(kp,Ti,Td)
   let sim=getSim(kp,Ti,Td);
-  sim.accept(e->abs(e[1]-1)>0.04).last()[0];
+  let line=sim.combine((a,b)->{a:a,b:b}).accept(e->abs(e.a[1]-1)>0.04 &amp; abs(e.b[1]-1)&lt;=0.04).last();
+  line.a[0]+(1-line.a[1])/(line.b[1]-line.a[1])*(line.b[0]-line.a[0]);
 
 func getCurve(kp,Ti,Td, color)
   curve( getSim(kp,Ti,Td),color,sprintf("kp=%.2f, Ti=%.2f, Td=%.2f",kp,Ti,Td));
@@ -113,11 +114,10 @@ func getCurve(kp,Ti,Td, color)
 let o1 = nelderMead(targetMax,[0.7,1,1]);
 let o2 = nelderMead(targetTime,o1.vec);
 
-[o2.min,
 plot(
   getCurve(1.0,1.0,1.0,black),
   getCurve(o1.vec[0],o1.vec[1],o1.vec[2],blue),
   getCurve(o2.vec[0],o2.vec[1],o2.vec[2],red)
-).xLabel("t").yLabel("h(t)").grid()]</example>
+).xLabel("t").yLabel("h(t)").grid()</example>
 
 </Examples>

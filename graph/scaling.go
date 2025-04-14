@@ -18,7 +18,7 @@ const expand = 0.02
 type Axis func(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth) (func(v float64) float64, []Tick, Bounds)
 
 func LinearAxis(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth) (func(v float64) float64, []Tick, Bounds) {
-	delta := (bounds.Max - bounds.Min) * expand
+	delta := bounds.Width() * expand
 	if delta < 1e-10 {
 		delta = 1 + expand
 	}
@@ -182,7 +182,7 @@ func CreateFixedStepAxis(step float64) Axis {
 		delta := step
 		var start float64
 		for {
-			start = math.Floor(bounds.Min/delta) * delta
+			start = math.Floor(b.Min/delta) * delta
 			next := start + delta
 
 			widthAvail := tr(next) - tr(start)
@@ -193,13 +193,13 @@ func CreateFixedStepAxis(step float64) Axis {
 		}
 
 		ticks = []Tick{}
-		pos := math.Ceil(bounds.Min/step) * step
+		pos := math.Ceil(b.Min/step) * step
 
 		for pos > start {
 			start += delta
 		}
 
-		for pos <= bounds.Max {
+		for pos <= b.Max {
 			if math.Abs(pos-start) < 1e-6 {
 				ticks = append(ticks, Tick{pos, fmt.Sprintf("%g", pos)})
 				start += delta
