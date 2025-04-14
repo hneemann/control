@@ -48,8 +48,8 @@ func ReadExamples() []Example {
 
 	for i := range examples.Examples {
 		c := examples.Examples[i].Code
-		strings.ReplaceAll(c, "\r", "")
-		strings.ReplaceAll(c, "\n", "\r\n")
+		c = strings.ReplaceAll(c, "\r", "")
+		c = strings.ReplaceAll(c, "\n", "\r\n")
 		examples.Examples[i].Code = c
 	}
 
