@@ -626,8 +626,7 @@ func NelderMead(fu funcGen.Function[value.Value], initial *value.List, delta *va
 }
 
 func HtmlExport(v value.Value) (template.HTML, bool, error) {
-	ret, ok, err := grParser.HtmlExport(v)
-	if ok {
+	if ret, ok, err := grParser.HtmlExport(v); ok {
 		return ret, ok, err
 	}
 	if lin, ok := v.(MathML); ok {

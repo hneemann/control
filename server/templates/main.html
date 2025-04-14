@@ -19,7 +19,7 @@
 <div id="result" onclick="runSource();"></div>
 <div>
   <div >
-    <textarea class="source" rows="15" type="text" id="source" placeholder="Enter script here">let s=lin();
+    <textarea class="source" rows="15" type="text" id="source" placeholder="Enter script" onkeyup="updateRow()" onclick="updateRow()">let s=lin();
 let g=3/((s+1)*(s+2));
 g.nyquist()</textarea>
   </div>
@@ -27,6 +27,7 @@ g.nyquist()</textarea>
       <button id="run" onclick="runSource();">Ausführen</button>
       <!--button id="save" onclick="runSource();">Speichern</button>
       <button id="load" onclick="runSource();">Öffnen</button-->
+      <span style="display:inline-block;width:2em;text-align:center;margin-top:0.2em;" id="row">1</span>
       <button id="example" style="margin-left:auto" onclick="showPopUpById('examples');">Beispiele</button>
   </div>
 </div>

@@ -1,4 +1,16 @@
-
+function updateRow() {
+    let textareaElement = document.getElementById("source");
+    let rowElement = document.getElementById("row");
+    let line = 1;
+    let selectionStart = textareaElement.selectionStart;
+    let text = textareaElement.value;
+    for (let i = 0; i < selectionStart; i++) {
+        if (text[i] === '\n') {
+            line++;
+        }
+    }
+    rowElement.textContent = line.toString();
+}
 
 let elementVisible = null
 let aCallOnHide = null
