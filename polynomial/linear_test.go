@@ -333,9 +333,9 @@ func Test_Bode1(t *testing.T) {
 	k := PID(10, 2, 1)
 
 	pl := NewBode(0.01, 100)
-	g.AddToBode(pl, graph.Green)
-	k.AddToBode(pl, graph.Blue)
-	k.Mul(g).AddToBode(pl, graph.Black)
+	g.AddToBode(pl, graph.Green, 0)
+	k.AddToBode(pl, graph.Blue, 0)
+	k.Mul(g).AddToBode(pl, graph.Black, 0)
 
 	err := exportPlot(pl, "bode1.svg")
 	assert.NoError(t, err)

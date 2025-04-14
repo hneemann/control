@@ -12,16 +12,12 @@ import (
 type Linear struct {
 	Numerator   Polynomial
 	Denominator Polynomial
-	Latency     float64
 	zeros       Roots
 	poles       Roots
 }
 
 func (l *Linear) Eval(s complex128) complex128 {
 	c := l.Numerator.EvalCplx(s) / l.Denominator.EvalCplx(s)
-	if l.Latency != 0 {
-		c *= cmplx.Exp(complex(-l.Latency, 0) * s)
-	}
 	return c
 }
 
@@ -31,9 +27,6 @@ func (l *Linear) Equals(b *Linear) bool {
 
 func (l *Linear) StringPoly(parse bool) string {
 	s := "(" + l.Numerator.intString(parse) + ")/(" + l.Denominator.intString(parse) + ")"
-	if l.Latency > 0 {
-		s += fmt.Sprintf("*exp(-%gs)", l.Latency)
-	}
 	return s
 }
 
@@ -59,9 +52,6 @@ func (l *Linear) intString(parse bool) string {
 		d = l.Denominator.intString(parse)
 	}
 	sp := fmt.Sprintf("%s/(%s)", n, d)
-	if l.Latency != 0 {
-		sp += fmt.Sprintf("*exp(-%gs)", l.Latency)
-	}
 	return sp
 }
 
@@ -150,7 +140,6 @@ func (l *Linear) Mul(b *Linear) *Linear {
 		Denominator: d,
 		zeros:       z,
 		poles:       p,
-		Latency:     l.Latency + b.Latency,
 	}).reduce()
 }
 
@@ -160,7 +149,6 @@ func (l *Linear) Inv() *Linear {
 		Denominator: l.Numerator,
 		zeros:       l.poles,
 		poles:       l.zeros,
-		Latency:     -l.Latency,
 	}
 }
 
@@ -188,14 +176,10 @@ func (l *Linear) Div(b *Linear) *Linear {
 		Denominator: d,
 		zeros:       z,
 		poles:       p,
-		Latency:     l.Latency - b.Latency,
 	}).reduce()
 }
 
 func (l *Linear) Add(b *Linear) (*Linear, error) {
-	if l.Latency != 0 || b.Latency != 0 {
-		return nil, fmt.Errorf("cannot add linear systems with latency")
-	}
 	n := l.Numerator.Mul(b.Denominator).Add(b.Numerator.Mul(l.Denominator))
 	if l.polesCalculated() && b.polesCalculated() {
 		adr, _ := l.Poles()
@@ -230,10 +214,6 @@ func NewConst(c float64) *Linear {
 }
 
 func (l *Linear) Loop() (*Linear, error) {
-	if l.Latency != 0 {
-		return nil, fmt.Errorf("cannot close the loop if linear system has a latency")
-	}
-
 	l, err := l.Reduce()
 	if err != nil {
 		return nil, err
@@ -260,20 +240,9 @@ func (l *Linear) Reduce() (*Linear, error) {
 			Denominator: np.Polynomial(),
 			zeros:       nz,
 			poles:       np,
-			Latency:     l.Latency,
 		}).reduceFactor(), nil
 	} else {
 		return l.reduceFactor(), nil
-	}
-}
-
-func (l *Linear) SetLatency(latency float64) *Linear {
-	return &Linear{
-		Numerator:   l.Numerator,
-		Denominator: l.Denominator,
-		zeros:       l.zeros,
-		poles:       l.poles,
-		Latency:     latency,
 	}
 }
 
@@ -288,7 +257,6 @@ func (l *Linear) reduceFactor() *Linear {
 			Denominator: np.Polynomial(),
 			zeros:       nz,
 			poles:       np,
-			Latency:     l.Latency,
 		}
 	}
 	return l
@@ -298,7 +266,6 @@ func (l *Linear) MulFloat(f float64) *Linear {
 	return &Linear{
 		Numerator:   l.Numerator.MulFloat(f),
 		Denominator: l.Denominator,
-		Latency:     l.Latency,
 	}
 }
 
@@ -479,10 +446,6 @@ var styleList = []*graph.Style{
 }
 
 func (l *Linear) CreateEvans(kMax float64) (*graph.Plot, error) {
-	if l.Latency != 0 {
-		return nil, fmt.Errorf("cannot create Evans plot for linear system with latency")
-	}
-
 	p, err := l.Poles()
 	if err != nil {
 		return nil, err
@@ -753,7 +716,7 @@ func (b *BodePlot) SetPhaseBounds(min, max float64) {
 	b.phase.YBounds = graph.NewBounds(min, max)
 }
 
-func (l *Linear) AddToBode(b *BodePlot, style *graph.Style) {
+func (l *Linear) AddToBode(b *BodePlot, style *graph.Style, latency float64) {
 	cZero := l.Eval(complex(0, 0))
 	lastAngle := 0.0
 	if real(cZero) < 0 {
@@ -765,6 +728,7 @@ func (l *Linear) AddToBode(b *BodePlot, style *graph.Style) {
 	phase := graph.NewPath(false)
 	angleOffset := 0.0
 	w := b.wMin
+	latFactor := latency / math.Pi * 180
 	for i := 0; i <= 100; i++ {
 		c := l.Eval(complex(0, w))
 		amp := cmplx.Abs(c)
@@ -778,7 +742,7 @@ func (l *Linear) AddToBode(b *BodePlot, style *graph.Style) {
 
 		lastAngle = angle
 		amplitude = amplitude.Add(graph.Point{X: w, Y: 20 * math.Log10(amp)})
-		phase = phase.Add(graph.Point{X: w, Y: angle + angleOffset})
+		phase = phase.Add(graph.Point{X: w, Y: angle + angleOffset - latFactor*w})
 		w *= wMult
 	}
 
@@ -869,10 +833,6 @@ func (l *Linear) refineNy(w0 float64, p0 graph.Point, w1 float64, p1 graph.Point
 }
 
 func (l *Linear) Simulate(tMax float64, u func(float64) (float64, error)) (*value.List, error) {
-	if l.Latency != 0 {
-		return nil, fmt.Errorf("cannot simulate transfer function with latency")
-	}
-
 	if tMax <= 0 {
 		return nil, fmt.Errorf("tMax must be greater than 0")
 	}
