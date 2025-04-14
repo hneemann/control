@@ -94,28 +94,32 @@ plot(
 )</example>
 
             <example name="Nelder&amp;Mead" desc="Nichtlineare Optimierung">let s = lin();
-let g=70/((s+1)*(s+2)*(s+2.5));
+let g = 70/((s+1)*(s+2)*(s+2.5));
 
 func getSim(kp,Ti,Td)
   (pid(kp,Ti,Td)*g).loop().simStep(10);
 
 func targetMax(kp,Ti,Td)
-  let sim=getSim(kp,Ti,Td);
+  let sim = getSim(kp,Ti,Td);
   abs(sim.minMax(e->e[1]).max-1.04);
 
 func targetTime(kp,Ti,Td)
-  let sim=getSim(kp,Ti,Td);
-  let line=sim.combine((a,b)->{a:a,b:b}).accept(e->abs(e.a[1]-1)>0.04 &amp; abs(e.b[1]-1)&lt;=0.04).last();
+  let sim  = getSim(kp,Ti,Td);
+  let line = sim.combine((a,b)->{a:a,b:b}).accept(e->abs(e.a[1]-1)>0.04 &amp; abs(e.b[1]-1)&lt;=0.04).last();
   line.a[0]+(1-line.a[1])/(line.b[1]-line.a[1])*(line.b[0]-line.a[0]);
 
 func getCurve(kp,Ti,Td, color)
-  curve( getSim(kp,Ti,Td),color,sprintf("kp=%.2f, Ti=%.2f, Td=%.2f",kp,Ti,Td));
+  curve( getSim(kp,Ti,Td),color,sprintf("kp=%.2f, Ti=%.2f, Td=%.2f",kp,Ti,Td) );
 
-let o1 = nelderMead(targetMax,[0.7,1,1]);
+let kp = 0.7;
+let Ti = 1.0;
+let Td = 1.0;
+
+let o1 = nelderMead(targetMax,[kp,Ti,Td]);
 let o2 = nelderMead(targetTime,o1.vec);
 
 plot(
-  getCurve(1.0,1.0,1.0,black),
+  getCurve(kp,Ti,Td,black),
   getCurve(o1.vec[0],o1.vec[1],o1.vec[2],blue),
   getCurve(o2.vec[0],o2.vec[1],o2.vec[2],red)
 ).xLabel("t").yLabel("h(t)").grid()</example>
