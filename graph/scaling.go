@@ -3,6 +3,7 @@ package graph
 import (
 	"fmt"
 	"math"
+	"time"
 )
 
 // CheckTextWidth returns true if a number with the given number of digits fits in the given space width
@@ -211,5 +212,219 @@ func CreateFixedStepAxis(step float64) Axis {
 
 		return tr, ticks, b
 	}
+}
 
+func CreateDateAxis(formatDate, formatMin string) Axis {
+	return func(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth) (func(v float64) float64, []Tick, Bounds) {
+		delta := bounds.Width() * expand
+		if delta < 1e-10 {
+			delta = 1 + expand
+		}
+		eMin := bounds.Min - delta
+		eMax := bounds.Max + delta
+		tr := func(v float64) float64 {
+			return (v-eMin)/(eMax-eMin)*(maxParent-minParent) + minParent
+		}
+
+		t := time.UnixMilli(int64(eMin) * 1000)
+		index := 0
+		for {
+			i := incrementerList[index]
+			t0 := i.norm(t)
+			t1 := i.inc(t0)
+			var digits int
+			if i.showMinutes() {
+				digits = len(t0.Format(formatMin))
+			} else {
+				digits = len(t0.Format(formatDate))
+			}
+			if ctw(tr(float64(t1.UnixMilli())/1000)-tr(float64(t0.UnixMilli())/1000), digits+2) || index == len(incrementerList)-1 {
+				break
+			}
+			index++
+		}
+
+		incr := incrementerList[index]
+		tickTime := incr.norm(t)
+
+		for tickTime.Before(t) {
+			tickTime = incr.inc(tickTime)
+		}
+
+		t = time.UnixMilli(int64(eMax) * 1000)
+		ticks := []Tick{}
+		for tickTime.Before(t) {
+			tick := Tick{Position: float64(tickTime.UnixMilli()) / 1000}
+			if incr.showMinutes() {
+				tick.Label = tickTime.Format(formatMin)
+			} else {
+				tick.Label = tickTime.Format(formatDate)
+			}
+			ticks = append(ticks, tick)
+			tickTime = incr.inc(tickTime)
+		}
+
+		return tr, ticks, Bounds{bounds.valid, eMin, eMax}
+	}
+}
+
+var incrementerList = []incrementer{
+	minuteIncrementer(1),
+	minuteIncrementer(5),
+	minuteIncrementer(10),
+	minuteIncrementer(15),
+	minuteIncrementer(30),
+	hourIncrementer(1),
+	hourIncrementer(2),
+	hourIncrementer(3),
+	hourIncrementer(6),
+	hourIncrementer(12),
+	dayIncrementer(1),
+	dayIncrementer(2),
+	dayIncrementer(4),
+	monthIncrementer(1),
+	monthIncrementer(2),
+	monthIncrementer(3),
+	monthIncrementer(4),
+	monthIncrementer(6),
+	yearIncrementer(1),
+	yearIncrementer(2),
+	yearIncrementer(5),
+	yearIncrementer(10),
+	yearIncrementer(20),
+}
+
+type incrementer interface {
+	inc(time.Time) time.Time
+	norm(time.Time) time.Time
+	showMinutes() bool
+}
+
+type minuteIncrementer int
+
+func (m minuteIncrementer) showMinutes() bool {
+	return true
+}
+
+func (m minuteIncrementer) inc(t time.Time) time.Time {
+	return t.Add(time.Minute * time.Duration(m))
+}
+
+func (m minuteIncrementer) norm(t time.Time) time.Time {
+	y := t.Year()
+	mo := t.Month()
+	d := t.Day()
+	h := t.Hour()
+	mi := t.Minute()
+	mi = (mi / int(m)) * int(m)
+	return time.Date(y, mo, d, h, mi, 0, 0, t.Location())
+}
+
+type hourIncrementer int
+
+func (h hourIncrementer) showMinutes() bool {
+	return true
+}
+
+func (h hourIncrementer) inc(t time.Time) time.Time {
+	y := t.Year()
+	mo := t.Month()
+	d := t.Day()
+	ho := t.Hour()
+	return time.Date(y, mo, d, ho+int(h), 0, 0, 0, t.Location())
+}
+
+func (h hourIncrementer) norm(t time.Time) time.Time {
+	y := t.Year()
+	mo := t.Month()
+	d := t.Day()
+	ho := t.Hour()
+	ho = (ho / int(h)) * int(h)
+	return time.Date(y, mo, d, ho, 0, 0, 0, t.Location())
+}
+
+type dayIncrementer int
+
+func (d dayIncrementer) showMinutes() bool {
+	return false
+}
+
+func (d dayIncrementer) inc(t time.Time) time.Time {
+	y := t.Year()
+	mo := t.Month()
+	da := t.Day()
+	ti := time.Date(y, mo, da+2*int(d), 0, 0, 0, 0, t.Location())
+	if ti.Month() != mo && ti.Day() > 1 {
+		return time.Date(y, mo+1, 1, 0, 0, 0, 0, t.Location())
+	} else {
+		return time.Date(y, mo, da+int(d), 0, 0, 0, 0, t.Location())
+	}
+}
+
+func (d dayIncrementer) norm(t time.Time) time.Time {
+	y := t.Year()
+	mo := t.Month()
+	return time.Date(y, mo, 1, 0, 0, 0, 0, t.Location())
+}
+
+type weekIncrementer int
+
+func (w weekIncrementer) showMinutes() bool {
+	return false
+}
+
+func (w weekIncrementer) inc(t time.Time) time.Time {
+	y := t.Year()
+	mo := t.Month()
+	da := t.Day() + 7
+	if da > 28 {
+		da = 1
+		mo += 1
+	}
+	return time.Date(y, mo, da, 0, 0, 0, 0, t.Location())
+}
+
+func (w weekIncrementer) norm(t time.Time) time.Time {
+	y := t.Year()
+	mo := t.Month()
+	da := ((t.Day()-1)/7/int(w))*int(w) + 1
+	if da > 28 {
+		da = 1
+		mo += 1
+	}
+	return time.Date(y, mo, da, 0, 0, 0, 0, t.Location())
+}
+
+type monthIncrementer int
+
+func (m monthIncrementer) showMinutes() bool {
+	return false
+}
+
+func (m monthIncrementer) inc(t time.Time) time.Time {
+	y := t.Year()
+	mo := t.Month() + time.Month(m)
+	return time.Date(y, mo, 1, 0, 0, 0, 0, t.Location())
+}
+
+func (m monthIncrementer) norm(t time.Time) time.Time {
+	y := t.Year()
+	mo := ((t.Month()-1)/time.Month(m))*time.Month(m) + 1
+	return time.Date(y, mo, 1, 0, 0, 0, 0, t.Location())
+}
+
+type yearIncrementer int
+
+func (y yearIncrementer) showMinutes() bool {
+	return false
+}
+
+func (y yearIncrementer) inc(t time.Time) time.Time {
+	ye := t.Year() + int(y)
+	return time.Date(ye, 1, 1, 0, 0, 0, 0, t.Location())
+}
+
+func (y yearIncrementer) norm(t time.Time) time.Time {
+	ye := (t.Year() / int(y)) * int(y)
+	return time.Date(ye, 1, 1, 0, 0, 0, 0, t.Location())
 }

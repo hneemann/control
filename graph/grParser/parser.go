@@ -180,6 +180,22 @@ func createPlotMethods() value.MethodMap {
 			plot.Value.Grid = graph.Gray
 			return plot, nil
 		}).SetMethodDescription("Adds a grid"),
+		"xLog": value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			plot.Value.XAxis = graph.LogAxis
+			return plot, nil
+		}).SetMethodDescription("Enables log scaling of x-Axis"),
+		"yLog": value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			plot.Value.YAxis = graph.LogAxis
+			return plot, nil
+		}).SetMethodDescription("Enables log scaling of y-Axis"),
+		"xDate": value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			plot.Value.XAxis = graph.CreateDateAxis("02.01.06", "02.01.06 15:04")
+			return plot, nil
+		}).SetMethodDescription("Enables date scaling of x-Axis"),
+		"yDate": value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			plot.Value.YAxis = graph.CreateDateAxis("02.01.06", "02.01.06 15:04")
+			return plot, nil
+		}).SetMethodDescription("Enables date scaling of y-Axis"),
 		"leftBorder": value.MethodAtType(1, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if b, ok := stack.Get(1).ToInt(); ok {
 				plot.Value.LeftBorder = b
@@ -288,6 +304,16 @@ func Setup(fg *value.FunctionGenerator) {
 	fg.AddConstant("cyan", StyleValue{Holder[*graph.Style]{graph.Cyan}, defSize})
 	fg.AddConstant("magenta", StyleValue{Holder[*graph.Style]{graph.Magenta}, defSize})
 	fg.AddConstant("yellow", StyleValue{Holder[*graph.Style]{graph.Yellow}, defSize})
+	fg.AddStaticFunction("dColor", funcGen.Function[value.Value]{
+		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
+			if i, ok := st.Get(0).ToInt(); ok {
+				return StyleValue{Holder[*graph.Style]{graph.GetColor(i)}, defSize}, nil
+			}
+			return nil, fmt.Errorf("color requires an int")
+		},
+		Args:   1,
+		IsPure: true,
+	}.SetDescription("int", "Gets the color with number int"))
 	fg.AddStaticFunction("plot", funcGen.Function[value.Value]{
 		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
 			p := NewPlotValue(&graph.Plot{})
@@ -431,7 +457,7 @@ func Setup(fg *value.FunctionGenerator) {
 func getMarker(st funcGen.Stack[value.Value], stPos int, size float64) (graph.Shape, error) {
 	var marker graph.Shape
 	if markerInt, ok := st.GetOptional(stPos, value.Int(0)).ToInt(); ok {
-		switch markerInt {
+		switch markerInt % 4 {
 		case 1:
 			marker = graph.NewCircleMarker(size)
 		case 2:
