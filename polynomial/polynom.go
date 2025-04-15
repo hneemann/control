@@ -185,6 +185,18 @@ func (p Polynomial) MulFloat(f float64) Polynomial {
 	return mp
 }
 
+func (p Polynomial) Normalize() Polynomial {
+	poly := p.Canonical()
+	mp := make(Polynomial, len(poly))
+
+	dif := poly[len(poly)-1]
+	copy(mp, poly)
+	for i := range poly {
+		mp[i] /= dif
+	}
+	return mp
+}
+
 func (p Polynomial) Div(q Polynomial) (Polynomial, Polynomial, error) {
 	if q.Degree() < 0 {
 		return Polynomial{}, Polynomial{}, errors.New("division by zero")
@@ -299,11 +311,12 @@ func (p Polynomial) Roots() (Roots, error) {
 }
 
 func (p Polynomial) findRootNewton(zEps float64) (complex128, error) {
-	deriv := p.Derivative()
+	pSearch := p.Normalize()
+	deriv := pSearch.Derivative()
 	var lastz complex128
 	z := complex(1, 1)
 	for range 1000 {
-		f := p.EvalCplx(z)
+		f := pSearch.EvalCplx(z)
 		if cmplx.Abs(z-lastz) < eps && cmplx.Abs(f) < zEps {
 			return cleanUp(z), nil
 		}
