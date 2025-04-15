@@ -17,8 +17,8 @@ func TestRect_Intersect(t *testing.T) {
 		cut    IntersectResult
 	}{
 		{"inside", p(-0.5, -0.5), p(0.5, 0.5), p(-0.5, -0.5), p(0.5, 0.5), BothInside},
-		{"Outside", p(-1.5, -0.5), p(-1.5, 0.5), p(-1.5, -0.5), p(-1.5, 0.5), BothOutside},
-		{"Outside2", p(1.5, -0.5), p(1.5, 0.5), p(1.5, -0.5), p(1.5, 0.5), BothOutside},
+		{"Outside", p(-1.5, -0.5), p(-1.5, 0.5), p(-1.5, -0.5), p(-1.5, 0.5), CompleteOutside},
+		{"Outside2", p(1.5, -0.5), p(1.5, 0.5), p(1.5, -0.5), p(1.5, 0.5), CompleteOutside},
 		{"oneInside0", p(0, 0), p(3, 0), p(0, 0), p(1, 0), P1Outside},
 		{"oneInside1", p(-3, 0), p(0, 0), p(-1, 0), p(0, 0), P0Outside},
 		{"oneInside2", p(0, 0), p(0, 3), p(0, 0), p(0, 1), P1Outside},
@@ -28,8 +28,8 @@ func TestRect_Intersect(t *testing.T) {
 		{"both outside3", p(-1, -2), p(2, 1), p(0, -1), p(1, 0), BothOutsidePartVisible},
 		{"both outside4", p(-2, -1), p(1, 2), p(-1, 0), p(0, 1), BothOutsidePartVisible},
 
-		{"both outside nc", p(-2.1, 0), p(0, 2.1), p(-2.1, 0), p(0, 2.1), BothOutside},
-		{"both outside nc", p(-2, 0), p(0, 2), p(-2, 0), p(0, 2), BothOutside},
+		{"both outside nc", p(-2.1, 0), p(0, 2.1), p(-2.1, 0), p(0, 2.1), CompleteOutside},
+		{"both outside nc", p(-2, 0), p(0, 2), p(-2, 0), p(0, 2), CompleteOutside},
 	}
 	r := NewRect(-1, 1, -1, 1)
 	for _, tt := range tests {

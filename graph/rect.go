@@ -36,8 +36,8 @@ func (r Rect) Inside(p Point) bool {
 type IntersectResult int
 
 const (
-	BothInside IntersectResult = iota
-	BothOutside
+	CompleteOutside IntersectResult = iota
+	BothInside
 	P0Outside
 	P1Outside
 	BothOutsidePartVisible
@@ -52,7 +52,7 @@ func (r Rect) Intersect(p0, p1 Point) (Point, Point, IntersectResult) {
 	}
 	if f0&f1 != 0 {
 		// completely outside, no intersection possible
-		return p0, p1, BothOutside
+		return p0, p1, CompleteOutside
 	}
 	if f0 == 0 {
 		// p0 inside, p1 outside
@@ -69,7 +69,7 @@ func (r Rect) Intersect(p0, p1 Point) (Point, Point, IntersectResult) {
 	s = appendCut(s, cutBothOutside(p0, p1, Point{r.Min.X, r.Max.Y}, Point{r.Max.X, r.Max.Y}))
 
 	if len(s) != 2 || math.Abs(s[0]-s[1]) < 1e-6 {
-		return p0, p1, BothOutside
+		return p0, p1, CompleteOutside
 	}
 
 	if s[0] > s[1] {
@@ -148,8 +148,10 @@ func (r Rect) Height() float64 {
 	return r.Max.Y - r.Min.Y
 }
 
-func (r Rect) Diagonal() float64 {
-	return math.Sqrt(sqr(r.Max.Y-r.Min.Y) + sqr(r.Max.X-r.Min.X))
+func (r Rect) MaxDistance(p Point) float64 {
+	d := math.Max(p.DistTo(r.Min), p.DistTo(r.Max))
+	d = math.Max(d, p.DistTo(Point{X: r.Min.X, Y: r.Max.Y}))
+	return math.Max(d, p.DistTo(Point{X: r.Max.X, Y: r.Min.Y}))
 }
 
 const nearDiv = 20

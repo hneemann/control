@@ -346,14 +346,14 @@ func (p Polar) DrawTo(plot *graph.Plot, canvas graph.Canvas) error {
 
 	textSize := canvas.Context().TextSize * 0.8
 	var zero graph.Point
-	if r.Inside(zero) {
-		radius := r.Diagonal()
-		path := graph.NewPath(false)
-		for angle := 90; angle <= 270; angle += 15 {
-			if angle != 180 {
-				x := radius * math.Cos(float64(angle)*math.Pi/180)
-				y := radius * math.Sin(float64(angle)*math.Pi/180)
-				ep := r.Cut(zero, graph.Point{X: x, Y: y})
+
+	radius := r.MaxDistance(zero)
+	path := graph.NewPath(false)
+	for angle := 90; angle <= 270; angle += 15 {
+		if angle != 180 {
+			x := radius * math.Cos(float64(angle)*math.Pi/180)
+			y := radius * math.Sin(float64(angle)*math.Pi/180)
+			if ap, ep, state := r.Intersect(zero, graph.Point{X: x, Y: y}); state != graph.CompleteOutside {
 				var o graph.Orientation
 				if r.IsNearTop(ep) {
 					o |= graph.Top
@@ -371,12 +371,14 @@ func (p Polar) DrawTo(plot *graph.Plot, canvas graph.Canvas) error {
 				} else {
 					o |= graph.Right
 				}
-				path = path.MoveTo(zero).LineTo(ep)
+				path = path.MoveTo(ap).LineTo(ep)
 				canvas.DrawText(ep, fmt.Sprintf("%d°", 180-angle), o, text, textSize)
 			}
 		}
-		canvas.DrawPath(path, graph.Gray.SetDash(4, 4))
+	}
+	canvas.DrawPath(path, graph.Gray.SetDash(4, 4))
 
+	if r.Inside(zero) {
 		path = graph.NewPath(false)
 		for _, t := range plot.GetXTicks() {
 			radius = -t.Position
@@ -418,20 +420,21 @@ func (a Asymptotes) PreferredBounds(_, _ graph.Bounds) (graph.Bounds, graph.Boun
 
 func (a Asymptotes) DrawTo(_ *graph.Plot, canvas graph.Canvas) error {
 	r := canvas.Rect()
-	if r.Inside(a.Point) {
-		d := r.Diagonal()
 
-		dAlpha := 2 * math.Pi / float64(a.Order)
-		alpha := dAlpha / 2
-		for i := 0; i < a.Order; i++ {
-			x := a.Point.X + d*math.Cos(alpha)
-			y := a.Point.Y + d*math.Sin(alpha)
+	d := r.MaxDistance(a.Point)
 
-			l := graph.NewPath(false).Add(a.Point).Add(graph.Point{X: x, Y: y})
-			canvas.DrawPath(l.Intersect(r), asymptotesStyle)
+	dAlpha := 2 * math.Pi / float64(a.Order)
+	alpha := dAlpha / 2
+	for i := 0; i < a.Order; i++ {
+		x := a.Point.X + d*math.Cos(alpha)
+		y := a.Point.Y + d*math.Sin(alpha)
 
-			alpha += dAlpha
+		if p1, p2, state := r.Intersect(a.Point, graph.Point{X: x, Y: y}); state != graph.CompleteOutside {
+			l := graph.NewPath(false).Add(p1).Add(p2)
+			canvas.DrawPath(l, asymptotesStyle)
 		}
+
+		alpha += dAlpha
 	}
 	return nil
 }
