@@ -75,7 +75,7 @@ function fetchHelper(url, data, target) {
     let formData = new FormData();
     formData.append('data', data);
 
-    fetch(url, {body: formData, method: "post", signal: AbortSignal.timeout(3000)})
+    fetch(url, {body: formData, method: "post", signal: AbortSignal.timeout(10000)})
         .then(function (response) {
             if (response.status !== 200) {
                 window.location.reload();
