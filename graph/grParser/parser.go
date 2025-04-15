@@ -212,8 +212,8 @@ func createPlotMethods() value.MethodMap {
 					return plot, nil
 				}
 			}
-			return nil, fmt.Errorf("yBounds requires two float values")
-		}).SetMethodDescription("yMin", "yMax", "Sets the y-bounds"),
+			return nil, fmt.Errorf("coordiantes requires two float values")
+		}).SetMethodDescription("x", "y", "Sets the label position"),
 		"textSize": value.MethodAtType(1, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if si, ok := stack.Get(1).ToFloat(); ok {
 				plot.textSize = si
@@ -357,7 +357,7 @@ func Setup(fg *value.FunctionGenerator) {
 		},
 		Args:   3,
 		IsPure: true,
-	}.SetDescription("data", "style", "label", "Creates a new scatter dataset").VarArgs(1, 3))
+	}.SetDescription("data", "style", "label", "Creates a new curve. The given data points are connected by a line.").VarArgs(1, 3))
 	fg.AddStaticFunction("function", funcGen.Function[value.Value]{
 		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
 			var style *graph.Style
