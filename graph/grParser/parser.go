@@ -50,14 +50,17 @@ const (
 
 type PlotValue struct {
 	Holder[*graph.Plot]
+	textSize float64
 }
+
+var _ TextSizeProvider = PlotValue{}
 
 func (p PlotValue) DrawTo(canvas graph.Canvas) error {
 	return p.Holder.Value.DrawTo(canvas)
 }
 
 func NewPlotValue(plot *graph.Plot) PlotValue {
-	return PlotValue{Holder[*graph.Plot]{plot}}
+	return PlotValue{Holder[*graph.Plot]{plot}, 0}
 }
 
 func (p PlotValue) GetType() value.Type {
@@ -77,6 +80,10 @@ func (p PlotValue) add(pc value.Value) error {
 		})
 	}
 	return errors.New("value is not a plot content")
+}
+
+func (p PlotValue) TextSize() float64 {
+	return p.textSize
 }
 
 func createStyleMethods() value.MethodMap {
@@ -207,6 +214,13 @@ func createPlotMethods() value.MethodMap {
 			}
 			return nil, fmt.Errorf("yBounds requires two float values")
 		}).SetMethodDescription("yMin", "yMax", "Sets the y-bounds"),
+		"textSize": value.MethodAtType(1, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			if si, ok := stack.Get(1).ToFloat(); ok {
+				plot.textSize = si
+				return plot, nil
+			}
+			return nil, fmt.Errorf("textSize requires a float values")
+		}).SetMethodDescription("size", "Sets the text size"),
 		"zoom": value.MethodAtType(3, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if x, ok := stack.Get(1).ToFloat(); ok {
 				if y, ok := stack.Get(2).ToFloat(); ok {
@@ -462,10 +476,20 @@ func toPointsList(st funcGen.Stack[value.Value]) ([]graph.Point, error) {
 	return nil, fmt.Errorf("scatter requires a list of points")
 }
 
+type TextSizeProvider interface {
+	TextSize() float64
+}
+
 func HtmlExport(v value.Value) (template.HTML, bool, error) {
 	if p, ok := v.(graph.Image); ok {
 		var buffer bytes.Buffer
-		svg := graph.NewSVG(800, 600, 15, &buffer)
+
+		textSize := 15.0
+		if ts, ok := p.(TextSizeProvider); ok {
+			textSize = ts.TextSize()
+		}
+
+		svg := graph.NewSVG(800, 600, textSize, &buffer)
 		err := p.DrawTo(svg)
 		if err != nil {
 			return "", true, err

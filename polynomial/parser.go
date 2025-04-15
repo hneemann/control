@@ -341,6 +341,13 @@ func exp(st funcGen.Stack[value.Value], a value.Value, b value.Value) (value.Val
 
 type BodePlotValue struct {
 	grParser.Holder[*BodePlot]
+	textSize float64
+}
+
+var _ grParser.TextSizeProvider = BodePlotValue{}
+
+func (b BodePlotValue) TextSize() float64 {
+	return b.textSize
 }
 
 func (b BodePlotValue) DrawTo(canvas graph.Canvas) error {
@@ -369,6 +376,13 @@ func bodeMethods() value.MethodMap {
 			}
 			return nil, errors.New("add requires a linear system, a color and a legend")
 		}).SetMethodDescription("lin", "color", "label", "adds a linear system to the bode plot").VarArgsMethod(1, 3),
+		"textSize": value.MethodAtType(1, func(plot BodePlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			if si, ok := stack.Get(1).ToFloat(); ok {
+				plot.textSize = si
+				return plot, nil
+			}
+			return nil, fmt.Errorf("textSize requires a float values")
+		}).SetMethodDescription("size", "Sets the text size"),
 		"addWithLatency": value.MethodAtType(-1, func(bode BodePlotValue, st funcGen.Stack[value.Value]) (value.Value, error) {
 			if linVal, ok := st.Get(1).(*Linear); ok {
 				if latency, ok := st.Get(2).ToFloat(); ok {
@@ -494,7 +508,7 @@ var Parser = value.New().
 			if wMin, ok := stack.Get(0).ToFloat(); ok {
 				if wMax, ok := stack.Get(1).ToFloat(); ok {
 					b := NewBode(wMin, wMax)
-					return BodePlotValue{grParser.Holder[*BodePlot]{b}}, nil
+					return BodePlotValue{grParser.Holder[*BodePlot]{b}, 0}, nil
 				}
 			}
 			return nil, fmt.Errorf("boded requires 2 float values")
