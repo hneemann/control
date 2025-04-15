@@ -47,7 +47,7 @@
 
 textarea.source {
     font-size: inherit;
-    white-space: nowrap;
+    white-space: pre;
     overflow: auto;
 }
 
