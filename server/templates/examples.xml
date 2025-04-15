@@ -56,42 +56,44 @@ bode(0.01,100)
  ["pid(2,2)",   "=", pid(2,2)  ],
  ["pid(2,3,1)", "=", pid(2,3,1)]
 ]</example>
-    <example name="WOK" desc="Darstellung einer Wurzelortskurve">let s = lin();
+    <example name="Evans" desc="Darstellung einer Wurzelortskurve">let s = lin();
 let g = 3/((s+1)*(s+2));
 let k = 1+1/(0.9*s);
 
 (k*g).evans(2)</example>
 
+    <example name="Evans 2" desc="Darstellung einer Wurzelortskurve">let l = 352*lin(poly(5,1),poly(0,0,2000,200,25,1));
+l.evans(100)</example>
+
     <example name="Simulation" desc="Simulation des Systems">let s=lin();
 
-let g=70/((s+1)*(s+2)*(s+2.5));
-let k=0.2*(0.6*s+1)/(0.002*s+1);
-let k2=pid(0.09,2);
-let k3=pid(0.3,2,0.5);
+let g = 70/((s+1)*(s+2)*(s+2.5));
+let k1 = 0.2*(0.6*s+1)/(0.002*s+1);
+let k2 = pid(0.1,2);
+let k3 = pid(0.3,2,0.5);
 
 plot(
-  curve((k*g).loop().simStep(10),blue,"phasenanhebendes Korrekturglied"),
+  curve((k1*g).loop().simStep(10),blue,"phasenanhebendes Korrekturglied"),
   curve((k2*g).loop().simStep(10),black,"PI"),
   curve((k3*g).loop().simStep(10),green,"PID")
 ).xLabel("t").yLabel("h(t)").labelPos(5,0.87)</example>
 
-        <example name="Simulation 2" desc="Simulation des Systems">func generateCalc(T,d)
-  t->if t&lt;0 then 0
-            else
-              let w0=1/T;
-              let we=w0*sqrt(1-d*d);
-              let phi=acos(d);
-              1-exp(-w0*d*t)/sqrt(1-d*d)*sin(we*t+phi);
+        <example name="Simulation 2" desc="Simulation des Systems">func PT2_Calculated(T,d)
+  let w0 = 1/T;
+  let we = w0*sqrt(1-d*d);
+  let phi = acos(d);
+  t-&gt;if t&lt;0 then 0
+            else 1-exp(-w0*d*t)/sqrt(1-d*d)*sin(we*t+phi);
 
-let s =lin();
-func generateSim(T,d)
-  let g=1/(T*T*s^2+2*T*d*s+1);
+func PT2_Simulated(T,d)
+  let s = lin();
+  let g = 1/(T*T*s^2+2*T*d*s+1);
   g.simStep(40);
 
 plot(
- function( generateCalc(1,0.1), black, "calc"),
- curve(    generateSim(1,0.1),  red,   "sim")
-)</example>
+  function( PT2_Calculated(1,0.1), black, "calculated"),
+  curve(    PT2_Simulated (1,0.1), red,   "simulated")
+).labelPos(20,1.5)</example>
 
             <example name="Nelder&amp;Mead" desc="Nichtlineare Optimierung">let s = lin();
 let g = 70/((s+1)*(s+2)*(s+2.5));
