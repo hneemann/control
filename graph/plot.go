@@ -54,6 +54,10 @@ func (p *Plot) DrawTo(canvas Canvas) error {
 	c := canvas.Context()
 	rect := canvas.Rect()
 	textStyle := Black.Text()
+	textSize := c.TextSize
+	if textSize <= rect.Height()/200 {
+		textSize = rect.Height() / 200
+	}
 
 	b := p.LeftBorder
 	if b <= 0 {
@@ -61,8 +65,8 @@ func (p *Plot) DrawTo(canvas Canvas) error {
 	}
 
 	innerRect := Rect{
-		Min: Point{rect.Min.X + c.TextSize*float64(b)*0.75, rect.Min.Y + c.TextSize*2},
-		Max: Point{rect.Max.X - c.TextSize, rect.Max.Y - c.TextSize},
+		Min: Point{rect.Min.X + textSize*float64(b)*0.75, rect.Min.Y + textSize*2},
+		Max: Point{rect.Max.X - textSize, rect.Max.Y - textSize},
 	}
 
 	xBounds := p.XBounds
@@ -107,11 +111,11 @@ func (p *Plot) DrawTo(canvas Canvas) error {
 
 	xTrans, xTicks, xBounds := xAxis(innerRect.Min.X, innerRect.Max.X, xBounds,
 		func(width float64, digits int) bool {
-			return width > c.TextSize*(float64(digits+2))*0.75
+			return width > textSize*(float64(digits+2))*0.75
 		})
 	yTrans, yTicks, yBounds := yAxis(innerRect.Min.Y, innerRect.Max.Y, yBounds,
 		func(width float64, _ int) bool {
-			return width > c.TextSize*2
+			return width > textSize*2
 		})
 
 	p.xTicks = xTicks
@@ -130,35 +134,35 @@ func (p *Plot) DrawTo(canvas Canvas) error {
 		},
 	}
 
-	large := c.TextSize / 2
-	small := c.TextSize / 4
+	large := textSize / 2
+	small := textSize / 4
 
 	for _, tick := range xTicks {
 		xp := xTrans(tick.Position)
 		if tick.Label == "" {
 			canvas.DrawPath(NewLine(Point{xp, innerRect.Min.Y - small}, Point{xp, innerRect.Min.Y}), Black)
 		} else {
-			canvas.DrawText(Point{xp, innerRect.Min.Y - large}, tick.Label, Top|HCenter, textStyle, c.TextSize)
+			canvas.DrawText(Point{xp, innerRect.Min.Y - large}, tick.Label, Top|HCenter, textStyle, textSize)
 			canvas.DrawPath(NewLine(Point{xp, innerRect.Min.Y - large}, Point{xp, innerRect.Min.Y}), Black)
 		}
 		if p.Grid != nil {
 			canvas.DrawPath(NewLine(Point{xp, innerRect.Min.Y}, Point{xp, innerRect.Max.Y}), p.Grid)
 		}
 	}
-	canvas.DrawText(Point{innerRect.Max.X - small, innerRect.Min.Y + small}, p.XLabel, Bottom|Right, textStyle, c.TextSize)
+	canvas.DrawText(Point{innerRect.Max.X - small, innerRect.Min.Y + small}, p.XLabel, Bottom|Right, textStyle, textSize)
 	for _, tick := range yTicks {
 		yp := yTrans(tick.Position)
 		if tick.Label == "" {
 			canvas.DrawPath(NewLine(Point{innerRect.Min.X - small, yp}, Point{innerRect.Min.X, yp}), Black)
 		} else {
-			canvas.DrawText(Point{innerRect.Min.X - large, yp}, tick.Label, Right|VCenter, textStyle, c.TextSize)
+			canvas.DrawText(Point{innerRect.Min.X - large, yp}, tick.Label, Right|VCenter, textStyle, textSize)
 			canvas.DrawPath(NewLine(Point{innerRect.Min.X - large, yp}, Point{innerRect.Min.X, yp}), Black)
 		}
 		if p.Grid != nil {
 			canvas.DrawPath(NewLine(Point{innerRect.Min.X, yp}, Point{innerRect.Max.X, yp}), p.Grid)
 		}
 	}
-	canvas.DrawText(Point{innerRect.Min.X + small, innerRect.Max.Y - small}, p.YLabel, Top|Left, textStyle, c.TextSize)
+	canvas.DrawText(Point{innerRect.Min.X + small, innerRect.Max.Y - small}, p.YLabel, Top|Left, textStyle, textSize)
 
 	canvas.DrawPath(innerRect.Poly(), Black.SetStrokeWidth(2))
 
@@ -174,17 +178,17 @@ func (p *Plot) DrawTo(canvas Canvas) error {
 		if p.legendPosGiven {
 			lp = Point{xTrans(p.legendPos.X), yTrans(p.legendPos.Y)}
 		} else {
-			lp = Point{innerRect.Min.X + c.TextSize*3, innerRect.Min.Y + c.TextSize*(float64(len(p.Legend))*1.5-0.5)}
+			lp = Point{innerRect.Min.X + textSize*3, innerRect.Min.Y + textSize*(float64(len(p.Legend))*1.5-0.5)}
 		}
 		for _, leg := range p.Legend {
-			canvas.DrawText(lp, leg.Name, Left|VCenter, textStyle, c.TextSize)
+			canvas.DrawText(lp, leg.Name, Left|VCenter, textStyle, textSize)
 			if leg.Shape != nil && leg.ShapeStyle != nil {
-				canvas.DrawShape(lp.Add(Point{-1*c.TextSize - small, 0}), leg.Shape, leg.ShapeStyle)
+				canvas.DrawShape(lp.Add(Point{-1*textSize - small, 0}), leg.Shape, leg.ShapeStyle)
 			}
 			if leg.LineStyle != nil {
-				canvas.DrawPath(NewLine(lp.Add(Point{-2*c.TextSize - small, 0}), lp.Add(Point{-small, 0})), leg.LineStyle)
+				canvas.DrawPath(NewLine(lp.Add(Point{-2*textSize - small, 0}), lp.Add(Point{-small, 0})), leg.LineStyle)
 			}
-			lp = lp.Add(Point{0, -c.TextSize * 1.5})
+			lp = lp.Add(Point{0, -textSize * 1.5})
 		}
 
 	}

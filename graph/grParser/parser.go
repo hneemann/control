@@ -486,7 +486,10 @@ func HtmlExport(v value.Value) (template.HTML, bool, error) {
 
 		textSize := 15.0
 		if ts, ok := p.(TextSizeProvider); ok {
-			textSize = ts.TextSize()
+			s := ts.TextSize()
+			if s > 2 {
+				textSize = s
+			}
 		}
 
 		svg := graph.NewSVG(800, 600, textSize, &buffer)
