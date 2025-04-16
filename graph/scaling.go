@@ -244,24 +244,34 @@ func CreateDateAxis(formatDate, formatMin string) Axis {
 			index++
 		}
 
-		incr := incrementerList[index]
-		tickTime := incr.norm(t)
+		textIncr := incrementerList[index]
+		smallIncr := textIncr.getSmallTicks()
 
-		for tickTime.Before(t) {
-			tickTime = incr.inc(tickTime)
+		smallTickTime := smallIncr.norm(t)
+		for smallTickTime.Before(t) {
+			smallTickTime = smallIncr.inc(smallTickTime)
+		}
+		textTickTime := textIncr.norm(t)
+		for textTickTime.Before(t) {
+			textTickTime = textIncr.inc(textTickTime)
 		}
 
 		t = time.UnixMilli(int64(eMax) * 1000)
 		ticks := []Tick{}
-		for tickTime.Before(t) {
-			tick := Tick{Position: float64(tickTime.UnixMilli()) / 1000}
-			if incr.showMinutes() {
-				tick.Label = tickTime.Format(formatMin)
-			} else {
-				tick.Label = tickTime.Format(formatDate)
+		textTime := float64(textTickTime.UnixMilli()) / 1000
+		for smallTickTime.Before(t) {
+			tick := Tick{Position: float64(smallTickTime.UnixMilli()) / 1000}
+			if math.Abs(tick.Position-textTime) < 100 {
+				if textIncr.showMinutes() {
+					tick.Label = textTickTime.Format(formatMin)
+				} else {
+					tick.Label = textTickTime.Format(formatDate)
+				}
+				textTickTime = textIncr.inc(textTickTime)
+				textTime = float64(textTickTime.UnixMilli()) / 1000
 			}
 			ticks = append(ticks, tick)
-			tickTime = incr.inc(tickTime)
+			smallTickTime = smallIncr.inc(smallTickTime)
 		}
 
 		return tr, ticks, Bounds{bounds.valid, eMin, eMax}
@@ -282,6 +292,8 @@ var incrementerList = []incrementer{
 	dayIncrementer(1),
 	dayIncrementer(2),
 	dayIncrementer(4),
+	weekIncrementer(1),
+	weekIncrementer(2),
 	monthIncrementer(1),
 	monthIncrementer(2),
 	monthIncrementer(3),
@@ -298,6 +310,7 @@ type incrementer interface {
 	inc(time.Time) time.Time
 	norm(time.Time) time.Time
 	showMinutes() bool
+	getSmallTicks() incrementer
 }
 
 type minuteIncrementer int
@@ -306,8 +319,20 @@ func (m minuteIncrementer) showMinutes() bool {
 	return true
 }
 
+func (m minuteIncrementer) getSmallTicks() incrementer {
+	if m >= 15 {
+		return minuteIncrementer(5)
+	}
+	return minuteIncrementer(1)
+}
+
 func (m minuteIncrementer) inc(t time.Time) time.Time {
-	return t.Add(time.Minute * time.Duration(m))
+	y := t.Year()
+	mo := t.Month()
+	d := t.Day()
+	h := t.Hour()
+	mi := t.Minute() + int(m)
+	return time.Date(y, mo, d, h, mi, 0, 0, t.Location())
 }
 
 func (m minuteIncrementer) norm(t time.Time) time.Time {
@@ -321,6 +346,13 @@ func (m minuteIncrementer) norm(t time.Time) time.Time {
 }
 
 type hourIncrementer int
+
+func (h hourIncrementer) getSmallTicks() incrementer {
+	if h == 1 {
+		return minuteIncrementer(10)
+	}
+	return hourIncrementer(1)
+}
 
 func (h hourIncrementer) showMinutes() bool {
 	return true
@@ -345,6 +377,13 @@ func (h hourIncrementer) norm(t time.Time) time.Time {
 
 type dayIncrementer int
 
+func (d dayIncrementer) getSmallTicks() incrementer {
+	if d == 1 {
+		return hourIncrementer(1)
+	}
+	return dayIncrementer(1)
+}
+
 func (d dayIncrementer) showMinutes() bool {
 	return false
 }
@@ -364,10 +403,19 @@ func (d dayIncrementer) inc(t time.Time) time.Time {
 func (d dayIncrementer) norm(t time.Time) time.Time {
 	y := t.Year()
 	mo := t.Month()
-	return time.Date(y, mo, 1, 0, 0, 0, 0, t.Location())
+	da := t.Day()
+	da = ((da-1)/int(d))*int(d) + 1
+	return time.Date(y, mo, da, 0, 0, 0, 0, t.Location())
 }
 
 type weekIncrementer int
+
+func (w weekIncrementer) getSmallTicks() incrementer {
+	if w == 1 {
+		return dayIncrementer(1)
+	}
+	return weekIncrementer(1)
+}
 
 func (w weekIncrementer) showMinutes() bool {
 	return false
@@ -397,6 +445,13 @@ func (w weekIncrementer) norm(t time.Time) time.Time {
 
 type monthIncrementer int
 
+func (m monthIncrementer) getSmallTicks() incrementer {
+	if m == 1 {
+		return weekIncrementer(1)
+	}
+	return monthIncrementer(1)
+}
+
 func (m monthIncrementer) showMinutes() bool {
 	return false
 }
@@ -414,6 +469,13 @@ func (m monthIncrementer) norm(t time.Time) time.Time {
 }
 
 type yearIncrementer int
+
+func (y yearIncrementer) getSmallTicks() incrementer {
+	if y == 1 {
+		return monthIncrementer(1)
+	}
+	return yearIncrementer(1)
+}
 
 func (y yearIncrementer) showMinutes() bool {
 	return false
