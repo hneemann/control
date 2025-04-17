@@ -3,6 +3,8 @@ package polynomial
 import (
 	"fmt"
 	"github.com/hneemann/control/graph"
+	"github.com/hneemann/iterator"
+	"github.com/hneemann/parser2/funcGen"
 	"github.com/hneemann/parser2/value"
 	"math"
 	"math/cmplx"
@@ -383,7 +385,7 @@ func (p Polar) DrawTo(plot *graph.Plot, canvas graph.Canvas) error {
 		for _, t := range plot.GetXTicks() {
 			radius = -t.Position
 			if radius > 1e-5 {
-				for angle := 90; angle <= 270; angle += 5 {
+				for angle := 90; angle <= 270; angle += 1 {
 					x := radius * math.Cos(float64(angle)*math.Pi/180)
 					y := radius * math.Sin(float64(angle)*math.Pi/180)
 					point := graph.Point{X: x, Y: y}
@@ -835,6 +837,45 @@ func (l *Linear) refineNy(w0 float64, p0 graph.Point, w1 float64, p1 graph.Point
 	}
 }
 
+type dataSet struct {
+	elements []float64
+	cols     int
+	rows     int
+}
+
+func newDataSet(rows, cols int) *dataSet {
+	return &dataSet{
+		elements: make([]float64, rows*cols),
+		cols:     cols,
+		rows:     rows,
+	}
+}
+
+func (v dataSet) get(row, col int) float64 {
+	return v.elements[row*v.cols+col]
+}
+
+func (v dataSet) set(row, col int, val float64) {
+	v.elements[row*v.cols+col] = val
+}
+
+func (v dataSet) toList() *value.List {
+	return value.NewListFromIterable(func(st funcGen.Stack[value.Value], yield iterator.Consumer[value.Value]) error {
+		o := 0
+		for range v.rows {
+			row := value.NewListConvert[float64](func(v float64) value.Value {
+				return value.Float(v)
+			}, v.elements[o:o+v.cols])
+
+			if err := yield(row); err != nil {
+				return err
+			}
+			o += v.cols
+		}
+		return nil
+	})
+}
+
 func (l *Linear) Simulate(tMax float64, u func(float64) (float64, error)) (*value.List, error) {
 	if tMax <= 0 {
 		return nil, fmt.Errorf("tMax must be greater than 0")
@@ -845,35 +886,40 @@ func (l *Linear) Simulate(tMax float64, u func(float64) (float64, error)) (*valu
 		return nil, err
 	}
 
-	const pointsVisible = 400
-	const pointsInternal = 40000
-	const skip = pointsInternal / pointsVisible
+	const pointsExported = 1000
+	const pointsInternal = 100000
+	const skip = pointsInternal / pointsExported
 	dt := tMax / pointsInternal
 	t := 0.0
 	n := len(l.Denominator) - 1
 	x := make(Vector, n)
 	xDot := make(Vector, n)
 
+	data := newDataSet(pointsExported+1, 2)
+	row := 0
 	counter := 0
-
-	var li []value.Value
-	for t < tMax {
+	for {
 		ut, err := u(t)
 		if err != nil {
 			return nil, err
 		}
 		y := c.Mul(x) + d*ut
-		if counter%skip == 0 {
-			li = append(li, value.NewList(value.Float(t), value.Float(y)))
+		if counter == 0 {
+			data.set(row, 0, t)
+			data.set(row, 1, y)
+			row++
+			if row > pointsExported {
+				return data.toList(), nil
+			}
+			counter = skip
 		}
-		counter++
+		counter--
+
 		a.Mul(xDot, x)
 		xDot[n-1] += ut
 		x.Add(dt, xDot)
 		t += dt
 	}
-
-	return value.NewList(li...), nil
 }
 
 func (l *Linear) GetStateSpaceRepresentation() (Matrix, Vector, float64, error) {
