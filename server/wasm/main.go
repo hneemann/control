@@ -3,7 +3,6 @@
 package main
 
 import (
-	"fmt"
 	"github.com/hneemann/control/polynomial"
 	"github.com/hneemann/parser2/funcGen"
 	"github.com/hneemann/parser2/value"
@@ -19,12 +18,10 @@ func parserWrapper() js.Func {
 	jsonFunc := js.FuncOf(func(this js.Value, args []js.Value) any {
 
 		if len(args) != 1 {
-			return "Invalid no of arguments passed"
+			return "Invalid, only one argument possible"
 		}
 
 		source := args[0].String()
-
-		fmt.Printf("input %s\n", source)
 
 		var expHtml template.HTML
 		fu, err := polynomial.Parser.Generate(source)
@@ -38,8 +35,7 @@ func parserWrapper() js.Func {
 		}
 
 		if err != nil {
-			fmt.Printf("unable to create output %s\n", err)
-			return err.Error()
+			return "<pre>" + err.Error() + "</pre>"
 		}
 
 		return string(expHtml)
@@ -51,8 +47,6 @@ func parserWrapper() js.Func {
 }
 
 func main() {
-	fmt.Println("Go Web Assembly")
 	js.Global().Set("generateOutput", parserWrapper())
-
 	select {}
 }
