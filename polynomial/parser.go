@@ -342,12 +342,20 @@ func exp(st funcGen.Stack[value.Value], a value.Value, b value.Value) (value.Val
 type BodePlotValue struct {
 	grParser.Holder[*BodePlot]
 	textSize float64
+	filename string
 }
 
-var _ grParser.TextSizeProvider = BodePlotValue{}
+var (
+	_ grParser.TextSizeProvider = BodePlotValue{}
+	_ grParser.Downloadable     = BodePlotValue{}
+)
 
 func (b BodePlotValue) TextSize() float64 {
 	return b.textSize
+}
+
+func (b BodePlotValue) Filename() string {
+	return b.filename
 }
 
 func (b BodePlotValue) DrawTo(canvas graph.Canvas) error {
@@ -381,8 +389,15 @@ func bodeMethods() value.MethodMap {
 				plot.textSize = si
 				return plot, nil
 			}
-			return nil, fmt.Errorf("textSize requires a float values")
+			return nil, fmt.Errorf("textSize requires a float value")
 		}).SetMethodDescription("size", "Sets the text size"),
+		"download": value.MethodAtType(1, func(plot BodePlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			if name, ok := stack.Get(1).(value.String); ok {
+				plot.filename = string(name)
+				return plot, nil
+			}
+			return nil, fmt.Errorf("download requires a string value")
+		}).SetMethodDescription("filename", "Enables download"),
 		"addWithLatency": value.MethodAtType(-1, func(bode BodePlotValue, st funcGen.Stack[value.Value]) (value.Value, error) {
 			if linVal, ok := st.Get(1).(*Linear); ok {
 				if latency, ok := st.Get(2).ToFloat(); ok {
@@ -508,7 +523,7 @@ var Parser = value.New().
 			if wMin, ok := stack.Get(0).ToFloat(); ok {
 				if wMax, ok := stack.Get(1).ToFloat(); ok {
 					b := NewBode(wMin, wMax)
-					return BodePlotValue{grParser.Holder[*BodePlot]{b}, 0}, nil
+					return BodePlotValue{grParser.Holder[*BodePlot]{b}, 0, ""}, nil
 				}
 			}
 			return nil, fmt.Errorf("boded requires 2 float values")

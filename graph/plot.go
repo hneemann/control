@@ -166,14 +166,14 @@ func (p *Plot) DrawTo(canvas Canvas) error {
 	}
 	canvas.DrawText(Point{innerRect.Min.X + small, innerRect.Max.Y - small}, p.YLabel, Top|Left, textStyle, textSize)
 
-	canvas.DrawPath(innerRect.Poly(), thickLine)
-
 	for _, plotContent := range p.Content {
 		err := plotContent.DrawTo(p, inner)
 		if err != nil {
 			return err
 		}
 	}
+
+	canvas.DrawPath(innerRect.Poly(), thickLine)
 
 	if len(p.Legend) > 0 {
 		var lp Point
