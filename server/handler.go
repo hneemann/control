@@ -47,13 +47,6 @@ func ReadExamples() []Example {
 		panic(err)
 	}
 
-	for i := range examples.Examples {
-		c := examples.Examples[i].Code
-		c = strings.ReplaceAll(c, "\r", "")
-		c = strings.ReplaceAll(c, "\n", "\r\n")
-		examples.Examples[i].Code = c
-	}
-
 	log.Printf("loaded %d examples", len(examples.Examples))
 
 	return examples.Examples
