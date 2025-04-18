@@ -2,12 +2,12 @@ package grParser
 
 import (
 	"bytes"
-	"encoding/base64"
 	"errors"
 	"fmt"
 	"github.com/hneemann/control/graph"
 	"github.com/hneemann/parser2/funcGen"
 	"github.com/hneemann/parser2/value"
+	"github.com/hneemann/parser2/value/export"
 	"html/template"
 	"io"
 )
@@ -53,12 +53,10 @@ const (
 type PlotValue struct {
 	Holder[*graph.Plot]
 	textSize float64
-	filename string
 }
 
 var (
 	_ TextSizeProvider = PlotValue{}
-	_ Downloadable     = PlotValue{}
 )
 
 func (p PlotValue) DrawTo(canvas graph.Canvas) error {
@@ -66,7 +64,7 @@ func (p PlotValue) DrawTo(canvas graph.Canvas) error {
 }
 
 func NewPlotValue(plot *graph.Plot) PlotValue {
-	return PlotValue{Holder[*graph.Plot]{plot}, 0, ""}
+	return PlotValue{Holder[*graph.Plot]{plot}, 0}
 }
 
 func (p PlotValue) GetType() value.Type {
@@ -90,10 +88,6 @@ func (p PlotValue) add(pc value.Value) error {
 
 func (p PlotValue) TextSize() float64 {
 	return p.textSize
-}
-
-func (p PlotValue) Filename() string {
-	return p.filename
 }
 
 func createStyleMethods() value.MethodMap {
@@ -192,10 +186,9 @@ func createPlotMethods() value.MethodMap {
 			plot.Value.Grid = GridStyle
 			return plot, nil
 		}).SetMethodDescription("Adds a grid"),
-		"download": value.MethodAtType(1, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+		"file": value.MethodAtType(1, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if str, ok := stack.Get(1).(value.String); ok {
-				plot.filename = string(str)
-				return plot, nil
+				return ImageToFile(plot.Value, string(str))
 			} else {
 				return nil, fmt.Errorf("download requires a string")
 			}
@@ -315,6 +308,7 @@ func Setup(fg *value.FunctionGenerator) {
 	fg.RegisterMethods(PlotType, createPlotMethods())
 	fg.RegisterMethods(PlotContentType, createPlotContentMethods())
 	fg.RegisterMethods(StyleType, createStyleMethods())
+	export.AddZipHelpers(fg)
 	fg.AddConstant("black", StyleValue{Holder[*graph.Style]{graph.Black}, defSize})
 	fg.AddConstant("green", StyleValue{Holder[*graph.Style]{graph.Green}, defSize})
 	fg.AddConstant("red", StyleValue{Holder[*graph.Style]{graph.Red}, defSize})
@@ -561,53 +555,48 @@ type TextSizeProvider interface {
 	TextSize() float64
 }
 
-type Downloadable interface {
-	Filename() string
-}
-
 func HtmlExport(v value.Value) (template.HTML, bool, error) {
 	if p, ok := v.(graph.Image); ok {
-
-		textSize := 15.0
-		if ts, ok := p.(TextSizeProvider); ok {
-			s := ts.TextSize()
-			if s > 2 {
-				textSize = s
-			}
-		}
-
-		download := ""
-		if down, ok := p.(Downloadable); ok {
-			download = down.Filename()
-		}
-
 		var buffer bytes.Buffer
-		var svgWriter io.Writer
-
-		if download != "" {
-			buffer.WriteString("<a href=\"data:application/octet-stream;base64,")
-			svgWriter = base64.NewEncoder(base64.StdEncoding, &buffer)
-			svgWriter.Write([]byte("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"))
-		} else {
-			svgWriter = &buffer
-		}
-
-		svg := graph.NewSVG(800, 600, textSize, svgWriter)
-		err := p.DrawTo(svg)
+		err := createSVG(p, &buffer)
 		if err != nil {
 			return "", true, err
-		}
-		err = svg.Close()
-		if err != nil {
-			return "", true, err
-		}
-
-		if download != "" {
-			svgWriter.(io.Closer).Close()
-			buffer.WriteString("\" download=\"" + download + ".svg\">Download \"" + download + ".svg\"</a>")
 		}
 		return template.HTML(buffer.String()), true, nil
-
 	}
 	return "", false, nil
+}
+
+func ImageToFile(plot graph.Image, name string) (value.Value, error) {
+	var buf bytes.Buffer
+	buf.WriteString("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n")
+	err := createSVG(plot, &buf)
+	if err != nil {
+		return nil, err
+	}
+	return export.File{
+		Name: name + ".svg",
+		Data: buf.Bytes(),
+	}, nil
+}
+
+func createSVG(p graph.Image, writer io.Writer) error {
+	textSize := 15.0
+	if ts, ok := p.(TextSizeProvider); ok {
+		s := ts.TextSize()
+		if s > 2 {
+			textSize = s
+		}
+	}
+
+	svg := graph.NewSVG(800, 600, textSize, writer)
+	err := p.DrawTo(svg)
+	if err != nil {
+		return err
+	}
+	err = svg.Close()
+	if err != nil {
+		return err
+	}
+	return nil
 }

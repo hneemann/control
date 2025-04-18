@@ -48,12 +48,15 @@ bode(0.01,100)
   .add(g)</example>
     <example name="Bode 2" desc="Darstellung mehrerer Kurven in einem Bode-Diagramm">let s = lin();
 let g = 3/((s+1)*(s+2));
-let k = 1.5*(1+1/(2.5*s));
+let k = 1.6*(1+1/(1.7*s));
+
+let g0=k*g;
+let pm=g0.pMargin();
 
 bode(0.01,100)
-  .add(g,   green, "G")
-  .add(k,   blue,  "K")
-  .add(k*g, black, "G0")</example>
+  .add(g,  green, "G")
+  .add(k,  blue,  "K")
+  .add(g0, black, sprintf("G0, phi=%.1f°, ws=%.2f rad/s",pm.pMargin,pm.w0) )</example>
     <example name="pid" desc="Die pid-Funktion">[
  ["pid(2,2)",   "=", pid(2,2)  ],
  ["pid(2,3,1)", "=", pid(2,3,1)]

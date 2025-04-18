@@ -356,20 +356,14 @@ func exp(st funcGen.Stack[value.Value], a value.Value, b value.Value) (value.Val
 type BodePlotValue struct {
 	grParser.Holder[*BodePlot]
 	textSize float64
-	filename string
 }
 
 var (
 	_ grParser.TextSizeProvider = BodePlotValue{}
-	_ grParser.Downloadable     = BodePlotValue{}
 )
 
 func (b BodePlotValue) TextSize() float64 {
 	return b.textSize
-}
-
-func (b BodePlotValue) Filename() string {
-	return b.filename
 }
 
 func (b BodePlotValue) DrawTo(canvas graph.Canvas) error {
@@ -405,10 +399,9 @@ func bodeMethods() value.MethodMap {
 			}
 			return nil, fmt.Errorf("textSize requires a float value")
 		}).SetMethodDescription("size", "Sets the text size"),
-		"download": value.MethodAtType(1, func(plot BodePlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+		"file": value.MethodAtType(1, func(plot BodePlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if name, ok := stack.Get(1).(value.String); ok {
-				plot.filename = string(name)
-				return plot, nil
+				return grParser.ImageToFile(plot.Value, string(name))
 			}
 			return nil, fmt.Errorf("download requires a string value")
 		}).SetMethodDescription("filename", "Enables download"),
@@ -537,13 +530,13 @@ var Parser = value.New().
 			if wMin, ok := stack.Get(0).ToFloat(); ok {
 				if wMax, ok := stack.Get(1).ToFloat(); ok {
 					b := NewBode(wMin, wMax)
-					return BodePlotValue{grParser.Holder[*BodePlot]{b}, 0, ""}, nil
+					return BodePlotValue{grParser.Holder[*BodePlot]{b}, 0}, nil
 				}
 			}
 			return nil, fmt.Errorf("boded requires 2 float values")
 		},
 		Args:   2,
-		IsPure: true,
+		IsPure: false,
 	}.SetDescription("wMin", "wMax", "creates a bode plot")).
 	AddStaticFunction("nelderMead", funcGen.Function[value.Value]{
 		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
