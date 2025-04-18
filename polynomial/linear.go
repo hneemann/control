@@ -1,6 +1,7 @@
 package polynomial
 
 import (
+	"errors"
 	"fmt"
 	"github.com/hneemann/control/graph"
 	"github.com/hneemann/control/graph/grParser"
@@ -966,6 +967,90 @@ func (l *Linear) GetStateSpaceRepresentation() (Matrix, Vector, float64, error) 
 	}
 
 	return a, c, d, nil
+}
+
+func bisection(x0, x1 float64, f func(float64) float64) (float64, error) {
+	x0Pos := f(x0) > 0
+	for i := 0; i < 100; i++ {
+		x := (x0 + x1) / 2
+		if (f(x) > 0) == x0Pos {
+			x0 = x
+		} else {
+			x1 = x
+		}
+		if math.Abs(x1-x0) < eps {
+			return x, nil
+		}
+	}
+	return 0, fmt.Errorf("bisection failed")
+}
+
+func (l *Linear) PMargin() (float64, float64, error) {
+	w0 := 0.0
+	g := cmplx.Abs(l.Eval(complex(0, w0)))
+
+	if g < 1 {
+		return 0, 0, errors.New("no crossover frequency")
+	}
+
+	for {
+		var w1 float64
+		if w0 == 0 {
+			w1 = 0.01
+		} else {
+			w1 = w0 * 1.1
+		}
+		g = cmplx.Abs(l.Eval(complex(0, w1)))
+		if g < 1 {
+			var err error
+			w0, err = bisection(w0, w1, func(w float64) float64 {
+				return cmplx.Abs(l.Eval(complex(0, w))) - 1
+			})
+			if err != nil {
+				return 0, 0, err
+			}
+			break
+		}
+		w0 = w1
+	}
+
+	ph := cmplx.Phase(l.Eval(complex(0, w0))) / math.Pi * 180
+	if ph > 0 {
+		ph = ph - 180
+	} else {
+		ph = ph + 180
+	}
+
+	return w0, ph, nil
+}
+
+func (l *Linear) GMargin() (float64, float64, error) {
+	w0 := 0.0
+	im0 := imag(l.Eval(complex(0, w0)))
+	for {
+		var w1 float64
+		if w0 == 0 {
+			w1 = 0.01
+		} else {
+			w1 = w0 * 1.1
+		}
+		im1 := imag(l.Eval(complex(0, w1)))
+
+		if (im0 > 0) != (im1 > 0) {
+			var err error
+			w0, err = bisection(w0, w1, func(w float64) float64 {
+				return imag(l.Eval(complex(0, w)))
+			})
+			if err != nil {
+				return 0, 0, err
+			}
+			break
+		}
+		w0 = w1
+		im0 = im1
+	}
+	gm := cmplx.Abs(l.Eval(complex(0, w0)))
+	return w0, 20 * math.Log10(1/gm), nil
 }
 
 type Vector []float64

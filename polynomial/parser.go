@@ -225,6 +225,20 @@ func linMethods() value.MethodMap {
 			}
 			return grParser.NewPlotValue(plot), nil
 		}).SetMethodDescription("also negative", "creates a nyquist plot").VarArgsMethod(0, 1),
+		"pMargin": value.MethodAtType(0, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
+			w0, margin, err := lin.PMargin()
+			return value.NewMap(value.RealMap{
+				"w0":      value.Float(w0),
+				"pMargin": value.Float(margin),
+			}), err
+		}).SetMethodDescription("returns the crossover frequency and the phase margin"),
+		"gMargin": value.MethodAtType(0, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
+			w180, margin, err := lin.GMargin()
+			return value.NewMap(value.RealMap{
+				"w180":    value.Float(w180),
+				"gMargin": value.Float(margin),
+			}), err
+		}).SetMethodDescription("returns the crossover frequency and the phase margin"),
 		"simStep": value.MethodAtType(1, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
 			if tMax, ok := st.Get(1).ToFloat(); ok {
 				return lin.Simulate(tMax, func(t float64) (float64, error) {
