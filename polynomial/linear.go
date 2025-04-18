@@ -342,15 +342,42 @@ func (p Polar) PreferredBounds(_, _ graph.Bounds) (x, y graph.Bounds, e error) {
 	return graph.Bounds{}, graph.Bounds{}, nil
 }
 
+type polarPath struct {
+	radius float64
+	r      graph.Rect
+}
+
+func (p polarPath) Iter(yield func(rune, graph.Point) bool) {
+	radius := p.radius
+	for angle := 90; angle <= 270; angle += 2 {
+		x := radius * math.Cos(float64(angle)*math.Pi/180)
+		y := radius * math.Sin(float64(angle)*math.Pi/180)
+		point := graph.Point{X: x, Y: y}
+		if angle == 90 {
+			if !yield('M', point) {
+				return
+			}
+		} else {
+			if !yield('L', point) {
+				return
+			}
+		}
+	}
+}
+
+func (p polarPath) IsClosed() bool {
+	return false
+}
+
 func (p Polar) DrawTo(plot *graph.Plot, canvas graph.Canvas) error {
 	r := canvas.Rect()
 	text := graph.Gray.Text()
-
+	dashStyle := graph.Gray.SetDash(4, 4)
 	textSize := canvas.Context().TextSize * 0.8
 	var zero graph.Point
 
+	// Draw the angle lines
 	radius := r.MaxDistance(zero)
-	path := graph.NewPath(false)
 	for angle := 90; angle <= 270; angle += 15 {
 		if angle != 180 {
 			x := radius * math.Cos(float64(angle)*math.Pi/180)
@@ -373,34 +400,23 @@ func (p Polar) DrawTo(plot *graph.Plot, canvas graph.Canvas) error {
 				} else {
 					o |= graph.Right
 				}
-				path = path.MoveTo(ap).LineTo(ep)
+				canvas.DrawPath(graph.NewPointsPath(false, ap, ep), dashStyle)
 				canvas.DrawText(ep, fmt.Sprintf("%d°", 180-angle), o, text, textSize)
 			}
 		}
 	}
-	canvas.DrawPath(path, graph.Gray.SetDash(4, 4))
 
 	if r.Inside(zero) {
-		path = graph.NewPath(false)
 		for _, t := range plot.GetXTicks() {
 			radius = -t.Position
 			if radius > 1e-5 {
-				for angle := 90; angle <= 270; angle += 1 {
-					x := radius * math.Cos(float64(angle)*math.Pi/180)
-					y := radius * math.Sin(float64(angle)*math.Pi/180)
-					point := graph.Point{X: x, Y: y}
-					if angle == 90 {
-						if r.Inside(point) {
-							canvas.DrawText(point, t.Label, graph.VCenter|graph.Left, text, textSize)
-						}
-						path = path.MoveTo(point)
-					} else {
-						path = path.LineTo(point)
-					}
+				canvas.DrawPath(r.IntersectPath(polarPath{radius: radius, r: r}), dashStyle)
+				point := graph.Point{X: 0, Y: radius}
+				if r.Inside(point) {
+					canvas.DrawText(point, t.Label, graph.VCenter|graph.Left, text, textSize)
 				}
 			}
 		}
-		canvas.DrawPath(path.Intersect(r), graph.Gray.SetDash(4, 4))
 	}
 	return nil
 }
@@ -432,8 +448,7 @@ func (a Asymptotes) DrawTo(_ *graph.Plot, canvas graph.Canvas) error {
 		y := a.Point.Y + d*math.Sin(alpha)
 
 		if p1, p2, state := r.Intersect(a.Point, graph.Point{X: x, Y: y}); state != graph.CompleteOutside {
-			l := graph.NewPath(false).Add(p1).Add(p2)
-			canvas.DrawPath(l, asymptotesStyle)
+			canvas.DrawPath(graph.NewPointsPath(false, p1, p2), asymptotesStyle)
 		}
 
 		alpha += dAlpha
@@ -501,7 +516,7 @@ func (l *Linear) CreateEvans(kMax float64) (*graph.Plot, error) {
 		evPoints[i-1].dist(evPoints[i])
 	}
 
-	pathList := make([]graph.Path, poleCount)
+	pathList := make([]graph.SlicePath, poleCount)
 	for _, pl := range evPoints {
 		for i := range poleCount {
 			pathList[i] = pathList[i].Add(pl.points[i])
@@ -729,8 +744,8 @@ func (l *Linear) AddToBode(b *BodePlot, style *graph.Style, latency float64) {
 	}
 
 	wMult := math.Pow(b.wMax/b.wMin, 0.01)
-	amplitude := graph.NewPath(false)
-	phase := graph.NewPath(false)
+	var amplitude []graph.Point
+	var phase []graph.Point
 	angleOffset := 0.0
 	w := b.wMin
 	latFactor := latency / math.Pi * 180
@@ -746,13 +761,13 @@ func (l *Linear) AddToBode(b *BodePlot, style *graph.Style, latency float64) {
 		}
 
 		lastAngle = angle
-		amplitude = amplitude.Add(graph.Point{X: w, Y: 20 * math.Log10(amp)})
-		phase = phase.Add(graph.Point{X: w, Y: angle + angleOffset - latFactor*w})
+		amplitude = append(amplitude, graph.Point{X: w, Y: 20 * math.Log10(amp)})
+		phase = append(phase, graph.Point{X: w, Y: angle + angleOffset - latFactor*w})
 		w *= wMult
 	}
 
-	b.amplitude.AddContent(graph.Curve{Path: amplitude, Style: style})
-	b.phase.AddContent(graph.Curve{Path: phase, Style: style})
+	b.amplitude.AddContent(graph.Curve{Path: graph.NewPointsPath(false, amplitude...), Style: style})
+	b.phase.AddContent(graph.Curve{Path: graph.NewPointsPath(false, phase...), Style: style})
 }
 
 func NewBode(wMin, wMax float64) *BodePlot {
@@ -826,7 +841,7 @@ func (l *Linear) Nyquist(alsoNeg bool) (*graph.Plot, error) {
 	}, nil
 }
 
-func (l *Linear) refineNy(w0 float64, p0 graph.Point, w1 float64, p1 graph.Point, path *graph.Path, depth int) {
+func (l *Linear) refineNy(w0 float64, p0 graph.Point, w1 float64, p1 graph.Point, path *graph.SlicePath, depth int) {
 	if p0.DistTo(p1) > 0.05 && depth > 0 {
 		w := (w0 + w1) / 2
 		c := l.Eval(complex(0, w))

@@ -43,15 +43,19 @@ func (s *SVG) Close() error {
 	return s.err
 }
 
-func (s *SVG) DrawPath(polygon Path, style *Style) {
-	if polygon.Size() > 1 {
-		s.write("  <path d=\"")
-		for _, p := range polygon.Elements {
-			s.writeRune(p.Mode)
-			s.writeRune(' ')
-			s.write(fmt.Sprintf("%.2f,%.2f ", p.X, s.rect.Max.Y-p.Y))
+func (s *SVG) DrawPath(path Path, style *Style) {
+	isOpen := false
+	for m, p := range path.Iter {
+		if !isOpen {
+			s.write("  <path d=\"")
+			isOpen = true
 		}
-		if polygon.Closed {
+		s.writeRune(m)
+		s.writeRune(' ')
+		s.write(fmt.Sprintf("%.2f,%.2f ", p.X, s.rect.Max.Y-p.Y))
+	}
+	if isOpen {
+		if path.IsClosed() {
 			s.write("Z")
 		}
 		s.write("\"")

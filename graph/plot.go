@@ -142,26 +142,26 @@ func (p *Plot) DrawTo(canvas Canvas) error {
 	for _, tick := range xTicks {
 		xp := xTrans(tick.Position)
 		if tick.Label == "" {
-			canvas.DrawPath(NewLine(Point{xp, innerRect.Min.Y - small}, Point{xp, innerRect.Min.Y}), Black)
+			canvas.DrawPath(NewPointsPath(false, Point{xp, innerRect.Min.Y - small}, Point{xp, innerRect.Min.Y}), Black)
 		} else {
 			canvas.DrawText(Point{xp, innerRect.Min.Y - large}, tick.Label, Top|HCenter, textStyle, textSize)
-			canvas.DrawPath(NewLine(Point{xp, innerRect.Min.Y - large}, Point{xp, innerRect.Min.Y}), thickLine)
+			canvas.DrawPath(NewPointsPath(false, Point{xp, innerRect.Min.Y - large}, Point{xp, innerRect.Min.Y}), thickLine)
 		}
 		if p.Grid != nil {
-			canvas.DrawPath(NewLine(Point{xp, innerRect.Min.Y}, Point{xp, innerRect.Max.Y}), p.Grid)
+			canvas.DrawPath(NewPointsPath(false, Point{xp, innerRect.Min.Y}, Point{xp, innerRect.Max.Y}), p.Grid)
 		}
 	}
 	canvas.DrawText(Point{innerRect.Max.X - small, innerRect.Min.Y + small}, p.XLabel, Bottom|Right, textStyle, textSize)
 	for _, tick := range yTicks {
 		yp := yTrans(tick.Position)
 		if tick.Label == "" {
-			canvas.DrawPath(NewLine(Point{innerRect.Min.X - small, yp}, Point{innerRect.Min.X, yp}), Black)
+			canvas.DrawPath(NewPointsPath(false, Point{innerRect.Min.X - small, yp}, Point{innerRect.Min.X, yp}), Black)
 		} else {
 			canvas.DrawText(Point{innerRect.Min.X - large, yp}, tick.Label, Right|VCenter, textStyle, textSize)
-			canvas.DrawPath(NewLine(Point{innerRect.Min.X - large, yp}, Point{innerRect.Min.X, yp}), thickLine)
+			canvas.DrawPath(NewPointsPath(false, Point{innerRect.Min.X - large, yp}, Point{innerRect.Min.X, yp}), thickLine)
 		}
 		if p.Grid != nil {
-			canvas.DrawPath(NewLine(Point{innerRect.Min.X, yp}, Point{innerRect.Max.X, yp}), p.Grid)
+			canvas.DrawPath(NewPointsPath(false, Point{innerRect.Min.X, yp}, Point{innerRect.Max.X, yp}), p.Grid)
 		}
 	}
 	canvas.DrawText(Point{innerRect.Min.X + small, innerRect.Max.Y - small}, p.YLabel, Top|Left, textStyle, textSize)
@@ -188,7 +188,7 @@ func (p *Plot) DrawTo(canvas Canvas) error {
 				canvas.DrawShape(lp.Add(Point{-1*textSize - small, 0}), leg.Shape, leg.ShapeStyle)
 			}
 			if leg.LineStyle != nil {
-				canvas.DrawPath(NewLine(lp.Add(Point{-2*textSize - small, 0}), lp.Add(Point{-small, 0})), leg.LineStyle)
+				canvas.DrawPath(NewPointsPath(false, lp.Add(Point{-2*textSize - small, 0}), lp.Add(Point{-small, 0})), leg.LineStyle)
 			}
 			lp = lp.Add(Point{0, -textSize * 1.5})
 		}
@@ -333,21 +333,43 @@ func (f Function) PreferredBounds(xGiven, _ Bounds) (Bounds, Bounds, error) {
 	return Bounds{}, Bounds{}, nil
 }
 
-func (f Function) DrawTo(_ *Plot, canvas Canvas) error {
-	rect := canvas.Rect()
+type funcPath struct {
+	f func(x float64) (float64, error)
+	r Rect
+	e error
+}
 
-	p := NewPath(false)
-	width := rect.Width()
+func (f *funcPath) Iter(yield func(rune, Point) bool) {
+	width := f.r.Width()
+	xo := f.r.Min.X
 	for i := 0; i <= functionSteps; i++ {
-		x := rect.Min.X + width*float64(i)/functionSteps
-		y, err := f.Function(x)
+		x := xo + width*float64(i)/functionSteps
+		y, err := f.f(x)
 		if err != nil {
-			return err
+			f.e = err
+			return
 		}
-		p = p.Add(Point{x, y})
+		mode := 'L'
+		if i == 0 {
+			mode = 'M'
+		}
+		if !yield(mode, Point{x, y}) {
+			return
+		}
 	}
-	canvas.DrawPath(p.Intersect(rect), f.Style)
-	return nil
+}
+
+func (f *funcPath) IsClosed() bool {
+	return false
+}
+
+func (f Function) DrawTo(_ *Plot, canvas Canvas) error {
+	path := funcPath{
+		f: f.Function,
+		r: canvas.Rect(),
+	}
+	canvas.DrawPath(canvas.Rect().IntersectPath(&path), f.Style)
+	return path.e
 }
 
 type Scatter struct {
@@ -385,20 +407,20 @@ type Curve struct {
 }
 
 func (c Curve) String() string {
-	return fmt.Sprintf("Curve with %d points", c.Path.Size())
+	return fmt.Sprintf("Curve based on data points")
 }
 
 func (c Curve) PreferredBounds(_, _ Bounds) (Bounds, Bounds, error) {
 	var x, y Bounds
-	for _, e := range c.Path.Elements {
-		x.Merge(e.Point.X)
-		y.Merge(e.Point.Y)
+	for _, p := range c.Path.Iter {
+		x.Merge(p.X)
+		y.Merge(p.Y)
 	}
 	return x, y, nil
 }
 
 func (c Curve) DrawTo(_ *Plot, canvas Canvas) error {
-	canvas.DrawPath(c.Path.Intersect(canvas.Rect()), c.Style)
+	canvas.DrawPath(canvas.Rect().IntersectPath(c.Path), c.Style)
 	return nil
 }
 
@@ -440,7 +462,7 @@ func (h Hint) DrawTo(_ *Plot, canvas Canvas) error {
 			tPos = tPos.Add(Point{0, dy})
 		}
 
-		canvas.DrawPath(NewLine(h.Pos, tPos), Black)
+		canvas.DrawPath(NewPointsPath(false, h.Pos, tPos), Black)
 		canvas.DrawText(tPos, h.Text, o, Black.Text(), canvas.Context().TextSize)
 	}
 	return nil
@@ -460,7 +482,7 @@ func (c circleMarker) DrawTo(canvas Canvas, style *Style) {
 	canvas.DrawCircle(c.p1, c.p2, style)
 }
 
-func NewCrossMarker(r float64) Path {
+func NewCrossMarker(r float64) Shape {
 	return NewPath(false).
 		AddMode('M', Point{-r, -r}).
 		AddMode('L', Point{r, r}).
@@ -468,19 +490,18 @@ func NewCrossMarker(r float64) Path {
 		AddMode('L', Point{r, -r})
 }
 
-func NewSquareMarker(r float64) Path {
-	return NewPath(true).
-		Add(Point{-r, -r}).
-		Add(Point{-r, r}).
-		Add(Point{r, r}).
-		Add(Point{r, -r})
+func NewSquareMarker(r float64) Shape {
+	return pointsPath{
+		points: []Point{{-r, -r}, {-r, r}, {r, r}, {r, -r}},
+		closed: true,
+	}
 }
 
-func NewTriangleMarker(r float64) Path {
-	return NewPath(true).
-		Add(Point{0, r}).
-		Add(Point{-r, -r}).
-		Add(Point{r, -r})
+func NewTriangleMarker(r float64) Shape {
+	return pointsPath{
+		points: []Point{{0, r}, {-r, -r}, {r, -r}},
+		closed: true,
+	}
 }
 
 type Cross struct {
@@ -499,10 +520,10 @@ func (c Cross) DrawTo(_ *Plot, canvas Canvas) error {
 	r := canvas.Rect()
 	if r.Inside(Point{0, 0}) {
 		canvas.DrawPath(NewPath(false).
-			Add(Point{r.Min.X, 0}).
-			Add(Point{r.Max.X, 0}).
+			MoveTo(Point{r.Min.X, 0}).
+			LineTo(Point{r.Max.X, 0}).
 			MoveTo(Point{0, r.Min.Y}).
-			Add(Point{0, r.Max.Y}), c.Style)
+			LineTo(Point{0, r.Max.Y}), c.Style)
 	}
 	return nil
 }
@@ -557,51 +578,75 @@ func (p *ParameterFunc) PreferredBounds(_, _ Bounds) (Bounds, Bounds, error) {
 }
 
 func (p *ParameterFunc) DrawTo(plot *Plot, canvas Canvas) error {
-	r := canvas.Rect()
-	t0 := p.InitialT
-	p0, err := p.Func(t0)
-	if err != nil {
-		return err
+	path := pFuncPath{
+		pf:   p,
+		plot: plot,
+		r:    canvas.Rect(),
 	}
-	path := NewPath(false)
-	path = path.Add(p0)
+	canvas.DrawPath(canvas.Rect().IntersectPath(&path), p.Style)
+	return path.e
+}
+
+type pFuncPath struct {
+	pf   *ParameterFunc
+	plot *Plot
+	r    Rect
+	e    error
+}
+
+func (p *pFuncPath) Iter(yield func(rune, Point) bool) {
+	pf := p.pf
+	t0 := pf.InitialT
+	p0, err := pf.Func(t0)
+	if err != nil {
+		p.e = err
+		return
+	}
+	if !yield('M', p0) {
+		return
+	}
 	t1 := t0
-	for i := 1; i <= p.Points; i++ {
-		t1 = p.NextT(t1)
-		p1, err := p.Func(t1)
+	for i := 1; i <= pf.Points; i++ {
+		t1 = pf.NextT(t1)
+		p1, err := pf.Func(t1)
 		if err != nil {
-			return err
+			p.e = err
+			return
 		}
-		if r.Inside(p1) || r.Inside(p0) {
-			err = p.refine(t0, p0, t1, p1, &path, plot, 10)
-			if err != nil {
-				return err
+		if p.r.Inside(p1) || p.r.Inside(p0) {
+			if !p.refine(t0, p0, t1, p1, yield, 10) {
+				return
 			}
 		}
-		path = path.Add(p1)
+		if !yield('L', p1) {
+			return
+		}
 		t0 = t1
 		p0 = p1
 	}
-	canvas.DrawPath(path.Intersect(canvas.Rect()), p.Style)
-	return nil
 }
 
-func (p *ParameterFunc) refine(w0 float64, p0 Point, w1 float64, p1 Point, path *Path, plot *Plot, depth int) error {
-	if plot.Dist(p0, p1) > 5 && depth > 0 {
+func (p *pFuncPath) IsClosed() bool {
+	return false
+}
+
+func (p *pFuncPath) refine(w0 float64, p0 Point, w1 float64, p1 Point, yield func(rune, Point) bool, depth int) bool {
+	if p.plot.Dist(p0, p1) > 5 && depth > 0 {
 		w := (w0 + w1) / 2
-		point, err := p.Func(w)
+		point, err := p.pf.Func(w)
 		if err != nil {
-			return err
+			p.e = err
+			return false
 		}
-		err = p.refine(w0, p0, w, point, path, plot, depth-1)
-		if err != nil {
-			return err
+		if !p.refine(w0, p0, w, point, yield, depth-1) {
+			return false
 		}
-		*path = path.Add(point)
-		err = p.refine(w, point, w1, p1, path, plot, depth-1)
-		if err != nil {
-			return err
+		if !yield('L', point) {
+			return false
+		}
+		if !p.refine(w, point, w1, p1, yield, depth-1) {
+			return false
 		}
 	}
-	return nil
+	return true
 }

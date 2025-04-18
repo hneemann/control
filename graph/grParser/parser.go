@@ -367,18 +367,16 @@ func Setup(fg *value.FunctionGenerator) {
 			if legVal, ok := st.GetOptional(2, value.String("")).(value.String); ok {
 				leg = string(legVal)
 			} else {
-				return nil, fmt.Errorf("curver requires a string as third argument")
+				return nil, fmt.Errorf("curve requires a string as third argument")
 			}
 
 			points, err := toPointsList(st)
 			if err != nil {
 				return nil, err
 			}
-			path := graph.NewPath(false)
-			for _, p := range points {
-				path = path.Add(p)
-			}
-			s := graph.Curve{Path: path, Style: style}
+			s := graph.Curve{
+				Path:  graph.NewPointsPath(false, points...),
+				Style: style}
 			return PlotContentValue{Holder[graph.PlotContent]{s}, graph.Legend{Name: leg, LineStyle: style}}, nil
 		},
 		Args:   3,

@@ -16,8 +16,9 @@ plot(
 )</example>
     <example name="Graph 2" desc="Funktionsplotter">plot(
  function( x->sin(pi*x), black, "sin(x)"),
- function( x->cos(pi*x), blue,  "cos(x)")
-).xBounds(0,2).grid()</example>
+ function( x->cos(pi*x), blue,  "cos(x)"),
+ function( x->tan(pi*x), red,   "tan(x)")
+).xBounds(0,2).yBounds(-2,2)</example>
     <example name="Ortskurve" desc="Darstellung der Ortskurve">let s = lin();
 let g = 3/((s+1)*(s+2));
 

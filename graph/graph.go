@@ -222,12 +222,34 @@ type PathElement struct {
 	Mode rune
 	Point
 }
-type Path struct {
+
+type Path interface {
+	Iter(func(rune, Point) bool)
+	IsClosed() bool
+}
+
+type SlicePath struct {
 	Elements []PathElement
 	Closed   bool
 }
 
-func (p Path) String() string {
+func NewPath(closed bool) SlicePath {
+	return SlicePath{Closed: closed}
+}
+
+func (p SlicePath) Iter(yield func(rune, Point) bool) {
+	for _, e := range p.Elements {
+		if !yield(e.Mode, e.Point) {
+			break
+		}
+	}
+}
+
+func (p SlicePath) IsClosed() bool {
+	return p.Closed
+}
+
+func (p SlicePath) String() string {
 	var b bytes.Buffer
 	for _, e := range p.Elements {
 		if b.Len() > 0 && e.Mode == 'M' {
@@ -242,74 +264,61 @@ func (p Path) String() string {
 	return b.String()
 }
 
-func (p Path) DrawTo(canvas Canvas, style *Style) {
+func (p SlicePath) DrawTo(canvas Canvas, style *Style) {
 	canvas.DrawPath(p, style)
 }
 
-func (p Path) Add(point Point) Path {
+func (p SlicePath) Add(point Point) SlicePath {
 	if len(p.Elements) == 0 {
-		return Path{append(p.Elements, PathElement{Mode: 'M', Point: point}), p.Closed}
+		return SlicePath{append(p.Elements, PathElement{Mode: 'M', Point: point}), p.Closed}
 	} else {
-		return Path{append(p.Elements, PathElement{Mode: 'L', Point: point}), p.Closed}
+		return SlicePath{append(p.Elements, PathElement{Mode: 'L', Point: point}), p.Closed}
 	}
 }
 
-func (p Path) LineTo(point Point) Path {
-	return Path{append(p.Elements, PathElement{Mode: 'L', Point: point}), p.Closed}
+func (p SlicePath) LineTo(point Point) SlicePath {
+	return SlicePath{append(p.Elements, PathElement{Mode: 'L', Point: point}), p.Closed}
 }
 
-func (p Path) MoveTo(point Point) Path {
-	return Path{append(p.Elements, PathElement{Mode: 'M', Point: point}), p.Closed}
+func (p SlicePath) MoveTo(point Point) SlicePath {
+	return SlicePath{append(p.Elements, PathElement{Mode: 'M', Point: point}), p.Closed}
 }
 
-func (p Path) AddMode(mode rune, point Point) Path {
-	return Path{append(p.Elements, PathElement{Mode: mode, Point: point}), p.Closed}
+func (p SlicePath) AddMode(mode rune, point Point) SlicePath {
+	return SlicePath{append(p.Elements, PathElement{Mode: mode, Point: point}), p.Closed}
 }
 
-func (p *Path) Size() int {
-	return len(p.Elements)
+type pointsPath struct {
+	points []Point
+	closed bool
 }
 
-func (p *Path) Last() Point {
-	return p.Elements[len(p.Elements)-1].Point
-}
-
-func (p Path) Intersect(r Rect) Path {
-	var path Path
-	var lastPoint Point
-	var lastInside bool
-	for _, e := range p.Elements {
-		inside := r.Inside(e.Point)
-		if e.Mode == 'M' {
-			if inside {
-				path = path.MoveTo(e.Point)
+func (p pointsPath) Iter(yield func(rune, Point) bool) {
+	for i, point := range p.points {
+		if i == 0 {
+			if !yield('M', point) {
+				return
 			}
 		} else {
-			if !lastInside && inside {
-				path = path.MoveTo(r.Cut(e.Point, lastPoint))
-			} else if lastInside && !inside {
-				path = path.LineTo(r.Cut(lastPoint, e.Point))
-			} else if inside {
-				path = path.LineTo(e.Point)
+			if !yield('L', point) {
+				return
 			}
 		}
-		lastPoint = e.Point
-		lastInside = inside
 	}
-	if len(path.Elements) > 0 {
-		path.Closed = p.Closed
-	}
-	return path
 }
 
-func NewPath(closed bool) Path {
-	return Path{Closed: closed}
+func (p pointsPath) IsClosed() bool {
+	return p.closed
 }
 
-func NewLine(p1, p2 Point) Path {
-	return Path{
-		Elements: []PathElement{{'M', p1}, {'L', p2}},
-		Closed:   false,
+func (p pointsPath) DrawTo(canvas Canvas, style *Style) {
+	canvas.DrawPath(p, style)
+}
+
+func NewPointsPath(closed bool, p ...Point) Path {
+	return pointsPath{
+		points: p,
+		closed: closed,
 	}
 }
 
@@ -331,12 +340,28 @@ type TransformCanvas struct {
 	size      Rect
 }
 
-func (t TransformCanvas) DrawPath(polygon Path, style *Style) {
-	el := make([]PathElement, len(polygon.Elements))
-	for i, p := range polygon.Elements {
-		el[i] = PathElement{p.Mode, t.transform(p.Point)}
+type transPath struct {
+	path      Path
+	transform Transform
+}
+
+func (t transPath) Iter(yield func(rune, Point) bool) {
+	for r, p := range t.path.Iter {
+		if !yield(r, t.transform(p)) {
+			return
+		}
 	}
-	t.parent.DrawPath(Path{Elements: el, Closed: polygon.Closed}, style)
+}
+
+func (t transPath) IsClosed() bool {
+	return t.path.IsClosed()
+}
+
+func (t TransformCanvas) DrawPath(polygon Path, style *Style) {
+	t.parent.DrawPath(transPath{
+		path:      polygon,
+		transform: t.transform,
+	}, style)
 }
 
 func (t TransformCanvas) DrawShape(point Point, shape Shape, style *Style) {

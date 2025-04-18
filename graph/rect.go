@@ -20,8 +20,8 @@ func NewRect(x0, x1, y0, y1 float64) Rect {
 	}
 }
 
-func (r Rect) Poly() Path {
-	return Path{
+func (r Rect) Poly() SlicePath {
+	return SlicePath{
 		Elements: []PathElement{
 			{'M', r.Min}, {'L', Point{r.Max.X, r.Min.Y}},
 			{'L', r.Max}, {'L', Point{r.Min.X, r.Max.Y}}},
@@ -194,4 +194,48 @@ func (r Rect) getFlags(p0 Point) int {
 	}
 	return flags
 
+}
+
+type interPath struct {
+	p Path
+	r Rect
+}
+
+func (i interPath) Iter(yield func(rune, Point) bool) {
+	var lastPoint Point
+	var lastInside bool
+	for m, point := range i.p.Iter {
+		inside := i.r.Inside(point)
+		if m == 'M' {
+			if inside {
+				if !yield('M', point) {
+					return
+				}
+			}
+		} else {
+			if !lastInside && inside {
+				if !yield('M', i.r.Cut(point, lastPoint)) {
+					return
+				}
+			} else if lastInside && !inside {
+				if !yield('L', i.r.Cut(lastPoint, point)) {
+					return
+				}
+			} else if inside {
+				if !yield('L', point) {
+					return
+				}
+			}
+		}
+		lastPoint = point
+		lastInside = inside
+	}
+}
+
+func (i interPath) IsClosed() bool {
+	return i.p.IsClosed()
+}
+
+func (r Rect) IntersectPath(p Path) Path {
+	return interPath{p, r}
 }
