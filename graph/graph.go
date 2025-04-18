@@ -30,6 +30,23 @@ func (p Point) DistTo(b Point) float64 {
 	return math.Sqrt(ds)
 }
 
+func (p Point) Norm() Point {
+	ds := sqr(p.X) + sqr(p.Y)
+	if ds <= 0 { // numerical instability
+		return p
+	}
+	n := math.Sqrt(ds)
+	return Point{X: p.X / n, Y: p.Y / n}
+}
+
+func (p Point) Rot90() Point {
+	return Point{X: p.Y, Y: -p.X}
+}
+
+func (p Point) Mul(f float64) Point {
+	return Point{X: p.X * f, Y: p.Y * f}
+}
+
 func sqr(x float64) float64 {
 	return x * x
 }

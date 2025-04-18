@@ -27,8 +27,9 @@ g.nyquist()</example>
 let g = 3/((s+1)*(s+1.5)*(s+2));
 
 func h(w)
-  let c = g( cplx(0,w) );
-  hint(c.real(),c.imag(),"ω="+w,black,2);
+  let c1 = g( cplx(0,w) );
+  let c2 = g( cplx(0,w*0.99) );
+  hintDir(c1.real(),c1.imag(),c2.real(),c2.imag(),"ω="+w,black,2);
 
 g.nyquist()
   .add( h(0.1)  )

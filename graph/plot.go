@@ -468,6 +468,49 @@ func (h Hint) DrawTo(_ *Plot, canvas Canvas) error {
 	return nil
 }
 
+type HintDir struct {
+	Hint
+	PosDir Point
+}
+
+func (h HintDir) DrawTo(p *Plot, canvas Canvas) error {
+	r := canvas.Rect()
+	if r.Inside(h.Pos) {
+		if h.Marker != nil && h.MarkerStyle != nil {
+			canvas.DrawShape(h.Pos, h.Marker, h.MarkerStyle)
+		}
+
+		if tc, ok := canvas.(TransformCanvas); ok {
+			parentCanvas := tc.parent
+			p1 := tc.transform(h.Pos)
+			p2 := tc.transform(h.PosDir)
+
+			delta := p1.Sub(p2).Norm().Rot90().Mul(parentCanvas.Rect().Width() / 30)
+			tPos := p1.Add(delta)
+
+			var o Orientation
+			if delta.X > 0 {
+				o = Left
+			} else if delta.X < 0 {
+				o = Right
+			} else {
+				o = HCenter
+			}
+			if delta.Y > 0 {
+				o |= Bottom
+			} else if delta.Y < 0 {
+				o |= Top
+			} else {
+				o |= VCenter
+			}
+			parentCanvas.DrawPath(NewPointsPath(false, p1, tPos), Black)
+			parentCanvas.DrawText(tPos, h.Text, o, Black.Text(), canvas.Context().TextSize)
+
+		}
+	}
+	return nil
+}
+
 type circleMarker struct {
 	p1, p2 Point
 }
