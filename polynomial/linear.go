@@ -3,6 +3,7 @@ package polynomial
 import (
 	"fmt"
 	"github.com/hneemann/control/graph"
+	"github.com/hneemann/control/graph/grParser"
 	"github.com/hneemann/iterator"
 	"github.com/hneemann/parser2/funcGen"
 	"github.com/hneemann/parser2/value"
@@ -372,7 +373,6 @@ func (p polarPath) IsClosed() bool {
 func (p Polar) DrawTo(plot *graph.Plot, canvas graph.Canvas) error {
 	r := canvas.Rect()
 	text := graph.Gray.Text()
-	dashStyle := graph.Gray.SetDash(4, 4)
 	textSize := canvas.Context().TextSize * 0.8
 	var zero graph.Point
 
@@ -400,7 +400,7 @@ func (p Polar) DrawTo(plot *graph.Plot, canvas graph.Canvas) error {
 				} else {
 					o |= graph.Right
 				}
-				canvas.DrawPath(graph.NewPointsPath(false, ap, ep), dashStyle)
+				canvas.DrawPath(graph.NewPointsPath(false, ap, ep), grParser.GridStyle)
 				canvas.DrawText(ep, fmt.Sprintf("%d°", 180-angle), o, text, textSize)
 			}
 		}
@@ -410,7 +410,7 @@ func (p Polar) DrawTo(plot *graph.Plot, canvas graph.Canvas) error {
 		for _, t := range plot.GetXTicks() {
 			radius = -t.Position
 			if radius > 1e-5 {
-				canvas.DrawPath(r.IntersectPath(polarPath{radius: radius, r: r}), dashStyle)
+				canvas.DrawPath(r.IntersectPath(polarPath{radius: radius, r: r}), grParser.GridStyle)
 				point := graph.Point{X: 0, Y: radius}
 				if r.Inside(point) {
 					canvas.DrawText(point, t.Label, graph.VCenter|graph.Left, text, textSize)
@@ -775,7 +775,7 @@ func NewBode(wMin, wMax float64) *BodePlot {
 		XBounds: graph.NewBounds(wMin, wMax),
 		XAxis:   graph.LogAxis,
 		YAxis:   graph.CreateFixedStepAxis(20),
-		Grid:    graph.Gray,
+		Grid:    grParser.GridStyle,
 		XLabel:  "ω [rad/s]",
 		YLabel:  "Amplitude [dB]",
 	}
@@ -783,7 +783,7 @@ func NewBode(wMin, wMax float64) *BodePlot {
 		XBounds: graph.NewBounds(wMin, wMax),
 		XAxis:   graph.LogAxis,
 		YAxis:   graph.CreateFixedStepAxis(45),
-		Grid:    graph.Gray,
+		Grid:    grParser.GridStyle,
 		XLabel:  "ω [rad/s]",
 		YLabel:  "Phase [°]",
 	}

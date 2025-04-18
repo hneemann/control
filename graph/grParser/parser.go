@@ -157,6 +157,8 @@ func toFloatList(stack funcGen.Stack[value.Value], val value.Value) ([]float64, 
 	}
 }
 
+var GridStyle = graph.Gray.SetDash(5, 5)
+
 func createPlotMethods() value.MethodMap {
 	return value.MethodMap{
 		"add": value.MethodAtType(1, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
@@ -187,7 +189,7 @@ func createPlotMethods() value.MethodMap {
 			return plot, nil
 		}).SetMethodDescription("label", "Sets the y-label"),
 		"grid": value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
-			plot.Value.Grid = graph.Gray
+			plot.Value.Grid = GridStyle
 			return plot, nil
 		}).SetMethodDescription("Adds a grid"),
 		"download": value.MethodAtType(1, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
