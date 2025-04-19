@@ -59,6 +59,8 @@ function loadExample(name) {
     let source = document.getElementById('source');
     fetchHelper("/example/", name, function (code) {
         source.value = code;
+        let label = document.getElementById('filenameLabel');
+        label.innerHTML = name;
         runSource();
     });
 }

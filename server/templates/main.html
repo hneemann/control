@@ -19,10 +19,8 @@
 <div id="result" onclick="runSource();"></div>
 <div>
   <div >
-    <label for="source" id="filenameLabel">Script</label>
-    <textarea class="source" rows="15" autocorrect="off" id="source" placeholder="Enter script" onkeyup="updateRow()" onclick="updateRow()">let s=lin();
-let g=3/((s+1)*(s+2));
-g.nyquist()</textarea>
+    <label for="source" id="filenameLabel"></label>
+    <textarea class="source" rows="15" autocorrect="off" id="source" placeholder="Enter script" onkeyup="updateRow()" onclick="updateRow()"></textarea>
   </div>
   <div class="buttons">
       <span style="display:inline-block;width:2em;text-align:center;margin-top:0.2em;" id="row">1</span>
@@ -41,7 +39,7 @@ g.nyquist()</textarea>
 
 <div class="fileDialog" id="saveDiv">
     <div style="margin-bottom:0.5em;">
-        <label for="filename">Dateiname</label>
+        <label for="filename">Dateiname:</label>
         <input type="text" id="filename"/>
     </div>
     <div class="fileList" id="saveFileList">
@@ -54,7 +52,7 @@ g.nyquist()</textarea>
 
 <div class="fileDialog" id="loadDiv">
     <div style="margin-bottom:0.5em;">
-        Dateien:
+        Vorhandene Dateien:
     </div>
     <div class="fileList" id="loadFileList">
     </div>

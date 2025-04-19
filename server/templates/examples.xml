@@ -83,32 +83,7 @@ plot(
   curve((k3*g).loop().simStep(10),green,"PID")
 ).xLabel("t").yLabel("h(t)").labelPos(5,0.87)</example>
 
-        <example name="Simulation 2" desc="Simulation des Systems">func PT2_Calculated(T,d)
-  let w0 = 1/T;
-  let we = w0*sqrt(1-d*d);
-  let phi = acos(d);
-  t-&gt;if t&lt;0 then 0
-            else 1-exp(-w0*d*t)/sqrt(1-d*d)*sin(we*t+phi);
-
-func PT2_Simulated(T,d)
-  let s = lin();
-  let g = 1/(T*T*s^2+2*T*d*s+1);
-  g.simStep(40);
-
-
-let T=0.2;
-let d=0.01;
-
-let calcFunc = PT2_Calculated(T,d);
-let simData  = PT2_Simulated(T,d);
-let error = simData.minMax(e->e[1]-calcFunc(e[0])).max;
-
-plot(
-  function( calcFunc, green,           "calculated"),
-  curve(    simData,  red.dash([8,8]), sprintf("simulated ( e=%.3e )",error))
-)</example>
-
-            <example name="Nelder&amp;Mead" desc="Nichtlineare Optimierung">let s = lin();
+            <!--example name="Nelder&amp;Mead" desc="Nichtlineare Optimierung">let s = lin();
 let g = 70/((s+1)*(s+2)*(s+2.5));
 
 func getSim(kp,Ti,Td)
@@ -139,6 +114,6 @@ plot(
   getCurve(kp,Ti,Td,black),
   getCurve(o1.vec[0],o1.vec[1],o1.vec[2],blue),
   getCurve(o2.vec[0],o2.vec[1],o2.vec[2],red)
-).xLabel(&quot;t&quot;).yLabel(&quot;h(t)&quot;).grid().labelPos(3,0.9)</example>
+).xLabel(&quot;t&quot;).yLabel(&quot;h(t)&quot;).grid().labelPos(3,0.9)</example-->
 
 </Examples>
