@@ -87,6 +87,19 @@ div.buttons {
     background-color: #ddd;
 }
 
+table.loginTable {
+    border-style: solid;
+    border-color: darkgray;
+    background-color: white;
+    padding: 1.5em 1em 1em 1em;
+    position: fixed;
+    top: 20%;
+    left: 50%;
+    width: 20em;
+    margin-left: -10em;
+    z-index: 5;
+}
+
 div.fileDialog {
     border-style: solid;
     border-color: darkgray;
@@ -119,4 +132,11 @@ div.head {
 div.fileList {
     display: grid;
     grid-template-columns: 1fr 1fr;
+    overflow-y:auto;
+    max-height: 20em;
+}
+
+img.icon {
+    width: 1.7em;
+    height: 1.7em;
 }

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"io"
 	"sort"
+	"strings"
 	"time"
 )
 
@@ -24,7 +25,7 @@ func (s Scripts) Len() int {
 }
 
 func (s Scripts) Less(i, j int) bool {
-	return s[i].Name < s[j].Name
+	return strings.ToLower(s[i].Name) < strings.ToLower(s[j].Name)
 }
 
 func (s Scripts) Swap(i, j int) {
