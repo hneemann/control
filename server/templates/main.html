@@ -19,15 +19,16 @@
 <div id="result" onclick="runSource();"></div>
 <div>
   <div >
+    <label for="source" id="filenameLabel">Script</label>
     <textarea class="source" rows="15" autocorrect="off" id="source" placeholder="Enter script" onkeyup="updateRow()" onclick="updateRow()">let s=lin();
 let g=3/((s+1)*(s+2));
 g.nyquist()</textarea>
   </div>
   <div class="buttons">
-      <button id="run" onclick="runSource();">Ausführen</button>
-      <!--button id="save" onclick="runSource();">Speichern</button>
-      <button id="load" onclick="runSource();">Öffnen</button-->
       <span style="display:inline-block;width:2em;text-align:center;margin-top:0.2em;" id="row">1</span>
+      <button id="run" onclick="runSource();">Ausführen</button>
+      <button id="save" onclick="showSave();">Speichern</button>
+      <button id="load" onclick="showLoad();">Öffnen</button>
       <button id="example" style="margin-left:auto" onclick="showPopUpById('examples');">Beispiele</button>
   </div>
 </div>
@@ -38,6 +39,35 @@ g.nyquist()</textarea>
     {{end}}
 </nav>
 
+<div class="fileDialog" id="saveDiv">
+    <div style="margin-bottom:0.5em;">
+        <label for="filename">Dateiname</label>
+        <input type="text" id="filename"/>
+    </div>
+    <div class="fileList" id="saveFileList">
+    </div>
+    <div style="text-align:right;margin-top:0.5em;">
+        <button onclick="hidePopUp();">Abbrechen</button>
+        <button onclick="saveSource();">Speichern</button>
+    </div>
+</div>
+
+<div class="fileDialog" id="loadDiv">
+    <div style="margin-bottom:0.5em;">
+        Dateien:
+    </div>
+    <div class="fileList" id="loadFileList">
+    </div>
+</div>
+
+<div class="fileDialog" id="saveOk">
+    <div>
+    Datei gespeichert!
+    </div>
+    <div style="text-align:right;margin-top:0.5em;">
+        <button onclick="hidePopUp();">Ok</button>
+    </div>
+</div>
 
 </body>
 </html>

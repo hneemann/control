@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Login</title>
+  <link rel="icon" type="image/svg" href="/assets/icon.svg">
+  <link rel="stylesheet" type="text/css" href="/assets/main.css"/>
+</head>
+<body>
+  <form action="/login" method="post">
+    <table class="loginTable" style="margin-top:3em">
+    <tr>
+      <td colspan="2" style="font-size:115%;font-weight:bold;text-align:center">Login Control</td>
+    </tr>
+    <tr>
+      <td><label for="username">Benutzername</label></td>
+      <td><input type="text" name="username" id="username" placeholder="Benutzername" autocomplete="username"></td>
+    </tr>
+    <tr>
+      <td><label for="password">Passwort</label></td>
+      <td><input type="password" name="password" id="password" placeholder="Passwort" autocomplete="current-password"></td>
+    </tr>
+    <tr>
+      <td></td>
+      <td style="text-align:right"><input type="submit" value="Login"></td>
+    </tr>
+    {{if .Error}}
+      <tr><td colspan="2" style="color:red">{{.Error}}</td></tr>
+    {{end}}
+    <tr>
+      <td colspan="2"><a href="/register?t={{.Target}}">Konto Anlegen</a></td>
+    </tr>
+    </table>
+    <input type="hidden" name="target" value="{{.Target}}">
+  </form>
+</body>
+</html>

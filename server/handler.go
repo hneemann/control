@@ -4,9 +4,11 @@ import (
 	"embed"
 	"encoding/xml"
 	"github.com/hneemann/control/polynomial"
+	"github.com/hneemann/control/server/data"
 	"github.com/hneemann/parser2/funcGen"
 	"github.com/hneemann/parser2/value"
 	"github.com/hneemann/parser2/value/export"
+	"github.com/hneemann/session"
 	"html"
 	"html/template"
 	"log"
@@ -21,9 +23,9 @@ var Assets embed.FS
 //go:embed templates/*
 var templateFS embed.FS
 
-var templates = template.Must(template.New("").ParseFS(templateFS, "templates/*.html"))
+var Templates = template.Must(template.New("").ParseFS(templateFS, "templates/*.html"))
 
-var mainViewTemp = templates.Lookup("main.html")
+var mainViewTemp = Templates.Lookup("main.html")
 
 type Example struct {
 	Name string `xml:"name,attr"`
@@ -99,4 +101,40 @@ func Execute(writer http.ResponseWriter, request *http.Request) {
 
 	writer.Header().Set("Content-Type", "text/html; charset=utf-8")
 	writer.Write([]byte(resHtml))
+}
+
+var loadListTemp = Templates.Lookup("loadList.html")
+var saveListTemp = Templates.Lookup("saveList.html")
+
+func Files(writer http.ResponseWriter, request *http.Request) {
+	command := strings.TrimSpace(request.FormValue("cmd"))
+	data := session.GetData[data.UserData](request)
+	if data != nil {
+		switch command {
+		case "loadList":
+			err := loadListTemp.Execute(writer, data.Scripts)
+			if err != nil {
+				log.Println(err)
+			}
+		case "saveList":
+			err := saveListTemp.Execute(writer, data.Scripts)
+			if err != nil {
+				log.Println(err)
+			}
+		case "save":
+			name := strings.TrimSpace(request.FormValue("name"))
+			src := strings.TrimSpace(request.FormValue("src"))
+			data.Add(name, src)
+		case "load":
+			name := strings.TrimSpace(request.FormValue("name"))
+			src, ok := data.Get(name)
+			if ok {
+				writer.Header().Set("Content-Type", "text; charset=utf-8")
+				writer.Write([]byte(src))
+			} else {
+				writer.Header().Set("Content-Type", "text; charset=utf-8")
+				writer.Write([]byte("no such script"))
+			}
+		}
+	}
 }

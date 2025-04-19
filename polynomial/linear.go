@@ -897,7 +897,9 @@ func (l *Linear) Simulate(tMax float64, u func(float64) (float64, error)) (*valu
 		return nil, fmt.Errorf("tMax must be greater than 0")
 	}
 
-	a, c, d, err := l.GetStateSpaceRepresentation()
+	lin := l.reduce()
+
+	a, c, d, err := lin.GetStateSpaceRepresentation()
 	if err != nil {
 		return nil, err
 	}
@@ -907,7 +909,7 @@ func (l *Linear) Simulate(tMax float64, u func(float64) (float64, error)) (*valu
 	const skip = pointsInternal / pointsExported
 	dt := tMax / pointsInternal
 	t := 0.0
-	n := len(l.Denominator) - 1
+	n := len(lin.Denominator) - 1
 	x := make(Vector, n)
 	xDot := make(Vector, n)
 

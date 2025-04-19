@@ -57,7 +57,7 @@ function hidePopUp() {
 function loadExample(name) {
     hidePopUp();
     let source = document.getElementById('source');
-    fetchHelper("/example/", name, function(code) {
+    fetchHelper("/example/", name, function (code) {
         source.value = code;
         runSource();
     });
@@ -71,10 +71,69 @@ function runSource() {
     fetchHelper("/execute/", source.value, a => result.innerHTML = a);
 }
 
+function showLoad() {
+    let formData = new FormData();
+    formData.append('cmd', "loadList");
+    fetchHelperForm("/files/", formData, html => {
+        let files = document.getElementById('loadFileList');
+        files.innerHTML = html;
+        showPopUpById('loadDiv')
+    })
+}
+
+function setName(name) {
+    let filename = document.getElementById('filename');
+    filename.value=name;
+}
+
+function showSave() {
+    let label = document.getElementById('filenameLabel');
+    let filename = document.getElementById('filename');
+    filename.value=label.innerHTML;
+
+    let formData = new FormData();
+    formData.append('cmd', "saveList");
+    fetchHelperForm("/files/", formData, html => {
+        let files = document.getElementById('saveFileList');
+        files.innerHTML = html;
+        showPopUpById('saveDiv')
+    })
+}
+
+function saveSource() {
+    let formData = new FormData();
+    let filename = document.getElementById('filename');
+    let source = document.getElementById('source');
+    formData.append('cmd', "save");
+    formData.append('name', filename.value);
+    formData.append('src', source.value);
+    fetchHelperForm("/files/", formData, html => {
+        let label = document.getElementById('filenameLabel');
+        label.innerHTML = filename.value;
+        showPopUpById('saveOk')
+    })
+}
+
+function loadSource(name) {
+    let formData = new FormData();
+    formData.append('cmd', "load");
+    formData.append('name', name);
+    fetchHelperForm("/files/", formData, code => {
+        let label = document.getElementById('filenameLabel');
+        label.innerHTML = name;
+        let source = document.getElementById('source');
+        source.value = code;
+        hidePopUp();
+    })
+}
+
 function fetchHelper(url, data, target) {
     let formData = new FormData();
     formData.append('data', data);
+    fetchHelperForm(url, formData, target);
+}
 
+function fetchHelperForm(url, formData, target) {
     fetch(url, {body: formData, method: "post", signal: AbortSignal.timeout(10000)})
         .then(function (response) {
             if (response.status !== 200) {

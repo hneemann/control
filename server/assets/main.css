@@ -86,3 +86,29 @@ div.buttons {
 .menu-content a:hover {
     background-color: #ddd;
 }
+
+div.fileDialog {
+    border-style: solid;
+    border-color: darkgray;
+    background-color: white;
+    padding: 1.5em 1em 1em 1em;
+    visibility: hidden;
+    position: fixed;
+    top: 20%;
+    left: 50%;
+    width: 20em;
+    margin-left: -10em;
+    z-index: 5;
+}
+
+div.fileEntry {
+    padding: 0.2em 0.2em 0.2em 0.2em;
+}
+div.fileEntry:hover {
+    background-color: #ddd;
+}
+
+div.fileList {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+}

@@ -4,10 +4,14 @@ github.com/hneemann/iterator v0.0.0-20240630073221-aab15310e28c h1:itki31EzEjJar
 github.com/hneemann/iterator v0.0.0-20240630073221-aab15310e28c/go.mod h1:Y4LjHwBja9p9vaWnjpEzDorwPp/9UcDmycAJPX6WBEI=
 github.com/hneemann/parser2 v0.0.0-20250418172120-8265ebb9ad6f h1:oqKevBlp9HfVyBIs++uKVvns8DlKvJQ7br09xes+SBE=
 github.com/hneemann/parser2 v0.0.0-20250418172120-8265ebb9ad6f/go.mod h1:SS7YsssqCfYO9w+HMtAff0UDfXqdjkq2rhElFNl7tZ4=
+github.com/hneemann/shopping v0.0.0-20250313065044-e9ac8a9cf766 h1:arfgmgAaSjfFfUWY0zhD+KxpODxihGpLjzCIVQtPgGQ=
+github.com/hneemann/shopping v0.0.0-20250313065044-e9ac8a9cf766/go.mod h1:F6KO8NwfMcJpgvemP4EzsboNnKXKzcGYdmzhUWS2nok=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/stretchr/testify v1.10.0 h1:Xv5erBjTwe/5IxqUQTdXv5kgmIvbHo3QQyRwhJsOfJA=
 github.com/stretchr/testify v1.10.0/go.mod h1:r2ic/lqez/lEtzL7wO/rwa5dbSLXVDPFyf8C91i36aY=
+golang.org/x/crypto v0.37.0 h1:kJNSjF/Xp7kU0iB2Z+9viTPMW4EqqsrywMXLJOOsXSE=
+golang.org/x/crypto v0.37.0/go.mod h1:vg+k43peMZ0pUMhYmVAWysMK35e6ioLh3wB8ZCAfbVc=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405 h1:yhCVgyC4o1eVCa2tZl7eS0r+SDo693bJlVdllGtEeKM=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
 gopkg.in/yaml.v3 v3.0.1 h1:fxVm/GzAzEWqLHuvctI91KS9hhNmmWOoWu0XTYJS7CA=
