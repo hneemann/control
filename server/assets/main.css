@@ -108,6 +108,14 @@ div.fileEntry:hover {
     background-color: #ddd;
 }
 
+div.head {
+    display: block;
+    text-align: center;
+    background-color: #ddd;
+    padding: 0.5em 0.5em 0.5em 0.5em;
+    margin: -1.5em -1em 1em;
+}
+
 div.fileList {
     display: grid;
     grid-template-columns: 1fr 1fr;

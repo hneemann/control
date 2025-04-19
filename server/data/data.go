@@ -62,6 +62,16 @@ func (d *UserData) Get(name string) (string, bool) {
 	return "", false
 }
 
+func (d *UserData) Delete(name string) bool {
+	for i, script := range d.Scripts {
+		if script.Name == name {
+			d.Scripts = append(d.Scripts[:i], d.Scripts[i+1:]...)
+			return true
+		}
+	}
+	return false
+}
+
 func Load(r io.Reader) (*UserData, error) {
 	var data UserData
 	err := json.NewDecoder(r).Decode(&data)

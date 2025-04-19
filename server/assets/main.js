@@ -105,6 +105,22 @@ function showSave() {
 function saveSource() {
     let formData = new FormData();
     let filename = document.getElementById('filename');
+    formData.append('cmd', "exists");
+    formData.append('name', filename.value);
+    fetchHelperForm("/files/", formData, text => {
+        if (text.trim() !== "false") {
+            let label = document.getElementById('confirmName');
+            label.innerHTML = filename.value;
+            showPopUpById('saveConfirm')
+            return;
+        }
+        overwriteSource();
+    })
+}
+
+function overwriteSource() {
+    let formData = new FormData();
+    let filename = document.getElementById('filename');
     let source = document.getElementById('source');
     formData.append('cmd', "save");
     formData.append('name', filename.value);
@@ -125,6 +141,27 @@ function loadSource(name) {
         label.innerHTML = name;
         let source = document.getElementById('source');
         source.value = code;
+        hidePopUp();
+    })
+}
+
+function deleteFileConfirm() {
+    let filename = document.getElementById('filename');
+    let conf = document.getElementById('confirmDeleteName');
+    conf.innerHTML = filename.value;
+    showPopUpById('deleteConfirm')
+}
+
+function deleteFile() {
+    let filename = document.getElementById('filename');
+    let formData = new FormData();
+    formData.append('cmd', "delete");
+    formData.append('name', filename.value);
+    fetchHelperForm("/files/", formData, text => {
+        if (text.trim() !== "true") {
+            showPopUpById('deleteError')
+            return;
+        }
         hidePopUp();
     })
 }

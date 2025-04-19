@@ -38,6 +38,9 @@
 </nav>
 
 <div class="fileDialog" id="saveDiv">
+    <div class="head">
+        Datei Speichern
+    </div>
     <div style="margin-bottom:0.5em;">
         <label for="filename">Dateiname:</label>
         <input type="text" id="filename"/>
@@ -45,16 +48,23 @@
     <div class="fileList" id="saveFileList">
     </div>
     <div style="text-align:right;margin-top:0.5em;">
+        <button onclick="deleteFileConfirm();">Löschen</button>
         <button onclick="hidePopUp();">Abbrechen</button>
         <button onclick="saveSource();">Speichern</button>
     </div>
 </div>
 
 <div class="fileDialog" id="loadDiv">
+    <div class="head">
+        Datei Öffnen
+    </div>
     <div style="margin-bottom:0.5em;">
         Vorhandene Dateien:
     </div>
     <div class="fileList" id="loadFileList">
+    </div>
+    <div style="text-align:right;margin-top:0.5em;">
+        <button onclick="hidePopUp();">Abbrechen</button>
     </div>
 </div>
 
@@ -64,6 +74,35 @@
     </div>
     <div style="text-align:right;margin-top:0.5em;">
         <button onclick="hidePopUp();">Ok</button>
+    </div>
+</div>
+
+<div class="fileDialog" id="deleteError">
+    <div>
+    Datei konnte nicht gelöscht werden!
+    </div>
+    <div style="text-align:right;margin-top:0.5em;">
+        <button onclick="hidePopUp();">Ok</button>
+    </div>
+</div>
+
+<div class="fileDialog" id="saveConfirm">
+    <div>
+    Datei "<span id="confirmName"></span>" existiert bereits!
+    </div>
+    <div style="text-align:right;margin-top:0.5em;">
+        <button onclick="hidePopUp();">Abbrechen</button>
+        <button onclick="overwriteSource();">Überschreiben</button>
+    </div>
+</div>
+
+<div class="fileDialog" id="deleteConfirm">
+    <div>
+    Datei "<span id="confirmDeleteName"></span>" wirklich löschen?
+    </div>
+    <div style="text-align:right;margin-top:0.5em;">
+        <button onclick="hidePopUp();">Abbrechen</button>
+        <button onclick="deleteFile();">Löschen</button>
     </div>
 </div>
 

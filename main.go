@@ -47,7 +47,7 @@ func main() {
 		session.NewDataManager[data.UserData](
 			session.NewFileSystemFactory(*dataFolder),
 			persist{}),
-		8*time.Hour, 3*time.Hour)
+		4*time.Hour, time.Hour)
 	defer sc.Close()
 
 	examples := server.ReadExamples()
