@@ -74,8 +74,8 @@ func (p PlotValue) GetType() value.Type {
 func (p PlotValue) add(pc value.Value) error {
 	if c, ok := pc.(PlotContentValue); ok {
 		p.Holder.Value.AddContent(c.Value)
-		if c.legend.Name != "" {
-			p.Holder.Value.AddLegend(c.legend.Name, c.legend.LineStyle, c.legend.Shape, c.legend.ShapeStyle)
+		if c.Legend.Name != "" {
+			p.Holder.Value.AddLegend(c.Legend.Name, c.Legend.LineStyle, c.Legend.Shape, c.Legend.ShapeStyle)
 		}
 		return nil
 	} else if l, ok := pc.ToList(); ok {
@@ -158,8 +158,8 @@ func createPlotMethods() value.MethodMap {
 		"add": value.MethodAtType(1, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if pc, ok := stack.Get(1).(PlotContentValue); ok {
 				plot.Value.AddContent(pc.Value)
-				if pc.legend.Name != "" {
-					plot.Value.AddLegend(pc.legend.Name, pc.legend.LineStyle, pc.legend.Shape, pc.legend.ShapeStyle)
+				if pc.Legend.Name != "" {
+					plot.Value.AddLegend(pc.Legend.Name, pc.Legend.LineStyle, pc.Legend.Shape, pc.Legend.ShapeStyle)
 				}
 			} else {
 				return nil, fmt.Errorf("add requires a plot content")
@@ -271,9 +271,9 @@ func createPlotContentMethods() value.MethodMap {
 	return value.MethodMap{
 		"legend": value.MethodAtType(1, func(plot PlotContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if leg, ok := stack.Get(1).(value.String); ok {
-				plot.legend.Name = string(leg)
+				plot.Legend.Name = string(leg)
 			} else {
-				return nil, fmt.Errorf("legend requires a string")
+				return nil, fmt.Errorf("Legend requires a string")
 			}
 			return plot, nil
 		}).SetMethodDescription("str", "sets a legend"),
@@ -282,7 +282,11 @@ func createPlotContentMethods() value.MethodMap {
 
 type PlotContentValue struct {
 	Holder[graph.PlotContent]
-	legend graph.Legend
+	Legend graph.Legend
+}
+
+func NewPlotContentValue(pc graph.PlotContent) PlotContentValue {
+	return PlotContentValue{Holder[graph.PlotContent]{pc}, graph.Legend{}}
 }
 
 func (p PlotContentValue) GetType() value.Type {

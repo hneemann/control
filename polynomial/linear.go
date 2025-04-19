@@ -794,30 +794,40 @@ func NewBode(wMin, wMax float64) *BodePlot {
 	return &b
 }
 
-func (l *Linear) Nyquist(alsoNeg bool) (*graph.Plot, error) {
-	cZero := l.Eval(complex(0, 0))
-	isZero := !(math.IsNaN(real(cZero)) || math.IsNaN(imag(cZero)))
-
-	posStyle := graph.Black.SetStrokeWidth(2)
-	negStyle := graph.Black.SetDash(4, 4).SetStrokeWidth(2)
-
-	var cp []graph.PlotContent
-	cp = append(cp, graph.Cross{Style: graph.Gray})
+func (l *Linear) NyquistPos(style *graph.Style) graph.PlotContent {
 	pfPos := graph.NewLogParameterFunc(0.001, 1000)
 	pfPos.Func = func(w float64) (graph.Point, error) {
 		c := l.Eval(complex(0, w))
 		return graph.Point{X: real(c), Y: imag(c)}, nil
 	}
-	pfPos.Style = posStyle
-	cp = append(cp, pfPos)
+	pfPos.Style = style
+	return pfPos
+}
+
+func (l *Linear) NyquistNeg(style *graph.Style) graph.PlotContent {
+	pfNeg := graph.NewLogParameterFunc(0.001, 1000)
+	pfNeg.Func = func(w float64) (graph.Point, error) {
+		c := l.Eval(complex(0, -w))
+		return graph.Point{X: real(c), Y: imag(c)}, nil
+	}
+	pfNeg.Style = style
+	return pfNeg
+}
+
+var (
+	posStyle = graph.Black.SetStrokeWidth(2)
+	negStyle = graph.Black.SetDash(4, 4).SetStrokeWidth(2)
+)
+
+func (l *Linear) Nyquist(alsoNeg bool) (*graph.Plot, error) {
+	cZero := l.Eval(complex(0, 0))
+	isZero := !(math.IsNaN(real(cZero)) || math.IsNaN(imag(cZero)))
+
+	var cp []graph.PlotContent
+	cp = append(cp, graph.Cross{Style: graph.Gray})
+	cp = append(cp, l.NyquistPos(posStyle))
 	if alsoNeg {
-		pfNeg := graph.NewLogParameterFunc(0.001, 1000)
-		pfNeg.Func = func(w float64) (graph.Point, error) {
-			c := l.Eval(complex(0, -w))
-			return graph.Point{X: real(c), Y: imag(c)}, nil
-		}
-		pfNeg.Style = negStyle
-		cp = append(cp, pfNeg)
+		cp = append(cp, l.NyquistNeg(negStyle))
 		cp = append(cp, graph.Scatter{Points: []graph.Point{{X: -1, Y: 0}}, Shape: graph.NewCrossMarker(4), Style: graph.Red})
 	}
 	zeroMarker := graph.NewCircleMarker(4)

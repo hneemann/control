@@ -225,6 +225,34 @@ func linMethods() value.MethodMap {
 			}
 			return grParser.NewPlotValue(plot), nil
 		}).SetMethodDescription("also negative", "creates a nyquist plot").VarArgsMethod(0, 1),
+		"nyquistPos": value.MethodAtType(2, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
+			if style, ok := st.GetOptional(1, defStyleValue).(grParser.StyleValue); ok {
+				if leg, ok := st.GetOptional(2, value.String("")).(value.String); ok {
+					plotContent := lin.NyquistPos(style.Value)
+					contentValue := grParser.NewPlotContentValue(plotContent)
+					if leg != "" {
+						contentValue.Legend.Name = string(leg)
+						contentValue.Legend.LineStyle = style.Value
+					}
+					return contentValue, nil
+				}
+			}
+			return nil, fmt.Errorf("nyquistPos requires a style")
+		}).SetMethodDescription("color", "leg", "creates a nyquist plot content with positive ω").VarArgsMethod(0, 2),
+		"nyquistNeg": value.MethodAtType(2, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
+			if style, ok := st.GetOptional(1, defStyleValue).(grParser.StyleValue); ok {
+				if leg, ok := st.GetOptional(2, value.String("")).(value.String); ok {
+					plotContent := lin.NyquistNeg(style.Value)
+					contentValue := grParser.NewPlotContentValue(plotContent)
+					if leg != "" {
+						contentValue.Legend.Name = string(leg)
+						contentValue.Legend.LineStyle = style.Value
+					}
+					return contentValue, nil
+				}
+			}
+			return nil, fmt.Errorf("nyquistNeg requires a style")
+		}).SetMethodDescription("color", "leg", "creates a nyquist plot content with negative ω").VarArgsMethod(0, 2),
 		"pMargin": value.MethodAtType(0, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
 			w0, margin, err := lin.PMargin()
 			return value.NewMap(value.RealMap{
