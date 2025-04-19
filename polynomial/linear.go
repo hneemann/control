@@ -842,17 +842,6 @@ func (l *Linear) Nyquist(alsoNeg bool) (*graph.Plot, error) {
 	}, nil
 }
 
-func (l *Linear) refineNy(w0 float64, p0 graph.Point, w1 float64, p1 graph.Point, path *graph.SlicePath, depth int) {
-	if p0.DistTo(p1) > 0.05 && depth > 0 {
-		w := (w0 + w1) / 2
-		c := l.Eval(complex(0, w))
-		p := graph.Point{X: real(c), Y: imag(c)}
-		l.refineNy(w0, p0, w, p, path, depth-1)
-		*path = path.Add(p)
-		l.refineNy(w, p, w1, p1, path, depth-1)
-	}
-}
-
 type dataSet struct {
 	elements []float64
 	cols     int
