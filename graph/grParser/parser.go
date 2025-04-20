@@ -166,6 +166,14 @@ func createPlotMethods() value.MethodMap {
 			}
 			return plot, nil
 		}).SetMethodDescription("plotContent", "Adds a plot content to the plot"),
+		"title": value.MethodAtType(1, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			if str, ok := stack.Get(1).(value.String); ok {
+				plot.Value.Title = string(str)
+			} else {
+				return nil, fmt.Errorf("title requires a string")
+			}
+			return plot, nil
+		}).SetMethodDescription("label", "Sets the title"),
 		"xLabel": value.MethodAtType(1, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if str, ok := stack.Get(1).(value.String); ok {
 				plot.Value.XLabel = string(str)
@@ -264,6 +272,23 @@ func createPlotMethods() value.MethodMap {
 			}
 			return nil, fmt.Errorf("zoom requires three float values")
 		}).SetMethodDescription("x", "y", "factor", "Zoom at the given point by the given factor"),
+		"inset": value.MethodAtType(4, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			if xmin, ok := stack.Get(1).ToFloat(); ok {
+				if xmax, ok := stack.Get(2).ToFloat(); ok {
+					if ymin, ok := stack.Get(3).ToFloat(); ok {
+						if ymax, ok := stack.Get(4).ToFloat(); ok {
+							r := graph.NewRect(xmin, xmax, ymin, ymax)
+							plot.Value.FillBackground = true
+							return NewPlotContentValue(graph.ImageInset{
+								Location: r,
+								Image:    plot.Value,
+							}), nil
+						}
+					}
+				}
+			}
+			return nil, fmt.Errorf("inset requires floats as arguments")
+		}).SetMethodDescription("xMin", "xMax", "yMin", "yMax", "converts plot to an inset"),
 	}
 }
 

@@ -38,9 +38,11 @@ type Plot struct {
 	YBounds        Bounds
 	LeftBorder     int
 	Grid           *Style
+	Title          string
 	XLabel         string
 	YLabel         string
 	Content        []PlotContent
+	FillBackground bool
 	xTicks         []Tick
 	yTicks         []Tick
 	legendPosGiven bool
@@ -48,15 +50,21 @@ type Plot struct {
 	Legend         []Legend
 	BoundsModifier BoundsModifier
 	trans          Transform
+	canvas         Canvas
 }
 
 func (p *Plot) DrawTo(canvas Canvas) error {
+	p.canvas = canvas
 	c := canvas.Context()
 	rect := canvas.Rect()
 	textStyle := Black.Text()
 	textSize := c.TextSize
 	if textSize <= rect.Height()/200 {
 		textSize = rect.Height() / 200
+	}
+
+	if p.FillBackground {
+		canvas.DrawPath(rect.Poly(), White.SetStrokeWidth(0).SetFill(White))
 	}
 
 	b := p.LeftBorder
@@ -165,6 +173,9 @@ func (p *Plot) DrawTo(canvas Canvas) error {
 		}
 	}
 	canvas.DrawText(Point{innerRect.Min.X + small, innerRect.Max.Y - small}, p.YLabel, Top|Left, textStyle, textSize)
+	if p.Title != "" {
+		canvas.DrawText(Point{innerRect.Max.X - small, innerRect.Max.Y - small}, p.Title, Top|Right, textStyle, textSize)
+	}
 
 	for _, plotContent := range p.Content {
 		err := plotContent.DrawTo(p, inner)
@@ -692,4 +703,30 @@ func (p *pFuncPath) refine(w0 float64, p0 Point, w1 float64, p1 Point, yield fun
 		}
 	}
 	return true
+}
+
+type ImageInset struct {
+	Location Rect
+	Image    Image
+}
+
+func (s ImageInset) PreferredBounds(xGiven, yGiven Bounds) (x, y Bounds, err error) {
+	xGiven.Merge(s.Location.Min.X)
+	xGiven.Merge(s.Location.Max.X)
+	yGiven.Merge(s.Location.Min.Y)
+	yGiven.Merge(s.Location.Max.Y)
+	return xGiven, yGiven, nil
+}
+
+func (s ImageInset) DrawTo(p *Plot, _ Canvas) error {
+	minPos := p.trans(s.Location.Min)
+	maxPos := p.trans(s.Location.Max)
+	inner := ResizeCanvas{
+		parent: p.canvas,
+		size: Rect{
+			Min: minPos,
+			Max: maxPos,
+		},
+	}
+	return s.Image.DrawTo(inner)
 }

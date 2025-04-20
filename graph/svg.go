@@ -131,10 +131,9 @@ func (s *SVG) DrawText(a Point, text string, orientation Orientation, style *Sty
 	case 0:
 		a.Y += textSize / 4
 	case 1:
-		st += ";dominant-baseline:middle"
+		a.Y -= textSize / 3
 	case 2:
-		st += ";dominant-baseline:hanging"
-		a.Y -= textSize / 4
+		a.Y -= textSize / 10 * 9
 	}
 
 	s.write("  <text ")

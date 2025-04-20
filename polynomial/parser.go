@@ -419,14 +419,14 @@ func bodeMethods() value.MethodMap {
 				}
 			}
 			return nil, errors.New("add requires a linear system, a color and a legend")
-		}).SetMethodDescription("lin", "color", "label", "adds a linear system to the bode plot").VarArgsMethod(1, 3),
+		}).SetMethodDescription("lin", "color", "label", "adds a linear system to the bode plot").VarArgsMethod(1, 3).Pure(false),
 		"textSize": value.MethodAtType(1, func(plot BodePlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if si, ok := stack.Get(1).ToFloat(); ok {
 				plot.textSize = si
 				return plot, nil
 			}
 			return nil, fmt.Errorf("textSize requires a float value")
-		}).SetMethodDescription("size", "Sets the text size"),
+		}).SetMethodDescription("size", "Sets the text size").Pure(false),
 		"file": value.MethodAtType(1, func(plot BodePlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if name, ok := stack.Get(1).(value.String); ok {
 				return grParser.ImageToFile(plot.Value, string(name))
@@ -448,7 +448,7 @@ func bodeMethods() value.MethodMap {
 				}
 			}
 			return nil, errors.New("addWithLatency requires a linear system, a latency, a color and a legend")
-		}).SetMethodDescription("lin", "Tt", "color", "label", "adds a linear system with latency to the bode plot").VarArgsMethod(2, 4),
+		}).SetMethodDescription("lin", "Tt", "color", "label", "adds a linear system with latency to the bode plot").VarArgsMethod(2, 4).Pure(false),
 		"aBounds": value.MethodAtType(2, func(bode BodePlotValue, st funcGen.Stack[value.Value]) (value.Value, error) {
 			if min, ok := st.Get(1).ToFloat(); ok {
 				if max, ok := st.Get(2).ToFloat(); ok {
@@ -457,7 +457,7 @@ func bodeMethods() value.MethodMap {
 				}
 			}
 			return nil, errors.New("aBounds requires two float values")
-		}).SetMethodDescription("min", "max", "sets the amplitude bounds"),
+		}).SetMethodDescription("min", "max", "sets the amplitude bounds").Pure(false),
 		"pBounds": value.MethodAtType(2, func(bode BodePlotValue, st funcGen.Stack[value.Value]) (value.Value, error) {
 			if min, ok := st.Get(1).ToFloat(); ok {
 				if max, ok := st.Get(2).ToFloat(); ok {
@@ -466,7 +466,33 @@ func bodeMethods() value.MethodMap {
 				}
 			}
 			return nil, errors.New("pBounds requires two float values")
-		}).SetMethodDescription("min", "max", "sets the phase bounds"),
+		}).SetMethodDescription("min", "max", "sets the phase bounds").Pure(false),
+		"ampModify": value.MethodAtType(1, func(bode BodePlotValue, st funcGen.Stack[value.Value]) (value.Value, error) {
+			if cl, ok := st.Get(1).ToClosure(); ok {
+				a, err := cl.Eval(st, grParser.NewPlotValue(bode.Value.amplitude))
+				if err != nil {
+					return nil, err
+				}
+				if aplot, ok := a.(grParser.PlotValue); ok {
+					bode.Value.amplitude = aplot.Value
+					return bode, nil
+				}
+			}
+			return nil, errors.New("ampModify requires a function that returns the modified plot")
+		}).SetMethodDescription("function", "the given function gets the amplitude plot and mast return the modified amplitude plot!").Pure(false),
+		"phaseModify": value.MethodAtType(1, func(bode BodePlotValue, st funcGen.Stack[value.Value]) (value.Value, error) {
+			if cl, ok := st.Get(1).ToClosure(); ok {
+				a, err := cl.Eval(st, grParser.NewPlotValue(bode.Value.phase))
+				if err != nil {
+					return nil, err
+				}
+				if aplot, ok := a.(grParser.PlotValue); ok {
+					bode.Value.phase = aplot.Value
+					return bode, nil
+				}
+			}
+			return nil, errors.New("phaseModify requires a function that returns the modified plot")
+		}).SetMethodDescription("function", "the given function gets the phase plot and mast return the modified phase plot!").Pure(false),
 	}
 }
 

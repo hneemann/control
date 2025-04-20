@@ -145,6 +145,11 @@ func (s *Style) SetStrokeWidth(sw float64) *Style {
 	var style Style
 	style = *s
 	style.StrokeWidth = sw
+	if sw == 0 {
+		style.Stroke = false
+	} else {
+		style.Stroke = true
+	}
 	return &style
 }
 
@@ -403,4 +408,37 @@ func (t TransformCanvas) Context() *Context {
 
 func (t TransformCanvas) String() string {
 	return fmt.Sprintf("Transform: %v", t.transform)
+}
+
+type ResizeCanvas struct {
+	parent Canvas
+	size   Rect
+}
+
+func (r ResizeCanvas) DrawPath(polygon Path, style *Style) {
+	r.parent.DrawPath(polygon, style)
+}
+
+func (r ResizeCanvas) DrawShape(point Point, shape Shape, style *Style) {
+	r.parent.DrawShape(point, shape, style)
+}
+
+func (r ResizeCanvas) DrawCircle(a Point, b Point, style *Style) {
+	r.parent.DrawCircle(a, b, style)
+}
+
+func (r ResizeCanvas) DrawText(a Point, s string, orientation Orientation, style *Style, testSize float64) {
+	r.parent.DrawText(a, s, orientation, style, testSize)
+}
+
+func (r ResizeCanvas) Rect() Rect {
+	return r.size
+}
+
+func (r ResizeCanvas) Context() *Context {
+	return r.parent.Context()
+}
+
+func (r ResizeCanvas) String() string {
+	return fmt.Sprintf("Resize: %v", r.size)
 }
