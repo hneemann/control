@@ -41,16 +41,16 @@
     <div class="head">
         Datei Speichern
     </div>
-    <div style="margin-bottom:0.5em;">
+    <div style="display:flex; margin-bottom:0.5em;">
         <label for="filename">Dateiname:</label>
-        <input size="25" type="text" id="filename"/>
+        <input size="25" type="text" id="saveDialogFilename"/>
     </div>
     <div class="fileList" id="saveFileList">
     </div>
-    <div style="text-align:right;margin-top:0.5em;">
-        <button onclick="deleteFileConfirm();">Löschen</button>
-        <button onclick="hidePopUp();">Abbrechen</button>
-        <button onclick="saveSource();">Speichern</button>
+    <div class="buttons" style="margin-top:0.5em;">
+        <button onclick="deleteFileConfirm();" title="Löschen"><img class="icon" src="/assets/delete.svg"/></button>
+        <button style="margin-left:auto" onclick="hidePopUp();" title="Abbrechen"><img class="icon" src="/assets/cancel.svg"/></button>
+        <button onclick="saveSource();" title="Speichern"><img class="icon" src="/assets/ok.svg"/></button>
     </div>
 </div>
 
@@ -63,17 +63,18 @@
     </div>
     <div class="fileList" id="loadFileList">
     </div>
-    <div style="text-align:right;margin-top:0.5em;">
-        <button onclick="hidePopUp();">Abbrechen</button>
+    <div class="buttons" style="margin-top:0.5em;">
+        <button style="margin-left:auto" onclick="hidePopUp();" title="Abbrechen"><img class="icon" src="/assets/cancel.svg"/></button>
     </div>
 </div>
 
-<div class="fileDialog" id="saveOk">
+<div class="fileDialog" id="overwriteConfirm">
     <div>
-    Datei gespeichert!
+    Soll das Script überschrieben werden?
     </div>
     <div style="text-align:right;margin-top:0.5em;">
-        <button onclick="hidePopUp();">Ok</button>
+        <button onclick="hidePopUp();">Abbrechen</button>
+        <button onclick="overwriteConfirmed();">Überschreiben</button>
     </div>
 </div>
 

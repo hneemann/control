@@ -51,8 +51,17 @@ textarea.source {
     overflow: auto;
 }
 
+input {
+    font-size: inherit;
+    display: flex;
+    margin-left: 0.25em;
+    width: 100%;
+}
+
 button {
     font-size: inherit;
+    margin-left: 0.25em;
+    margin-right: 0.25em;
 }
 
 math {
@@ -134,9 +143,13 @@ div.fileList {
     grid-template-columns: 1fr 1fr;
     overflow-y:auto;
     max-height: 20em;
+    border-style: solid;
+    border-color: darkgray;
+    border-width: 1px;
 }
 
 img.icon {
     width: 1.7em;
     height: 1.7em;
 }
+

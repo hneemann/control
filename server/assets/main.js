@@ -54,14 +54,56 @@ function hidePopUp() {
     }
 }
 
+// This function is used to set the name of the file in the save dialog.
+// It is called when the user clicks on a file in the list of files.
+function setName(name) {
+    let filename = document.getElementById('saveDialogFilename');
+    filename.value = name;
+}
+
+let loadedCode = "";
+
+function cleanString(str) {
+    return str.replace(/\r\n/g, "\n").trim();
+}
+
+function setSource(name, code) {
+    let source = document.getElementById('source');
+    source.value = code;
+    loadedCode = cleanString(code);
+    let label = document.getElementById('filenameLabel');
+    label.innerHTML = name;
+    runSource();
+}
+
+
+let overwriteAction = null;
+
+function checkOverwrite(action) {
+    let source = document.getElementById('source');
+    let srcCleaned = cleanString(source.value);
+    if (loadedCode !== srcCleaned) {
+        overwriteAction = action;
+        showPopUpById('overwriteConfirm')
+        return;
+    }
+    action();
+}
+
+function overwriteConfirmed() {
+    hidePopUp();
+    if (overwriteAction != null) {
+        overwriteAction();
+        overwriteAction = null;
+    }
+}
+
 function loadExample(name) {
     hidePopUp();
-    let source = document.getElementById('source');
-    fetchHelper("/example/", name, function (code) {
-        source.value = code;
-        let label = document.getElementById('filenameLabel');
-        label.innerHTML = name;
-        runSource();
+    checkOverwrite(() => {
+        fetchHelper("/example/", name, function (code) {
+            setSource(name, code);
+        });
     });
 }
 
@@ -74,24 +116,21 @@ function runSource() {
 }
 
 function showLoad() {
-    let formData = new FormData();
-    formData.append('cmd', "loadList");
-    fetchHelperForm("/files/", formData, html => {
-        let files = document.getElementById('loadFileList');
-        files.innerHTML = html;
-        showPopUpById('loadDiv')
+    checkOverwrite(() => {
+        let formData = new FormData();
+        formData.append('cmd', "loadList");
+        fetchHelperForm("/files/", formData, html => {
+            let files = document.getElementById('loadFileList');
+            files.innerHTML = html;
+            showPopUpById('loadDiv')
+        })
     })
-}
-
-function setName(name) {
-    let filename = document.getElementById('filename');
-    filename.value=name;
 }
 
 function showSave() {
     let label = document.getElementById('filenameLabel');
-    let filename = document.getElementById('filename');
-    filename.value=label.innerHTML;
+    let filename = document.getElementById('saveDialogFilename');
+    filename.value = label.innerHTML;
 
     let formData = new FormData();
     formData.append('cmd', "saveList");
@@ -104,7 +143,7 @@ function showSave() {
 
 function saveSource() {
     let formData = new FormData();
-    let filename = document.getElementById('filename');
+    let filename = document.getElementById('saveDialogFilename');
     formData.append('cmd', "exists");
     formData.append('name', filename.value);
     fetchHelperForm("/files/", formData, text => {
@@ -119,8 +158,9 @@ function saveSource() {
 }
 
 function overwriteSource() {
+    hidePopUp();
     let formData = new FormData();
-    let filename = document.getElementById('filename');
+    let filename = document.getElementById('saveDialogFilename');
     let source = document.getElementById('source');
     formData.append('cmd', "save");
     formData.append('name', filename.value);
@@ -128,7 +168,7 @@ function overwriteSource() {
     fetchHelperForm("/files/", formData, html => {
         let label = document.getElementById('filenameLabel');
         label.innerHTML = filename.value;
-        showPopUpById('saveOk')
+        loadedCode = source.value;
     })
 }
 
@@ -137,23 +177,20 @@ function loadSource(name) {
     formData.append('cmd', "load");
     formData.append('name', name);
     fetchHelperForm("/files/", formData, code => {
-        let label = document.getElementById('filenameLabel');
-        label.innerHTML = name;
-        let source = document.getElementById('source');
-        source.value = code;
+        setSource(name, code);
         hidePopUp();
     })
 }
 
 function deleteFileConfirm() {
-    let filename = document.getElementById('filename');
+    let filename = document.getElementById('saveDialogFilename');
     let conf = document.getElementById('confirmDeleteName');
     conf.innerHTML = filename.value;
     showPopUpById('deleteConfirm')
 }
 
 function deleteFile() {
-    let filename = document.getElementById('filename');
+    let filename = document.getElementById('saveDialogFilename');
     let formData = new FormData();
     formData.append('cmd', "delete");
     formData.append('name', filename.value);
