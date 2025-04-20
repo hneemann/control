@@ -268,7 +268,7 @@ func SimulateBlock(st funcGen.Stack[value.Value], def *value.List, tMax float64)
 func getStringList(st funcGen.Stack[value.Value], m value.Map, key string) ([]string, error) {
 	v, ok := m.Get(key)
 	if !ok {
-		return nil, fmt.Errorf("key %s not found", key)
+		return []string{}, nil
 	}
 	if l, ok := v.(value.String); ok {
 		return []string{string(l)}, nil
