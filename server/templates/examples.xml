@@ -58,8 +58,9 @@ bode(0.01,100)
   .add(k,  blue,  "K")
   .add(g0, black, sprintf("G0, phi=%.1f°, ws=%.2f rad/s",pm.pMargin,pm.w0) )</example>
     <example name="pid" desc="Die pid-Funktion">[
- ["pid(2,2)",   "=", pid(2,2)  ],
- ["pid(2,3,1)", "=", pid(2,3,1)]
+ ["pid(2,2)",           "=", pid(2,2)  ],
+ ["pid(2,3,1)",         "=", pid(2,3,1)],
+ ["pidReal(2,3,1,0.1)", "=", pidReal(2,3,1,0.1)]
 ]</example>
     <example name="Evans" desc="Darstellung einer Wurzelortskurve">let s = lin();
 let g = 3/((s+1)*(s+2));

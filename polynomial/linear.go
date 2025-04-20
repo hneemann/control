@@ -273,22 +273,24 @@ func (l *Linear) MulFloat(f float64) *Linear {
 	}
 }
 
-func PID(kp, ti, td float64) *Linear {
-	n := Polynomial{kp, kp * ti, kp * ti * td}.Canonical()
-	var d Polynomial
+func PID(kp, ti, td float64) (*Linear, error) {
 	if ti == 0 {
-		d = Polynomial{1}
-	} else {
-		d = Polynomial{0, ti}
+		return nil, errors.New("ti must not be zero")
 	}
-	zeros, _ := n.Roots()
-	poles, _ := d.Roots()
 	return &Linear{
-		Numerator:   n,
-		Denominator: d,
-		zeros:       zeros,
-		poles:       poles,
+		Numerator:   Polynomial{kp, kp * ti, kp * ti * td}.Canonical(),
+		Denominator: Polynomial{0, ti},
+	}, nil
+}
+
+func PIDReal(kp, ti, td, tp float64) (*Linear, error) {
+	if ti == 0 {
+		return nil, errors.New("ti must not be zero")
 	}
+	return &Linear{
+		Numerator:   Polynomial{kp, kp * (ti + tp), kp * ti * (td + tp)}.Canonical(),
+		Denominator: Polynomial{0, ti, ti * tp}.Canonical(),
+	}, nil
 }
 
 type evansPoint struct {

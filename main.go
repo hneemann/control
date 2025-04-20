@@ -53,17 +53,18 @@ func main() {
 	examples := server.ReadExamples()
 
 	mux := http.NewServeMux()
-	mux.Handle("/assets/", http.FileServer(http.FS(server.Assets)))
 	if *debug {
 		mux.HandleFunc("/", sc.DebugLogin("admin", "admin", server.CreateMain(examples)))
 	} else {
 		mux.HandleFunc("/", sc.CheckSessionFunc(server.CreateMain(examples)))
 	}
+	mux.HandleFunc("/login", sc.LoginHandler(server.Templates.Lookup("login.html")))
+	mux.HandleFunc("/register", sc.RegisterHandler(server.Templates.Lookup("register.html")))
+
+	mux.Handle("/assets/", Cache(http.FileServer(http.FS(server.Assets)), 60, !*debug))
 	mux.HandleFunc("/execute/", sc.CheckSessionRestFunc(server.Execute))
 	mux.HandleFunc("/example/", sc.CheckSessionRestFunc(server.CreateExamples(examples)))
 	mux.HandleFunc("/files/", sc.CheckSessionRestFunc(server.Files))
-	mux.HandleFunc("/login", sc.LoginHandler(server.Templates.Lookup("login.html")))
-	mux.HandleFunc("/register", sc.RegisterHandler(server.Templates.Lookup("register.html")))
 
 	serv := &http.Server{Addr: ":" + strconv.Itoa(*port), Handler: mux}
 
@@ -94,4 +95,16 @@ func main() {
 		log.Println(err)
 	}
 
+}
+
+func Cache(parent http.Handler, minutes int, enableCache bool) http.Handler {
+	if enableCache {
+		return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+			writer.Header().Add("Cache-Control", "public, max-age="+strconv.Itoa(minutes*60))
+			parent.ServeHTTP(writer, request)
+		})
+	} else {
+		log.Println("browser caching disabled")
+		return parent
+	}
 }
