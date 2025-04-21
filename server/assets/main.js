@@ -62,6 +62,7 @@ function setName(name) {
 }
 
 let loadedCode = "";
+let loadedName = "";
 
 function cleanString(str) {
     return str.replace(/\r\n/g, "\n").trim();
@@ -71,6 +72,7 @@ function setSource(name, code) {
     let source = document.getElementById('source');
     source.value = code;
     loadedCode = cleanString(code);
+    loadedName = name;
     let label = document.getElementById('filenameLabel');
     label.innerHTML = name;
     runSource();
@@ -115,6 +117,21 @@ function runSource() {
     fetchHelper("/execute/", source.value, a => result.innerHTML = a);
 }
 
+function save() {
+    if (loadedName==="") {
+        showSaveAs();
+    } else {
+        let formData = new FormData();
+        let source = document.getElementById('source');
+        formData.append('cmd', "save");
+        formData.append('name', loadedName);
+        formData.append('src', source.value);
+        fetchHelperForm("/files/", formData, html => {
+            loadedCode = cleanString(source.value);
+        })
+    }
+}
+
 function showLoad() {
     checkOverwrite(() => {
         let formData = new FormData();
@@ -127,7 +144,7 @@ function showLoad() {
     })
 }
 
-function showSave() {
+function showSaveAs() {
     let label = document.getElementById('filenameLabel');
     let filename = document.getElementById('saveDialogFilename');
     filename.value = label.innerHTML;
@@ -168,6 +185,7 @@ function overwriteSource() {
     fetchHelperForm("/files/", formData, html => {
         let label = document.getElementById('filenameLabel');
         label.innerHTML = filename.value;
+        loadedName = filename.value;
         loadedCode = source.value;
     })
 }
