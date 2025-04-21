@@ -893,6 +893,14 @@ func (v dataSet) toList() *value.List {
 	})
 }
 
+func (v dataSet) ToPoints() []graph.Point {
+	p := make([]graph.Point, v.rows)
+	for i := 0; i < v.rows; i++ {
+		p[i] = graph.Point{X: v.get(i, 0), Y: v.get(i, 1)}
+	}
+	return p
+}
+
 func (l *Linear) Simulate(tMax float64, u func(float64) (float64, error)) (*value.List, error) {
 	if tMax <= 0 {
 		return nil, fmt.Errorf("tMax must be greater than 0")

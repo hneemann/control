@@ -11,26 +11,27 @@ func TestSimple(t *testing.T) {
 
 	s := NewSystem().
 		AddBlock([]string{}, "w", Const(1)).
-		AddBlock([]string{"ul"}, "y", Linear(&Linear{
+		AddBlock([]string{"ul"}, "y", BlockLinear(&Linear{
 			Numerator:   Polynomial{70},
 			Denominator: NewRoots(complex(-1, 0), complex(-2, 0), complex(-2.5, 0)).Polynomial(),
 		})).
-		AddBlock([]string{"e"}, "u", Linear(Must(PIDReal(0.3, 1.14, 0.77, 0.05)))).
+		AddBlock([]string{"e"}, "u", BlockLinear(Must(PIDReal(0.3, 1.14, 0.77, 0.05)))).
 		AddBlock([]string{"w", "y"}, "e", Sub()).
 		AddBlock([]string{"u"}, "ul", Limit(0, 0.8))
 
 	err := s.Initialize()
 	assert.NoError(t, err)
 
-	data := s.Run(10)
+	data, err := s.Run(10)
+	assert.NoError(t, err)
 
 	p := graph.Plot{YBounds: graph.NewBounds(-0.2, 2)}
 
 	n := 0
-	for name, points := range data {
+	for name, data := range data {
 		style := graph.GetColor(n)
 		p.AddContent(graph.Curve{
-			Path:  graph.NewPointsPath(false, points...),
+			Path:  graph.NewPointsPath(false, data.ToPoints()...),
 			Style: style,
 		})
 		p.AddLegend(name, style, nil, nil)
@@ -43,11 +44,4 @@ func TestSimple(t *testing.T) {
 	assert.NoError(t, p.DrawTo(svg))
 	assert.NoError(t, svg.Close())
 	assert.NoError(t, file.Close())
-}
-
-func Must[T any](a T, e error) T {
-	if e != nil {
-		panic(e)
-	}
-	return a
 }

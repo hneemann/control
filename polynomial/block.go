@@ -304,7 +304,7 @@ func (s *System) Initialize() error {
 	return nil
 }
 
-func (s *System) Run(tMax float64) (value.Value, error) {
+func (s *System) Run(tMax float64) (map[string]*dataSet, error) {
 	const pointsExported = 1000
 	const pointsInternal = 100000
 	const skip = pointsInternal / pointsExported
@@ -347,12 +347,12 @@ func (s *System) Run(tMax float64) (value.Value, error) {
 		t += dt
 	}
 
-	rm := make(map[string]value.Value)
-	for i, output := range s.outputs {
-		rm[output] = result[i].toList()
+	rm := make(map[string]*dataSet)
+	for i := range result {
+		rm[s.outputs[i]] = result[i]
 	}
 
-	return value.NewMap(value.RealMap(rm)), nil
+	return rm, nil
 }
 
 func SimulateBlock(st funcGen.Stack[value.Value], def *value.List, tMax float64) (value.Value, error) {
@@ -394,7 +394,16 @@ func SimulateBlock(st funcGen.Stack[value.Value], def *value.List, tMax float64)
 		return nil, err
 	}
 
-	return sys.Run(tMax)
+	result, err := sys.Run(tMax)
+	if err != nil {
+		return nil, err
+	}
+	rm := make(map[string]value.Value)
+	for k, v := range result {
+		rm[k] = v.toList()
+	}
+
+	return value.NewMap(value.RealMap(rm)), nil
 }
 
 func valueToBlock(blockValue value.Value, in []string) (BlockFactory, error) {
@@ -458,5 +467,5 @@ func getStringList(st funcGen.Stack[value.Value], m value.Map, key string) ([]st
 		}
 		return result, nil
 	}
-	return nil, fmt.Errorf("invalid signal type", v)
+	return nil, fmt.Errorf("invalid signal type: %v", v)
 }
