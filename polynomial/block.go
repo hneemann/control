@@ -4,37 +4,85 @@ import (
 	"fmt"
 	"github.com/hneemann/parser2/funcGen"
 	"github.com/hneemann/parser2/value"
+	"strings"
 )
 
 type BlockFactory struct {
 	creator BlockFactoryFunc
 	inputs  int
+	name    string
 }
 
 type BlockFactoryFunc func([]*float64) (BlockNextFunc, error)
 
-type BlockNextFunc func(t, dt float64) float64
+type BlockNextFunc func(t, dt float64) (float64, error)
 
 func Gain(g float64) BlockFactory {
 	return BlockFactory{
 		creator: func(args []*float64) (BlockNextFunc, error) {
 			a := args[0]
-			return func(_, _ float64) float64 {
-				return *a * g
+			return func(_, _ float64) (float64, error) {
+				return *a * g, nil
 			}, nil
 		},
 		inputs: 1,
+		name:   fmt.Sprintf("Gain %f", g),
 	}
 }
 
 func Const(c float64) BlockFactory {
 	return BlockFactory{
 		creator: func(args []*float64) (BlockNextFunc, error) {
-			return func(_, _ float64) float64 {
-				return c
+			return func(_, _ float64) (float64, error) {
+				return c, nil
 			}, nil
 		},
 		inputs: 0,
+		name:   fmt.Sprintf("Const %f", c),
+	}
+}
+
+func Closure(c funcGen.Function[value.Value]) BlockFactory {
+	return BlockFactory{
+		creator: func(args []*float64) (BlockNextFunc, error) {
+			st := funcGen.NewEmptyStack[value.Value]()
+			vals := make([]value.Value, len(args))
+			return func(_, _ float64) (float64, error) {
+				for i, a := range args {
+					vals[i] = value.Float(*a)
+				}
+				res, err := c.EvalSt(st, vals...)
+				if err != nil {
+					return 0, err
+				}
+				if f, ok := res.ToFloat(); ok {
+					return f, nil
+				}
+				return 0, fmt.Errorf("invalid return value %v", res)
+			}, nil
+		},
+		inputs: c.Args,
+		name:   "function of input signals",
+	}
+}
+
+func ClosureTime(c funcGen.Function[value.Value]) BlockFactory {
+	return BlockFactory{
+		creator: func(args []*float64) (BlockNextFunc, error) {
+			st := funcGen.NewEmptyStack[value.Value]()
+			return func(t, _ float64) (float64, error) {
+				res, err := c.Eval(st, value.Float(t))
+				if err != nil {
+					return 0, err
+				}
+				if f, ok := res.ToFloat(); ok {
+					return f, nil
+				}
+				return 0, fmt.Errorf("invalid return value %v", res)
+			}, nil
+		},
+		inputs: 0,
+		name:   "function of time",
 	}
 }
 
@@ -43,11 +91,12 @@ func Add() BlockFactory {
 		creator: func(args []*float64) (BlockNextFunc, error) {
 			a := args[0]
 			b := args[1]
-			return func(_, _ float64) float64 {
-				return *a + *b
+			return func(_, _ float64) (float64, error) {
+				return *a + *b, nil
 			}, nil
 		},
 		inputs: 2,
+		name:   "Add",
 	}
 }
 
@@ -55,17 +104,17 @@ func Limit(min, max float64) BlockFactory {
 	return BlockFactory{
 		creator: func(args []*float64) (BlockNextFunc, error) {
 			in := args[0]
-			return func(_, _ float64) float64 {
+			return func(_, _ float64) (float64, error) {
 				if *in < min {
-					return min
+					return min, nil
 				} else if *in > max {
-					return max
+					return max, nil
 				}
-				return *in
+				return *in, nil
 			}, nil
 		},
 		inputs: 1,
-	}
+		name:   fmt.Sprintf("Limit %f-%f", min, max)}
 }
 
 func Sub() BlockFactory {
@@ -73,11 +122,66 @@ func Sub() BlockFactory {
 		creator: func(args []*float64) (BlockNextFunc, error) {
 			a := args[0]
 			b := args[1]
-			return func(_, _ float64) float64 {
-				return *a - *b
+			return func(_, _ float64) (float64, error) {
+				return *a - *b, nil
 			}, nil
 		},
 		inputs: 2,
+		name:   "Sub",
+	}
+}
+
+func Integrate() BlockFactory {
+	return BlockFactory{
+		creator: func(args []*float64) (BlockNextFunc, error) {
+			a := args[0]
+			var sum float64
+			return func(_, dt float64) (float64, error) {
+				tf := sum
+				sum += *a * dt
+				return tf, nil
+			}, nil
+		},
+		inputs: 1,
+		name:   "Integrate",
+	}
+}
+
+func BlockPID(kp, Ti, Td float64) (BlockFactory, error) {
+	if Ti == 0 {
+		return BlockFactory{}, fmt.Errorf("Ti must not be zero")
+	}
+	return BlockFactory{
+		creator: func(args []*float64) (BlockNextFunc, error) {
+			a := args[0]
+			var sum float64
+			var last float64
+			return func(_, dt float64) (float64, error) {
+				dif := (*a - last) / dt
+				u := kp * (*a + sum/Ti + dif*Td)
+				last = *a
+				sum += *a * dt
+				return u, nil
+			}, nil
+		},
+		inputs: 1,
+		name:   fmt.Sprintf("PID kp=%f, Ti=%f, Td=%f", kp, Ti, Td),
+	}, nil
+}
+
+func Differentiate() BlockFactory {
+	return BlockFactory{
+		creator: func(args []*float64) (BlockNextFunc, error) {
+			a := args[0]
+			var last float64
+			return func(_, dt float64) (float64, error) {
+				dif := (*a - last) / dt
+				last = *a
+				return dif, nil
+			}, nil
+		},
+		inputs: 1,
+		name:   "Differentiate",
 	}
 }
 
@@ -92,17 +196,18 @@ func BlockLinear(lin *Linear) BlockFactory {
 			n := len(lin.Denominator) - 1
 			x := make(Vector, n)
 			xDot := make(Vector, n)
-			return func(_, dt float64) float64 {
+			return func(_, dt float64) (float64, error) {
 				y := c.Mul(x) + d**in
 
 				a.Mul(xDot, x)
 				xDot[n-1] += *in
 				x.Add(dt, xDot)
 
-				return y
+				return y, nil
 			}, nil
 		},
 		inputs: 1,
+		name:   fmt.Sprintf("Linear %v", lin),
 	}
 }
 
@@ -110,6 +215,10 @@ type SystemBlock struct {
 	factory BlockFactory
 	inputs  []string
 	output  string
+}
+
+func (b SystemBlock) String() string {
+	return fmt.Sprintf("%s: %v->%s", b.factory.name, b.inputs, b.output)
 }
 
 type System struct {
@@ -137,7 +246,7 @@ func (s *System) Initialize() error {
 	var outputMap = make(map[string]int)
 	for _, block := range s.blocks {
 		if len(block.inputs) != block.factory.inputs {
-			return fmt.Errorf("invalid number of inputs in %v", block.factory)
+			return fmt.Errorf("invalid number of inputs in '%v'", block)
 		}
 
 		if _, ok := outputMap[block.output]; ok {
@@ -167,7 +276,7 @@ func (s *System) Initialize() error {
 		}
 		nextFunc, err := block.factory.creator(args)
 		if err != nil {
-			return fmt.Errorf("error creating block %v: %w", block.factory, err)
+			return fmt.Errorf("error creating block '%v': %w", block, err)
 		}
 		next = append(next, nextFunc)
 	}
@@ -179,36 +288,43 @@ func (s *System) Initialize() error {
 	return nil
 }
 
-func (s *System) Run(tMax float64) value.Value {
+func (s *System) Run(tMax float64) (value.Value, error) {
+	const pointsExported = 1000
+	const pointsInternal = 100000
+	const skip = pointsInternal / pointsExported
+
+	dt := tMax / pointsInternal
 	t := 0.0
-	dt := 0.00001
-	const skip = 1000
 
 	nextValues := make([]float64, len(s.values))
 	result := make([]*dataSet, len(s.outputs))
-	maxn := int(tMax / dt / skip)
 	for i := range result {
-		result[i] = newDataSet(maxn, 2)
+		result[i] = newDataSet(pointsExported+1, 2)
 	}
 
-	count := skip
-	n := 0
-	for t < tMax {
+	counter := 0
+	row := 0
+	for {
 
-		count--
-		if count == 0 {
-			count = skip
-			if n < maxn {
-				for i, y := range s.values {
-					result[i].set(n, 0, t)
-					result[i].set(n, 1, y)
-				}
+		if counter == 0 {
+			counter = skip
+			for i, y := range s.values {
+				result[i].set(row, 0, t)
+				result[i].set(row, 1, y)
 			}
-			n++
+			row++
+			if row > pointsExported {
+				break
+			}
 		}
+		counter--
 
 		for i, next := range s.next {
-			nextValues[i] = next(t, dt)
+			var err error
+			nextValues[i], err = next(t, dt)
+			if err != nil {
+				return nil, fmt.Errorf("error in block %d: %w", i, err)
+			}
 		}
 		copy(s.values, nextValues)
 		t += dt
@@ -219,7 +335,7 @@ func (s *System) Run(tMax float64) value.Value {
 		rm[output] = result[i].toList()
 	}
 
-	return value.NewMap(value.RealMap(rm))
+	return value.NewMap(value.RealMap(rm)), nil
 }
 
 func SimulateBlock(st funcGen.Stack[value.Value], def *value.List, tMax float64) (value.Value, error) {
@@ -238,16 +354,15 @@ func SimulateBlock(st funcGen.Stack[value.Value], def *value.List, tMax float64)
 				return fmt.Errorf("output must be a single value")
 			}
 
-			fac, ok := m.Get("block")
+			blockValue, ok := m.Get("block")
 			if !ok {
 				return fmt.Errorf("block not found %w", err)
 			}
-			if f, ok := fac.(BlockFactoryValue); ok {
-				sys.AddBlock(in, out[0], f.Value)
-			} else {
-				return fmt.Errorf("block not valid")
+			f, err := valueToBlock(blockValue, in)
+			if err != nil {
+				return fmt.Errorf("block not valid %w", err)
 			}
-
+			sys.AddBlock(in, out[0], f)
 		} else {
 			return fmt.Errorf("invalid block definition %v", v)
 		}
@@ -262,7 +377,42 @@ func SimulateBlock(st funcGen.Stack[value.Value], def *value.List, tMax float64)
 		return nil, err
 	}
 
-	return sys.Run(tMax), nil
+	return sys.Run(tMax)
+}
+
+func valueToBlock(blockValue value.Value, in []string) (BlockFactory, error) {
+	if fac, ok := blockValue.(BlockFactoryValue); ok {
+		return fac.Value, nil
+	}
+	if lin, ok := blockValue.(*Linear); ok {
+		return BlockLinear(lin), nil
+	}
+	if strVal, ok := blockValue.(value.String); ok {
+		str := strings.ToLower(string(strVal))
+		switch str {
+		case "+":
+			return Add(), nil
+		case "-":
+			return Sub(), nil
+		case "dif":
+			return Differentiate(), nil
+		case "int":
+			return Integrate(), nil
+		}
+	}
+	if c, ok := blockValue.ToFloat(); ok {
+		return Const(c), nil
+	}
+
+	if c, ok := blockValue.ToClosure(); ok {
+		if len(in) == 0 {
+			return ClosureTime(c), nil
+		} else {
+			return Closure(c), nil
+		}
+	}
+
+	return BlockFactory{}, fmt.Errorf("invalid block type %v", blockValue)
 }
 
 func getStringList(st funcGen.Stack[value.Value], m value.Map, key string) ([]string, error) {

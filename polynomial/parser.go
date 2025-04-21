@@ -203,10 +203,6 @@ func linMethods() value.MethodMap {
 		"stringPoly": value.MethodAtType(0, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
 			return value.String(lin.StringPoly(false)), nil
 		}).SetMethodDescription("creates a string representation of the linear system"),
-		"block": value.MethodAtType(0, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
-			linear := BlockLinear(lin)
-			return BlockFactoryValue{Holder: grParser.Holder[BlockFactory]{linear}}, nil
-		}).SetMethodDescription("creates a simulation block"),
 		"evans": value.MethodAtType(1, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
 			if k, ok := st.Get(1).ToFloat(); ok {
 				red, err := lin.Reduce()
@@ -631,47 +627,58 @@ var Parser = value.New().
 		Args:   4,
 		IsPure: true,
 	}.SetDescription("func", "initial", "delta", "iterations", "calculates a Nelder&Mead optimization").VarArgs(2, 4)).
-	AddStaticFunction("limiterBlock", funcGen.Function[value.Value]{
+	AddStaticFunction("blockLimiter", funcGen.Function[value.Value]{
 		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
 			if min, ok := stack.Get(0).ToFloat(); ok {
 				if max, ok := stack.Get(1).ToFloat(); ok {
 					return BlockFactoryValue{grParser.Holder[BlockFactory]{Limit(min, max)}}, nil
 				}
 			}
-			return nil, fmt.Errorf("limiterBlock requires 2 float values")
+			return nil, fmt.Errorf("blockLimiter requires 2 float values")
 		},
 		Args:   2,
 		IsPure: true,
 	}.SetDescription("min", "max", "creates a limiter block")).
-	AddStaticFunction("subBlock", funcGen.Function[value.Value]{
+	AddStaticFunction("blockGain", funcGen.Function[value.Value]{
 		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
-			return BlockFactoryValue{grParser.Holder[BlockFactory]{Sub()}}, nil
-		},
-		Args:   0,
-		IsPure: true,
-	}.SetDescription("creates a subtraction  block")).
-	AddStaticFunction("constBlock", funcGen.Function[value.Value]{
-		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
-			if c, ok := stack.Get(0).ToFloat(); ok {
-				return BlockFactoryValue{grParser.Holder[BlockFactory]{Const(c)}}, nil
+			if g, ok := stack.Get(0).ToFloat(); ok {
+				return BlockFactoryValue{grParser.Holder[BlockFactory]{Gain(g)}}, nil
 			}
-			return nil, fmt.Errorf("constBlock requires a float values")
+			return nil, fmt.Errorf("blockGainr requires a float value")
 		},
 		Args:   1,
 		IsPure: true,
-	}.SetDescription("const", "creates a const block")).
-	AddStaticFunction("nonlinSimulate", funcGen.Function[value.Value]{
+	}.SetDescription("gain", "creates a gain block")).
+	AddStaticFunction("blockPid", funcGen.Function[value.Value]{
+		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
+			if kp, ok := stack.Get(0).ToFloat(); ok {
+				if ti, ok := stack.Get(1).ToFloat(); ok {
+					if td, ok := stack.GetOptional(2, value.Float(0)).ToFloat(); ok {
+						pid, err := BlockPID(kp, ti, td)
+						if err != nil {
+							return nil, err
+						}
+						return BlockFactoryValue{grParser.Holder[BlockFactory]{pid}}, nil
+					}
+				}
+			}
+			return nil, fmt.Errorf("blockPid requires 3 float values")
+		},
+		Args:   3,
+		IsPure: true,
+	}.SetDescription("k_p", "T_I", "T_D", "a PID block").VarArgs(2, 3)).
+	AddStaticFunction("simulate", funcGen.Function[value.Value]{
 		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
 			if def, ok := stack.Get(0).ToList(); ok {
 				if tMax, ok := stack.Get(1).ToFloat(); ok {
 					return SimulateBlock(stack, def, tMax)
 				}
 			}
-			return nil, fmt.Errorf("nonLinSimulate requires a list and a flost")
+			return nil, fmt.Errorf("simulate requires a list and a flost")
 		},
 		Args:   2,
 		IsPure: true,
-	}.SetDescription("def", "tMax", "simulates the model")).
+	}.SetDescription("def", "tMax", "simulates the given model")).
 	AddOp("*", true, complexOperation("*", linOperation("*", value.Mul,
 		func(a, b *Linear) (value.Value, error) {
 			return a.Mul(b), nil
