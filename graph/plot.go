@@ -719,8 +719,8 @@ func (s ImageInset) PreferredBounds(xGiven, yGiven Bounds) (x, y Bounds, err err
 }
 
 func (s ImageInset) DrawTo(p *Plot, _ Canvas) error {
-	minPos := p.trans(s.Location.Min)
-	maxPos := p.trans(s.Location.Max)
+	minPos := p.trans(s.Location.Min).Add(Point{1, 1})
+	maxPos := p.trans(s.Location.Max).Sub(Point{1, 1})
 	inner := ResizeCanvas{
 		parent: p.canvas,
 		size: Rect{
