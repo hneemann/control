@@ -117,7 +117,7 @@ func (s *SVG) DrawCircle(a Point, b Point, style *Style) {
 }
 
 func (s *SVG) DrawText(a Point, text string, orientation Orientation, style *Style, textSize float64) {
-	st := fmt.Sprintf("font-size:%0.2gpx", textSize)
+	st := fmt.Sprintf("font-size:%0.1fpx", textSize)
 	switch orientation & 3 {
 	case 0:
 		a.X += textSize / 4

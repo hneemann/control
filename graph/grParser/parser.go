@@ -631,13 +631,6 @@ func ImageToFile(plot graph.Image, name string) (value.Value, error) {
 }
 
 func createSVG(p graph.Image, writer io.Writer) error {
-	textSize := 15.0
-	if ts, ok := p.(TextSizeProvider); ok {
-		s := ts.TextSize()
-		if s > 2 {
-			textSize = s
-		}
-	}
 	width := 800.0
 	height := 600.0
 	if ts, ok := p.(OutputSizeProvider); ok {
@@ -645,6 +638,13 @@ func createSVG(p graph.Image, writer io.Writer) error {
 		if w > 2 && h > 2 {
 			width = w
 			height = h
+		}
+	}
+	textSize := height / 40
+	if ts, ok := p.(TextSizeProvider); ok {
+		s := ts.TextSize()
+		if s > 2 {
+			textSize = s
 		}
 	}
 
