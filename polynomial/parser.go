@@ -387,15 +387,21 @@ func exp(st funcGen.Stack[value.Value], a value.Value, b value.Value) (value.Val
 
 type BodePlotValue struct {
 	grParser.Holder[*BodePlot]
-	textSize float64
+	textSize      float64
+	width, height float64
 }
 
 var (
-	_ grParser.TextSizeProvider = BodePlotValue{}
+	_ grParser.TextSizeProvider   = BodePlotValue{}
+	_ grParser.OutputSizeProvider = BodePlotValue{}
 )
 
 func (b BodePlotValue) TextSize() float64 {
 	return b.textSize
+}
+
+func (b BodePlotValue) OutputSize() (float64, float64) {
+	return b.width, b.height
 }
 
 func (b BodePlotValue) DrawTo(canvas graph.Canvas) error {
@@ -431,9 +437,19 @@ func bodeMethods() value.MethodMap {
 			}
 			return nil, fmt.Errorf("textSize requires a float value")
 		}).SetMethodDescription("size", "Sets the text size").Pure(false),
+		"outputSize": value.MethodAtType(2, func(plot BodePlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			if width, ok := stack.Get(1).ToFloat(); ok {
+				if height, ok := stack.Get(2).ToFloat(); ok {
+					plot.width = width
+					plot.height = height
+					return plot, nil
+				}
+			}
+			return nil, fmt.Errorf("outputSize requires two float values")
+		}).SetMethodDescription("width", "height", "Sets the svg-output size"),
 		"file": value.MethodAtType(1, func(plot BodePlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if name, ok := stack.Get(1).(value.String); ok {
-				return grParser.ImageToFile(plot.Value, string(name))
+				return grParser.ImageToFile(plot, string(name))
 			}
 			return nil, fmt.Errorf("download requires a string value")
 		}).SetMethodDescription("filename", "Enables download"),
@@ -604,7 +620,7 @@ var Parser = value.New().
 			if wMin, ok := stack.Get(0).ToFloat(); ok {
 				if wMax, ok := stack.Get(1).ToFloat(); ok {
 					b := NewBode(wMin, wMax)
-					return BodePlotValue{grParser.Holder[*BodePlot]{b}, 0}, nil
+					return BodePlotValue{grParser.Holder[*BodePlot]{b}, 0, 0, 0}, nil
 				}
 			}
 			return nil, fmt.Errorf("boded requires 2 float values")

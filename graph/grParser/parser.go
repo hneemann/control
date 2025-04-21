@@ -53,10 +53,13 @@ const (
 type PlotValue struct {
 	Holder[*graph.Plot]
 	textSize float64
+	width    float64
+	height   float64
 }
 
 var (
-	_ TextSizeProvider = PlotValue{}
+	_ TextSizeProvider   = PlotValue{}
+	_ OutputSizeProvider = PlotValue{}
 )
 
 func (p PlotValue) DrawTo(canvas graph.Canvas) error {
@@ -64,7 +67,7 @@ func (p PlotValue) DrawTo(canvas graph.Canvas) error {
 }
 
 func NewPlotValue(plot *graph.Plot) PlotValue {
-	return PlotValue{Holder[*graph.Plot]{plot}, 0}
+	return PlotValue{Holder[*graph.Plot]{plot}, 0, 0, 0}
 }
 
 func (p PlotValue) GetType() value.Type {
@@ -88,6 +91,10 @@ func (p PlotValue) add(pc value.Value) error {
 
 func (p PlotValue) TextSize() float64 {
 	return p.textSize
+}
+
+func (b PlotValue) OutputSize() (float64, float64) {
+	return b.width, b.height
 }
 
 func createStyleMethods() value.MethodMap {
@@ -196,7 +203,7 @@ func createPlotMethods() value.MethodMap {
 		}).SetMethodDescription("Adds a grid"),
 		"file": value.MethodAtType(1, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if str, ok := stack.Get(1).(value.String); ok {
-				return ImageToFile(plot.Value, string(str))
+				return ImageToFile(plot, string(str))
 			} else {
 				return nil, fmt.Errorf("download requires a string")
 			}
@@ -258,6 +265,16 @@ func createPlotMethods() value.MethodMap {
 			}
 			return nil, fmt.Errorf("textSize requires a float values")
 		}).SetMethodDescription("size", "Sets the text size"),
+		"outputSize": value.MethodAtType(2, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			if width, ok := stack.Get(1).ToFloat(); ok {
+				if height, ok := stack.Get(2).ToFloat(); ok {
+					plot.width = width
+					plot.height = height
+					return plot, nil
+				}
+			}
+			return nil, fmt.Errorf("outputSize requires two float values")
+		}).SetMethodDescription("width", "height", "Sets the svg-output size"),
 		"zoom": value.MethodAtType(3, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if x, ok := stack.Get(1).ToFloat(); ok {
 				if y, ok := stack.Get(2).ToFloat(); ok {
@@ -584,6 +601,10 @@ type TextSizeProvider interface {
 	TextSize() float64
 }
 
+type OutputSizeProvider interface {
+	OutputSize() (float64, float64)
+}
+
 func HtmlExport(v value.Value) (template.HTML, bool, error) {
 	if p, ok := v.(graph.Image); ok {
 		var buffer bytes.Buffer
@@ -617,8 +638,17 @@ func createSVG(p graph.Image, writer io.Writer) error {
 			textSize = s
 		}
 	}
+	width := 800.0
+	height := 600.0
+	if ts, ok := p.(OutputSizeProvider); ok {
+		w, h := ts.OutputSize()
+		if w > 2 && h > 2 {
+			width = w
+			height = h
+		}
+	}
 
-	svg := graph.NewSVG(800, 600, textSize, writer)
+	svg := graph.NewSVG(width, height, textSize, writer)
 	err := p.DrawTo(svg)
 	if err != nil {
 		return err
