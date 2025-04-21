@@ -100,6 +100,22 @@ func Add() BlockFactory {
 	}
 }
 
+func AddMultiple(n int) BlockFactory {
+	return BlockFactory{
+		creator: func(args []*float64) (BlockNextFunc, error) {
+			return func(_, _ float64) (float64, error) {
+				var sum float64
+				for i := 0; i < n; i++ {
+					sum += *args[i]
+				}
+				return sum, nil
+			}, nil
+		},
+		inputs: n,
+		name:   "Add",
+	}
+}
+
 func Limit(min, max float64) BlockFactory {
 	return BlockFactory{
 		creator: func(args []*float64) (BlockNextFunc, error) {
@@ -392,7 +408,11 @@ func valueToBlock(blockValue value.Value, in []string) (BlockFactory, error) {
 		str := strings.ToLower(string(strVal))
 		switch str {
 		case "+":
-			return Add(), nil
+			if len(in) > 2 {
+				return AddMultiple(len(in)), nil
+			} else {
+				return Add(), nil
+			}
 		case "-":
 			return Sub(), nil
 		case "dif":

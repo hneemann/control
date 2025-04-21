@@ -9,6 +9,7 @@ import (
 	"github.com/hneemann/parser2/funcGen"
 	"github.com/hneemann/parser2/value"
 	"html/template"
+	"math"
 	"math/cmplx"
 )
 
@@ -631,7 +632,7 @@ var Parser = value.New().
 		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
 			if min, ok := stack.Get(0).ToFloat(); ok {
 				if max, ok := stack.Get(1).ToFloat(); ok {
-					return BlockFactoryValue{grParser.Holder[BlockFactory]{Limit(min, max)}}, nil
+					return BlockFactoryValue{grParser.Holder[BlockFactory]{Limit(math.Min(min, max), math.Max(min, max))}}, nil
 				}
 			}
 			return nil, fmt.Errorf("blockLimiter requires 2 float values")
