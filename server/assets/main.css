@@ -49,6 +49,7 @@ textarea.source {
     font-size: inherit;
     white-space: pre;
     overflow: auto;
+    width: 99%;
 }
 
 input {
