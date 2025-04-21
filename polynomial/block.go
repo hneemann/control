@@ -298,22 +298,23 @@ func (s *System) Run(tMax float64) (value.Value, error) {
 
 	nextValues := make([]float64, len(s.values))
 	result := make([]*dataSet, len(s.outputs))
+	dataSetRows := pointsExported + 10
 	for i := range result {
-		result[i] = newDataSet(pointsExported+1, 2)
+		result[i] = newDataSet(dataSetRows, 2)
 	}
 
 	counter := 0
 	row := 0
 	for {
 
-		if counter == 0 {
+		if counter == 0 || row < 10 {
 			counter = skip
 			for i, y := range s.values {
 				result[i].set(row, 0, t)
 				result[i].set(row, 1, y)
 			}
 			row++
-			if row > pointsExported {
+			if row >= dataSetRows {
 				break
 			}
 		}
