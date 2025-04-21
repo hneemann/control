@@ -273,17 +273,7 @@ func (l *Linear) MulFloat(f float64) *Linear {
 	}
 }
 
-func PID(kp, ti, td float64) (*Linear, error) {
-	if ti == 0 {
-		return nil, errors.New("ti must not be zero")
-	}
-	return &Linear{
-		Numerator:   Polynomial{kp, kp * ti, kp * ti * td}.Canonical(),
-		Denominator: Polynomial{0, ti},
-	}, nil
-}
-
-func PIDReal(kp, ti, td, tp float64) (*Linear, error) {
+func PID(kp, ti, td, tp float64) (*Linear, error) {
 	if ti == 0 {
 		return nil, errors.New("ti must not be zero")
 	}

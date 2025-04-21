@@ -590,22 +590,8 @@ var Parser = value.New().
 			if kp, ok := stack.Get(0).ToFloat(); ok {
 				if ti, ok := stack.Get(1).ToFloat(); ok {
 					if td, ok := stack.GetOptional(2, value.Float(0)).ToFloat(); ok {
-						return PID(kp, ti, td)
-					}
-				}
-			}
-			return nil, fmt.Errorf("pid requires 3 float values")
-		},
-		Args:   3,
-		IsPure: true,
-	}.SetDescription("k_p", "T_I", "T_D", "a PID linear system").VarArgs(2, 3)).
-	AddStaticFunction("pidReal", funcGen.Function[value.Value]{
-		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
-			if kp, ok := stack.Get(0).ToFloat(); ok {
-				if ti, ok := stack.Get(1).ToFloat(); ok {
-					if td, ok := stack.Get(2).ToFloat(); ok {
-						if tp, ok := stack.Get(3).ToFloat(); ok {
-							return PIDReal(kp, ti, td, tp)
+						if tp, ok := stack.GetOptional(3, value.Float(0)).ToFloat(); ok {
+							return PID(kp, ti, td, tp)
 						}
 					}
 				}
@@ -614,7 +600,8 @@ var Parser = value.New().
 		},
 		Args:   4,
 		IsPure: true,
-	}.SetDescription("k_p", "T_I", "T_D", "T_D", "a real PID linear system")).
+	}.SetDescription("k_p", "T_I", "T_D", "T_P", "a PID linear system. The fourth time T_P is the time "+
+		"constant that describes the parasitic PT1 term occurring in a real differentiation.").VarArgs(2, 4)).
 	AddStaticFunction("bode", funcGen.Function[value.Value]{
 		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
 			if wMin, ok := stack.Get(0).ToFloat(); ok {

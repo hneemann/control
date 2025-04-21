@@ -50,6 +50,7 @@ textarea.source {
     white-space: pre;
     overflow: auto;
     width: 99%;
+    resize: vertical;
 }
 
 input {

@@ -129,7 +129,7 @@ func createStyleMethods() value.MethodMap {
 				return nil, fmt.Errorf("size requires a float")
 			}
 			return StyleValue{Holder[*graph.Style]{styleValue.Value}, size}, nil
-		}).SetMethodDescription("width", "Sets the stroke width"),
+		}).SetMethodDescription("width", "Sets the symbol size"),
 		"fill": value.MethodAtType(1, func(styleValue StyleValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			style := styleValue.Value
 			styleVal, ok := stack.Get(1).(StyleValue)

@@ -166,7 +166,7 @@ func Test_Integration(t *testing.T) {
 	d := Must(Must(Must(NewRoots().Real(2, 1)).Real(1, 1)).Complex(1, 3, 3.1))
 	g := FromRoots(n, d)
 
-	k, err := PID(12, 1.5, 1)
+	k, err := PID(12, 1.5, 1, 0)
 	assert.NoError(t, err)
 
 	g0 := g.Mul(k)
@@ -219,7 +219,7 @@ func Test_Evans3(t *testing.T) {
 	d := NewRoots(complex(1, 0), complex(2, 0))
 	g := FromRoots(n, d)
 
-	pid, err := PID(1, 0.7, 0.45)
+	pid, err := PID(1, 0.7, 0.45, 0)
 	assert.NoError(t, err)
 
 	g0 := g.Mul(pid)
@@ -240,7 +240,7 @@ func Test_Evans4(t *testing.T) {
 	d := Must(Must(Must(NewRoots().Real(2, 1)).Real(1, 1)).Complex(1, 3, 3.1))
 	g := FromRoots(n, d)
 
-	pid, err := PID(1, 1.5, 1)
+	pid, err := PID(1, 1.5, 1, 0)
 	assert.NoError(t, err)
 
 	g0 := g.Mul(pid)
@@ -333,7 +333,7 @@ func Test_Bode1(t *testing.T) {
 	d := Must(Must(Must(NewRoots().Real(2, 1)).Real(1, 1)).Complex(1, 3, 3.1))
 	g := FromRoots(n, d)
 
-	k, err := PID(10, 2, 1)
+	k, err := PID(10, 2, 1, 0)
 	assert.NoError(t, err)
 
 	pl := NewBode(0.01, 100)

@@ -15,7 +15,7 @@ func TestSimple(t *testing.T) {
 			Numerator:   Polynomial{70},
 			Denominator: NewRoots(complex(-1, 0), complex(-2, 0), complex(-2.5, 0)).Polynomial(),
 		})).
-		AddBlock([]string{"e"}, "u", BlockLinear(Must(PIDReal(0.3, 1.14, 0.77, 0.05)))).
+		AddBlock([]string{"e"}, "u", BlockLinear(Must(PID(0.3, 1.14, 0.77, 0.05)))).
 		AddBlock([]string{"w", "y"}, "e", Sub()).
 		AddBlock([]string{"u"}, "ul", Limit(0, 0.8))
 
