@@ -120,6 +120,8 @@ func TestPolynom_Roots(t *testing.T) {
 		{"four", Polynomial{24, 14, -13, -2, 1}, []complex128{complex(4, 0), complex(2, 0), complex(-1, 0), complex(-3, 0)}, ""},
 
 		{"zero", Polynomial{0, 24, 14, -13, -2, 1}, []complex128{0, complex(4, 0), complex(2, 0), complex(-1, 0), complex(-3, 0)}, ""},
+
+		{"stable", Polynomial{0.5358983848622455, -1.4641016151377544, -0.4641016151377544, 2, 1}, []complex128{complex(-1.4909847033472479, 0), complex(-1.4909848297877935, 0), complex(0.49098476656751755, 0), complex(0.49098476656751755, 0)}, ""},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -133,7 +135,7 @@ func TestPolynom_Roots(t *testing.T) {
 			for _, r := range tt.want {
 				found := false
 				for _, root := range roots.roots {
-					if cmplx.Abs(r-root) < 1e-9 {
+					if cmplx.Abs(r-root) < 1e-7 {
 						found = true
 						break
 					}

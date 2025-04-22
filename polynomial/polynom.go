@@ -315,8 +315,9 @@ func (p Polynomial) findRootNewton(zEps float64) (complex128, error) {
 	deriv := pSearch.Derivative()
 	var lastz complex128
 	z := complex(1, 1)
+	var f complex128
 	for range 1000 {
-		f := pSearch.EvalCplx(z)
+		f = pSearch.EvalCplx(z)
 		if cmplx.Abs(z-lastz) < eps && cmplx.Abs(f) < zEps {
 			return cleanUp(z), nil
 		}
@@ -324,12 +325,17 @@ func (p Polynomial) findRootNewton(zEps float64) (complex128, error) {
 		z = z - f/deriv.EvalCplx(z)
 	}
 	z = cleanUp(z)
+
+	if cmplx.Abs(f) < zEps {
+		return cleanUp(z), nil
+	}
+
 	return z, fmt.Errorf("no convergence in %v, s=%v, f(s)=%v", p, z, p.EvalCplx(z))
 }
 
 func cleanUp(z complex128) complex128 {
 	absImag := math.Abs(imag(z))
-	if absImag < eps {
+	if absImag < 1e-7 {
 		return complex(real(z), 0)
 	}
 	return complex(real(z), absImag)
