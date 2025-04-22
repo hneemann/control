@@ -656,43 +656,11 @@ func (l *Linear) EvansAsymptotesIntersect() (float64, int, error) {
 	return s / float64(order), order, nil
 }
 
-func (l *Linear) EvansSplitPoints() ([]float64, error) {
+func (l *Linear) EvansSplitPoints() (Roots, error) {
 	a := l.Numerator.Mul(l.Denominator.Derivative())
 	b := l.Denominator.Mul(l.Numerator.Derivative())
 	g := a.Add(b.MulFloat(-1)).Canonical()
-
-	r, err := g.Roots()
-	if err != nil {
-		return nil, err
-	}
-
-	p, err := l.Poles()
-	if err != nil {
-		return nil, err
-	}
-
-	z, err := l.Zeros()
-	if err != nil {
-		return nil, err
-	}
-
-	sp := append(p.OnlyReal(), z.OnlyReal()...)
-	sort.Float64s(sp)
-
-	var f []float64
-	for _, can := range r.OnlyReal() {
-		n := 0
-		for _, s := range sp {
-			if can < s {
-				n++
-			}
-		}
-		if n&1 == 1 {
-			f = append(f, can)
-		}
-	}
-
-	return f, nil
+	return g.Roots()
 }
 
 func (l *Linear) EvansSplitGains() ([]float64, error) {
@@ -700,10 +668,25 @@ func (l *Linear) EvansSplitGains() ([]float64, error) {
 	if err != nil {
 		return nil, err
 	}
-	for i, sp := range f {
-		f[i] = -l.Denominator.Eval(sp) / l.Numerator.Eval(sp)
+
+	var kList []float64
+	for _, sp := range f.roots {
+		k := -l.Denominator.EvalCplx(sp) / l.Numerator.EvalCplx(sp)
+		if math.Abs(imag(k)) < 1e-6 && real(k) > 0 {
+			found := false
+			for _, ki := range kList {
+				if math.Abs(real(k)-ki) < 1e-6 {
+					found = true
+					break
+				}
+			}
+			if !found {
+				kList = append(kList, real(k))
+			}
+		}
 	}
-	return f, nil
+	sort.Float64s(kList)
+	return kList, nil
 }
 
 type BodePlot struct {

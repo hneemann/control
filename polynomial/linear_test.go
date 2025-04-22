@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/hneemann/control/graph"
 	"github.com/stretchr/testify/assert"
-	"math"
 	"os"
 	"path/filepath"
 	"testing"
@@ -313,13 +312,16 @@ func TestLinear_EvansSplitPoints(t *testing.T) {
 		lin  Linear
 		want []float64
 	}{
-		{"simple", Linear{Numerator: Polynomial{3, 1}, Denominator: Polynomial{2, 3, 1}}, []float64{math.Sqrt(2) - 3, -math.Sqrt(2) - 3}},
-		{"cplx", Linear{Numerator: Polynomial{3, 1}, Denominator: Polynomial{2, 2, 1}}, []float64{-math.Sqrt(5) - 3}},
+		{"simple", Linear{Numerator: Polynomial{3, 1}, Denominator: Polynomial{2, 3, 1}}, []float64{0.17157287525380963, 5.82842712474619}},
+		{"cplx", Linear{Numerator: Polynomial{3, 1}, Denominator: Polynomial{2, 2, 1}}, []float64{8.47213595499958}},
+		// (7s²+7s+3.5)/(s⁴+2s³-s²-2s)
+		{"cplx2", Linear{Numerator: Polynomial{3.5, 7, 7}, Denominator: Polynomial{0, -2, -1, 2, 1}}, []float64{0.10913314607145859, 0.7480097110713985}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := tt.lin.EvansSplitPoints()
+			got, err := tt.lin.EvansSplitGains()
 			assert.NoError(t, err)
+			fmt.Printf("got: %v\n", got)
 			assert.Equal(t, len(tt.want), len(got))
 			for i, w := range tt.want {
 				assert.InDelta(t, w, got[i], 1e-6)
