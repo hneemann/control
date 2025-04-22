@@ -78,7 +78,6 @@ function setSource(name, code) {
     runSource();
 }
 
-
 let overwriteAction = null;
 
 function checkOverwrite(action) {
@@ -100,6 +99,12 @@ function overwriteConfirmed() {
     }
 }
 
+function newScript() {
+    checkOverwrite(() => {
+        setSource("", "")
+    })
+}
+
 function loadExample(name) {
     hidePopUp();
     checkOverwrite(() => {
@@ -118,7 +123,7 @@ function runSource() {
 }
 
 function save() {
-    if (loadedName==="") {
+    if (loadedName === "") {
         showSaveAs();
     } else {
         let formData = new FormData();
