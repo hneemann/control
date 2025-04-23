@@ -487,6 +487,15 @@ func bodeMethods() value.MethodMap {
 			}
 			return nil, errors.New("pBounds requires two float values")
 		}).SetMethodDescription("min", "max", "sets the phase bounds").Pure(false),
+		"grid": value.MethodAtType(1, func(plot BodePlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			style := grParser.GridStyle
+			if st, ok := stack.Get(1).(grParser.StyleValue); ok {
+				style = st.Value
+			}
+			plot.Value.amplitude.Grid = style
+			plot.Value.phase.Grid = style
+			return plot, nil
+		}).SetMethodDescription("color", "Adds a grid").VarArgsMethod(0, 1),
 		"ampModify": value.MethodAtType(1, func(bode BodePlotValue, st funcGen.Stack[value.Value]) (value.Value, error) {
 			if cl, ok := st.Get(1).ToClosure(); ok {
 				a, err := cl.Eval(st, grParser.NewPlotValue(bode.Value.amplitude))

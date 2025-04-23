@@ -207,10 +207,14 @@ func createPlotMethods() value.MethodMap {
 			}
 			return plot, nil
 		}).SetMethodDescription("label", "Sets the y-label"),
-		"grid": value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
-			plot.Value.Grid = GridStyle
+		"grid": value.MethodAtType(1, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			style := GridStyle
+			if st, ok := stack.Get(1).(StyleValue); ok {
+				style = st.Value
+			}
+			plot.Value.Grid = style
 			return plot, nil
-		}).SetMethodDescription("Adds a grid"),
+		}).SetMethodDescription("color", "Adds a grid").VarArgsMethod(0, 1),
 		"file": value.MethodAtType(1, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if str, ok := stack.Get(1).(value.String); ok {
 				return ImageToFile(plot, string(str))
