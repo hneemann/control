@@ -442,10 +442,12 @@ type Hint struct {
 	MarkerStyle *Style
 }
 
-func (h Hint) PreferredBounds(xGiven, yGiven Bounds) (Bounds, Bounds, error) {
-	xGiven.Merge(h.Pos.X)
-	yGiven.Merge(h.Pos.Y)
-	return xGiven, yGiven, nil
+func (h Hint) PreferredBounds(_, _ Bounds) (Bounds, Bounds, error) {
+	var x Bounds
+	x.Merge(h.Pos.X)
+	var y Bounds
+	y.Merge(h.Pos.Y)
+	return x, y, nil
 }
 
 func (h Hint) DrawTo(_ *Plot, canvas Canvas) error {
@@ -710,12 +712,13 @@ type ImageInset struct {
 	Image    Image
 }
 
-func (s ImageInset) PreferredBounds(xGiven, yGiven Bounds) (x, y Bounds, err error) {
-	xGiven.Merge(s.Location.Min.X)
-	xGiven.Merge(s.Location.Max.X)
-	yGiven.Merge(s.Location.Min.Y)
-	yGiven.Merge(s.Location.Max.Y)
-	return xGiven, yGiven, nil
+func (s ImageInset) PreferredBounds(_, _ Bounds) (Bounds, Bounds, error) {
+	var x, y Bounds
+	x.Merge(s.Location.Min.X)
+	x.Merge(s.Location.Max.X)
+	y.Merge(s.Location.Min.Y)
+	y.Merge(s.Location.Max.Y)
+	return x, y, nil
 }
 
 func (s ImageInset) DrawTo(p *Plot, _ Canvas) error {
@@ -729,4 +732,42 @@ func (s ImageInset) DrawTo(p *Plot, _ Canvas) error {
 		},
 	}
 	return s.Image.DrawTo(inner)
+}
+
+type YConst struct {
+	Y     float64
+	Style *Style
+}
+
+func (yc YConst) PreferredBounds(_, _ Bounds) (x, y Bounds, err error) {
+	return Bounds{}, NewBounds(yc.Y, yc.Y), nil
+}
+
+func (yc YConst) DrawTo(plot *Plot, canvas Canvas) error {
+	r := canvas.Rect()
+	if r.Max.Y >= yc.Y && r.Min.Y <= yc.Y {
+		canvas.DrawPath(NewPath(false).
+			MoveTo(Point{r.Min.X, yc.Y}).
+			LineTo(Point{r.Max.X, yc.Y}), yc.Style)
+	}
+	return nil
+}
+
+type XConst struct {
+	X     float64
+	Style *Style
+}
+
+func (xc XConst) PreferredBounds(_, _ Bounds) (Bounds, Bounds, error) {
+	return NewBounds(xc.X, xc.X), Bounds{}, nil
+}
+
+func (xc XConst) DrawTo(plot *Plot, canvas Canvas) error {
+	r := canvas.Rect()
+	if r.Max.X >= xc.X && r.Min.X <= xc.X {
+		canvas.DrawPath(NewPath(false).
+			MoveTo(Point{xc.X, r.Min.Y}).
+			LineTo(Point{xc.X, r.Max.Y}), xc.Style)
+	}
+	return nil
 }

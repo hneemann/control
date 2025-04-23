@@ -494,6 +494,40 @@ func Setup(fg *value.FunctionGenerator) {
 		Args:   -1,
 		IsPure: true,
 	}.SetDescription("data", "style", "label", "Creates a new scatter dataset").VarArgs(1, 3))
+	fg.AddStaticFunction("yConst", funcGen.Function[value.Value]{
+		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
+			if y, ok := st.Get(0).ToFloat(); ok {
+				style := GridStyle
+				if styleVal, ok := st.GetOptional(1, StyleValue{Holder[*graph.Style]{GridStyle}, defSize}).(StyleValue); ok {
+					style = styleVal.Value
+				} else {
+					return nil, fmt.Errorf("yConst requires a style as second argument")
+				}
+				c := graph.YConst{float64(y), style}
+				return PlotContentValue{Holder[graph.PlotContent]{c}, graph.Legend{}}, nil
+			}
+			return nil, fmt.Errorf("yConst requires a float")
+		},
+		Args:   2,
+		IsPure: true,
+	}.SetDescription("y", "color", "Creates a constant line.").VarArgs(1, 2))
+	fg.AddStaticFunction("xConst", funcGen.Function[value.Value]{
+		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
+			if x, ok := st.Get(0).ToFloat(); ok {
+				style := GridStyle
+				if styleVal, ok := st.GetOptional(1, StyleValue{Holder[*graph.Style]{GridStyle}, defSize}).(StyleValue); ok {
+					style = styleVal.Value
+				} else {
+					return nil, fmt.Errorf("yConst requires a style as second argument")
+				}
+				c := graph.XConst{float64(x), style}
+				return PlotContentValue{Holder[graph.PlotContent]{c}, graph.Legend{}}, nil
+			}
+			return nil, fmt.Errorf("yConst requires a float")
+		},
+		Args:   2,
+		IsPure: true,
+	}.SetDescription("y", "color", "Creates a constant line.").VarArgs(1, 2))
 	fg.AddStaticFunction("hint", funcGen.Function[value.Value]{
 		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
 			if x, ok := st.Get(0).ToFloat(); ok {
