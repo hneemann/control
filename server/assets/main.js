@@ -242,9 +242,12 @@ function fetchHelperForm(url, formData, target) {
             return response.text();
         })
         .catch(function (error) {
-            window.location.reload();
+            showPopUpById("networkError");
+            target=null
         })
         .then(function (html) {
-            target(html);
+            if (target != null) {
+                target(html);
+            }
         })
 }
