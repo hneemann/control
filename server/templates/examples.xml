@@ -115,9 +115,9 @@ plot(
   curve(simU.u,blue.stroke(2).dash([7,7]),"u(t) unlimited")
 ).yBounds(-0.2,1.5)
  .legendPos(2,0.7).grid()
- .xLabel("t").yLabel("h(t)")
- .title("Effect of a u(t) Limiter")</example>
-            <example-- name="Nelder&amp;Mead" desc="Nichtlineare Optimierung">let s = lin();
+ .labels("t", "h(t)")
+ .title("Effect of u(t) Limiter")</example>
+            <!--example name="Nelder&amp;Mead" desc="Nichtlineare Optimierung">let s = lin();
 let g = 70/((s+1)*(s+2)*(s+2.5));
 
 func getSim(kp,Ti,Td)

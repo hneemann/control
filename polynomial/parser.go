@@ -173,16 +173,12 @@ func (l *Linear) ToBool() (bool, bool) {
 func (l *Linear) ToClosure() (funcGen.Function[value.Value], bool) {
 	return funcGen.Function[value.Value]{
 		Func: func(st funcGen.Stack[value.Value], _ []value.Value) (value.Value, error) {
-			var s complex128
 			if sc, ok := st.Get(0).(Complex); ok {
-				s = complex128(sc)
-			} else if sf, ok := st.Get(0).ToFloat(); ok {
-				s = complex(sf, 0)
-			} else {
-				return nil, fmt.Errorf("eval requires a complex value")
+				return Complex(l.EvalCplx(complex128(sc))), nil
+			} else if f, ok := st.Get(0).ToFloat(); ok {
+				return value.Float(l.Eval(f)), nil
 			}
-			r := l.Eval(s)
-			return Complex(r), nil
+			return nil, fmt.Errorf("eval requires a complex or a float value")
 		},
 		Args:   1,
 		IsPure: true,

@@ -84,9 +84,6 @@ math {
 div.toolbar {
     display:flex;
     background: #eee;
-    border-style: solid;
-    border-color: gray;
-    border-width: 1px;
 }
 
 div.buttons {
@@ -164,7 +161,7 @@ div.mainHead {
     text-align: center;
     background-color: #ddd;
     padding: 0.2em 0.5em 0.2em 0.5em;
-    border-style: solid;
+    border-bottom-style: solid;
     border-color: gray;
     border-width: 1px;
 }

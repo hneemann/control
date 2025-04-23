@@ -36,13 +36,14 @@ func (p persist) Save(f fileSys.FileSystem, data *data.UserData) error {
 }
 
 func main() {
-	dataFolder := flag.String("folder", "/home/hneemann/Dokumente/DHBW/Projekte/control/server", "data folder")
-	cert := flag.String("cert", "localhost.pem", "certificate")
-	key := flag.String("key", "localhost.key", "certificate")
+	dataFolder := flag.String("folder", "", "data folder")
+	cert := flag.String("cert", "", "certificate")
+	key := flag.String("key", "", "certificate")
 	port := flag.Int("port", 8080, "port")
 	debug := flag.Bool("debug", false, "debug mode")
 	flag.Parse()
 
+	log.Println("Folder:", *dataFolder)
 	sc := session.NewSessionCache[data.UserData](
 		session.NewDataManager[data.UserData](
 			session.NewFileSystemFactory(*dataFolder),

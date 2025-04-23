@@ -20,8 +20,13 @@ type Linear struct {
 	poles       Roots
 }
 
-func (l *Linear) Eval(s complex128) complex128 {
+func (l *Linear) EvalCplx(s complex128) complex128 {
 	c := l.Numerator.EvalCplx(s) / l.Denominator.EvalCplx(s)
+	return c
+}
+
+func (l *Linear) Eval(s float64) float64 {
+	c := l.Numerator.Eval(s) / l.Denominator.Eval(s)
 	return c
 }
 
@@ -713,7 +718,7 @@ func (b *BodePlot) SetPhaseBounds(min, max float64) {
 }
 
 func (l *Linear) AddToBode(b *BodePlot, style *graph.Style, latency float64) {
-	cZero := l.Eval(complex(0, 0))
+	cZero := l.EvalCplx(complex(0, 0))
 	lastAngle := 0.0
 	if real(cZero) < 0 {
 		lastAngle = -180
@@ -726,7 +731,7 @@ func (l *Linear) AddToBode(b *BodePlot, style *graph.Style, latency float64) {
 	w := b.wMin
 	latFactor := latency / math.Pi * 180
 	for i := 0; i <= 100; i++ {
-		c := l.Eval(complex(0, w))
+		c := l.EvalCplx(complex(0, w))
 		amp := cmplx.Abs(c)
 		angle := cmplx.Phase(c) / math.Pi * 180
 		if lastAngle-angle > 180 {
@@ -772,7 +777,7 @@ func NewBode(wMin, wMax float64) *BodePlot {
 func (l *Linear) NyquistPos(style *graph.Style) graph.PlotContent {
 	pfPos := graph.NewLogParameterFunc(0.001, 1000)
 	pfPos.Func = func(w float64) (graph.Point, error) {
-		c := l.Eval(complex(0, w))
+		c := l.EvalCplx(complex(0, w))
 		return graph.Point{X: real(c), Y: imag(c)}, nil
 	}
 	pfPos.Style = style
@@ -782,7 +787,7 @@ func (l *Linear) NyquistPos(style *graph.Style) graph.PlotContent {
 func (l *Linear) NyquistNeg(style *graph.Style) graph.PlotContent {
 	pfNeg := graph.NewLogParameterFunc(0.001, 1000)
 	pfNeg.Func = func(w float64) (graph.Point, error) {
-		c := l.Eval(complex(0, -w))
+		c := l.EvalCplx(complex(0, -w))
 		return graph.Point{X: real(c), Y: imag(c)}, nil
 	}
 	pfNeg.Style = style
@@ -795,7 +800,7 @@ var (
 )
 
 func (l *Linear) Nyquist(alsoNeg bool) (*graph.Plot, error) {
-	cZero := l.Eval(complex(0, 0))
+	cZero := l.EvalCplx(complex(0, 0))
 	isZero := !(math.IsNaN(real(cZero)) || math.IsNaN(imag(cZero)))
 
 	var cp []graph.PlotContent
@@ -971,7 +976,7 @@ func bisection(x0, x1 float64, f func(float64) float64) (float64, error) {
 
 func (l *Linear) PMargin() (float64, float64, error) {
 	w0 := 0.0
-	g := cmplx.Abs(l.Eval(complex(0, w0)))
+	g := cmplx.Abs(l.EvalCplx(complex(0, w0)))
 
 	if g < 1 {
 		return 0, 0, errors.New("no crossover frequency")
@@ -984,11 +989,11 @@ func (l *Linear) PMargin() (float64, float64, error) {
 		} else {
 			w1 = w0 * 1.1
 		}
-		g = cmplx.Abs(l.Eval(complex(0, w1)))
+		g = cmplx.Abs(l.EvalCplx(complex(0, w1)))
 		if g < 1 {
 			var err error
 			w0, err = bisection(w0, w1, func(w float64) float64 {
-				return cmplx.Abs(l.Eval(complex(0, w))) - 1
+				return cmplx.Abs(l.EvalCplx(complex(0, w))) - 1
 			})
 			if err != nil {
 				return 0, 0, err
@@ -998,7 +1003,7 @@ func (l *Linear) PMargin() (float64, float64, error) {
 		w0 = w1
 	}
 
-	ph := cmplx.Phase(l.Eval(complex(0, w0))) / math.Pi * 180
+	ph := cmplx.Phase(l.EvalCplx(complex(0, w0))) / math.Pi * 180
 	if ph > 0 {
 		ph = ph - 180
 	} else {
@@ -1010,7 +1015,7 @@ func (l *Linear) PMargin() (float64, float64, error) {
 
 func (l *Linear) GMargin() (float64, float64, error) {
 	w0 := 0.0
-	im0 := imag(l.Eval(complex(0, w0)))
+	im0 := imag(l.EvalCplx(complex(0, w0)))
 	for {
 		var w1 float64
 		if w0 == 0 {
@@ -1018,12 +1023,12 @@ func (l *Linear) GMargin() (float64, float64, error) {
 		} else {
 			w1 = w0 * 1.1
 		}
-		im1 := imag(l.Eval(complex(0, w1)))
+		im1 := imag(l.EvalCplx(complex(0, w1)))
 
 		if (im0 > 0) != (im1 > 0) {
 			var err error
 			w0, err = bisection(w0, w1, func(w float64) float64 {
-				return imag(l.Eval(complex(0, w)))
+				return imag(l.EvalCplx(complex(0, w)))
 			})
 			if err != nil {
 				return 0, 0, err
@@ -1033,7 +1038,7 @@ func (l *Linear) GMargin() (float64, float64, error) {
 		w0 = w1
 		im0 = im1
 	}
-	gm := cmplx.Abs(l.Eval(complex(0, w0)))
+	gm := cmplx.Abs(l.EvalCplx(complex(0, w0)))
 	return w0, 20 * math.Log10(1/gm), nil
 }
 
