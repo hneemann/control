@@ -2,10 +2,10 @@ github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/hneemann/iterator v0.0.0-20240630073221-aab15310e28c h1:itki31EzEjJar/sQHUc1lXD9/vG0g72W8TPUx8wwC/M=
 github.com/hneemann/iterator v0.0.0-20240630073221-aab15310e28c/go.mod h1:Y4LjHwBja9p9vaWnjpEzDorwPp/9UcDmycAJPX6WBEI=
-github.com/hneemann/parser2 v0.0.0-20250418172120-8265ebb9ad6f h1:oqKevBlp9HfVyBIs++uKVvns8DlKvJQ7br09xes+SBE=
-github.com/hneemann/parser2 v0.0.0-20250418172120-8265ebb9ad6f/go.mod h1:SS7YsssqCfYO9w+HMtAff0UDfXqdjkq2rhElFNl7tZ4=
-github.com/hneemann/shopping v0.0.0-20250313065044-e9ac8a9cf766 h1:arfgmgAaSjfFfUWY0zhD+KxpODxihGpLjzCIVQtPgGQ=
-github.com/hneemann/shopping v0.0.0-20250313065044-e9ac8a9cf766/go.mod h1:F6KO8NwfMcJpgvemP4EzsboNnKXKzcGYdmzhUWS2nok=
+github.com/hneemann/parser2 v0.0.0-20250420081852-0ff695b1602c h1:/XC1yvygzCfkf3MtIOblG2lVyU/41Eci0tIDZT4c4BA=
+github.com/hneemann/parser2 v0.0.0-20250420081852-0ff695b1602c/go.mod h1:SS7YsssqCfYO9w+HMtAff0UDfXqdjkq2rhElFNl7tZ4=
+github.com/hneemann/session v0.0.0-20250420105522-3ae8f8af13c5 h1:00r5hepctqIAXM8QnIa1t7gs1BC6a88efDY6NSlGyjM=
+github.com/hneemann/session v0.0.0-20250420105522-3ae8f8af13c5/go.mod h1:ldjS1vGSjejww/dhUCgNtxEPL0u4fCGvXJAfHUSKJbo=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/stretchr/testify v1.10.0 h1:Xv5erBjTwe/5IxqUQTdXv5kgmIvbHo3QQyRwhJsOfJA=

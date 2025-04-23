@@ -71,12 +71,12 @@ func TestComplex(t *testing.T) {
 		exp  string
 		res  any
 	}{
-		{name: "add", exp: "let i=cplx(0,1); 2+i*3", res: Complex(complex(2, 3))},
-		{name: "sub", exp: "let i=cplx(0,1); 2-i*3", res: Complex(complex(2, -3))},
-		{name: "mul", exp: "cplx(1,2)*cplx(3,4)", res: Complex(complex(-5, 10))},
-		{name: "div", exp: "cplx(1,2)/cplx(3,4)", res: Complex(complex(11.0/25, 2.0/25))},
-		{name: "div2", exp: "25*cplx(1,2)/cplx(3,4)", res: Complex(complex(11, 2))},
-		{name: "div3", exp: "cplx(1,2)/cplx(3,4)*25", res: Complex(complex(11, 2))},
+		{name: "add", exp: "2+_i*3", res: Complex(complex(2, 3))},
+		{name: "sub", exp: "2-_i*3", res: Complex(complex(2, -3))},
+		{name: "mul", exp: "cmplx(1,2)*cmplx(3,4)", res: Complex(complex(-5, 10))},
+		{name: "div", exp: "cmplx(1,2)/cmplx(3,4)", res: Complex(complex(11.0/25, 2.0/25))},
+		{name: "div2", exp: "25*cmplx(1,2)/cmplx(3,4)", res: Complex(complex(11, 2))},
+		{name: "div3", exp: "cmplx(1,2)/cmplx(3,4)*25", res: Complex(complex(11, 2))},
 	}
 	for _, test := range tests {
 		test := test

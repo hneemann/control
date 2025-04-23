@@ -181,6 +181,16 @@ func createPlotMethods() value.MethodMap {
 			}
 			return plot, nil
 		}).SetMethodDescription("label", "Sets the title"),
+		"labels": value.MethodAtType(2, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			if xStr, ok := stack.Get(1).(value.String); ok {
+				if yStr, ok := stack.Get(2).(value.String); ok {
+					plot.Value.XLabel = string(xStr)
+					plot.Value.YLabel = string(yStr)
+					return plot, nil
+				}
+			}
+			return nil, fmt.Errorf("xLabel requires a string")
+		}).SetMethodDescription("x label", "y label", "Sets the axis labels"),
 		"xLabel": value.MethodAtType(1, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if str, ok := stack.Get(1).(value.String); ok {
 				plot.Value.XLabel = string(str)
@@ -249,15 +259,15 @@ func createPlotMethods() value.MethodMap {
 			}
 			return nil, fmt.Errorf("yBounds requires two float values")
 		}).SetMethodDescription("yMin", "yMax", "Sets the y-bounds"),
-		"labelPos": value.MethodAtType(2, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+		"legendPos": value.MethodAtType(2, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if x, ok := stack.Get(1).ToFloat(); ok {
 				if y, ok := stack.Get(2).ToFloat(); ok {
 					plot.Value.SetLegendPosition(graph.Point{x, y})
 					return plot, nil
 				}
 			}
-			return nil, fmt.Errorf("coordiantes requires two float values")
-		}).SetMethodDescription("x", "y", "Sets the label position"),
+			return nil, fmt.Errorf("legendPos requires two float values")
+		}).SetMethodDescription("x", "y", "Sets the position of the legend"),
 		"textSize": value.MethodAtType(1, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if si, ok := stack.Get(1).ToFloat(); ok {
 				plot.textSize = si

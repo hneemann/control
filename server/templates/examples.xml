@@ -27,8 +27,8 @@ g.nyquist()</example>
 let g = 3/((s+1)*(s+1.5)*(s+2));
 
 func h(w)
-  let c1 = g( cplx(0,w) );
-  let c2 = g( cplx(0,w*0.99) );
+  let c1 = g( _i*w );
+  let c2 = g( _i*w*0.99 );
   hintDir(c1.real(),c1.imag(),c2.real(),c2.imag(),"ω="+w,black,2);
 
 g.nyquist()
@@ -82,9 +82,42 @@ plot(
   curve((k1*g).loop().simStep(10),blue,"phasenanhebendes Korrekturglied"),
   curve((k2*g).loop().simStep(10),black,"PI"),
   curve((k3*g).loop().simStep(10),green,"PID")
-).xLabel("t").yLabel("h(t)").labelPos(5,0.87)</example>
+).labels("t","h(t)").legendPos(5,0.87)</example>
 
-            <!--example name="Nelder&amp;Mead" desc="Nichtlineare Optimierung">let s = lin();
+<example name="Simulation nicht linear" desc="Simulation eines nicht linearen Systems">let s = lin();
+let g = 70/((s+1)*(s+2)*(s+2.5));
+
+let kp = 0.24;
+let Ti = 1.05;
+let Td = 0.82;
+let Tp = 0.05;
+
+let simL=simulate([
+ {in:"uLim",    out:"y",    block: g                 },
+ {in:"e",       out:"u",    block: pid(kp,Ti,Td,Tp)  },
+ {in:"u",       out:"uLim", block: blockLimiter(0,1) },
+ {in:["w","y"], out:"e",    block: "-"               },
+ {              out:"w",    block: 1                 }
+],6);
+
+let simU=simulate([
+ {in:"u",       out:"y",    block: g                 },
+ {in:"e",       out:"u",    block: pid(kp,Ti,Td,Tp)  },
+ {in:["w","y"], out:"e",    block: "-"               },
+ {              out:"w",    block: 1                 }
+],6);
+
+plot(
+  curve(simL.y,black.stroke(2),"y(t) (u limited)"),
+  curve(simL.uLim,blue.stroke(2),"u(t) limited"),
+
+  curve(simU.y,black.stroke(2).dash([7,7]),"y(t) (u(t) unlimited)"),
+  curve(simU.u,blue.stroke(2).dash([7,7]),"u(t) unlimited")
+).yBounds(-0.2,1.5)
+ .legendPos(2,0.7).grid()
+ .xLabel("t").yLabel("h(t)")
+ .title("Effect of a u(t) Limiter")</example>
+            <example-- name="Nelder&amp;Mead" desc="Nichtlineare Optimierung">let s = lin();
 let g = 70/((s+1)*(s+2)*(s+2.5));
 
 func getSim(kp,Ti,Td)

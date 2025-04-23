@@ -525,6 +525,7 @@ var Parser = value.New().
 		p := f.GetParser()
 		p.AllowComments()
 	}).
+	AddConstant("_i", Complex(complex(0, 1))).
 	AddStaticFunction("lin", funcGen.Function[value.Value]{
 		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
 			if stack.Size() == 0 {
@@ -548,14 +549,14 @@ var Parser = value.New().
 		Args:   -1,
 		IsPure: true,
 	}.SetDescription("a linear system 's'")).
-	AddStaticFunction("cplx", funcGen.Function[value.Value]{
+	AddStaticFunction("cmplx", funcGen.Function[value.Value]{
 		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
 			if re, ok := stack.Get(0).ToFloat(); ok {
 				if im, ok := stack.Get(1).ToFloat(); ok {
 					return Complex(complex(re, im)), nil
 				}
 			}
-			return nil, errors.New("cplx requires two float arguments")
+			return nil, errors.New("cmplx requires two float arguments")
 		},
 		Args:   2,
 		IsPure: true,
