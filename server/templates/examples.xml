@@ -97,11 +97,11 @@ let Td = 0.82;
 let Tp = 0.05;
 
 let systemDescription = [   // nonlinear with limiter
- {              out:"w",    block: 1                 }
+ {              out:"w",    block: 1                 },
  {in:["w","y"], out:"e",    block: "-"               },
  {in:"e",       out:"u",    block: pid(kp,Ti,Td,Tp)  },
  {in:"u",       out:"uLim", block: blockLimiter(0,1) },
- {in:"uLim",    out:"y",    block: g                 },
+ {in:"uLim",    out:"y",    block: g                 }
 ];
 
 let simLim=simulate(systemDescription,6);
