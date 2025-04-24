@@ -99,14 +99,19 @@ func (b PlotValue) OutputSize() (float64, float64) {
 
 func createStyleMethods() value.MethodMap {
 	return value.MethodMap{
-		"dash": value.MethodAtType(1, func(styleValue StyleValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+		"dash": value.MethodAtType(6, func(styleValue StyleValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			style := styleValue.Value
-			floatList, err := toFloatList(stack, stack.Get(1))
-			if err != nil {
-				return nil, fmt.Errorf("dash requires a float array")
+			n := stack.Size()
+			dash := make([]float64, n-1)
+			for i := 1; i < stack.Size(); i++ {
+				if f, ok := stack.Get(i).ToFloat(); ok {
+					dash[i-1] = f
+				} else {
+					return nil, fmt.Errorf("dash requires a float")
+				}
 			}
-			return StyleValue{Holder[*graph.Style]{style.SetDash(floatList...)}, styleValue.Size}, nil
-		}).SetMethodDescription("def", "Sets the dash style"),
+			return StyleValue{Holder[*graph.Style]{style.SetDash(dash...)}, styleValue.Size}, nil
+		}).SetMethodDescription("l1", "l2", "l3", "l4", "l5", "l6", "Sets the dash style").VarArgsMethod(2, 6),
 		"darker": value.MethodAtType(0, func(styleValue StyleValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			style := styleValue.Value
 			return StyleValue{Holder[*graph.Style]{style.Darker()}, styleValue.Size}, nil
@@ -138,23 +143,6 @@ func createStyleMethods() value.MethodMap {
 			}
 			return StyleValue{Holder[*graph.Style]{style.SetFill(styleVal.Value)}, styleValue.Size}, nil
 		}).SetMethodDescription("color", "The color used to fill"),
-	}
-}
-
-func toFloatList(stack funcGen.Stack[value.Value], val value.Value) ([]float64, error) {
-	if list, ok := val.ToList(); ok {
-		var floatList []float64
-		err := list.Iterate(stack, func(v value.Value) error {
-			if f, ok := v.ToFloat(); ok {
-				floatList = append(floatList, f)
-			} else {
-				return fmt.Errorf("list elements need to be floats")
-			}
-			return nil
-		})
-		return floatList, err
-	} else {
-		return nil, fmt.Errorf("dash requires a list of floats")
 	}
 }
 

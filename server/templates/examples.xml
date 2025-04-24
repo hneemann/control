@@ -56,7 +56,11 @@ let pm=g0.pMargin();
 bode(0.01,100)
   .add(g,  green, "G")
   .add(k,  blue,  "K")
-  .add(g0, black, sprintf("G0, phi=%.1f°, ws=%.2f rad/s",pm.pMargin,pm.w0) )</example>
+  .add(g0, black, sprintf("G0, phi=%.1f°, ws=%.2f rad/s",pm.pMargin,pm.w0) )
+  .phaseModify( p->p.add(yConst(-110,red.dash(7,7)))
+                    .add(yConst(-130,red.dash(7,7)))
+                    .add(xConst(pm.w0,red.dash(7,7))) )
+  .ampModify( p->p.add(xConst(pm.w0,red.dash(7,7))) )</example>
     <example name="pid" desc="Die pid-Funktion">[
  ["pid(2,2)",        "=", pid(2,2)  ],
  ["pid(2,3,1)",      "=", pid(2,3,1)],
@@ -111,8 +115,8 @@ plot(
   curve(simL.y,black.stroke(2),"y(t) (u limited)"),
   curve(simL.uLim,blue.stroke(2),"u(t) limited"),
 
-  curve(simU.y,black.stroke(2).dash([7,7]),"y(t) (u(t) unlimited)"),
-  curve(simU.u,blue.stroke(2).dash([7,7]),"u(t) unlimited")
+  curve(simU.y,black.stroke(2).dash(7,7),"y(t) (u(t) unlimited)"),
+  curve(simU.u,blue.stroke(2).dash(7,7),"u(t) unlimited")
 ).yBounds(-0.2,1.5)
  .legendPos(2,0.7).grid()
  .labels("t", "h(t)")
