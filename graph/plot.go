@@ -384,9 +384,10 @@ func (f Function) DrawTo(_ *Plot, canvas Canvas) error {
 }
 
 type Scatter struct {
-	Points []Point
-	Shape  Shape
-	Style  *Style
+	Points     []Point
+	Shape      Shape
+	ShapeStyle *Style
+	LineStyle  *Style
 }
 
 func (s Scatter) String() string {
@@ -404,34 +405,17 @@ func (s Scatter) PreferredBounds(_, _ Bounds) (Bounds, Bounds, error) {
 
 func (s Scatter) DrawTo(_ *Plot, canvas Canvas) error {
 	rect := canvas.Rect()
-	for _, p := range s.Points {
-		if rect.Inside(p) {
-			canvas.DrawShape(p, s.Shape, s.Style)
+	if s.ShapeStyle != nil && s.Shape != nil {
+		for _, p := range s.Points {
+			if rect.Inside(p) {
+				canvas.DrawShape(p, s.Shape, s.ShapeStyle)
+			}
 		}
 	}
-	return nil
-}
-
-type Curve struct {
-	Path  Path
-	Style *Style
-}
-
-func (c Curve) String() string {
-	return fmt.Sprintf("Curve based on data points")
-}
-
-func (c Curve) PreferredBounds(_, _ Bounds) (Bounds, Bounds, error) {
-	var x, y Bounds
-	for _, p := range c.Path.Iter {
-		x.Merge(p.X)
-		y.Merge(p.Y)
+	if s.LineStyle != nil {
+		path := NewPointsPath(false, s.Points...)
+		canvas.DrawPath(canvas.Rect().IntersectPath(path), s.LineStyle)
 	}
-	return x, y, nil
-}
-
-func (c Curve) DrawTo(_ *Plot, canvas Canvas) error {
-	canvas.DrawPath(canvas.Rect().IntersectPath(c.Path), c.Style)
 	return nil
 }
 

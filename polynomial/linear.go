@@ -514,10 +514,10 @@ func (l *Linear) CreateEvans(kMax float64) (*graph.Plot, error) {
 		evPoints[i-1].dist(evPoints[i])
 	}
 
-	pathList := make([]graph.SlicePath, poleCount)
+	pathList := make([][]graph.Point, poleCount)
 	for _, pl := range evPoints {
 		for i := range poleCount {
-			pathList[i] = pathList[i].Add(pl.points[i])
+			pathList[i] = append(pathList[i], pl.points[i])
 		}
 	}
 
@@ -534,7 +534,7 @@ func (l *Linear) CreateEvans(kMax float64) (*graph.Plot, error) {
 	}
 
 	for i, pa := range pathList {
-		curveList = append(curveList, graph.Curve{Path: pa, Style: styleList[i%len(styleList)]})
+		curveList = append(curveList, graph.Scatter{Points: pa, LineStyle: styleList[i%len(styleList)]})
 	}
 
 	markerStyle := graph.Black.SetStrokeWidth(2)
@@ -542,9 +542,9 @@ func (l *Linear) CreateEvans(kMax float64) (*graph.Plot, error) {
 		polesMarker := graph.NewCrossMarker(4)
 		curveList = append(curveList,
 			graph.Scatter{
-				Points: p.ToPoints(),
-				Shape:  polesMarker,
-				Style:  markerStyle,
+				Points:     p.ToPoints(),
+				Shape:      polesMarker,
+				ShapeStyle: markerStyle,
 			},
 		)
 		legend = append(legend,
@@ -559,9 +559,9 @@ func (l *Linear) CreateEvans(kMax float64) (*graph.Plot, error) {
 		zeroMarker := graph.NewCircleMarker(4)
 		curveList = append(curveList,
 			graph.Scatter{
-				Points: z.ToPoints(),
-				Shape:  zeroMarker,
-				Style:  markerStyle,
+				Points:     z.ToPoints(),
+				Shape:      zeroMarker,
+				ShapeStyle: markerStyle,
 			},
 		)
 		legend = append(legend,
@@ -747,8 +747,8 @@ func (l *Linear) AddToBode(b *BodePlot, style *graph.Style, latency float64) {
 		w *= wMult
 	}
 
-	b.amplitude.AddContent(graph.Curve{Path: graph.NewPointsPath(false, amplitude...), Style: style})
-	b.phase.AddContent(graph.Curve{Path: graph.NewPointsPath(false, phase...), Style: style})
+	b.amplitude.AddContent(graph.Scatter{Points: amplitude, LineStyle: style})
+	b.phase.AddContent(graph.Scatter{Points: phase, LineStyle: style})
 }
 
 func NewBode(wMin, wMax float64) *BodePlot {
@@ -808,11 +808,11 @@ func (l *Linear) Nyquist(alsoNeg bool) (*graph.Plot, error) {
 	cp = append(cp, l.NyquistPos(posStyle))
 	if alsoNeg {
 		cp = append(cp, l.NyquistNeg(negStyle))
-		cp = append(cp, graph.Scatter{Points: []graph.Point{{X: -1, Y: 0}}, Shape: graph.NewCrossMarker(4), Style: graph.Red})
+		cp = append(cp, graph.Scatter{Points: []graph.Point{{X: -1, Y: 0}}, Shape: graph.NewCrossMarker(4), ShapeStyle: graph.Red})
 	}
 	zeroMarker := graph.NewCircleMarker(4)
 	if isZero {
-		cp = append(cp, graph.Scatter{Points: []graph.Point{{X: real(cZero), Y: imag(cZero)}}, Shape: zeroMarker, Style: graph.Black})
+		cp = append(cp, graph.Scatter{Points: []graph.Point{{X: real(cZero), Y: imag(cZero)}}, Shape: zeroMarker, ShapeStyle: graph.Black})
 	}
 
 	var legend []graph.Legend

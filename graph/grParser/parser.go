@@ -411,7 +411,7 @@ func Setup(fg *value.FunctionGenerator) {
 			if err != nil {
 				return nil, err
 			}
-			s := graph.Scatter{Points: points, Shape: marker, Style: styleVal.Value}
+			s := graph.Scatter{Points: points, Shape: marker, ShapeStyle: styleVal.Value}
 			return PlotContentValue{Holder[graph.PlotContent]{s}, graph.Legend{Name: leg, Shape: marker, ShapeStyle: styleVal.Value}}, nil
 		},
 		Args:   4,
@@ -436,14 +436,42 @@ func Setup(fg *value.FunctionGenerator) {
 			if err != nil {
 				return nil, err
 			}
-			s := graph.Curve{
-				Path:  graph.NewPointsPath(false, points...),
-				Style: style}
+			s := graph.Scatter{
+				Points:    points,
+				LineStyle: style}
 			return PlotContentValue{Holder[graph.PlotContent]{s}, graph.Legend{Name: leg, LineStyle: style}}, nil
 		},
 		Args:   3,
 		IsPure: true,
 	}.SetDescription("data", "style", "label", "Creates a new curve. The given data points are connected by a line.").VarArgs(1, 3))
+	fg.AddStaticFunction("scatterCurve", funcGen.Function[value.Value]{
+		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
+			styleVal, ok := st.GetOptional(1, defStyle).(StyleValue)
+			if !ok {
+				return nil, fmt.Errorf("scatterCurve requires a style as second argument")
+			}
+			marker, err := getMarker(st, 2, styleVal.Size)
+			if err != nil {
+				return nil, err
+			}
+			leg := ""
+			if legVal, ok := st.GetOptional(3, value.String("")).(value.String); ok {
+				leg = string(legVal)
+			} else {
+				return nil, fmt.Errorf("scatterCurve requires a string as fourth argument")
+			}
+
+			points, err := toPointsList(st)
+			if err != nil {
+				return nil, err
+			}
+			s := graph.Scatter{Points: points, Shape: marker, ShapeStyle: styleVal.Value, LineStyle: styleVal.Value}
+			return PlotContentValue{Holder[graph.PlotContent]{s},
+				graph.Legend{Name: leg, Shape: marker, ShapeStyle: styleVal.Value, LineStyle: styleVal.Value}}, nil
+		},
+		Args:   4,
+		IsPure: true,
+	}.SetDescription("data", "color", "markerType", "label", "Creates a new scatter dataset drawn with a curve").VarArgs(1, 4))
 	fg.AddStaticFunction("function", funcGen.Function[value.Value]{
 		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
 			var style *graph.Style
