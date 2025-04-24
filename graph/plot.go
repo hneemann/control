@@ -470,7 +470,7 @@ type HintDir struct {
 	PosDir Point
 }
 
-func (h HintDir) DrawTo(p *Plot, canvas Canvas) error {
+func (h HintDir) DrawTo(_ *Plot, canvas Canvas) error {
 	r := canvas.Rect()
 	if r.Inside(h.Pos) {
 		if h.Marker != nil && h.MarkerStyle != nil {
@@ -727,7 +727,7 @@ func (yc YConst) PreferredBounds(_, _ Bounds) (x, y Bounds, err error) {
 	return Bounds{}, NewBounds(yc.Y, yc.Y), nil
 }
 
-func (yc YConst) DrawTo(plot *Plot, canvas Canvas) error {
+func (yc YConst) DrawTo(_ *Plot, canvas Canvas) error {
 	r := canvas.Rect()
 	if r.Max.Y >= yc.Y && r.Min.Y <= yc.Y {
 		canvas.DrawPath(NewPath(false).
@@ -746,7 +746,7 @@ func (xc XConst) PreferredBounds(_, _ Bounds) (Bounds, Bounds, error) {
 	return NewBounds(xc.X, xc.X), Bounds{}, nil
 }
 
-func (xc XConst) DrawTo(plot *Plot, canvas Canvas) error {
+func (xc XConst) DrawTo(_ *Plot, canvas Canvas) error {
 	r := canvas.Rect()
 	if r.Max.X >= xc.X && r.Min.X <= xc.X {
 		canvas.DrawPath(NewPath(false).
