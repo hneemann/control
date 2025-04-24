@@ -86,7 +86,7 @@ plot(
   curve((k1*g).loop().simStep(10),blue,"phasenanhebendes Korrekturglied"),
   curve((k2*g).loop().simStep(10),black,"PI"),
   curve((k3*g).loop().simStep(10),green,"PID")
-).labels("t","h(t)").legendPos(5,0.87)</example>
+).labels("t [s]","h(t)").legendPos(5,0.87)</example>
 
 <example name="Simulation nicht linear" desc="Simulation eines nicht linearen Systems">let s = lin();
 let g = 70/((s+1)*(s+2)*(s+2.5));
@@ -96,31 +96,25 @@ let Ti = 1.05;
 let Td = 0.82;
 let Tp = 0.05;
 
-let simL=simulate([
- {in:"uLim",    out:"y",    block: g                 },
+let systemDescription = [   // nonlinear with limiter
+ {              out:"w",    block: 1                 }
+ {in:["w","y"], out:"e",    block: "-"               },
  {in:"e",       out:"u",    block: pid(kp,Ti,Td,Tp)  },
  {in:"u",       out:"uLim", block: blockLimiter(0,1) },
- {in:["w","y"], out:"e",    block: "-"               },
- {              out:"w",    block: 1                 }
-],6);
+ {in:"uLim",    out:"y",    block: g                 },
+];
 
-let simU=simulate([
- {in:"u",       out:"y",    block: g                 },
- {in:"e",       out:"u",    block: pid(kp,Ti,Td,Tp)  },
- {in:["w","y"], out:"e",    block: "-"               },
- {              out:"w",    block: 1                 }
-],6);
+let simLim=simulate(systemDescription,6);
+let sim=(pid(kp,Ti,Td,Tp)*g).loop().simStep(6);
 
 plot(
-  curve(simL.y,black.stroke(2),"y(t) (u limited)"),
-  curve(simL.uLim,blue.stroke(2),"u(t) limited"),
-
-  curve(simU.y,black.stroke(2).dash(7,7),"y(t) (u(t) unlimited)"),
-  curve(simU.u,blue.stroke(2).dash(7,7),"u(t) unlimited")
-).yBounds(-0.2,1.5)
- .legendPos(2,0.7).grid()
- .labels("t", "h(t)")
- .title("Effect of u(t) Limiter")</example>
+  curve(sim,green.stroke(2),"y (u unlimited)"),
+  curve(simLim.uLim,blue.stroke(2),"u limited"),
+  curve(simLim.y,black.stroke(2),"y (u limited)")
+).yBounds(-0.2,1.5).grid()
+ .legendPos(2,0.7)
+ .labels("t [s]", "h(t)")
+ .title("Effect of a Limiter")</example>
             <!--example name="Nelder&amp;Mead" desc="Nichtlineare Optimierung">let s = lin();
 let g = 70/((s+1)*(s+2)*(s+2.5));
 
