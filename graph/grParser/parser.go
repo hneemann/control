@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/hneemann/control/graph"
+	"github.com/hneemann/iterator"
 	"github.com/hneemann/parser2/funcGen"
 	"github.com/hneemann/parser2/value"
 	"github.com/hneemann/parser2/value/export"
@@ -392,6 +393,12 @@ func Setup(fg *value.FunctionGenerator) {
 	}.SetDescription("content", "Creates a new plot"))
 	fg.AddStaticFunction("scatter", funcGen.Function[value.Value]{
 		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
+			var list *value.List
+			var ok bool
+			if list, ok = st.Get(0).ToList(); !ok {
+				return nil, fmt.Errorf("scatter requires a list as first argument")
+			}
+
 			styleVal, ok := st.GetOptional(1, defStyle).(StyleValue)
 			if !ok {
 				return nil, fmt.Errorf("scatter requires a style as second argument")
@@ -407,11 +414,7 @@ func Setup(fg *value.FunctionGenerator) {
 				return nil, fmt.Errorf("scatter requires a string as fourth argument")
 			}
 
-			points, err := toPointsList(st)
-			if err != nil {
-				return nil, err
-			}
-			s := graph.Scatter{Points: points, Shape: marker, ShapeStyle: styleVal.Value}
+			s := graph.Scatter{Points: listToPoints(list), Shape: marker, ShapeStyle: styleVal.Value}
 			return PlotContentValue{Holder[graph.PlotContent]{s}, graph.Legend{Name: leg, Shape: marker, ShapeStyle: styleVal.Value}}, nil
 		},
 		Args:   4,
@@ -419,6 +422,12 @@ func Setup(fg *value.FunctionGenerator) {
 	}.SetDescription("data", "color", "markerType", "label", "Creates a new scatter dataset").VarArgs(1, 4))
 	fg.AddStaticFunction("curve", funcGen.Function[value.Value]{
 		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
+			var list *value.List
+			var ok bool
+			if list, ok = st.Get(0).ToList(); !ok {
+				return nil, fmt.Errorf("scatter requires a list as first argument")
+			}
+
 			var style *graph.Style
 			if styleVal, ok := st.GetOptional(1, defStyle).(StyleValue); ok {
 				style = styleVal.Value
@@ -432,12 +441,8 @@ func Setup(fg *value.FunctionGenerator) {
 				return nil, fmt.Errorf("curve requires a string as third argument")
 			}
 
-			points, err := toPointsList(st)
-			if err != nil {
-				return nil, err
-			}
 			s := graph.Scatter{
-				Points:    points,
+				Points:    listToPoints(list),
 				LineStyle: style}
 			return PlotContentValue{Holder[graph.PlotContent]{s}, graph.Legend{Name: leg, LineStyle: style}}, nil
 		},
@@ -446,6 +451,12 @@ func Setup(fg *value.FunctionGenerator) {
 	}.SetDescription("data", "style", "label", "Creates a new curve. The given data points are connected by a line.").VarArgs(1, 3))
 	fg.AddStaticFunction("scatterCurve", funcGen.Function[value.Value]{
 		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
+			var list *value.List
+			var ok bool
+			if list, ok = st.Get(0).ToList(); !ok {
+				return nil, fmt.Errorf("scatter requires a list as first argument")
+			}
+
 			styleVal, ok := st.GetOptional(1, defStyle).(StyleValue)
 			if !ok {
 				return nil, fmt.Errorf("scatterCurve requires a style as second argument")
@@ -461,11 +472,7 @@ func Setup(fg *value.FunctionGenerator) {
 				return nil, fmt.Errorf("scatterCurve requires a string as fourth argument")
 			}
 
-			points, err := toPointsList(st)
-			if err != nil {
-				return nil, err
-			}
-			s := graph.Scatter{Points: points, Shape: marker, ShapeStyle: styleVal.Value, LineStyle: styleVal.Value}
+			s := graph.Scatter{Points: listToPoints(list), Shape: marker, ShapeStyle: styleVal.Value, LineStyle: styleVal.Value}
 			return PlotContentValue{Holder[graph.PlotContent]{s},
 				graph.Legend{Name: leg, Shape: marker, ShapeStyle: styleVal.Value, LineStyle: styleVal.Value}}, nil
 		},
@@ -632,9 +639,9 @@ func getMarker(st funcGen.Stack[value.Value], stPos int, size float64) (graph.Sh
 	return marker, nil
 }
 
-func toPointsList(st funcGen.Stack[value.Value]) ([]graph.Point, error) {
-	if list, ok := st.Get(0).ToList(); ok {
-		var points []graph.Point
+func listToPoints(list *value.List) graph.Points {
+	return func(yield func(graph.Point, error) bool) {
+		st := funcGen.NewEmptyStack[value.Value]()
 		err := list.Iterate(st, func(v value.Value) error {
 			if vec, ok := v.ToList(); ok {
 				slice, err := vec.ToSlice(st)
@@ -646,7 +653,9 @@ func toPointsList(st funcGen.Stack[value.Value]) ([]graph.Point, error) {
 				}
 				if x, ok := slice[0].ToFloat(); ok {
 					if y, ok := slice[1].ToFloat(); ok {
-						points = append(points, graph.Point{x, y})
+						if !yield(graph.Point{x, y}, nil) {
+							return iterator.SBC
+						}
 					} else {
 						return fmt.Errorf("list elements needs to contain two floats")
 					}
@@ -656,9 +665,10 @@ func toPointsList(st funcGen.Stack[value.Value]) ([]graph.Point, error) {
 			}
 			return nil
 		})
-		return points, err
+		if err != nil && err != iterator.SBC {
+			yield(graph.Point{}, err)
+		}
 	}
-	return nil, fmt.Errorf("scatter requires a list of points")
 }
 
 type TextSizeProvider interface {

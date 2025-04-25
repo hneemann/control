@@ -331,6 +331,16 @@ func (e evansPoints) Swap(i, j int) {
 	e[i], e[j] = e[j], e[i]
 }
 
+func (e evansPoints) getPoints(i int) graph.Points {
+	return func(yield func(graph.Point, error) bool) {
+		for _, ep := range e {
+			if !yield(ep.points[i], nil) {
+				return
+			}
+		}
+	}
+}
+
 type Polar struct{}
 
 func (p Polar) String() string {
@@ -514,14 +524,7 @@ func (l *Linear) CreateEvans(kMax float64) (*graph.Plot, error) {
 		evPoints[i-1].dist(evPoints[i])
 	}
 
-	pathList := make([][]graph.Point, poleCount)
-	for _, pl := range evPoints {
-		for i := range poleCount {
-			pathList[i] = append(pathList[i], pl.points[i])
-		}
-	}
-
-	curveList := make([]graph.PlotContent, 0, len(pathList)+2)
+	curveList := make([]graph.PlotContent, 0, poleCount+5)
 	curveList = append(curveList, Polar{})
 	var legend []graph.Legend
 
@@ -533,8 +536,8 @@ func (l *Linear) CreateEvans(kMax float64) (*graph.Plot, error) {
 		curveList = append(curveList, Asymptotes{Point: graph.Point{X: as, Y: 0}, Order: order})
 	}
 
-	for i, pa := range pathList {
-		curveList = append(curveList, graph.Scatter{Points: pa, LineStyle: styleList[i%len(styleList)]})
+	for i := range poleCount {
+		curveList = append(curveList, graph.Scatter{Points: evPoints.getPoints(i), LineStyle: styleList[i%len(styleList)]})
 	}
 
 	markerStyle := graph.Black.SetStrokeWidth(2)
@@ -542,7 +545,7 @@ func (l *Linear) CreateEvans(kMax float64) (*graph.Plot, error) {
 		polesMarker := graph.NewCrossMarker(4)
 		curveList = append(curveList,
 			graph.Scatter{
-				Points:     p.ToPoints(),
+				Points:     graph.PointsFromSlice(p.ToPoints()),
 				Shape:      polesMarker,
 				ShapeStyle: markerStyle,
 			},
@@ -559,7 +562,7 @@ func (l *Linear) CreateEvans(kMax float64) (*graph.Plot, error) {
 		zeroMarker := graph.NewCircleMarker(4)
 		curveList = append(curveList,
 			graph.Scatter{
-				Points:     z.ToPoints(),
+				Points:     graph.PointsFromSlice(z.ToPoints()),
 				Shape:      zeroMarker,
 				ShapeStyle: markerStyle,
 			},
@@ -747,8 +750,8 @@ func (l *Linear) AddToBode(b *BodePlot, style *graph.Style, latency float64) {
 		w *= wMult
 	}
 
-	b.amplitude.AddContent(graph.Scatter{Points: amplitude, LineStyle: style})
-	b.phase.AddContent(graph.Scatter{Points: phase, LineStyle: style})
+	b.amplitude.AddContent(graph.Scatter{Points: graph.PointsFromSlice(amplitude), LineStyle: style})
+	b.phase.AddContent(graph.Scatter{Points: graph.PointsFromSlice(phase), LineStyle: style})
 }
 
 func NewBode(wMin, wMax float64) *BodePlot {
@@ -808,11 +811,11 @@ func (l *Linear) Nyquist(alsoNeg bool) (*graph.Plot, error) {
 	cp = append(cp, l.NyquistPos(posStyle))
 	if alsoNeg {
 		cp = append(cp, l.NyquistNeg(negStyle))
-		cp = append(cp, graph.Scatter{Points: []graph.Point{{X: -1, Y: 0}}, Shape: graph.NewCrossMarker(4), ShapeStyle: graph.Red})
+		cp = append(cp, graph.Scatter{Points: graph.PointsFromPoint(graph.Point{X: -1, Y: 0}), Shape: graph.NewCrossMarker(4), ShapeStyle: graph.Red})
 	}
 	zeroMarker := graph.NewCircleMarker(4)
 	if isZero {
-		cp = append(cp, graph.Scatter{Points: []graph.Point{{X: real(cZero), Y: imag(cZero)}}, Shape: zeroMarker, ShapeStyle: graph.Black})
+		cp = append(cp, graph.Scatter{Points: graph.PointsFromPoint(graph.Point{X: real(cZero), Y: imag(cZero)}), Shape: zeroMarker, ShapeStyle: graph.Black})
 	}
 
 	var legend []graph.Legend
@@ -854,8 +857,22 @@ func (v dataSet) set(row, col int, val float64) {
 	v.elements[row*v.cols+col] = val
 }
 
+func (v dataSet) toPoints(i0, i1 int) graph.Points {
+	return func(yield func(graph.Point, error) bool) {
+		o := 0
+		for range v.rows {
+			x := v.elements[o+i0]
+			y := v.elements[o+i1]
+			if !yield(graph.Point{X: x, Y: y}, nil) {
+				return
+			}
+			o += v.cols
+		}
+	}
+}
+
 func (v dataSet) toList() *value.List {
-	return value.NewListFromIterable(func(st funcGen.Stack[value.Value], yield iterator.Consumer[value.Value]) error {
+	return value.NewListFromIterable(func(_ funcGen.Stack[value.Value], yield iterator.Consumer[value.Value]) error {
 		o := 0
 		for range v.rows {
 			row := value.NewListConvert[float64](func(v float64) value.Value {
@@ -863,6 +880,21 @@ func (v dataSet) toList() *value.List {
 			}, v.elements[o:o+v.cols])
 
 			if err := yield(row); err != nil {
+				return err
+			}
+			o += v.cols
+		}
+		return nil
+	})
+}
+
+func (v dataSet) toPointList(i0, i1 int) *value.List {
+	return value.NewListFromIterable(func(_ funcGen.Stack[value.Value], yield iterator.Consumer[value.Value]) error {
+		o := 0
+		for range v.rows {
+			x := value.Float(v.elements[o+i0])
+			y := value.Float(v.elements[o+i1])
+			if err := yield(value.NewList(x, y)); err != nil {
 				return err
 			}
 			o += v.cols
@@ -914,7 +946,7 @@ func (l *Linear) Simulate(tMax float64, u func(float64) (float64, error)) (*valu
 			data.set(row, 1, y)
 			row++
 			if row > pointsExported {
-				return data.toList(), nil
+				return data.toPointList(0, 1), nil
 			}
 			counter = skip
 		}

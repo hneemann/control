@@ -305,7 +305,7 @@ func (s *System) Initialize() error {
 	return nil
 }
 
-func (s *System) Run(tMax float64) (map[string]*dataSet, error) {
+func (s *System) Run(tMax float64) (*dataSet, error) {
 	const pointsExported = 1000
 	const pointsInternal = 100000
 	const skip = pointsInternal / pointsExported
@@ -314,11 +314,9 @@ func (s *System) Run(tMax float64) (map[string]*dataSet, error) {
 	t := 0.0
 
 	nextValues := make([]float64, len(s.values))
-	result := make([]*dataSet, len(s.outputs))
 	dataSetRows := pointsExported + 10
-	for i := range result {
-		result[i] = newDataSet(dataSetRows, 2)
-	}
+
+	resultData := newDataSet(dataSetRows, len(s.outputs)+1)
 
 	counter := 0
 	row := 0
@@ -326,9 +324,9 @@ func (s *System) Run(tMax float64) (map[string]*dataSet, error) {
 
 		if counter == 0 || row < 10 {
 			counter = skip
+			resultData.set(row, 0, t)
 			for i, y := range s.values {
-				result[i].set(row, 0, t)
-				result[i].set(row, 1, y)
+				resultData.set(row, i+1, y)
 			}
 			row++
 			if row >= dataSetRows {
@@ -348,12 +346,7 @@ func (s *System) Run(tMax float64) (map[string]*dataSet, error) {
 		t += dt
 	}
 
-	rm := make(map[string]*dataSet)
-	for i := range result {
-		rm[s.outputs[i]] = result[i]
-	}
-
-	return rm, nil
+	return resultData, nil
 }
 
 func SimulateBlock(st funcGen.Stack[value.Value], def *value.List, tMax float64) (value.Value, error) {
@@ -395,13 +388,13 @@ func SimulateBlock(st funcGen.Stack[value.Value], def *value.List, tMax float64)
 		return nil, err
 	}
 
-	result, err := sys.Run(tMax)
+	resultData, err := sys.Run(tMax)
 	if err != nil {
 		return nil, err
 	}
 	rm := make(map[string]value.Value)
-	for k, v := range result {
-		rm[k] = v.toList()
+	for i, name := range sys.outputs {
+		rm[name] = resultData.toPointList(0, i+1)
 	}
 
 	return value.NewMap(value.RealMap(rm)), nil

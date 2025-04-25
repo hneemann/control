@@ -27,12 +27,11 @@ func TestSimple(t *testing.T) {
 
 	p := graph.Plot{YBounds: graph.NewBounds(-0.2, 2)}
 
-	n := 0
-	for name, data := range data {
+	for n, name := range s.outputs {
 		style := graph.GetColor(n)
-		p.AddContent(graph.Curve{
-			Path:  graph.NewPointsPath(false, data.ToPoints()...),
-			Style: style,
+		p.AddContent(graph.Scatter{
+			Points:    data.toPoints(0, n+1),
+			LineStyle: style,
 		})
 		p.AddLegend(name, style, nil, nil)
 		n++

@@ -37,18 +37,19 @@ type Plot struct {
 	XBounds        Bounds
 	YBounds        Bounds
 	LeftBorder     int
+	RightBorder    int
 	Grid           *Style
 	Title          string
 	XLabel         string
 	YLabel         string
 	Content        []PlotContent
 	FillBackground bool
+	BoundsModifier BoundsModifier
 	xTicks         []Tick
 	yTicks         []Tick
 	legendPosGiven bool
 	legendPos      Point
 	Legend         []Legend
-	BoundsModifier BoundsModifier
 	trans          Transform
 	canvas         Canvas
 }
@@ -67,14 +68,18 @@ func (p *Plot) DrawTo(canvas Canvas) error {
 		canvas.DrawPath(rect.Poly(), White.SetStrokeWidth(0).SetFill(White))
 	}
 
-	b := p.LeftBorder
-	if b <= 0 {
-		b = 5
+	lb := p.LeftBorder
+	if lb <= 0 {
+		lb = 5
+	}
+	rb := p.RightBorder
+	if rb <= 0 {
+		rb = 2
 	}
 
 	innerRect := Rect{
-		Min: Point{rect.Min.X + textSize*float64(b)*0.75, rect.Min.Y + textSize*2},
-		Max: Point{rect.Max.X - textSize, rect.Max.Y - textSize},
+		Min: Point{rect.Min.X + textSize*float64(lb)*0.75, rect.Min.Y + textSize*2},
+		Max: Point{rect.Max.X - textSize*float64(rb)*0.75, rect.Max.Y - textSize/2},
 	}
 
 	xBounds := p.XBounds
@@ -152,7 +157,7 @@ func (p *Plot) DrawTo(canvas Canvas) error {
 		if tick.Label == "" {
 			canvas.DrawPath(NewPointsPath(false, Point{xp, innerRect.Min.Y - small}, Point{xp, innerRect.Min.Y}), Black)
 		} else {
-			canvas.DrawText(Point{xp, innerRect.Min.Y - large}, tick.Label, Top|HCenter, textStyle, textSize)
+			canvas.DrawText(Point{xp, innerRect.Min.Y - large - small}, tick.Label, Top|HCenter, textStyle, textSize)
 			canvas.DrawPath(NewPointsPath(false, Point{xp, innerRect.Min.Y - large}, Point{xp, innerRect.Min.Y}), thickLine)
 		}
 		if p.Grid != nil {
@@ -384,19 +389,22 @@ func (f Function) DrawTo(_ *Plot, canvas Canvas) error {
 }
 
 type Scatter struct {
-	Points     []Point
+	Points     Points
 	Shape      Shape
 	ShapeStyle *Style
 	LineStyle  *Style
 }
 
 func (s Scatter) String() string {
-	return fmt.Sprintf("Scatter with %d points", len(s.Points))
+	return "Scatter"
 }
 
 func (s Scatter) PreferredBounds(_, _ Bounds) (Bounds, Bounds, error) {
 	var x, y Bounds
-	for _, p := range s.Points {
+	for p, err := range s.Points {
+		if err != nil {
+			return Bounds{}, Bounds{}, err
+		}
 		x.Merge(p.X)
 		y.Merge(p.Y)
 	}
@@ -406,15 +414,14 @@ func (s Scatter) PreferredBounds(_, _ Bounds) (Bounds, Bounds, error) {
 func (s Scatter) DrawTo(_ *Plot, canvas Canvas) error {
 	rect := canvas.Rect()
 	if s.ShapeStyle != nil && s.Shape != nil {
-		for _, p := range s.Points {
+		for p := range s.Points {
 			if rect.Inside(p) {
 				canvas.DrawShape(p, s.Shape, s.ShapeStyle)
 			}
 		}
 	}
 	if s.LineStyle != nil {
-		path := NewPointsPath(false, s.Points...)
-		canvas.DrawPath(canvas.Rect().IntersectPath(path), s.LineStyle)
+		canvas.DrawPath(canvas.Rect().IntersectPath(s.Points), s.LineStyle)
 	}
 	return nil
 }

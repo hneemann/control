@@ -3,6 +3,7 @@ package graph
 import (
 	"bytes"
 	"fmt"
+	"iter"
 	"math"
 )
 
@@ -49,6 +50,38 @@ func (p Point) Mul(f float64) Point {
 
 func sqr(x float64) float64 {
 	return x * x
+}
+
+type Points iter.Seq2[Point, error]
+
+func PointsFromPoint(p Point) Points {
+	return func(yield func(Point, error) bool) {
+		yield(p, nil)
+	}
+}
+
+func PointsFromSlice(pointList []Point) Points {
+	return func(yield func(Point, error) bool) {
+		for _, point := range pointList {
+			if !yield(point, nil) {
+				return
+			}
+		}
+	}
+}
+
+func (p Points) Iter(yield func(rune, Point) bool) {
+	r := 'M'
+	for point := range p {
+		if !yield(r, point) {
+			return
+		}
+		r = 'L'
+	}
+}
+
+func (p Points) IsClosed() bool {
+	return false
 }
 
 type Color struct {

@@ -96,12 +96,13 @@ let Ti = 1.05;
 let Td = 0.82;
 let Tp = 0.05;
 
-let systemDescription = [   // nonlinear with limiter
- {              out:"w",    block: 1                 },
- {in:["w","y"], out:"e",    block: "-"               },
- {in:"e",       out:"u",    block: pid(kp,Ti,Td,Tp)  },
- {in:"u",       out:"uLim", block: blockLimiter(0,1) },
- {in:"uLim",    out:"y",    block: g                 }
+// A Simulink-like model in the form of a simple netlist.
+let systemDescription = [
+ {              block: 1,                 out:"w"    },
+ {in:["w","y"], block: "-",               out:"e"    },
+ {in:"e",       block: pid(kp,Ti,Td,Tp),  out:"u"    },
+ {in:"u",       block: blockLimiter(0,1), out:"uLim" },
+ {in:"uLim",    block: g,                 out:"y"    }
 ];
 
 let simLim=simulate(systemDescription,6);
@@ -115,37 +116,52 @@ plot(
  .legendPos(2,0.7)
  .labels("t [s]", "h(t)")
  .title("Effect of a Limiter")</example>
-            <!--example name="Nelder&amp;Mead" desc="Nichtlineare Optimierung">let s = lin();
-let g = 70/((s+1)*(s+2)*(s+2.5));
+            <!--example name="Nelder&amp;Mead" desc="Nichtlineare Optimierung">let s=lin();
+let g=7/((s+1)*(s+2)*(s-1));
 
-func getSim(kp,Ti,Td)
-  (pid(kp,Ti,Td)*g).loop().simStep(10);
 
-func targetMax(kp,Ti,Td)
-  let sim = getSim(kp,Ti,Td);
+func getSim(kp,T)
+  let k=kp*(T*s+1)/(0.01*s+1);
+  let g0=k*g;
+  let k0=g0(0);
+  let v=(1+k0)/k0;
+  let vor=v*(g0.loop());
+  vor.simStep(10);
+
+const maxPercent=3;
+const minStartTime=4;
+
+const minBorder=1-maxPercent/100;
+const maxBorder=1+maxPercent/100;
+
+func targetMax(kp,T)
+  let sim = getSim(kp,T);
   let ma=sim.minMax(e-&gt;e[1]).maxItem;
-  let mi=sim.accept(e-&gt;e[0]&gt;1).minMax(e-&gt;e[1]).minItem;
-  sqr(ma[1]-1.04)+sqr(mi[1]-0.96);
+  let mi=sim.accept(e-&gt;e[0]&gt;minStartTime).minMax(e-&gt;e[1]).minItem;
+  sqr(ma[1]-maxBorder)+sqr(mi[1]-minBorder);
 
-func targetTime(kp,Ti,Td)
-  let sim  = getSim(kp,Ti,Td);
-  let line = sim.combine((a,b)-&gt;{a:a,b:b}).accept(e-&gt;abs(e.a[1]-1)&gt;0.05 &amp; abs(e.b[1]-1)&lt;=0.05).last();
-  line.a[0]+(1-line.a[1])/(line.b[1]-line.a[1])*(line.b[0]-line.a[0]);
+const maxTimePercent=4;
+const maxTimeDif = maxTimePercent/100;
 
-func getCurve(kp,Ti,Td, color)
-  curve( getSim(kp,Ti,Td),color,sprintf(&quot;kp=%.2f, Ti=%.2f, Td=%.2f, Tm=%.2f&quot;,kp,Ti,Td,targetTime(kp,Ti,Td)) );
+func targetTime(kp,T)
+  let sim=getSim(kp,T);
+  let l = sim.combine((a,b)-&gt;{a:a,b:b}).accept(e-&gt;abs(e.a[1]-1)&gt;maxTimeDif &amp; abs(e.b[1]-1)&lt;=maxTimeDif).last();
+  let bez = if l.a[1]&lt;1 then 1-maxTimeDif else 1+maxTimeDif;
+  l.a[0]+(bez-l.a[1])/(l.b[1]-l.a[1])*(l.b[0]-l.a[0]);
 
-let kp = 0.7;
-let Ti = 1.0;
-let Td = 1.0;
+func getCurve(kp,T, color)
+  curve( getSim(kp,T),color,sprintf(&quot;kp=%.2f, Ti=%.2f, Tm=%.2f&quot;,kp,T,targetTime(kp,T)) );
 
-let o1 = nelderMead(targetMax,[kp,Ti,Td]);
+let kp = 0.4;
+let T = 1.1;
+
+let o1 = nelderMead(targetMax,[kp,T]);
 let o2 = nelderMead(targetTime,o1.vec);
 
 plot(
-  getCurve(kp,Ti,Td,black),
-  getCurve(o1.vec[0],o1.vec[1],o1.vec[2],blue),
-  getCurve(o2.vec[0],o2.vec[1],o2.vec[2],red)
-).xLabel(&quot;t&quot;).yLabel(&quot;h(t)&quot;).grid().labelPos(3,0.9)</example-->
+  getCurve(kp,T,black),
+  getCurve(o1.vec[0],o1.vec[1],blue),
+  getCurve(o2.vec[0],o2.vec[1],red)
+).xLabel(&quot;t&quot;).yLabel(&quot;h(t)&quot;).grid().legendPos(5,0.9)</example-->
 
 </Examples>
