@@ -481,34 +481,6 @@ func Benchmark_DataSet(b *testing.B) {
 	b.ResetTimer()
 	for range b.N {
 		sum := 0.0
-		d.toList().Iterate(st, func(v value.Value) error {
-			if l, ok := v.ToList(); ok {
-				p, _ := l.ToSlice(st)
-				if x, ok := p[0].ToFloat(); ok {
-					if y, ok := p[1].ToFloat(); ok {
-						sum += x + y
-					}
-				}
-			}
-			return nil
-		})
-		ss += sum
-	}
-	fmt.Println(ss)
-}
-
-func Benchmark_DataSet2(b *testing.B) {
-	d := newDataSet(1000, 2)
-	for i := 0; i < 1000; i++ {
-		d.set(i, 0, float64(i))
-		d.set(i, 1, float64(i))
-	}
-	st := funcGen.NewEmptyStack[value.Value]()
-
-	ss := 0.0
-	b.ResetTimer()
-	for range b.N {
-		sum := 0.0
 		d.toPointList(0, 1).Iterate(st, func(v value.Value) error {
 			if l, ok := v.ToList(); ok {
 				p, _ := l.ToSlice(st)
