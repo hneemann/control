@@ -5,6 +5,7 @@ import (
 	"github.com/hneemann/parser2/funcGen"
 	"github.com/hneemann/parser2/value"
 	"strings"
+	"unicode"
 )
 
 type BlockFactory struct {
@@ -361,11 +362,11 @@ func SimulateBlock(st funcGen.Stack[value.Value], def *value.List, tMax float64)
 		if m, ok := v.(value.Map); ok {
 			in, err := getStringList(st, m, "in")
 			if err != nil {
-				return fmt.Errorf("input not found: %w", err)
+				return err
 			}
 			out, err := getStringList(st, m, "out")
 			if err != nil {
-				return fmt.Errorf("output not found %w", err)
+				return err
 			}
 			if len(out) != 1 {
 				return fmt.Errorf("output must be a single value")
@@ -448,19 +449,24 @@ func valueToBlock(blockValue value.Value, in []string) (BlockFactory, error) {
 func getStringList(st funcGen.Stack[value.Value], m value.Map, key string) ([]string, error) {
 	v, ok := m.Get(key)
 	if !ok {
-		return []string{}, nil
+		return nil, nil
 	}
-	if l, ok := v.(value.String); ok {
-		return []string{string(l)}, nil
+	if s, ok := v.(value.String); ok {
+		if isIdent(string(s)) {
+			return []string{string(s)}, nil
+		}
+		return nil, fmt.Errorf("invalid signal name %v", v)
 	}
 	if l, ok := v.(*value.List); ok {
 		var result []string
 		err := l.Iterate(st, func(v value.Value) error {
 			if s, ok := v.(value.String); ok {
-				result = append(result, string(s))
-				return nil
+				if isIdent(string(s)) {
+					result = append(result, string(s))
+					return nil
+				}
 			}
-			return fmt.Errorf("invalid string %v", v)
+			return fmt.Errorf("invalid signal name %v", v)
 		})
 		if err != nil {
 			return nil, err
@@ -468,4 +474,22 @@ func getStringList(st funcGen.Stack[value.Value], m value.Map, key string) ([]st
 		return result, nil
 	}
 	return nil, fmt.Errorf("invalid signal type: %v", v)
+}
+
+func isIdent(s string) bool {
+	if len(s) == 0 {
+		return false
+	}
+	for i, c := range s {
+		if i == 0 {
+			if !unicode.IsLetter(c) || c == '_' {
+				return false
+			}
+		} else {
+			if !(unicode.IsLetter(c) || unicode.IsDigit(c) || c == '_') {
+				return false
+			}
+		}
+	}
+	return true
 }
