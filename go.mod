@@ -4,7 +4,7 @@ go 1.23.8
 
 require (
 	github.com/hneemann/iterator v0.0.0-20240630073221-aab15310e28c
-	github.com/hneemann/parser2 v0.0.0-20250420081852-0ff695b1602c
+	github.com/hneemann/parser2 v0.0.0-20250426083807-a139b109ce92
 	github.com/hneemann/session v0.0.0-20250420105522-3ae8f8af13c5
 	github.com/stretchr/testify v1.10.0
 )
