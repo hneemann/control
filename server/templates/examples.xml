@@ -105,13 +105,13 @@ let systemDescription = [
  {in:"uLim",    block: g,                 out:"y"    }
 ];
 
-let simLimited=simulate(systemDescription,6);
-let simNormal=(pid(kp,Ti,Td,Tp)*g).loop().simStep(6);
+let simLimited = simulate(systemDescription,6);
+let simNormal  = (pid(kp,Ti,Td,Tp)*g).loop().simStep(6);
 
 plot(
-  curve(simNormal,green,"y (u unlimited)"),
-  curve(simLimited.uLim,blue,"u limited"),
-  curve(simLimited.y,black,"y (u limited)")
+  curve(simNormal,       green, "y (u unlimited)" ),
+  curve(simLimited.uLim, blue,  "u limited"       ),
+  curve(simLimited.y,    black, "y (u limited)"   )
 ).yBounds(-0.2,1.5).grid()
  .legendPos(2,0.7)
  .labels("t [s]", "h(t)")
