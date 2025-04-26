@@ -147,7 +147,7 @@ func createStyleMethods() value.MethodMap {
 	}
 }
 
-var GridStyle = graph.Gray.SetDash(5, 5)
+var GridStyle = graph.Gray.SetDash(5, 5).SetStrokeWidth(1)
 
 func createPlotMethods() value.MethodMap {
 	return value.MethodMap{

@@ -56,7 +56,7 @@ let pm=g0.pMargin();
 bode(0.01,100)
   .add(g,  green, "G")
   .add(k,  blue,  "K")
-  .add(g0, black, sprintf("G0, phi=%.1f°, ws=%.2f rad/s",pm.pMargin,pm.w0) )
+  .add(g0, black, sprintf("G0, Φ=%.1f°, ω₀=%.2f rad/s",pm.pMargin,pm.w0) )
   .phaseModify( p->p.add(yConst(-110,red.dash(7,7)))
                     .add(yConst(-130,red.dash(7,7)))
                     .add(xConst(pm.w0,red.dash(7,7))) )
@@ -105,13 +105,13 @@ let systemDescription = [
  {in:"uLim",    block: g,                 out:"y"    }
 ];
 
-let simLim=simulate(systemDescription,6);
-let sim=(pid(kp,Ti,Td,Tp)*g).loop().simStep(6);
+let simLimited=simulate(systemDescription,6);
+let simNormal=(pid(kp,Ti,Td,Tp)*g).loop().simStep(6);
 
 plot(
-  curve(sim,green.stroke(2),"y (u unlimited)"),
-  curve(simLim.uLim,blue.stroke(2),"u limited"),
-  curve(simLim.y,black.stroke(2),"y (u limited)")
+  curve(simNormal,green,"y (u unlimited)"),
+  curve(simLimited.uLim,blue,"u limited"),
+  curve(simLimited.y,black,"y (u limited)")
 ).yBounds(-0.2,1.5).grid()
  .legendPos(2,0.7)
  .labels("t [s]", "h(t)")

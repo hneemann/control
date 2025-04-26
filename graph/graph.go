@@ -139,7 +139,6 @@ var (
 	color = []*Style{
 		NewStyle(230, 25, 75),
 		NewStyle(60, 180, 75),
-		NewStyle(255, 225, 25),
 		NewStyle(0, 130, 200),
 		NewStyle(245, 130, 48),
 		NewStyle(145, 30, 180),
@@ -147,6 +146,7 @@ var (
 		NewStyle(240, 50, 230),
 		NewStyle(210, 245, 60),
 		NewStyle(250, 190, 212),
+		NewStyle(255, 225, 25),
 		NewStyle(0, 128, 128),
 		NewStyle(220, 190, 255),
 		NewStyle(170, 110, 40),

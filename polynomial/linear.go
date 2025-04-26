@@ -379,8 +379,13 @@ func (p polarPath) IsClosed() bool {
 }
 
 func (p Polar) DrawTo(plot *graph.Plot, canvas graph.Canvas) error {
+	style := plot.Grid
+	if style == nil {
+		style = grParser.GridStyle
+	}
+
 	r := canvas.Rect()
-	text := graph.Gray.Text()
+	text := style.Text()
 	textSize := canvas.Context().TextSize * 0.8
 	var zero graph.Point
 
@@ -408,7 +413,7 @@ func (p Polar) DrawTo(plot *graph.Plot, canvas graph.Canvas) error {
 				} else {
 					o |= graph.Right
 				}
-				canvas.DrawPath(graph.NewPointsPath(false, ap, ep), grParser.GridStyle)
+				canvas.DrawPath(graph.NewPointsPath(false, ap, ep), style)
 				canvas.DrawText(ep, fmt.Sprintf("%d°", 180-angle), o, text, textSize)
 			}
 		}
@@ -418,7 +423,7 @@ func (p Polar) DrawTo(plot *graph.Plot, canvas graph.Canvas) error {
 		for _, t := range plot.GetXTicks() {
 			radius = -t.Position
 			if radius > 1e-5 {
-				canvas.DrawPath(r.IntersectPath(polarPath{radius: radius, r: r}), grParser.GridStyle)
+				canvas.DrawPath(r.IntersectPath(polarPath{radius: radius, r: r}), style)
 				point := graph.Point{X: 0, Y: radius}
 				if r.Inside(point) {
 					canvas.DrawText(point, t.Label, graph.VCenter|graph.Left, text, textSize)
@@ -462,15 +467,6 @@ func (a Asymptotes) DrawTo(_ *graph.Plot, canvas graph.Canvas) error {
 		alpha += dAlpha
 	}
 	return nil
-}
-
-var styleList = []*graph.Style{
-	graph.Red.SetStrokeWidth(2).Darker(),
-	graph.Green.SetStrokeWidth(2).Darker(),
-	graph.Blue.SetStrokeWidth(2).Darker(),
-	graph.Cyan.SetStrokeWidth(2).Darker(),
-	graph.Magenta.SetStrokeWidth(2).Darker(),
-	graph.Yellow.SetStrokeWidth(2).Darker(),
 }
 
 func (l *Linear) CreateEvans(kMax float64) (*graph.Plot, error) {
@@ -537,7 +533,7 @@ func (l *Linear) CreateEvans(kMax float64) (*graph.Plot, error) {
 	}
 
 	for i := range poleCount {
-		curveList = append(curveList, graph.Scatter{Points: evPoints.getPoints(i), LineStyle: styleList[i%len(styleList)]})
+		curveList = append(curveList, graph.Scatter{Points: evPoints.getPoints(i), LineStyle: graph.GetColor(i).SetStrokeWidth(2)})
 	}
 
 	markerStyle := graph.Black.SetStrokeWidth(2)

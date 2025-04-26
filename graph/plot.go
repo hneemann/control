@@ -43,13 +43,13 @@ type Plot struct {
 	XLabel         string
 	YLabel         string
 	Content        []PlotContent
+	Legend         []Legend
 	FillBackground bool
 	BoundsModifier BoundsModifier
 	xTicks         []Tick
 	yTicks         []Tick
 	legendPosGiven bool
 	legendPos      Point
-	Legend         []Legend
 	trans          Transform
 	canvas         Canvas
 }
@@ -151,11 +151,12 @@ func (p *Plot) DrawTo(canvas Canvas) error {
 	small := textSize / 4
 
 	thickLine := Black.SetStrokeWidth(2)
+	thinLine := Black.SetStrokeWidth(1)
 
 	for _, tick := range xTicks {
 		xp := xTrans(tick.Position)
 		if tick.Label == "" {
-			canvas.DrawPath(NewPointsPath(false, Point{xp, innerRect.Min.Y - small}, Point{xp, innerRect.Min.Y}), Black)
+			canvas.DrawPath(NewPointsPath(false, Point{xp, innerRect.Min.Y - small}, Point{xp, innerRect.Min.Y}), thinLine)
 		} else {
 			canvas.DrawText(Point{xp, innerRect.Min.Y - large - small}, tick.Label, Top|HCenter, textStyle, textSize)
 			canvas.DrawPath(NewPointsPath(false, Point{xp, innerRect.Min.Y - large}, Point{xp, innerRect.Min.Y}), thickLine)
@@ -168,7 +169,7 @@ func (p *Plot) DrawTo(canvas Canvas) error {
 	for _, tick := range yTicks {
 		yp := yTrans(tick.Position)
 		if tick.Label == "" {
-			canvas.DrawPath(NewPointsPath(false, Point{innerRect.Min.X - small, yp}, Point{innerRect.Min.X, yp}), Black)
+			canvas.DrawPath(NewPointsPath(false, Point{innerRect.Min.X - small, yp}, Point{innerRect.Min.X, yp}), thinLine)
 		} else {
 			canvas.DrawText(Point{innerRect.Min.X - large, yp}, tick.Label, Right|VCenter, textStyle, textSize)
 			canvas.DrawPath(NewPointsPath(false, Point{innerRect.Min.X - large, yp}, Point{innerRect.Min.X, yp}), thickLine)
