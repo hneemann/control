@@ -428,10 +428,9 @@ func (s Scatter) DrawTo(_ *Plot, canvas Canvas) error {
 }
 
 type Hint struct {
-	Text        string
-	Pos         Point
-	Marker      Shape
-	MarkerStyle *Style
+	Text  string
+	Style *Style
+	Pos   Point
 }
 
 func (h Hint) PreferredBounds(_, _ Bounds) (Bounds, Bounds, error) {
@@ -442,33 +441,23 @@ func (h Hint) PreferredBounds(_, _ Bounds) (Bounds, Bounds, error) {
 	return x, y, nil
 }
 
-func (h Hint) DrawTo(_ *Plot, canvas Canvas) error {
+func (h Hint) DrawTo(plot *Plot, canvas Canvas) error {
 	r := canvas.Rect()
 	if r.Inside(h.Pos) {
-		if h.Marker != nil && h.MarkerStyle != nil {
-			canvas.DrawShape(h.Pos, h.Marker, h.MarkerStyle)
-		}
 		tPos := h.Pos
-		var o Orientation
 		dx := r.Width() / 30
 		if r.IsInLeftHalf(h.Pos) {
-			o = Left
 			tPos = tPos.Add(Point{dx, 0})
 		} else {
-			o = Right
 			tPos = tPos.Add(Point{-dx, 0})
 		}
 		dy := r.Height() / 30
 		if r.IsInTopHalf(h.Pos) {
-			o |= Top
 			tPos = tPos.Add(Point{0, -dy})
 		} else {
-			o |= Bottom
 			tPos = tPos.Add(Point{0, dy})
 		}
-
-		canvas.DrawPath(NewPointsPath(false, h.Pos, tPos), Black)
-		canvas.DrawText(tPos, h.Text, o, Black.Text(), canvas.Context().TextSize)
+		drawArrow(plot, plot.trans(tPos), plot.trans(h.Pos), h.Style, 1, h.Text)
 	}
 	return nil
 }
@@ -478,12 +467,9 @@ type HintDir struct {
 	PosDir Point
 }
 
-func (h HintDir) DrawTo(_ *Plot, canvas Canvas) error {
+func (h HintDir) DrawTo(plot *Plot, canvas Canvas) error {
 	r := canvas.Rect()
 	if r.Inside(h.Pos) {
-		if h.Marker != nil && h.MarkerStyle != nil {
-			canvas.DrawShape(h.Pos, h.Marker, h.MarkerStyle)
-		}
 
 		if tc, ok := canvas.(TransformCanvas); ok {
 			parentCanvas := tc.parent
@@ -493,10 +479,7 @@ func (h HintDir) DrawTo(_ *Plot, canvas Canvas) error {
 			delta := p1.Sub(p2).Norm().Rot90().Mul(parentCanvas.Rect().Width() / 30)
 			tPos := p1.Add(delta)
 
-			o := orientationByDelta(delta)
-			parentCanvas.DrawPath(NewPointsPath(false, p1, tPos), Black)
-			parentCanvas.DrawText(tPos, h.Text, o, Black.Text(), canvas.Context().TextSize)
-
+			drawArrow(plot, tPos, p1, h.Style, 1, h.Text)
 		}
 	}
 	return nil
@@ -538,11 +521,15 @@ func (a Arrow) PreferredBounds(_, _ Bounds) (Bounds, Bounds, error) {
 }
 
 func (a Arrow) DrawTo(plot *Plot, canvas Canvas) error {
-	textSize := canvas.Context().TextSize
-	w := textSize * 0.75
-
 	from := plot.trans(a.From)
 	to := plot.trans(a.To)
+	drawArrow(plot, from, to, a.Style, a.Mode, a.Label)
+	return nil
+}
+
+func drawArrow(plot *Plot, from, to Point, style *Style, mode int, label string) {
+	textSize := plot.canvas.Context().TextSize
+	w := textSize * 0.75
 
 	dif := to.Sub(from).Norm().Mul(w)
 	norm := dif.Rot90().Mul(0.25)
@@ -550,25 +537,25 @@ func (a Arrow) DrawTo(plot *Plot, canvas Canvas) error {
 	var textPos Point
 	var o Orientation
 
-	if a.From != a.To {
+	if from != to {
 		p := NewPath(false)
 		p = p.MoveTo(from)
 		p = p.LineTo(to)
-		if a.Mode&1 != 0 {
+		if mode&1 != 0 {
 			p = p.MoveTo(to.Sub(dif).Add(norm))
 			p = p.LineTo(to)
 			p = p.LineTo(to.Sub(dif).Sub(norm))
 		}
-		if a.Mode&2 != 0 {
+		if mode&2 != 0 {
 			p = p.MoveTo(from.Add(dif).Add(norm))
 			p = p.LineTo(from)
 			p = p.LineTo(from.Add(dif).Sub(norm))
 		}
-		plot.canvas.DrawPath(p, a.Style)
+		plot.canvas.DrawPath(p, style)
 	}
 
-	if a.Label != "" {
-		switch a.Mode & 3 {
+	if label != "" {
+		switch mode & 3 {
 		case 1:
 			textPos = from
 			o = orientationByDelta(dif.Mul(-1))
@@ -579,9 +566,8 @@ func (a Arrow) DrawTo(plot *Plot, canvas Canvas) error {
 			textPos = from.Add(to).Mul(0.5)
 			o = orientationByDelta(norm)
 		}
-		plot.canvas.DrawText(textPos, a.Label, o, a.Style.Text(), textSize)
+		plot.canvas.DrawText(textPos, label, o, style.Text(), textSize)
 	}
-	return nil
 }
 
 type circleMarker struct {

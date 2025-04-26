@@ -568,12 +568,7 @@ func Setup(fg *value.FunctionGenerator) {
 							if !ok {
 								return nil, fmt.Errorf("hint requires a style as fourth argument")
 							}
-							hint.MarkerStyle = styleVal.Value
-							marker, err := getMarker(st, 4, styleVal.Size)
-							if err != nil {
-								return nil, fmt.Errorf("hint requires a marker as fifth argument")
-							}
-							hint.Marker = marker
+							hint.Style = styleVal.Value
 						}
 						return PlotContentValue{Holder: Holder[graph.PlotContent]{hint}}, nil
 					}
@@ -581,9 +576,9 @@ func Setup(fg *value.FunctionGenerator) {
 			}
 			return nil, fmt.Errorf("hint requires two floats and a string")
 		},
-		Args:   5,
+		Args:   4,
 		IsPure: true,
-	}.SetDescription("x", "y", "text", "marker", "color", "Creates a new scatter dataset").VarArgs(3, 5))
+	}.SetDescription("x", "y", "text", "color", "Creates a new hint").VarArgs(3, 4))
 	fg.AddStaticFunction("hintDir", funcGen.Function[value.Value]{
 		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
 			if x1, ok := st.Get(0).ToFloat(); ok {
@@ -598,29 +593,22 @@ func Setup(fg *value.FunctionGenerator) {
 									},
 									PosDir: graph.Point{x2, y2},
 								}
-								if st.Size() > 5 {
-									styleVal, ok := st.GetOptional(5, defStyle).(StyleValue)
-									if !ok {
-										return nil, fmt.Errorf("hint requires a style as fourth argument")
-									}
-									hint.MarkerStyle = styleVal.Value
-									marker, err := getMarker(st, 6, styleVal.Size)
-									if err != nil {
-										return nil, fmt.Errorf("hint requires a marker as fifth argument")
-									}
-									hint.Marker = marker
+								styleVal, ok := st.GetOptional(5, defStyle).(StyleValue)
+								if !ok {
+									return nil, fmt.Errorf("hintDir requires a style as fourth argument")
 								}
+								hint.Style = styleVal.Value
 								return PlotContentValue{Holder: Holder[graph.PlotContent]{hint}}, nil
 							}
 						}
 					}
 				}
 			}
-			return nil, fmt.Errorf("hint requires two floats and a string")
+			return nil, fmt.Errorf("hintDir requires four floats and a string")
 		},
-		Args:   7,
+		Args:   6,
 		IsPure: true,
-	}.SetDescription("x1", "y1", "x2", "y2", "text", "marker", "color", "Creates a new scatter dataset").VarArgs(5, 7))
+	}.SetDescription("x1", "y1", "x2", "y2", "text", "color", "Creates a new hint").VarArgs(5, 6))
 	fg.AddStaticFunction("arrow", funcGen.Function[value.Value]{
 		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
 			if x1, ok := st.Get(0).ToFloat(); ok {
@@ -635,13 +623,13 @@ func Setup(fg *value.FunctionGenerator) {
 								}
 								styleVal, ok := st.GetOptional(5, defStyle).(StyleValue)
 								if !ok {
-									return nil, fmt.Errorf("hint requires a style as fourth argument")
+									return nil, fmt.Errorf("arrow requires a style as fourth argument")
 								}
 								arrow.Style = styleVal.Value
-								if mode, ok := st.GetOptional(6, value.Int(3)).(value.Int); ok {
+								if mode, ok := st.GetOptional(6, value.Int(3)).ToInt(); ok {
 									arrow.Mode = int(mode)
 								} else {
-									return nil, fmt.Errorf("hint requires an int as fifth argument")
+									return nil, fmt.Errorf("arrow requires an int as fifth argument")
 								}
 								return PlotContentValue{Holder: Holder[graph.PlotContent]{arrow}}, nil
 							}
@@ -649,7 +637,7 @@ func Setup(fg *value.FunctionGenerator) {
 					}
 				}
 			}
-			return nil, fmt.Errorf("hint requires two floats and a string")
+			return nil, fmt.Errorf("arrow requires four floats and a string")
 		},
 		Args:   7,
 		IsPure: true,

@@ -29,14 +29,15 @@ let g = 3/((s+1)*(s+1.5)*(s+2));
 func h(w)
   let c1 = g( _i*w );
   let c2 = g( _i*w*0.99 );
-  hintDir(c1.real(),c1.imag(),c2.real(),c2.imag(),"ω="+w,black,2);
+  hintDir(c1.real(),c1.imag(),c2.real(),c2.imag(),"ω="+w);
 
 g.nyquist()
   .add( h(0.1)  )
   .add( h(0.25) )
   .add( h(0.5)  )
   .add( h(1)    )
-  .add( h(2)    )</example>
+  .add( h(2)    )
+  .add( h(5)    )</example>
     <example name="Nyquist" desc="Anwendung des Nyquistkriteriums">let s = lin();
 let g = 6*(s+1)/((s-1)*(s-3));
 
@@ -57,8 +58,8 @@ bode(0.01,100)
   .add(g,  green, "G")
   .add(k,  blue,  "K")
   .add(g0, black, sprintf("G0, Φ=%.1f°, ω₀=%.2f rad/s",pm.pMargin,pm.w0) )
-  .phaseModify( p->p.add(yConst(-110,red.dash(7,7)))
-                    .add(yConst(-130,red.dash(7,7)))
+  .phaseModify( p->p.add(yConst(-180+70,red.dash(7,7)))
+                    .add(yConst(-180+50,red.dash(7,7)))
                     .add(xConst(pm.w0,red.dash(7,7))) )
   .ampModify( p->p.add(xConst(pm.w0,red.dash(7,7))) )</example>
     <example name="pid" desc="Die pid-Funktion">[
