@@ -493,25 +493,93 @@ func (h HintDir) DrawTo(_ *Plot, canvas Canvas) error {
 			delta := p1.Sub(p2).Norm().Rot90().Mul(parentCanvas.Rect().Width() / 30)
 			tPos := p1.Add(delta)
 
-			var o Orientation
-			if delta.X > 0 {
-				o = Left
-			} else if delta.X < 0 {
-				o = Right
-			} else {
-				o = HCenter
-			}
-			if delta.Y > 0 {
-				o |= Bottom
-			} else if delta.Y < 0 {
-				o |= Top
-			} else {
-				o |= VCenter
-			}
+			o := orientationByDelta(delta)
 			parentCanvas.DrawPath(NewPointsPath(false, p1, tPos), Black)
 			parentCanvas.DrawText(tPos, h.Text, o, Black.Text(), canvas.Context().TextSize)
 
 		}
+	}
+	return nil
+}
+
+func orientationByDelta(delta Point) Orientation {
+	var o Orientation
+	if delta.X > 0 {
+		o = Left
+	} else if delta.X < 0 {
+		o = Right
+	} else {
+		o = HCenter
+	}
+	if delta.Y > 0 {
+		o |= Bottom
+	} else if delta.Y < 0 {
+		o |= Top
+	} else {
+		o |= VCenter
+	}
+	return o
+}
+
+type Arrow struct {
+	From, To Point
+	Style    *Style
+	Label    string
+	Mode     int
+}
+
+func (a Arrow) PreferredBounds(_, _ Bounds) (Bounds, Bounds, error) {
+	var x, y Bounds
+	x.Merge(a.From.X)
+	x.Merge(a.To.X)
+	y.Merge(a.From.Y)
+	y.Merge(a.To.Y)
+	return x, y, nil
+}
+
+func (a Arrow) DrawTo(plot *Plot, canvas Canvas) error {
+	textSize := canvas.Context().TextSize
+	w := textSize * 0.75
+
+	from := plot.trans(a.From)
+	to := plot.trans(a.To)
+
+	dif := to.Sub(from).Norm().Mul(w)
+	norm := dif.Rot90().Mul(0.25)
+
+	var textPos Point
+	var o Orientation
+
+	if a.From != a.To {
+		p := NewPath(false)
+		p = p.MoveTo(from)
+		p = p.LineTo(to)
+		if a.Mode&1 != 0 {
+			p = p.MoveTo(to.Sub(dif).Add(norm))
+			p = p.LineTo(to)
+			p = p.LineTo(to.Sub(dif).Sub(norm))
+		}
+		if a.Mode&2 != 0 {
+			p = p.MoveTo(from.Add(dif).Add(norm))
+			p = p.LineTo(from)
+			p = p.LineTo(from.Add(dif).Sub(norm))
+		}
+		plot.canvas.DrawPath(p, a.Style)
+	}
+
+	if a.Label != "" {
+		switch a.Mode & 3 {
+		case 1:
+			textPos = from
+			o = orientationByDelta(dif.Mul(-1))
+		case 2:
+			textPos = to
+			o = orientationByDelta(dif)
+		default:
+			textPos = from.Add(to).Mul(0.5)
+			o = orientationByDelta(norm)
+		}
+		plot.canvas.DrawText(textPos, a.Label, o, a.Style.Text(), textSize)
 	}
 	return nil
 }
