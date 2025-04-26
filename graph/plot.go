@@ -124,7 +124,7 @@ func (p *Plot) DrawTo(canvas Canvas) error {
 
 	xTrans, xTicks, xBounds := xAxis(innerRect.Min.X, innerRect.Max.X, xBounds,
 		func(width float64, digits int) bool {
-			return width > textSize*(float64(digits+2))*0.75
+			return width > textSize*(float64(digits+1))*0.5
 		})
 	yTrans, yTicks, yBounds := yAxis(innerRect.Min.Y, innerRect.Max.Y, yBounds,
 		func(width float64, _ int) bool {
@@ -165,7 +165,6 @@ func (p *Plot) DrawTo(canvas Canvas) error {
 			canvas.DrawPath(NewPointsPath(false, Point{xp, innerRect.Min.Y}, Point{xp, innerRect.Max.Y}), p.Grid)
 		}
 	}
-	canvas.DrawText(Point{innerRect.Max.X - small, innerRect.Min.Y + small}, p.XLabel, Bottom|Right, textStyle, textSize)
 	for _, tick := range yTicks {
 		yp := yTrans(tick.Position)
 		if tick.Label == "" {
@@ -178,10 +177,6 @@ func (p *Plot) DrawTo(canvas Canvas) error {
 			canvas.DrawPath(NewPointsPath(false, Point{innerRect.Min.X, yp}, Point{innerRect.Max.X, yp}), p.Grid)
 		}
 	}
-	canvas.DrawText(Point{innerRect.Min.X + small, innerRect.Max.Y - small}, p.YLabel, Top|Left, textStyle, textSize)
-	if p.Title != "" {
-		canvas.DrawText(Point{innerRect.Max.X - small, innerRect.Max.Y - small}, p.Title, Top|Right, textStyle, textSize)
-	}
 
 	for _, plotContent := range p.Content {
 		err := plotContent.DrawTo(p, inner)
@@ -190,6 +185,11 @@ func (p *Plot) DrawTo(canvas Canvas) error {
 		}
 	}
 
+	canvas.DrawText(Point{innerRect.Max.X - small, innerRect.Min.Y + small}, p.XLabel, Bottom|Right, textStyle, textSize)
+	canvas.DrawText(Point{innerRect.Min.X + small, innerRect.Max.Y - small}, p.YLabel, Top|Left, textStyle, textSize)
+	if p.Title != "" {
+		canvas.DrawText(Point{innerRect.Max.X - small, innerRect.Max.Y - small}, p.Title, Top|Right, textStyle, textSize)
+	}
 	canvas.DrawPath(innerRect.Poly(), thickLine)
 
 	if len(p.Legend) > 0 {
@@ -470,38 +470,15 @@ type HintDir struct {
 func (h HintDir) DrawTo(plot *Plot, canvas Canvas) error {
 	r := canvas.Rect()
 	if r.Inside(h.Pos) {
+		p1 := plot.trans(h.Pos)
+		p2 := plot.trans(h.PosDir)
 
-		if tc, ok := canvas.(TransformCanvas); ok {
-			parentCanvas := tc.parent
-			p1 := tc.transform(h.Pos)
-			p2 := tc.transform(h.PosDir)
+		delta := p1.Sub(p2).Norm().Rot90().Mul(plot.canvas.Rect().Width() / 30)
+		tPos := p1.Add(delta)
 
-			delta := p1.Sub(p2).Norm().Rot90().Mul(parentCanvas.Rect().Width() / 30)
-			tPos := p1.Add(delta)
-
-			drawArrow(plot, tPos, p1, h.Style, 1, h.Text)
-		}
+		drawArrow(plot, tPos, p1, h.Style, 1, h.Text)
 	}
 	return nil
-}
-
-func orientationByDelta(delta Point) Orientation {
-	var o Orientation
-	if delta.X > 0 {
-		o = Left
-	} else if delta.X < 0 {
-		o = Right
-	} else {
-		o = HCenter
-	}
-	if delta.Y > 0 {
-		o |= Bottom
-	} else if delta.Y < 0 {
-		o |= Top
-	} else {
-		o |= VCenter
-	}
-	return o
 }
 
 type Arrow struct {
@@ -568,6 +545,25 @@ func drawArrow(plot *Plot, from, to Point, style *Style, mode int, label string)
 		}
 		plot.canvas.DrawText(textPos, label, o, style.Text(), textSize)
 	}
+}
+
+func orientationByDelta(delta Point) Orientation {
+	var o Orientation
+	if delta.X > 0 {
+		o = Left
+	} else if delta.X < 0 {
+		o = Right
+	} else {
+		o = HCenter
+	}
+	if delta.Y > 0 {
+		o |= Bottom
+	} else if delta.Y < 0 {
+		o |= Top
+	} else {
+		o |= VCenter
+	}
+	return o
 }
 
 type circleMarker struct {
