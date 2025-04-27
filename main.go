@@ -66,8 +66,8 @@ func main() {
 	mux.HandleFunc("/login", sc.LoginHandler(server.Templates.Lookup("login.html")))
 	mux.HandleFunc("/register", sc.RegisterHandler(server.Templates.Lookup("register.html")))
 
-	mux.Handle("/assets/", Cache(http.FileServer(http.FS(server.Assets)), 60, !*debug))
-	mux.Handle("/js/execute.js", Cache(server.RunMode(*onServer), 60, !*debug))
+	mux.Handle("/assets/", Cache(http.FileServer(http.FS(server.Assets)), 180, !*debug))
+	mux.Handle("/js/execute.js", Cache(server.RunMode(*onServer), 180, !*debug))
 	mux.HandleFunc("/execute/", sc.CheckSessionRestFunc(server.Execute))
 	mux.HandleFunc("/example/", sc.CheckSessionRestFunc(server.CreateExamples(examples)))
 	mux.HandleFunc("/files/", sc.CheckSessionRestFunc(server.Files))
