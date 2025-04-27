@@ -90,31 +90,35 @@ plot(
 ).labels("t [s]","h(t)").legendPos(5,0.87)</example>
 
 <example name="Simulation nicht linear" desc="Simulation eines nicht linearen Systems">let s = lin();
-let g = 70/((s+1)*(s+2)*(s+2.5));
+let G = 70/((s+1)*(s+2)*(s+2.5));
 
 let kp = 0.24;
 let Ti = 1.05;
 let Td = 0.82;
 let Tp = 0.05;
 
-// A Simulink-like model in the form of a simple netlist.
+let K = pid(kp,Ti,Td,Tp);
+
+// A Simulink-like model in the form of a netlist.
+// The blocks are connected by the names of inputs
+// and outputs. The order of the blocks does not matter.
 let systemDescription = [
  {              block: 1,                 out:"w"    },
  {in:["w","y"], block: "-",               out:"e"    },
- {in:"e",       block: pid(kp,Ti,Td,Tp),  out:"u"    },
+ {in:"e",       block: K,                 out:"u"    },
  {in:"u",       block: blockLimiter(0,1), out:"uLim" },
- {in:"uLim",    block: g,                 out:"y"    }
+ {in:"uLim",    block: G,                 out:"y"    }
 ];
 
 let simLimited = simulate(systemDescription,6);
-let simNormal  = (pid(kp,Ti,Td,Tp)*g).loop().simStep(6);
+let simNormal  = (K*G).loop().simStep(6);
 
 plot(
+  yConst(1),
   curve(simNormal,       green, "y (u unlimited)" ),
   curve(simLimited.uLim, blue,  "u limited"       ),
   curve(simLimited.y,    black, "y (u limited)"   )
-).yBounds(-0.2,1.5).grid()
- .legendPos(2,0.7)
+).legendPos(2,0.7)
  .labels("t [s]", "h(t)")
  .title("Effect of a Limiter")</example>
             <!--example name="Nelder&amp;Mead" desc="Nichtlineare Optimierung">let s=lin();
