@@ -107,8 +107,8 @@ func Execute(writer http.ResponseWriter, request *http.Request) {
 			}
 		}
 		log.Println("calculation on server took", time.Since(start))
-
 		if err != nil {
+			log.Println("error in calculation:", err)
 			resHtml = template.HTML("<pre>" + html.EscapeString(err.Error()) + "</pre>")
 		}
 	} else {
