@@ -14,26 +14,29 @@
 	});
   </script>
   <script type="text/javascript" src="/assets/main.js"></script>
+  <script type="text/javascript" src="/js/execute.js"></script>
 </head>
 <body>
-<div id="result" onclick="runSource();"></div>
-<div class="window">
-  <div class="mainHead">
-    <label for="source" id="filenameLabel"></label><br>
-  </div>
-  <div class="toolbar">
-      <button id="new" onclick="newScript();" title="Neu"><img class="icon" src="/assets/new.svg"/></button>
-      <button id="load" onclick="showLoad();" title="Öffnen"><img class="icon" src="/assets/open.svg"/></button>
-      <button id="save" onclick="save();" title="Speichern"><img class="icon" src="/assets/save.svg"/></button>
-      <button id="saveAs" onclick="showSaveAs();" title="Speichern unter"><img class="icon" src="/assets/save-as.svg"/></button>
-      <button id="run" onclick="runSource();" title="Ausführen und Ausgabe aktualisieren"><img class="icon" src="/assets/refresh.svg"/></button>
-      <button id="example" style="margin-left:auto" onclick="showPopUpById('examples');" title="Beispiele"><img class="icon" src="/assets/help.svg"/></button>
-  </div>
-  <div style="display:flex;">
-    <textarea class="source" rows="10" autocorrect="off" id="source" placeholder="Enter script" onkeyup="updateRow()" onclick="updateRow()"></textarea>
-  </div>
-  <div >
-      <span style="display:inline-block;width:3em;text-align:center;" id="row">1</span>
+<div class="main">
+  <div id="result" onclick="runSource();"></div>
+  <div class="window">
+    <div class="mainHead">
+      <label for="source" id="filenameLabel"></label><br>
+    </div>
+    <div class="toolbar">
+        <button id="new" onclick="newScript();" title="Neu"><img class="icon" src="/assets/new.svg"/></button>
+        <button id="load" onclick="showLoad();" title="Öffnen"><img class="icon" src="/assets/open.svg"/></button>
+        <button id="save" onclick="save();" title="Speichern"><img class="icon" src="/assets/save.svg"/></button>
+        <button id="saveAs" onclick="showSaveAs();" title="Speichern unter"><img class="icon" src="/assets/save-as.svg"/></button>
+        <button id="run" onclick="runSource();" title="Ausführen und Ausgabe aktualisieren"><img class="icon" src="/assets/refresh.svg"/></button>
+        <button id="example" style="margin-left:auto" onclick="showPopUpById('examples');" title="Beispiele"><img class="icon" src="/assets/help.svg"/></button>
+    </div>
+    <div style="display:flex;">
+      <textarea class="source" rows="10" autocorrect="off" id="source" placeholder="Enter script" onkeyup="updateRow()" onclick="updateRow()"></textarea>
+    </div>
+    <div class="footer">
+        <span style="display:inline-block;width:3em;text-align:center;" id="row">1</span>
+    </div>
   </div>
 </div>
 

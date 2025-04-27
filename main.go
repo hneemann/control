@@ -41,6 +41,7 @@ func main() {
 	key := flag.String("key", "", "certificate")
 	port := flag.Int("port", 8080, "port")
 	debug := flag.Bool("debug", false, "debug mode")
+	onServer := flag.Bool("onServer", false, "execution on server")
 	flag.Parse()
 
 	log.Println("Folder:", *dataFolder)
@@ -51,18 +52,22 @@ func main() {
 		4*time.Hour, time.Hour)
 	defer sc.Close()
 
+	if *debug {
+		err := sc.CreateDebugSession("admin", "admin", "debugTokenForAdmin")
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
 	examples := server.ReadExamples()
 
 	mux := http.NewServeMux()
-	if *debug {
-		mux.HandleFunc("/", sc.DebugLogin("admin", "admin", server.CreateMain(examples)))
-	} else {
-		mux.HandleFunc("/", sc.CheckSessionFunc(server.CreateMain(examples)))
-	}
+	mux.HandleFunc("/", sc.CheckSessionFunc(server.CreateMain(examples)))
 	mux.HandleFunc("/login", sc.LoginHandler(server.Templates.Lookup("login.html")))
 	mux.HandleFunc("/register", sc.RegisterHandler(server.Templates.Lookup("register.html")))
 
 	mux.Handle("/assets/", Cache(http.FileServer(http.FS(server.Assets)), 60, !*debug))
+	mux.Handle("/js/execute.js", Cache(server.RunMode(*onServer), 60, !*debug))
 	mux.HandleFunc("/execute/", sc.CheckSessionRestFunc(server.Execute))
 	mux.HandleFunc("/example/", sc.CheckSessionRestFunc(server.CreateExamples(examples)))
 	mux.HandleFunc("/files/", sc.CheckSessionRestFunc(server.Files))

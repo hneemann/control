@@ -157,3 +157,22 @@ func writeOk(writer http.ResponseWriter, ok bool) {
 		writer.Write([]byte("false"))
 	}
 }
+
+func RunMode(onServer bool) http.Handler {
+	var name string
+	if onServer {
+		log.Println("execution on server")
+		name = "templates/runOnServer.js"
+	} else {
+		log.Println("execution in browser")
+		name = "templates/runInBrowser.js"
+	}
+	data, err := templateFS.ReadFile(name)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		writer.Header().Set("Content-Type", "text/javascript; charset=utf-8")
+		writer.Write(data)
+	})
+}
