@@ -313,13 +313,15 @@ func (b *Bounds) Width() float64 {
 }
 
 type PlotContent interface {
-	// DrawTo draws the content to the given canvas
-	// The *Plot is passed to allow the content to access the plot's properties
-	DrawTo(*Plot, Canvas) error
 	// PreferredBounds returns the preferred bounds for the content
 	// The first bounds is the x-axis, the second is the y-axis
 	// The given bounds are valid if they are set by the user
+	// They are necessary only if the bounds of this instance depend
+	// on the bounds given by the user.
 	PreferredBounds(xGiven, yGiven Bounds) (x, y Bounds, err error)
+	// DrawTo draws the content to the given canvas
+	// The *Plot is passed to allow the content to access the plot's properties
+	DrawTo(*Plot, Canvas) error
 }
 
 type Function struct {
