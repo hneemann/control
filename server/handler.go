@@ -13,6 +13,7 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"runtime/debug"
 	"strings"
 	"time"
 )
@@ -50,6 +51,21 @@ func ReadExamples() []Example {
 	}
 
 	log.Printf("loaded %d examples", len(examples.Examples))
+
+	if bi, ok := debug.ReadBuildInfo(); ok {
+		var vs = "// Written by H.Neemann in 2025\n\n// Build info: "
+		for _, v := range bi.Settings {
+			if !strings.HasPrefix(v.Key, "CGO_") {
+				vs += "\n// " + v.Key + " = " + v.Value
+			}
+		}
+		vs += "\n\n0"
+		return append(examples.Examples, Example{
+			Name: "Info",
+			Desc: "Info",
+			Code: vs,
+		})
+	}
 
 	return examples.Examples
 }

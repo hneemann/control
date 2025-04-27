@@ -49,6 +49,10 @@
     }
 }
 
+#result {
+    margin: 0.3em;
+}
+
 div.window {
     border-style: solid;
     border-color: black;
