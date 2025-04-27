@@ -197,11 +197,11 @@ func createPlotMethods() value.MethodMap {
 			return plot, nil
 		}).SetMethodDescription("label", "Sets the y-label"),
 		"grid": value.MethodAtType(1, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
-			style := GridStyle
-			if st, ok := stack.Get(1).(StyleValue); ok {
-				style = st.Value
+			styleVal, err := GetStyle(stack, 1, GridStyle)
+			if err != nil {
+				return nil, fmt.Errorf("grid: %w", err)
 			}
-			plot.Value.Grid = style
+			plot.Value.Grid = styleVal.Value
 			return plot, nil
 		}).SetMethodDescription("color", "Adds a grid").VarArgsMethod(0, 1),
 		"file": value.MethodAtType(1, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
@@ -402,9 +402,9 @@ func Setup(fg *value.FunctionGenerator) {
 				return nil, fmt.Errorf("scatter requires a list as first argument")
 			}
 
-			styleVal, ok := st.GetOptional(1, defStyle).(StyleValue)
-			if !ok {
-				return nil, fmt.Errorf("scatter requires a style as second argument")
+			styleVal, err := GetStyle(st, 1, graph.Black)
+			if err != nil {
+				return nil, fmt.Errorf("scatter: %w", err)
 			}
 			marker, err := getMarker(st, 2, styleVal.Size)
 			if err != nil {
@@ -431,11 +431,9 @@ func Setup(fg *value.FunctionGenerator) {
 				return nil, fmt.Errorf("scatter requires a list as first argument")
 			}
 
-			var style *graph.Style
-			if styleVal, ok := st.GetOptional(1, defStyle).(StyleValue); ok {
-				style = styleVal.Value
-			} else {
-				return nil, fmt.Errorf("curve requires a style as second argument")
+			styleVal, err := GetStyle(st, 1, graph.Black)
+			if err != nil {
+				return nil, fmt.Errorf("curve: %w", err)
 			}
 			leg := ""
 			if legVal, ok := st.GetOptional(2, value.String("")).(value.String); ok {
@@ -446,8 +444,8 @@ func Setup(fg *value.FunctionGenerator) {
 
 			s := graph.Scatter{
 				Points:    listToPoints(list),
-				LineStyle: style}
-			return PlotContentValue{Holder[graph.PlotContent]{s}, graph.Legend{Name: leg, LineStyle: style}}, nil
+				LineStyle: styleVal.Value}
+			return PlotContentValue{Holder[graph.PlotContent]{s}, graph.Legend{Name: leg, LineStyle: styleVal.Value}}, nil
 		},
 		Args:   3,
 		IsPure: true,
@@ -460,9 +458,9 @@ func Setup(fg *value.FunctionGenerator) {
 				return nil, fmt.Errorf("scatter requires a list as first argument")
 			}
 
-			styleVal, ok := st.GetOptional(1, defStyle).(StyleValue)
-			if !ok {
-				return nil, fmt.Errorf("scatterCurve requires a style as second argument")
+			styleVal, err := GetStyle(st, 1, graph.Black)
+			if err != nil {
+				return nil, fmt.Errorf("scatterCurve: %w", err)
 			}
 			marker, err := getMarker(st, 2, styleVal.Size)
 			if err != nil {
@@ -484,17 +482,15 @@ func Setup(fg *value.FunctionGenerator) {
 	}.SetDescription("data", "color", "markerType", "label", "Creates a new scatter dataset drawn with a curve").VarArgs(1, 4))
 	fg.AddStaticFunction("function", funcGen.Function[value.Value]{
 		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
-			var style *graph.Style
-			if styleVal, ok := st.GetOptional(1, defStyle).(StyleValue); ok {
-				style = styleVal.Value
-			} else {
-				return nil, fmt.Errorf("function requires a style as second argument")
+			styleVal, err := GetStyle(st, 1, graph.Black)
+			if err != nil {
+				return nil, fmt.Errorf("function: %w", err)
 			}
 			leg := ""
 			if legVal, ok := st.GetOptional(2, value.String("")).(value.String); ok {
 				leg = string(legVal)
 			} else {
-				return nil, fmt.Errorf("curver requires a string as third argument")
+				return nil, fmt.Errorf("function requires a string as third argument")
 			}
 
 			var f func(x float64) (float64, error)
@@ -514,8 +510,8 @@ func Setup(fg *value.FunctionGenerator) {
 					return 0, fmt.Errorf("function must return a float")
 				}
 			}
-			gf := graph.Function{Function: f, Style: style}
-			return PlotContentValue{Holder[graph.PlotContent]{gf}, graph.Legend{Name: leg, LineStyle: style}}, nil
+			gf := graph.Function{Function: f, Style: styleVal.Value}
+			return PlotContentValue{Holder[graph.PlotContent]{gf}, graph.Legend{Name: leg, LineStyle: styleVal.Value}}, nil
 		},
 		Args:   -1,
 		IsPure: true,
@@ -523,13 +519,11 @@ func Setup(fg *value.FunctionGenerator) {
 	fg.AddStaticFunction("yConst", funcGen.Function[value.Value]{
 		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
 			if y, ok := st.Get(0).ToFloat(); ok {
-				style := GridStyle
-				if styleVal, ok := st.GetOptional(1, StyleValue{Holder[*graph.Style]{GridStyle}, defSize}).(StyleValue); ok {
-					style = styleVal.Value
-				} else {
-					return nil, fmt.Errorf("yConst requires a style as second argument")
+				styleVal, err := GetStyle(st, 1, GridStyle)
+				if err != nil {
+					return nil, fmt.Errorf("yConst: %w", err)
 				}
-				c := graph.YConst{float64(y), style}
+				c := graph.YConst{float64(y), styleVal.Value}
 				return PlotContentValue{Holder[graph.PlotContent]{c}, graph.Legend{}}, nil
 			}
 			return nil, fmt.Errorf("yConst requires a float")
@@ -540,13 +534,11 @@ func Setup(fg *value.FunctionGenerator) {
 	fg.AddStaticFunction("xConst", funcGen.Function[value.Value]{
 		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
 			if x, ok := st.Get(0).ToFloat(); ok {
-				style := GridStyle
-				if styleVal, ok := st.GetOptional(1, StyleValue{Holder[*graph.Style]{GridStyle}, defSize}).(StyleValue); ok {
-					style = styleVal.Value
-				} else {
-					return nil, fmt.Errorf("yConst requires a style as second argument")
+				styleVal, err := GetStyle(st, 1, GridStyle)
+				if err != nil {
+					return nil, fmt.Errorf("xConst: %w", err)
 				}
-				c := graph.XConst{float64(x), style}
+				c := graph.XConst{float64(x), styleVal.Value}
 				return PlotContentValue{Holder[graph.PlotContent]{c}, graph.Legend{}}, nil
 			}
 			return nil, fmt.Errorf("yConst requires a float")
@@ -563,13 +555,11 @@ func Setup(fg *value.FunctionGenerator) {
 							Text: string(text),
 							Pos:  graph.Point{x, y},
 						}
-						if st.Size() > 3 {
-							styleVal, ok := st.GetOptional(3, defStyle).(StyleValue)
-							if !ok {
-								return nil, fmt.Errorf("hint requires a style as fourth argument")
-							}
-							hint.Style = styleVal.Value
+						styleVal, err := GetStyle(st, 3, graph.Black)
+						if err != nil {
+							return nil, fmt.Errorf("hint: %w", err)
 						}
+						hint.Style = styleVal.Value
 						return PlotContentValue{Holder: Holder[graph.PlotContent]{hint}}, nil
 					}
 				}
@@ -593,9 +583,9 @@ func Setup(fg *value.FunctionGenerator) {
 									},
 									PosDir: graph.Point{x2, y2},
 								}
-								styleVal, ok := st.GetOptional(5, defStyle).(StyleValue)
-								if !ok {
-									return nil, fmt.Errorf("hintDir requires a style as fourth argument")
+								styleVal, err := GetStyle(st, 5, graph.Black)
+								if err != nil {
+									return nil, fmt.Errorf("hintDir: %w", err)
 								}
 								hint.Style = styleVal.Value
 								return PlotContentValue{Holder: Holder[graph.PlotContent]{hint}}, nil
@@ -621,10 +611,11 @@ func Setup(fg *value.FunctionGenerator) {
 									To:    graph.Point{x2, y2},
 									Label: string(text),
 								}
-								styleVal, ok := st.GetOptional(5, defStyle).(StyleValue)
-								if !ok {
-									return nil, fmt.Errorf("arrow requires a style as fourth argument")
+								styleVal, err := GetStyle(st, 5, graph.Black)
+								if err != nil {
+									return nil, fmt.Errorf("arrow: %w", err)
 								}
+
 								arrow.Style = styleVal.Value
 								if mode, ok := st.GetOptional(6, value.Int(3)).ToInt(); ok {
 									arrow.Mode = int(mode)
@@ -642,6 +633,20 @@ func Setup(fg *value.FunctionGenerator) {
 		Args:   7,
 		IsPure: true,
 	}.SetDescription("x1", "y1", "x2", "y2", "text", "marker", "color", "Creates a new scatter dataset").VarArgs(5, 7))
+}
+
+func GetStyle(st funcGen.Stack[value.Value], index int, defStyle *graph.Style) (StyleValue, error) {
+	v := st.GetOptional(index, StyleValue{
+		Holder: Holder[*graph.Style]{defStyle},
+		Size:   defSize,
+	})
+	if styleVal, ok := v.(StyleValue); ok {
+		return styleVal, nil
+	}
+	if colNum, ok := v.ToInt(); ok {
+		return StyleValue{Holder[*graph.Style]{graph.GetColor(colNum)}, defSize}, nil
+	}
+	return StyleValue{}, fmt.Errorf("argument %d needs to be a style or a color number", index)
 }
 
 func getMarker(st funcGen.Stack[value.Value], stPos int, size float64) (graph.Shape, error) {

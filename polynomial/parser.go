@@ -226,7 +226,7 @@ func linMethods() value.MethodMap {
 			return grParser.NewPlotValue(plot), nil
 		}).SetMethodDescription("also negative", "creates a nyquist plot").VarArgsMethod(0, 1),
 		"nyquistPos": value.MethodAtType(2, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
-			if style, ok := st.GetOptional(1, defStyleValue).(grParser.StyleValue); ok {
+			if style, err := grParser.GetStyle(st, 1, graph.Black); err == nil {
 				if leg, ok := st.GetOptional(2, value.String("")).(value.String); ok {
 					plotContent := lin.NyquistPos(style.Value)
 					contentValue := grParser.NewPlotContentValue(plotContent)
@@ -240,7 +240,7 @@ func linMethods() value.MethodMap {
 			return nil, fmt.Errorf("nyquistPos requires a style")
 		}).SetMethodDescription("color", "leg", "creates a nyquist plot content with positive ω").VarArgsMethod(0, 2),
 		"nyquistNeg": value.MethodAtType(2, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
-			if style, ok := st.GetOptional(1, defStyleValue).(grParser.StyleValue); ok {
+			if style, err := grParser.GetStyle(st, 1, graph.Black); err == nil {
 				if leg, ok := st.GetOptional(2, value.String("")).(value.String); ok {
 					plotContent := lin.NyquistNeg(style.Value)
 					contentValue := grParser.NewPlotContentValue(plotContent)
@@ -414,7 +414,7 @@ func bodeMethods() value.MethodMap {
 	return value.MethodMap{
 		"add": value.MethodAtType(-1, func(bode BodePlotValue, st funcGen.Stack[value.Value]) (value.Value, error) {
 			if linVal, ok := st.Get(1).(*Linear); ok {
-				if styleVal, ok := st.GetOptional(2, defStyleValue).(grParser.StyleValue); ok {
+				if styleVal, err := grParser.GetStyle(st, 2, graph.Black); err == nil {
 					if legVal, ok := st.GetOptional(3, value.String("")).(value.String); ok {
 						linVal.AddToBode(bode.Value, styleVal.Value, 0)
 						if legVal != "" {
@@ -452,7 +452,7 @@ func bodeMethods() value.MethodMap {
 		"addWithLatency": value.MethodAtType(-1, func(bode BodePlotValue, st funcGen.Stack[value.Value]) (value.Value, error) {
 			if linVal, ok := st.Get(1).(*Linear); ok {
 				if latency, ok := st.Get(2).ToFloat(); ok {
-					if styleVal, ok := st.GetOptional(3, defStyleValue).(grParser.StyleValue); ok {
+					if styleVal, err := grParser.GetStyle(st, 3, graph.Black); err == nil {
 						if legVal, ok := st.GetOptional(4, value.String("")).(value.String); ok {
 							linVal.AddToBode(bode.Value, styleVal.Value, latency)
 							if legVal != "" {
@@ -484,12 +484,12 @@ func bodeMethods() value.MethodMap {
 			return nil, errors.New("pBounds requires two float values")
 		}).SetMethodDescription("min", "max", "sets the phase bounds").Pure(false),
 		"grid": value.MethodAtType(1, func(plot BodePlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
-			style := grParser.GridStyle
-			if st, ok := stack.Get(1).(grParser.StyleValue); ok {
-				style = st.Value
+			if style, err := grParser.GetStyle(stack, 1, grParser.GridStyle); err == nil {
+				plot.Value.amplitude.Grid = style.Value
+				plot.Value.phase.Grid = style.Value
+			} else {
+				return nil, err
 			}
-			plot.Value.amplitude.Grid = style
-			plot.Value.phase.Grid = style
 			return plot, nil
 		}).SetMethodDescription("color", "Adds a grid").VarArgsMethod(0, 1),
 		"ampModify": value.MethodAtType(1, func(bode BodePlotValue, st funcGen.Stack[value.Value]) (value.Value, error) {
