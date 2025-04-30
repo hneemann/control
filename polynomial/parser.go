@@ -6,11 +6,14 @@ import (
 	"github.com/hneemann/control/graph"
 	"github.com/hneemann/control/graph/grParser"
 	"github.com/hneemann/control/nelderMead"
+	"github.com/hneemann/control/twoPort"
 	"github.com/hneemann/parser2/funcGen"
 	"github.com/hneemann/parser2/value"
-	"html/template"
+	"github.com/hneemann/parser2/value/export"
+	"github.com/hneemann/parser2/value/export/xmlWriter"
 	"math"
 	"math/cmplx"
+	"strings"
 )
 
 const (
@@ -77,6 +80,28 @@ func cmplxMethods() value.MethodMap {
 		"abs": value.MethodAtType(0, func(c Complex, st funcGen.Stack[value.Value]) (value.Value, error) {
 			return value.Float(cmplx.Abs(complex128(c))), nil
 		}).SetMethodDescription("returns the amplitude"),
+		"phase": value.MethodAtType(0, func(c Complex, st funcGen.Stack[value.Value]) (value.Value, error) {
+			return value.Float(cmplx.Phase(complex128(c))), nil
+		}).SetMethodDescription("returns the phase"),
+	}
+}
+
+func twoPortMethods() value.MethodMap {
+	return value.MethodMap{
+		"voltageGain": value.MethodAtType(1, func(tp *twoPort.TwoPort, st funcGen.Stack[value.Value]) (value.Value, error) {
+			z, err := getComplex(st, 1)
+			if err != nil {
+				return nil, fmt.Errorf("voltageGain requires a complex value")
+			}
+			return Complex(tp.VoltageGain(z)), nil
+		}).SetMethodDescription("load", "returns the voltage gain"),
+		"currentGain": value.MethodAtType(1, func(tp *twoPort.TwoPort, st funcGen.Stack[value.Value]) (value.Value, error) {
+			z, err := getComplex(st, 1)
+			if err != nil {
+				return nil, fmt.Errorf("voltageGain requires a complex value")
+			}
+			return Complex(tp.CurrentGain(z)), nil
+		}).SetMethodDescription("load", "returns the current gain"),
 	}
 }
 
@@ -390,6 +415,7 @@ type BodePlotValue struct {
 var (
 	_ grParser.TextSizeProvider   = BodePlotValue{}
 	_ grParser.OutputSizeProvider = BodePlotValue{}
+	_ export.ToHtmlInterface      = BodePlotValue{}
 )
 
 func (b BodePlotValue) TextSize() float64 {
@@ -406,6 +432,10 @@ func (b BodePlotValue) DrawTo(canvas graph.Canvas) error {
 
 func (b BodePlotValue) GetType() value.Type {
 	return BodeValueType
+}
+
+func (b BodePlotValue) ToHtml(st funcGen.Stack[value.Value], w *xmlWriter.XMLWriter) error {
+	return grParser.CreateSVG(b, w)
 }
 
 var defStyleValue = grParser.StyleValue{grParser.Holder[*graph.Style]{graph.Black}, 4}
@@ -525,6 +555,7 @@ var Parser = value.New().
 	RegisterMethods(LinearValueType, linMethods()).
 	RegisterMethods(BodeValueType, bodeMethods()).
 	RegisterMethods(ComplexValueType, cmplxMethods()).
+	RegisterMethods(twoPort.TwoPortValueType, twoPortMethods()).
 	AddFinalizerValue(grParser.Setup).
 	AddFinalizerValue(func(f *value.FunctionGenerator) {
 		p := f.GetParser()
@@ -677,6 +708,81 @@ var Parser = value.New().
 		Args:   3,
 		IsPure: true,
 	}.SetDescription("k_p", "T_I", "T_D", "a PID block").VarArgs(2, 3)).
+	AddStaticFunction("tpCascade", funcGen.Function[value.Value]{
+		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
+			tpl := []*twoPort.TwoPort{}
+			for i := 0; i < stack.Size(); i++ {
+				if _, ok := stack.Get(i).(*twoPort.TwoPort); ok {
+					tpl = append(tpl, stack.Get(i).(*twoPort.TwoPort))
+				} else {
+					return nil, fmt.Errorf("tpCascade requires two-ports as arguments")
+				}
+			}
+			if len(tpl) < 2 {
+				return nil, fmt.Errorf("tpCascade requires at least two two-ports")
+			}
+			return twoPort.Cascade(tpl...), nil
+		},
+		Args:   -1,
+		IsPure: true,
+	}.SetDescription("tp1", "tp2", "cascade the given two-ports")).
+	AddStaticFunction("tpSeries", funcGen.Function[value.Value]{
+		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
+			z, err := getComplex(stack, 0)
+			if err != nil {
+				return nil, fmt.Errorf("tpSeries requires a complex or a float value")
+			}
+			return twoPort.NewSeries(z), nil
+		},
+		Args:   1,
+		IsPure: true,
+	}.SetDescription("z", "returns a series two-port")).
+	AddStaticFunction("tpShunt", funcGen.Function[value.Value]{
+		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
+			z, err := getComplex(stack, 0)
+			if err != nil {
+				return nil, fmt.Errorf("tpShunt requires a complex or a float value")
+			}
+			return twoPort.NewShunt(z), nil
+		},
+		Args:   1,
+		IsPure: true,
+	}.SetDescription("z", "returns a shunt two-port")).
+	AddStaticFunction("twoPort", funcGen.Function[value.Value]{
+		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
+			m := make([]complex128, 4)
+			for i := 0; i < 4; i++ {
+				var err error
+				m[i], err = getComplex(stack, i)
+				if err != nil {
+					return nil, fmt.Errorf("twoport requires complex or float values")
+				}
+			}
+			if typ, ok := stack.Get(4).(value.String); ok {
+				typStr := strings.ToLower(string(typ))
+				var t twoPort.TpType
+				switch typStr {
+				case "a":
+					t = twoPort.AParam
+				case "z":
+					t = twoPort.ZParam
+				case "y":
+					t = twoPort.YParam
+				case "h":
+					t = twoPort.HParam
+				case "c":
+					t = twoPort.CParam
+				default:
+					return nil, fmt.Errorf("twoPort requires a valid type as last argument (h,y,z,a,c)")
+				}
+				return twoPort.NewTwoPort(m[0], m[1], m[2], m[3], t), nil
+			} else {
+				return nil, fmt.Errorf("twoPort requires a string as last argument")
+			}
+		},
+		Args:   5,
+		IsPure: true,
+	}.SetDescription("m11", "m12", "m21", "m21", "type", "creates a new two-port of given type")).
 	AddStaticFunction("simulate", funcGen.Function[value.Value]{
 		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
 			if def, ok := stack.Get(0).ToList(); ok {
@@ -716,6 +822,21 @@ var Parser = value.New().
 		return a + b, nil
 	},
 	))
+
+func getComplex(stack funcGen.Stack[value.Value], i int) (complex128, error) {
+	var z complex128
+	v := stack.Get(i)
+	if c, ok := v.(Complex); ok {
+		z = complex128(c)
+	} else {
+		if f, ok := v.ToFloat(); ok {
+			z = complex(f, 0)
+		} else {
+			return 0, fmt.Errorf("complex or a float value required")
+		}
+	}
+	return z, nil
+}
 
 func NelderMead(fu funcGen.Function[value.Value], initial *value.List, delta *value.List, iter int) (value.Value, error) {
 	stack := funcGen.NewEmptyStack[value.Value]()
@@ -794,15 +915,4 @@ func NelderMead(fu funcGen.Function[value.Value], initial *value.List, delta *va
 	m["min"] = value.Float(minVal)
 
 	return value.NewMap(value.RealMap(m)), nil
-}
-
-func HtmlExport(v value.Value) (template.HTML, bool, error) {
-	if ret, ok, err := grParser.HtmlExport(v); ok {
-		return ret, ok, err
-	}
-	if lin, ok := v.(MathML); ok {
-		math := "<math xmlns=\"http://www.w3.org/1998/Math/MathML\"><mstyle displaystyle=\"true\" scriptlevel=\"0\">" + lin.ToMathML() + "</mstyle></math>"
-		return template.HTML(math), true, nil
-	}
-	return "", false, nil
 }

@@ -8,6 +8,8 @@ import (
 	"github.com/hneemann/iterator"
 	"github.com/hneemann/parser2/funcGen"
 	"github.com/hneemann/parser2/value"
+	"github.com/hneemann/parser2/value/export"
+	"github.com/hneemann/parser2/value/export/xmlWriter"
 	"math"
 	"math/cmplx"
 	"sort"
@@ -19,6 +21,8 @@ type Linear struct {
 	zeros       Roots
 	poles       Roots
 }
+
+var _ export.ToHtmlInterface = &Linear{}
 
 func (l *Linear) EvalCplx(s complex128) complex128 {
 	c := l.Numerator.EvalCplx(s) / l.Denominator.EvalCplx(s)
@@ -64,11 +68,23 @@ func (l *Linear) intString(parse bool) string {
 	return sp
 }
 
-func (l *Linear) ToMathML() string {
-	result := "<mfrac>"
-	result += l.Numerator.ToMathML()
-	result += l.Denominator.ToMathML()
-	return result + "</mfrac>"
+func (l *Linear) ToHtml(st funcGen.Stack[value.Value], w *xmlWriter.XMLWriter) error {
+	w.Open("math").
+		Attr("xmlns", "http://www.w3.org/1998/Math/MathML")
+
+	w.Open("mstyle").
+		Attr("displaystyle", "true").
+		Attr("scriptlevel", "0")
+
+	w.Open("mfrac")
+
+	l.Numerator.ToMathML(w)
+	l.Denominator.ToMathML(w)
+
+	w.Close()
+	w.Close()
+	w.Close()
+	return nil
 }
 
 func (l *Linear) zerosCalculated() bool {

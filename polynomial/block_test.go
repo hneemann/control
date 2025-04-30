@@ -2,8 +2,8 @@ package polynomial
 
 import (
 	"github.com/hneemann/control/graph"
+	"github.com/hneemann/parser2/value/export/xmlWriter"
 	"github.com/stretchr/testify/assert"
-	"os"
 	"testing"
 )
 
@@ -37,10 +37,9 @@ func TestSimple(t *testing.T) {
 		n++
 	}
 
-	file, err := os.Create("test.svg")
 	assert.NoError(t, err)
-	svg := graph.NewSVG(800, 600, 15, file)
+	svg := graph.NewSVG(800, 600, 15, xmlWriter.New())
 	assert.NoError(t, p.DrawTo(svg))
 	assert.NoError(t, svg.Close())
-	assert.NoError(t, file.Close())
+
 }

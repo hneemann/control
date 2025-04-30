@@ -5,6 +5,7 @@ import (
 	"github.com/hneemann/control/graph"
 	"github.com/hneemann/parser2/funcGen"
 	"github.com/hneemann/parser2/value"
+	"github.com/hneemann/parser2/value/export/xmlWriter"
 	"github.com/stretchr/testify/assert"
 	"os"
 	"path/filepath"
@@ -301,11 +302,15 @@ func Test_Evans7(t *testing.T) {
 }
 
 func exportPlot(pl graph.Image, name string) error {
+	w := xmlWriter.New()
+	c := graph.NewSVG(800, 600, 15, w)
+	pl.DrawTo(c)
+	c.Close()
+
 	f, _ := os.Create(filepath.Join(testFolder, name))
 	defer f.Close()
-	c := graph.NewSVG(800, 600, 15, f)
-	pl.DrawTo(c)
-	return c.Close()
+	_, err := f.Write(w.Bytes())
+	return err
 }
 
 func TestLinear_EvansSplitPoints(t *testing.T) {

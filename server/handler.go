@@ -103,7 +103,7 @@ func Execute(writer http.ResponseWriter, request *http.Request) {
 			var res value.Value
 			res, err = fu(funcGen.NewEmptyStack[value.Value]())
 			if err == nil {
-				resHtml, _, err = export.ToHtml(res, 50, polynomial.HtmlExport, true)
+				resHtml, _, err = export.ToHtml(res, 50, nil, true)
 			}
 		}
 		log.Println("calculation on server took", time.Since(start))

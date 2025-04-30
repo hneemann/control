@@ -2,7 +2,6 @@ package polynomial
 
 import (
 	"fmt"
-	"github.com/hneemann/control/graph/grParser"
 	"github.com/hneemann/parser2/funcGen"
 	"github.com/hneemann/parser2/value"
 	"github.com/hneemann/parser2/value/export"
@@ -126,7 +125,7 @@ func TestSVGExport(t *testing.T) {
 				res, err := fu(funcGen.NewEmptyStack[value.Value]())
 				assert.NoError(t, err, test.exp)
 
-				expHtml, _, err := export.ToHtml(res, 50, grParser.HtmlExport, true)
+				expHtml, _, err := export.ToHtml(res, 50, nil, true)
 				assert.NoError(t, err, test.exp)
 
 				// needs to contain a svg image

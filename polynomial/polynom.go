@@ -4,6 +4,10 @@ import (
 	"errors"
 	"fmt"
 	"github.com/hneemann/control/graph"
+	"github.com/hneemann/parser2/funcGen"
+	"github.com/hneemann/parser2/value"
+	"github.com/hneemann/parser2/value/export"
+	"github.com/hneemann/parser2/value/export/xmlWriter"
 	"math"
 	"math/cmplx"
 	"strings"
@@ -12,6 +16,8 @@ import (
 const eps = 1e-10
 
 type Polynomial []float64
+
+var _ export.ToHtmlInterface = Polynomial{}
 
 func (p Polynomial) Degree() int {
 	return len(p) - 1
@@ -104,12 +110,23 @@ func (p Polynomial) intString(parser bool) string {
 	return result
 }
 
-type MathML interface {
-	ToMathML() string
+func (p Polynomial) ToHtml(st funcGen.Stack[value.Value], w *xmlWriter.XMLWriter) error {
+	w.Open("math").
+		Attr("xmlns", "http://www.w3.org/1998/Math/MathML")
+
+	w.Open("mstyle").
+		Attr("displaystyle", "true").
+		Attr("scriptlevel", "0")
+
+	p.ToMathML(w)
+
+	w.Close()
+	w.Close()
+	return nil
 }
 
-func (p Polynomial) ToMathML() string {
-	result := "<mrow>"
+func (p Polynomial) ToMathML(w *xmlWriter.XMLWriter) {
+	w.Open("mrow")
 	for i := range p {
 		n := len(p) - i - 1
 		c := p[n]
@@ -121,25 +138,27 @@ func (p Polynomial) ToMathML() string {
 			c = math.Abs(c)
 			if neg || i > 0 {
 				if neg {
-					result += "<mo>-</mo>"
+					w.Open("mo").Write("-").Close()
 				} else {
-					result += "<mo>+</mo>"
+					w.Open("mo").Write("+").Close()
 				}
 			}
 			if c != 1 || n == 0 {
-				result += fmt.Sprintf("<mn>%.6g</mn>", c)
+				w.Open("mn").Write(fmt.Sprintf("%.6g", c)).Close()
 			}
 			switch n {
 			case 0:
 			case 1:
-				result += "<mi>s</mi>"
+				w.Open("mi").Write("s").Close()
 			default:
-				result += fmt.Sprintf("<msup><mi>s</mi><mn>%d</mn></msup>", n)
+				w.Open("msup")
+				w.Open("mi").Write("s").Close()
+				w.Open("mn").Write(fmt.Sprintf("%d", n)).Close()
+				w.Close()
 			}
 		}
 	}
-	result += "</mrow>"
-	return result
+	w.Close()
 }
 
 func (p Polynomial) Derivative() Polynomial {

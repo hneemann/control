@@ -9,8 +9,7 @@ import (
 	"github.com/hneemann/parser2/funcGen"
 	"github.com/hneemann/parser2/value"
 	"github.com/hneemann/parser2/value/export"
-	"html/template"
-	"io"
+	"github.com/hneemann/parser2/value/export/xmlWriter"
 )
 
 type Holder[T any] struct {
@@ -58,9 +57,14 @@ type PlotValue struct {
 	height   float64
 }
 
+func (p PlotValue) ToHtml(st funcGen.Stack[value.Value], w *xmlWriter.XMLWriter) error {
+	return CreateSVG(p, w)
+}
+
 var (
-	_ TextSizeProvider   = PlotValue{}
-	_ OutputSizeProvider = PlotValue{}
+	_ TextSizeProvider       = PlotValue{}
+	_ OutputSizeProvider     = PlotValue{}
+	_ export.ToHtmlInterface = PlotValue{}
 )
 
 func (p PlotValue) DrawTo(canvas graph.Canvas) error {
@@ -708,22 +712,11 @@ type OutputSizeProvider interface {
 	OutputSize() (float64, float64)
 }
 
-func HtmlExport(v value.Value) (template.HTML, bool, error) {
-	if p, ok := v.(graph.Image); ok {
-		var buffer bytes.Buffer
-		err := createSVG(p, &buffer)
-		if err != nil {
-			return "", true, err
-		}
-		return template.HTML(buffer.String()), true, nil
-	}
-	return "", false, nil
-}
-
 func ImageToFile(plot graph.Image, name string) (value.Value, error) {
 	var buf bytes.Buffer
 	buf.WriteString("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n")
-	err := createSVG(plot, &buf)
+	w := xmlWriter.NewWithBuffer(&buf)
+	err := CreateSVG(plot, w)
 	if err != nil {
 		return nil, err
 	}
@@ -733,7 +726,7 @@ func ImageToFile(plot graph.Image, name string) (value.Value, error) {
 	}, nil
 }
 
-func createSVG(p graph.Image, writer io.Writer) error {
+func CreateSVG(p graph.Image, w *xmlWriter.XMLWriter) error {
 	width := 800.0
 	height := 600.0
 	if ts, ok := p.(OutputSizeProvider); ok {
@@ -751,7 +744,7 @@ func createSVG(p graph.Image, writer io.Writer) error {
 		}
 	}
 
-	svg := graph.NewSVG(width, height, textSize, writer)
+	svg := graph.NewSVG(width, height, textSize, w)
 	err := p.DrawTo(svg)
 	if err != nil {
 		return err

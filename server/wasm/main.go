@@ -30,7 +30,7 @@ func parserWrapper() js.Func {
 			var res value.Value
 			res, err = fu(funcGen.NewEmptyStack[value.Value]())
 			if err == nil {
-				expHtml, _, err = export.ToHtml(res, 50, polynomial.HtmlExport, true)
+				expHtml, _, err = export.ToHtml(res, 50, nil, true)
 			}
 		}
 
