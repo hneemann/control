@@ -7,6 +7,7 @@ import (
 	"github.com/hneemann/control/server/data"
 	"github.com/hneemann/session"
 	"github.com/hneemann/session/fileSys"
+	"github.com/hneemann/session/myOidc"
 	"log"
 	"net/http"
 	"os"
@@ -42,30 +43,48 @@ func main() {
 	port := flag.Int("port", 8080, "port")
 	debug := flag.Bool("debug", false, "debug mode")
 	onServer := flag.Bool("onServer", false, "execution on server")
+	oidc := flag.Bool("oidc", false, "oidc mode")
 	flag.Parse()
 
 	log.Println("Folder:", *dataFolder)
-	sc := session.NewSessionCache[data.UserData](
-		session.NewDataManager[data.UserData](
-			session.NewFileSystemFactory(*dataFolder),
-			persist{}),
-		4*time.Hour, time.Hour)
-	defer sc.Close()
 
-	if *debug {
-		err := sc.CreateDebugSession("admin", "admin", "debugTokenForAdmin")
-		if err != nil {
-			log.Fatal(err)
+	var sc *session.Cache[data.UserData]
+	if *oidc {
+		sc = session.NewSessionCache[data.UserData](
+			myOidc.NewOidcDataManager[data.UserData](
+				session.NewFileSystemFactory(*dataFolder),
+				persist{}),
+			4*time.Hour, time.Hour)
+	} else {
+		sc = session.NewSessionCache[data.UserData](
+			session.NewDataManager[data.UserData](
+				session.NewFileSystemFactory(*dataFolder),
+				persist{}),
+			4*time.Hour, time.Hour)
+		if *debug {
+			err := sc.CreateDebugSession("admin", "admin", "debugTokenForAdmin")
+			if err != nil {
+				log.Fatal(err)
+			}
 		}
 	}
 
-	examples := server.ReadExamples()
+	defer sc.Close()
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/", sc.CheckSessionFunc(server.CreateMain(examples)))
-	mux.HandleFunc("/login", sc.LoginHandler(server.Templates.Lookup("login.html")))
-	mux.HandleFunc("/register", sc.RegisterHandler(server.Templates.Lookup("register.html")))
 
+	if *oidc {
+		isOidc := myOidc.RegisterLogin(mux, "/login", "/auth/callback", myOidc.CreateOidcSession(sc))
+		if !isOidc {
+			log.Fatal("oidc not available!")
+		}
+	} else {
+		mux.HandleFunc("/login", sc.LoginHandler(server.Templates.Lookup("login.html")))
+		mux.HandleFunc("/register", sc.RegisterHandler(server.Templates.Lookup("register.html")))
+	}
+
+	examples := server.ReadExamples()
+	mux.HandleFunc("/", sc.CheckSessionFunc(server.CreateMain(examples)))
 	mux.Handle("/assets/", Cache(http.FileServer(http.FS(server.Assets)), 180, !*debug))
 	mux.Handle("/js/execute.js", Cache(server.RunMode(*onServer), 180, !*debug))
 	mux.HandleFunc("/execute/", sc.CheckSessionRestFunc(server.Execute))
