@@ -11,43 +11,43 @@ import (
 
 func TestTwoPort_VoltageGain(t *testing.T) {
 	tp := NewTwoPort(1, 2+2i, 3, 4-1i, YParam)
-	expected := tp.VoltageGain(10)
-
-	checkVG(t, expected, tp.GetY())
-	checkVG(t, expected, tp.GetZ())
-	checkVG(t, expected, tp.GetA())
-	checkVG(t, expected, tp.GetH())
-	checkVG(t, expected, tp.GetC())
-}
-
-func checkVG(t *testing.T, expected complex128, tp *TwoPort) {
-	checkCmplx(t, expected, tp.GetY().VoltageGain(10))
-	checkCmplx(t, expected, tp.GetZ().VoltageGain(10))
-	checkCmplx(t, expected, tp.GetA().VoltageGain(10))
-	checkCmplx(t, expected, tp.GetH().VoltageGain(10))
-	checkCmplx(t, expected, tp.GetC().VoltageGain(10))
+	check(t, tp, func(tp *TwoPort) complex128 {
+		return tp.VoltageGain(10)
+	})
 }
 
 func TestTwoPort_CurrentGain(t *testing.T) {
-	tp := NewTwoPort(1, 2+2i, 3, 4-1i, YParam)
-	expected := tp.CurrentGain(10)
-
-	checkCG(t, expected, tp.GetY())
-	checkCG(t, expected, tp.GetZ())
-	checkCG(t, expected, tp.GetA())
-	checkCG(t, expected, tp.GetH())
-	checkCG(t, expected, tp.GetC())
+	tp := NewTwoPort(1, 2+2i, 3, 4-1i, ZParam)
+	check(t, tp, func(tp *TwoPort) complex128 {
+		return tp.CurrentGain(10)
+	})
 }
 
-func checkCG(t *testing.T, expected complex128, tp *TwoPort) {
-	checkCmplx(t, expected, tp.GetY().CurrentGain(10))
-	checkCmplx(t, expected, tp.GetZ().CurrentGain(10))
-	checkCmplx(t, expected, tp.GetA().CurrentGain(10))
-	checkCmplx(t, expected, tp.GetH().CurrentGain(10))
-	checkCmplx(t, expected, tp.GetC().CurrentGain(10))
+func TestTwoPort_InputImpedance(t *testing.T) {
+	tp := NewTwoPort(1, 2+2i, 3, 4-1i, HParam)
+	check(t, tp, func(tp *TwoPort) complex128 {
+		return tp.InputImpedance(10)
+	})
 }
 
-func checkCmplx(t *testing.T, expected complex128, got complex128) {
+func TestTwoPort_OutputImpedance(t *testing.T) {
+	tp := NewTwoPort(1, 2+2i, 3, 4-1i, AParam)
+	check(t, tp, func(tp *TwoPort) complex128 {
+		return tp.OutputImpedance(10)
+	})
+}
+
+func check(t *testing.T, tp *TwoPort, f func(tp *TwoPort) complex128) {
+	expected := f(tp)
+	checkExp(t, tp.GetZ(), expected, f)
+	checkExp(t, tp.GetY(), expected, f)
+	checkExp(t, tp.GetH(), expected, f)
+	checkExp(t, tp.GetC(), expected, f)
+	checkExp(t, tp.GetA(), expected, f)
+}
+
+func checkExp(t *testing.T, tp *TwoPort, expected complex128, f func(tp *TwoPort) complex128) {
+	got := f(tp)
 	assert.InDelta(t, real(expected), real(got), 1e-13)
 	assert.InDelta(t, imag(expected), imag(got), 1e-13)
 }

@@ -174,7 +174,7 @@ func Cascade(a ...*TwoPort) *TwoPort {
 	}
 	tp := a[0]
 	for i := 1; i < len(a); i++ {
-		tp = tp.cascade(a[i])
+		tp = tp.Cascade(a[i])
 	}
 	return tp
 }
@@ -295,6 +295,38 @@ func (tp *TwoPort) CurrentGain(load complex128) complex128 {
 	panic("Invalid type")
 }
 
+func (tp *TwoPort) InputImpedance(load complex128) complex128 {
+	switch tp.typ {
+	case YParam:
+		return (tp.m22 + 1/load) / (tp.det() + tp.m11/load)
+	case ZParam:
+		return (tp.m11 + tp.det()/load) / (1 + tp.m22/load)
+	case HParam:
+		return (tp.det() + tp.m11/load) / (tp.m22 + 1/load)
+	case CParam:
+		return (1 + tp.m22/load) / (tp.m11 + tp.det()/load)
+	case AParam:
+		return (tp.m11 + tp.m12/load) / (tp.m21 + tp.m22/load)
+	}
+	panic("Invalid type")
+}
+
+func (tp *TwoPort) OutputImpedance(load complex128) complex128 {
+	switch tp.typ {
+	case YParam:
+		return (tp.m11 + 1/load) / (tp.det() + tp.m22/load)
+	case ZParam:
+		return (tp.m22 + tp.det()/load) / (1 + tp.m11/load)
+	case HParam:
+		return (1 + tp.m11/load) / (tp.m22 + tp.det()/load)
+	case CParam:
+		return (tp.det() + tp.m22/load) / (tp.m11 + 1/load)
+	case AParam:
+		return (tp.m22 + tp.m12/load) / (tp.m21 + tp.m11/load)
+	}
+	panic("Invalid type")
+}
+
 func (tp TwoPort) div(d complex128) *TwoPort {
 	tp.m11 = tp.m11 / d
 	tp.m12 = tp.m12 / d
@@ -303,7 +335,20 @@ func (tp TwoPort) div(d complex128) *TwoPort {
 	return &tp
 }
 
-func (tp *TwoPort) cascade(port *TwoPort) *TwoPort {
+func (tp *TwoPort) add(o *TwoPort) *TwoPort {
+	if tp.typ != o.typ {
+		panic("Two ports must be of the same type")
+	}
+	return &TwoPort{
+		m11: tp.m11 + o.m11,
+		m12: tp.m12 + o.m12,
+		m21: tp.m21 + o.m21,
+		m22: tp.m22 + o.m22,
+		typ: tp.typ,
+	}
+}
+
+func (tp *TwoPort) Cascade(port *TwoPort) *TwoPort {
 	a := tp.GetA()
 	b := port.GetA()
 
@@ -314,4 +359,20 @@ func (tp *TwoPort) cascade(port *TwoPort) *TwoPort {
 		m22: a.m21*b.m12 + a.m22*b.m22,
 		typ: AParam,
 	}
+}
+
+func (tp *TwoPort) Series(o *TwoPort) *TwoPort {
+	return tp.GetZ().add(o.GetZ())
+}
+
+func (tp *TwoPort) Parallel(o *TwoPort) *TwoPort {
+	return tp.GetY().add(o.GetY())
+}
+
+func (tp *TwoPort) SeriesParallel(o *TwoPort) *TwoPort {
+	return tp.GetH().add(o.GetH())
+}
+
+func (tp *TwoPort) ParallelSeries(o *TwoPort) *TwoPort {
+	return tp.GetC().add(o.GetC())
 }

@@ -13,7 +13,6 @@ import (
 	"github.com/hneemann/parser2/value/export/xmlWriter"
 	"math"
 	"math/cmplx"
-	"strings"
 )
 
 const (
@@ -102,6 +101,50 @@ func twoPortMethods() value.MethodMap {
 			}
 			return Complex(tp.CurrentGain(z)), nil
 		}).SetMethodDescription("load", "returns the current gain"),
+		"inputImp": value.MethodAtType(1, func(tp *twoPort.TwoPort, st funcGen.Stack[value.Value]) (value.Value, error) {
+			z, err := getComplex(st, 1)
+			if err != nil {
+				return nil, fmt.Errorf("inputImp requires a complex value")
+			}
+			return Complex(tp.InputImpedance(z)), nil
+		}).SetMethodDescription("load", "returns the input impedance"),
+		"outputImp": value.MethodAtType(1, func(tp *twoPort.TwoPort, st funcGen.Stack[value.Value]) (value.Value, error) {
+			z, err := getComplex(st, 1)
+			if err != nil {
+				return nil, fmt.Errorf("outputImp requires a complex value")
+			}
+			return Complex(tp.OutputImpedance(z)), nil
+		}).SetMethodDescription("load", "returns the output impedance"),
+		"cascade": value.MethodAtType(1, func(tp *twoPort.TwoPort, st funcGen.Stack[value.Value]) (value.Value, error) {
+			if o, ok := st.Get(1).(*twoPort.TwoPort); ok {
+				return tp.Cascade(o), nil
+			}
+			return nil, fmt.Errorf("cascade requires a two-port value")
+		}).SetMethodDescription("tp", "returns a series-series connection"),
+		"series": value.MethodAtType(1, func(tp *twoPort.TwoPort, st funcGen.Stack[value.Value]) (value.Value, error) {
+			if o, ok := st.Get(1).(*twoPort.TwoPort); ok {
+				return tp.Series(o), nil
+			}
+			return nil, fmt.Errorf("series requires a two-port value")
+		}).SetMethodDescription("tp", "returns a series-series connection"),
+		"parallel": value.MethodAtType(1, func(tp *twoPort.TwoPort, st funcGen.Stack[value.Value]) (value.Value, error) {
+			if o, ok := st.Get(1).(*twoPort.TwoPort); ok {
+				return tp.Parallel(o), nil
+			}
+			return nil, fmt.Errorf("parallel requires a two-port value")
+		}).SetMethodDescription("tp", "returns a parallel-parallel connection"),
+		"seriesParallel": value.MethodAtType(1, func(tp *twoPort.TwoPort, st funcGen.Stack[value.Value]) (value.Value, error) {
+			if o, ok := st.Get(1).(*twoPort.TwoPort); ok {
+				return tp.SeriesParallel(o), nil
+			}
+			return nil, fmt.Errorf("seriesParallel requires a two-port value")
+		}).SetMethodDescription("tp", "returns a series-parallel connection"),
+		"parallelSeries": value.MethodAtType(1, func(tp *twoPort.TwoPort, st funcGen.Stack[value.Value]) (value.Value, error) {
+			if o, ok := st.Get(1).(*twoPort.TwoPort); ok {
+				return tp.ParallelSeries(o), nil
+			}
+			return nil, fmt.Errorf("ParallelSeries requires a two-port value")
+		}).SetMethodDescription("tp", "returns a parallel-series connection"),
 	}
 }
 
@@ -748,41 +791,11 @@ var Parser = value.New().
 		Args:   1,
 		IsPure: true,
 	}.SetDescription("z", "returns a shunt two-port")).
-	AddStaticFunction("twoPort", funcGen.Function[value.Value]{
-		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
-			m := make([]complex128, 4)
-			for i := 0; i < 4; i++ {
-				var err error
-				m[i], err = getComplex(stack, i)
-				if err != nil {
-					return nil, fmt.Errorf("twoport requires complex or float values")
-				}
-			}
-			if typ, ok := stack.Get(4).(value.String); ok {
-				typStr := strings.ToLower(string(typ))
-				var t twoPort.TpType
-				switch typStr {
-				case "a":
-					t = twoPort.AParam
-				case "z":
-					t = twoPort.ZParam
-				case "y":
-					t = twoPort.YParam
-				case "h":
-					t = twoPort.HParam
-				case "c":
-					t = twoPort.CParam
-				default:
-					return nil, fmt.Errorf("twoPort requires a valid type as last argument (h,y,z,a,c)")
-				}
-				return twoPort.NewTwoPort(m[0], m[1], m[2], m[3], t), nil
-			} else {
-				return nil, fmt.Errorf("twoPort requires a string as last argument")
-			}
-		},
-		Args:   5,
-		IsPure: true,
-	}.SetDescription("m11", "m12", "m21", "m21", "type", "creates a new two-port of given type")).
+	AddStaticFunction("twoPortY", createTwoPort(twoPort.YParam)).
+	AddStaticFunction("twoPortZ", createTwoPort(twoPort.ZParam)).
+	AddStaticFunction("twoPortH", createTwoPort(twoPort.HParam)).
+	AddStaticFunction("twoPortC", createTwoPort(twoPort.CParam)).
+	AddStaticFunction("twoPortA", createTwoPort(twoPort.AParam)).
 	AddStaticFunction("simulate", funcGen.Function[value.Value]{
 		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
 			if def, ok := stack.Get(0).ToList(); ok {
@@ -915,4 +928,22 @@ func NelderMead(fu funcGen.Function[value.Value], initial *value.List, delta *va
 	m["min"] = value.Float(minVal)
 
 	return value.NewMap(value.RealMap(m)), nil
+}
+
+func createTwoPort(typ twoPort.TpType) funcGen.Function[value.Value] {
+	return funcGen.Function[value.Value]{
+		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
+			m := make([]complex128, 4)
+			for i := 0; i < 4; i++ {
+				var err error
+				m[i], err = getComplex(stack, i)
+				if err != nil {
+					return nil, fmt.Errorf("twoport requires complex or float values")
+				}
+			}
+			return twoPort.NewTwoPort(m[0], m[1], m[2], m[3], typ), nil
+		},
+		Args:   4,
+		IsPure: true,
+	}.SetDescription("m11", "m12", "m21", "m21", "creates a new two-port of type "+typ.String())
 }
