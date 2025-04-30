@@ -14,11 +14,9 @@ type Tick struct {
 	Label    string
 }
 
-const expand = 0.02
+type Axis func(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth, expand float64) (func(v float64) float64, []Tick, Bounds)
 
-type Axis func(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth) (func(v float64) float64, []Tick, Bounds)
-
-func LinearAxis(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth) (func(v float64) float64, []Tick, Bounds) {
+func LinearAxis(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth, expand float64) (func(v float64) float64, []Tick, Bounds) {
 	delta := bounds.Width() * expand
 	if delta < 1e-10 {
 		delta = 1 + expand
@@ -123,16 +121,16 @@ func exp10(log int) float64 {
 	return e10
 }
 
-func LogAxis(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth) (func(v float64) float64, []Tick, Bounds) {
+func LogAxis(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth, expand float64) (func(v float64) float64, []Tick, Bounds) {
 	if bounds.Min <= 0 {
-		return LinearAxis(minParent, maxParent, bounds, ctw)
+		return LinearAxis(minParent, maxParent, bounds, ctw, expand)
 	}
 
 	logMin := math.Log10(bounds.Min)
 	logMax := math.Log10(bounds.Max)
 
 	if logMax-logMin < 1 {
-		return LinearAxis(minParent, maxParent, bounds, ctw)
+		return LinearAxis(minParent, maxParent, bounds, ctw, expand)
 	}
 
 	delta := (logMax - logMin) * expand
@@ -172,8 +170,8 @@ func CreateLogTicks(logMin, parentMin, parentMax float64, tr func(v float64) flo
 }
 
 func CreateFixedStepAxis(step float64) Axis {
-	return func(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth) (func(v float64) float64, []Tick, Bounds) {
-		tr, ticks, b := LinearAxis(minParent, maxParent, bounds, ctw)
+	return func(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth, expand float64) (func(v float64) float64, []Tick, Bounds) {
+		tr, ticks, b := LinearAxis(minParent, maxParent, bounds, ctw, expand)
 
 		width := b.Width()
 		if width < step*2 || width > step*20 {
@@ -215,7 +213,7 @@ func CreateFixedStepAxis(step float64) Axis {
 }
 
 func CreateDateAxis(formatDate, formatMin string) Axis {
-	return func(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth) (func(v float64) float64, []Tick, Bounds) {
+	return func(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth, expand float64) (func(v float64) float64, []Tick, Bounds) {
 		delta := bounds.Width() * expand
 		if delta < 1e-10 {
 			delta = 1 + expand

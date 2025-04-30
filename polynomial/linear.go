@@ -768,20 +768,22 @@ func (l *Linear) AddToBode(b *BodePlot, style *graph.Style, latency float64) {
 
 func NewBode(wMin, wMax float64) *BodePlot {
 	amplitude := &graph.Plot{
-		XBounds: graph.NewBounds(wMin, wMax),
-		XAxis:   graph.LogAxis,
-		YAxis:   graph.CreateFixedStepAxis(20),
-		Grid:    grParser.GridStyle,
-		XLabel:  "ω [rad/s]",
-		YLabel:  "Amplitude [dB]",
+		XBounds:      graph.NewBounds(wMin, wMax),
+		XAxis:        graph.LogAxis,
+		YAxis:        graph.CreateFixedStepAxis(20),
+		Grid:         grParser.GridStyle,
+		XLabel:       "ω [rad/s]",
+		YLabel:       "Amplitude [dB]",
+		YLabelExpand: true,
 	}
 	phase := &graph.Plot{
-		XBounds: graph.NewBounds(wMin, wMax),
-		XAxis:   graph.LogAxis,
-		YAxis:   graph.CreateFixedStepAxis(45),
-		Grid:    grParser.GridStyle,
-		XLabel:  "ω [rad/s]",
-		YLabel:  "Phase [°]",
+		XBounds:      graph.NewBounds(wMin, wMax),
+		XAxis:        graph.LogAxis,
+		YAxis:        graph.CreateFixedStepAxis(45),
+		Grid:         grParser.GridStyle,
+		XLabel:       "ω [rad/s]",
+		YLabel:       "Phase [°]",
+		YLabelExpand: true,
 	}
 	b := BodePlot{wMin, wMax,
 		amplitude, phase,

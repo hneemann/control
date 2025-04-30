@@ -42,6 +42,7 @@ type Plot struct {
 	Title          string
 	XLabel         string
 	YLabel         string
+	YLabelExpand   bool
 	Content        []PlotContent
 	Legend         []Legend
 	FillBackground bool
@@ -122,14 +123,20 @@ func (p *Plot) DrawTo(canvas Canvas) error {
 		yAxis = LinearAxis
 	}
 
+	yExp := 0.02
 	xTrans, xTicks, xBounds := xAxis(innerRect.Min.X, innerRect.Max.X, xBounds,
 		func(width float64, digits int) bool {
 			return width > textSize*(float64(digits+1))*0.5
-		})
+		}, yExp)
+
+	if p.YLabelExpand && (p.XLabel != "" || p.YLabel != "") {
+		yExp = 1.8 * textSize / innerRect.Height()
+	}
+
 	yTrans, yTicks, yBounds := yAxis(innerRect.Min.Y, innerRect.Max.Y, yBounds,
 		func(width float64, _ int) bool {
 			return width > textSize*2
-		})
+		}, yExp)
 
 	p.xTicks = xTicks
 	p.yTicks = yTicks

@@ -68,7 +68,6 @@ func main() {
 			}
 		}
 	}
-
 	defer sc.Close()
 
 	mux := http.NewServeMux()
