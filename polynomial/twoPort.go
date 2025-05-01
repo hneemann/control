@@ -1,7 +1,8 @@
-package twoPort
+package polynomial
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"github.com/hneemann/parser2/funcGen"
 	"github.com/hneemann/parser2/value"
@@ -9,38 +10,62 @@ import (
 	"github.com/hneemann/parser2/value/export/xmlWriter"
 )
 
-type TpType int
+type TpType rune
 
 func (t TpType) String() string {
-	switch t {
-	case HParam:
-		return "H"
-	case ZParam:
-		return "Z"
-	case YParam:
-		return "Y"
-	case CParam:
-		return "C"
-	case AParam:
-		return "A"
-	default:
-		return "Unknown"
-	}
+	return string(t)
 }
 
-const TwoPortValueType value.Type = 39
-
 const (
-	HParam TpType = iota
-	ZParam
-	YParam
-	CParam
-	AParam
+	HParam TpType = 'H'
+	ZParam TpType = 'Z'
+	YParam TpType = 'Y'
+	CParam TpType = 'C'
+	AParam TpType = 'A'
 )
 
 type TwoPort struct {
 	m11, m12, m21, m22 complex128
 	typ                TpType
+}
+
+func (tp *TwoPort) Get(key string) (value.Value, bool) {
+	switch key {
+	case "m11":
+		return Complex(tp.m11), true
+	case "m12":
+		return Complex(tp.m12), true
+	case "m21":
+		return Complex(tp.m21), true
+	case "m22":
+		return Complex(tp.m22), true
+	case "type":
+		return value.String(tp.typ), true
+	}
+	return nil, false
+}
+
+func (tp *TwoPort) Iter(yield func(key string, v value.Value) bool) bool {
+	if !yield("m11", Complex(tp.m11)) {
+		return false
+	}
+	if !yield("m12", Complex(tp.m12)) {
+		return false
+	}
+	if !yield("m21", Complex(tp.m21)) {
+		return false
+	}
+	if !yield("m22", Complex(tp.m22)) {
+		return false
+	}
+	if !yield("type", value.String(tp.typ)) {
+		return false
+	}
+	return true
+}
+
+func (tp *TwoPort) Size() int {
+	return 5
 }
 
 func (tp *TwoPort) ToHtml(st funcGen.Stack[value.Value], w *xmlWriter.XMLWriter) error {
@@ -89,7 +114,7 @@ func (tp *TwoPort) ToList() (*value.List, bool) {
 }
 
 func (tp *TwoPort) ToMap() (value.Map, bool) {
-	return value.Map{}, false
+	return value.NewMap(tp), true
 }
 
 func (tp *TwoPort) ToInt() (int, bool) {
@@ -102,26 +127,15 @@ func (tp *TwoPort) ToFloat() (float64, bool) {
 
 func (tp *TwoPort) ToString(st funcGen.Stack[value.Value]) (string, error) {
 	var buf bytes.Buffer
-	switch tp.typ {
-	case YParam:
-		buf.WriteString("Y")
-	case AParam:
-		buf.WriteString("A")
-	case HParam:
-		buf.WriteString("H")
-	case ZParam:
-		buf.WriteString("Z")
-	case CParam:
-		buf.WriteString("C")
-	}
+	buf.WriteString(tp.typ.String())
 	buf.WriteString("=(")
-	buf.WriteString(fmt.Sprintf("%f", tp.m11))
+	buf.WriteString(cmplxStr(tp.m11))
 	buf.WriteString(",")
-	buf.WriteString(fmt.Sprintf("%f", tp.m12))
+	buf.WriteString(cmplxStr(tp.m12))
 	buf.WriteString(";")
-	buf.WriteString(fmt.Sprintf("%f", tp.m21))
+	buf.WriteString(cmplxStr(tp.m21))
 	buf.WriteString(",")
-	buf.WriteString(fmt.Sprintf("%f", tp.m22))
+	buf.WriteString(cmplxStr(tp.m22))
 	buf.WriteString(")")
 	return buf.String(), nil
 }
@@ -168,25 +182,29 @@ func NewShunt(z complex128) *TwoPort {
 	}
 }
 
-func Cascade(a ...*TwoPort) *TwoPort {
+func Cascade(a ...*TwoPort) (*TwoPort, error) {
 	if len(a) == 0 {
-		return nil
+		return nil, errors.New("no ports to cascade")
 	}
 	tp := a[0]
 	for i := 1; i < len(a); i++ {
-		tp = tp.Cascade(a[i])
+		var err error
+		tp, err = tp.Cascade(a[i])
+		if err != nil {
+			return nil, err
+		}
 	}
-	return tp
+	return tp, nil
 }
 
 func (tp *TwoPort) det() complex128 {
 	return tp.m11*tp.m22 - tp.m12*tp.m21
 }
 
-func (tp *TwoPort) GetY() *TwoPort {
+func (tp *TwoPort) GetY() (*TwoPort, error) {
 	switch tp.typ {
 	case YParam:
-		return tp
+		return tp, nil
 	case AParam:
 		return TwoPort{tp.m22, -tp.det(), -1, tp.m11, YParam}.div(tp.m12)
 	case HParam:
@@ -199,7 +217,7 @@ func (tp *TwoPort) GetY() *TwoPort {
 	panic("Invalid type")
 }
 
-func (tp *TwoPort) GetZ() *TwoPort {
+func (tp *TwoPort) GetZ() (*TwoPort, error) {
 	switch tp.typ {
 	case YParam:
 		return TwoPort{tp.m22, -tp.m12, -tp.m21, tp.m11, ZParam}.div(tp.det())
@@ -208,19 +226,19 @@ func (tp *TwoPort) GetZ() *TwoPort {
 	case HParam:
 		return TwoPort{tp.det(), tp.m12, -tp.m21, 1, ZParam}.div(tp.m22)
 	case ZParam:
-		return tp
+		return tp, nil
 	case CParam:
 		return TwoPort{1, -tp.m12, tp.m21, tp.det(), ZParam}.div(tp.m11)
 	}
 	panic("Invalid type")
 }
 
-func (tp *TwoPort) GetA() *TwoPort {
+func (tp *TwoPort) GetA() (*TwoPort, error) {
 	switch tp.typ {
 	case YParam:
 		return TwoPort{-tp.m22, -1, -tp.det(), -tp.m11, AParam}.div(tp.m21)
 	case AParam:
-		return tp
+		return tp, nil
 	case HParam:
 		return TwoPort{-tp.det(), -tp.m11, -tp.m22, -1, AParam}.div(tp.m21)
 	case ZParam:
@@ -231,14 +249,14 @@ func (tp *TwoPort) GetA() *TwoPort {
 	panic("Invalid type")
 }
 
-func (tp *TwoPort) GetH() *TwoPort {
+func (tp *TwoPort) GetH() (*TwoPort, error) {
 	switch tp.typ {
 	case YParam:
 		return TwoPort{1, -tp.m12, tp.m21, tp.det(), HParam}.div(tp.m11)
 	case AParam:
 		return TwoPort{tp.m12, tp.det(), -1, tp.m21, HParam}.div(tp.m22)
 	case HParam:
-		return tp
+		return tp, nil
 	case ZParam:
 		return TwoPort{tp.det(), tp.m12, -tp.m21, 1, HParam}.div(tp.m22)
 	case CParam:
@@ -247,7 +265,7 @@ func (tp *TwoPort) GetH() *TwoPort {
 	panic("Invalid type")
 }
 
-func (tp *TwoPort) GetC() *TwoPort {
+func (tp *TwoPort) GetC() (*TwoPort, error) {
 	switch tp.typ {
 	case YParam:
 		return TwoPort{tp.det(), tp.m12, -tp.m21, 1, CParam}.div(tp.m22)
@@ -258,7 +276,7 @@ func (tp *TwoPort) GetC() *TwoPort {
 	case ZParam:
 		return TwoPort{1, -tp.m12, tp.m21, tp.det(), CParam}.div(tp.m11)
 	case CParam:
-		return tp
+		return tp, nil
 	}
 	panic("Invalid type")
 }
@@ -327,12 +345,15 @@ func (tp *TwoPort) OutputImpedance(load complex128) complex128 {
 	panic("Invalid type")
 }
 
-func (tp TwoPort) div(d complex128) *TwoPort {
+func (tp TwoPort) div(d complex128) (*TwoPort, error) {
+	if d == 0 {
+		return nil, fmt.Errorf("cannot create parameters: division by zero")
+	}
 	tp.m11 = tp.m11 / d
 	tp.m12 = tp.m12 / d
 	tp.m21 = tp.m21 / d
 	tp.m22 = tp.m22 / d
-	return &tp
+	return &tp, nil
 }
 
 func (tp *TwoPort) add(o *TwoPort) *TwoPort {
@@ -348,9 +369,15 @@ func (tp *TwoPort) add(o *TwoPort) *TwoPort {
 	}
 }
 
-func (tp *TwoPort) Cascade(port *TwoPort) *TwoPort {
-	a := tp.GetA()
-	b := port.GetA()
+func (tp *TwoPort) Cascade(port *TwoPort) (*TwoPort, error) {
+	a, err := tp.GetA()
+	if err != nil {
+		return nil, err
+	}
+	b, err := port.GetA()
+	if err != nil {
+		return nil, err
+	}
 
 	return &TwoPort{
 		m11: a.m11*b.m11 + a.m12*b.m21,
@@ -358,21 +385,53 @@ func (tp *TwoPort) Cascade(port *TwoPort) *TwoPort {
 		m21: a.m21*b.m11 + a.m22*b.m21,
 		m22: a.m21*b.m12 + a.m22*b.m22,
 		typ: AParam,
+	}, nil
+}
+
+func (tp *TwoPort) Series(o *TwoPort) (*TwoPort, error) {
+	z1, err := tp.GetZ()
+	if err != nil {
+		return nil, err
 	}
+	z2, err := o.GetZ()
+	if err != nil {
+		return nil, err
+	}
+	return z1.add(z2), nil
 }
 
-func (tp *TwoPort) Series(o *TwoPort) *TwoPort {
-	return tp.GetZ().add(o.GetZ())
+func (tp *TwoPort) Parallel(o *TwoPort) (*TwoPort, error) {
+	y1, err := tp.GetY()
+	if err != nil {
+		return nil, err
+	}
+	y2, err := o.GetY()
+	if err != nil {
+		return nil, err
+	}
+	return y1.add(y2), nil
 }
 
-func (tp *TwoPort) Parallel(o *TwoPort) *TwoPort {
-	return tp.GetY().add(o.GetY())
+func (tp *TwoPort) SeriesParallel(o *TwoPort) (*TwoPort, error) {
+	h1, err := tp.GetH()
+	if err != nil {
+		return nil, err
+	}
+	h2, err := o.GetH()
+	if err != nil {
+		return nil, err
+	}
+	return h1.add(h2), nil
 }
 
-func (tp *TwoPort) SeriesParallel(o *TwoPort) *TwoPort {
-	return tp.GetH().add(o.GetH())
-}
-
-func (tp *TwoPort) ParallelSeries(o *TwoPort) *TwoPort {
-	return tp.GetC().add(o.GetC())
+func (tp *TwoPort) ParallelSeries(o *TwoPort) (*TwoPort, error) {
+	c1, err := tp.GetC()
+	if err != nil {
+		return nil, err
+	}
+	c2, err := o.GetC()
+	if err != nil {
+		return nil, err
+	}
+	return c1.add(c2), nil
 }

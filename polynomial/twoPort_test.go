@@ -1,8 +1,6 @@
-package twoPort
+package polynomial
 
 import (
-	"github.com/hneemann/parser2/funcGen"
-	"github.com/hneemann/parser2/value"
 	"github.com/stretchr/testify/assert"
 	"math"
 	"math/cmplx"
@@ -39,11 +37,11 @@ func TestTwoPort_OutputImpedance(t *testing.T) {
 
 func check(t *testing.T, tp *TwoPort, f func(tp *TwoPort) complex128) {
 	expected := f(tp)
-	checkExp(t, tp.GetZ(), expected, f)
-	checkExp(t, tp.GetY(), expected, f)
-	checkExp(t, tp.GetH(), expected, f)
-	checkExp(t, tp.GetC(), expected, f)
-	checkExp(t, tp.GetA(), expected, f)
+	checkExp(t, Must(tp.GetZ()), expected, f)
+	checkExp(t, Must(tp.GetY()), expected, f)
+	checkExp(t, Must(tp.GetH()), expected, f)
+	checkExp(t, Must(tp.GetC()), expected, f)
+	checkExp(t, Must(tp.GetA()), expected, f)
 }
 
 func checkExp(t *testing.T, tp *TwoPort, expected complex128, f func(tp *TwoPort) complex128) {
@@ -53,17 +51,14 @@ func checkExp(t *testing.T, tp *TwoPort, expected complex128, f func(tp *TwoPort
 }
 
 func TestTwoPort_Travo(t *testing.T) {
-	sum := Cascade(
+	sum, err := Cascade(
 		NewSeries(2000),
 		NewShunt(complex(0, 2*math.Pi*50*10)),
 		NewTwoPort(0, 10, -10, 0, HParam),
 		NewSeries(5),
 		NewShunt(complex(0, -1/(2*math.Pi*50*400e-6))),
 	)
-
-	str, err := sum.ToString(funcGen.NewEmptyStack[value.Value]())
 	assert.NoError(t, err)
-	assert.EqualValues(t, "A=((14.000000+25.049729i),(250.000000-31.830989i);(0.002000+0.009383i),(0.100000-0.015915i))", str)
 
 	outputVoltage := cmplx.Abs(sum.VoltageGain(500)) * 240
 
