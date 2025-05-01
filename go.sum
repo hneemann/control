@@ -26,6 +26,8 @@ github.com/hneemann/parser2 v0.0.0-20250429183911-7aed5ff4b6f4 h1:Og8xwzAhJrnq4n
 github.com/hneemann/parser2 v0.0.0-20250429183911-7aed5ff4b6f4/go.mod h1:SS7YsssqCfYO9w+HMtAff0UDfXqdjkq2rhElFNl7tZ4=
 github.com/hneemann/session v0.0.0-20250430164941-2ec3c47ce898 h1:VWInTp7AiqC/styQ5sALcCOl8hduvFubLH6haoSGZI4=
 github.com/hneemann/session v0.0.0-20250430164941-2ec3c47ce898/go.mod h1:ldjS1vGSjejww/dhUCgNtxEPL0u4fCGvXJAfHUSKJbo=
+github.com/hneemann/session v0.0.0-20250501092138-f4338f8a2a3d h1:z+HX+Otxwa5YvlAapb7ZaRlVliE391XR2d2HwSXuY0A=
+github.com/hneemann/session v0.0.0-20250501092138-f4338f8a2a3d/go.mod h1:ldjS1vGSjejww/dhUCgNtxEPL0u4fCGvXJAfHUSKJbo=
 github.com/jeremija/gosubmit v0.2.8 h1:mmSITBz9JxVtu8eqbN+zmmwX7Ij2RidQxhcwRVI4wqA=
 github.com/jeremija/gosubmit v0.2.8/go.mod h1:Ui+HS073lCFREXBbdfrJzMB57OI/bdxTiLtrDHHhFPI=
 github.com/kr/pretty v0.3.1 h1:flRD4NNwYAUpkphVc1HcthR4KEIFJ65n8Mw5qdRn3LE=
