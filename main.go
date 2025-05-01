@@ -18,6 +18,19 @@ import (
 
 type persist struct{}
 
+func retry(count int, delay time.Duration, task func() bool) bool {
+	for i := range count {
+		if i > 0 {
+			log.Printf("Retry %d/%d in %v", i, count, delay)
+			time.Sleep(delay)
+		}
+		if task() {
+			return true
+		}
+	}
+	return false
+}
+
 func (p persist) Load(f fileSys.FileSystem) (*data.UserData, error) {
 	r, err := f.Reader("data.json")
 	if err != nil {
@@ -73,7 +86,9 @@ func main() {
 	mux := http.NewServeMux()
 
 	if *oidc {
-		isOidc := myOidc.RegisterLogin(mux, "/login", "/auth/callback", myOidc.CreateOidcSession(sc))
+		isOidc := retry(3, time.Second*3, func() bool {
+			return myOidc.RegisterLogin(mux, "/login", "/auth/callback", myOidc.CreateOidcSession(sc))
+		})
 		if !isOidc {
 			log.Fatal("oidc not available!")
 		}
