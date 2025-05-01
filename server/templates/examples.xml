@@ -61,7 +61,7 @@ bode(0.01,100)
   .phaseModify( p->p.add(yConst(-180+70,red.dash(7,7)))
                     .add(yConst(-180+50,red.dash(7,7)))
                     .add(xConst(pm.w0,  red.dash(7,7))) )
-  .ampModify( p->p.add(xConst(pm.w0,red.dash(7,7))) )</example>
+  .ampModify( a->a.add(xConst(pm.w0,red.dash(7,7))) )</example>
     <example name="pid" desc="Die pid-Funktion">[
  ["pid(2,2)",        "=", pid(2,2)  ],
  ["pid(2,3,1)",      "=", pid(2,3,1)],
@@ -121,6 +121,30 @@ plot(
 ).legendPos(2,0.7)
  .labels("t [s]", "h(t)")
  .title("Effect of a Limiter")</example>
+    <example name="Zweitore" desc="Berechnung von Zweitoren">let Rin   = 2000;
+let Lh    = 10;
+let ueber = 10;
+let Rout  = 5;
+let Cout  = 400e-6;
+let Rload = 500;
+let omega = 2*pi*50;
+
+let transformer =
+  tpCascade (
+    tpSeries(Rin),
+    tpShunt(_i*omega*Lh),
+    tpH(0,ueber,-ueber,0),
+    tpSeries(Rout),
+    tpShunt(1/(_i*omega*Cout))
+  );
+
+let gain=transformer.voltageGain(Rload).abs();
+
+[
+ ["Transformer:",transformer],
+ ["Voltage Gain:",gain],
+ ["Uout:",gain*240]
+]</example>
             <!--example name="Nelder&amp;Mead" desc="Nichtlineare Optimierung">let s=lin();
 let g=7/((s+1)*(s+2)*(s-1));
 
