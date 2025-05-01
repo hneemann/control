@@ -791,12 +791,12 @@ var Parser = value.New().
 		Args:   1,
 		IsPure: true,
 	}.SetDescription("z", "returns a shunt two-port")).
-	AddStaticFunction("twoPortY", createTwoPort(twoPort.YParam)).
-	AddStaticFunction("twoPortZ", createTwoPort(twoPort.ZParam)).
-	AddStaticFunction("twoPortH", createTwoPort(twoPort.HParam)).
-	AddStaticFunction("twoPortC", createTwoPort(twoPort.CParam)).
-	AddStaticFunction("twoPortA", createTwoPort(twoPort.AParam)).
-	AddStaticFunction("simulate", funcGen.Function[value.Value]{
+	AddStaticFunction("tpY", createTwoPort(twoPort.YParam)).
+	AddStaticFunction("tpZ", createTwoPort(twoPort.ZParam)).
+	AddStaticFunction("tpH", createTwoPort(twoPort.HParam)).
+	AddStaticFunction("tpC", createTwoPort(twoPort.CParam)).
+	AddStaticFunction("tpA", createTwoPort(twoPort.AParam)).
+	AddStaticFunction("simulateBlocks", funcGen.Function[value.Value]{
 		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
 			if def, ok := stack.Get(0).ToList(); ok {
 				if tMax, ok := stack.Get(1).ToFloat(); ok {

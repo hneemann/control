@@ -110,7 +110,7 @@ let systemDescription = [
  {in:"uLim",    block: G,                 out:"y"    }
 ];
 
-let simLimited = simulate(systemDescription,6);
+let simLimited = simulateBlocks(systemDescription,6);
 let simNormal  = (K*G).loop().simStep(6);
 
 plot(

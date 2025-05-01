@@ -42,7 +42,6 @@ type Plot struct {
 	Title          string
 	XLabel         string
 	YLabel         string
-	YLabelExpand   bool
 	Content        []PlotContent
 	Legend         []Legend
 	FillBackground bool
@@ -85,6 +84,8 @@ func (p *Plot) DrawTo(canvas Canvas) error {
 
 	xBounds := p.XBounds
 	yBounds := p.YBounds
+
+	yAutoScale := !yBounds.valid
 
 	if !(xBounds.valid && yBounds.valid) {
 		mergeX := !xBounds.valid
@@ -129,7 +130,7 @@ func (p *Plot) DrawTo(canvas Canvas) error {
 			return width > textSize*(float64(digits+1))*0.5
 		}, yExp)
 
-	if p.YLabelExpand && (p.XLabel != "" || p.YLabel != "") {
+	if yAutoScale && (p.XLabel != "" || p.YLabel != "") {
 		yExp = 1.8 * textSize / innerRect.Height()
 	}
 
