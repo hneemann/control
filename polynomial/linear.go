@@ -1093,7 +1093,6 @@ func (m Matrix) String() string {
 		str += fmt.Sprintf("%v\n", row)
 	}
 	return str
-
 }
 
 func (m Matrix) Mul(target Vector, x Vector) {
