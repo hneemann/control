@@ -504,7 +504,7 @@ var defStyleValue = grParser.StyleValue{grParser.Holder[*graph.Style]{graph.Blac
 func bodeMethods() value.MethodMap {
 	return value.MethodMap{
 		"add": value.MethodAtType(-1, func(bode BodePlotValue, st funcGen.Stack[value.Value]) (value.Value, error) {
-			if linVal, ok := st.Get(1).(*Linear); ok {
+			if linVal, ok := getLinear(st, 1); ok {
 				if styleVal, err := grParser.GetStyle(st, 2, graph.Black); err == nil {
 					if legVal, ok := st.GetOptional(3, value.String("")).(value.String); ok {
 						linVal.AddToBode(bode.Value, styleVal.Value, 0)
@@ -541,7 +541,7 @@ func bodeMethods() value.MethodMap {
 			return nil, fmt.Errorf("download requires a string value")
 		}).SetMethodDescription("filename", "Enables download"),
 		"addWithLatency": value.MethodAtType(-1, func(bode BodePlotValue, st funcGen.Stack[value.Value]) (value.Value, error) {
-			if linVal, ok := st.Get(1).(*Linear); ok {
+			if linVal, ok := getLinear(st, 1); ok {
 				if latency, ok := st.Get(2).ToFloat(); ok {
 					if styleVal, err := grParser.GetStyle(st, 3, graph.Black); err == nil {
 						if legVal, ok := st.GetOptional(4, value.String("")).(value.String); ok {
@@ -610,6 +610,17 @@ func bodeMethods() value.MethodMap {
 			return nil, errors.New("phaseModify requires a function that returns the modified plot")
 		}).SetMethodDescription("function", "the given function gets the phase plot and mast return the modified phase plot!").Pure(false),
 	}
+}
+
+func getLinear(st funcGen.Stack[value.Value], i int) (*Linear, bool) {
+	v := st.Get(i)
+	if l, ok := v.(*Linear); ok {
+		return l, true
+	}
+	if f, ok := v.ToFloat(); ok {
+		return NewConst(f), true
+	}
+	return nil, false
 }
 
 var Parser = value.New().

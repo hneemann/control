@@ -200,6 +200,10 @@ func createPlotMethods() value.MethodMap {
 			}
 			return plot, nil
 		}).SetMethodDescription("label", "Sets the y-label"),
+		"protectLabels": value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			plot.Value.YLabelExtend = true
+			return plot, nil
+		}).SetMethodDescription("Autoscaling protects the labels"),
 		"grid": value.MethodAtType(1, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			styleVal, err := GetStyle(stack, 1, GridStyle)
 			if err != nil {

@@ -75,7 +75,7 @@ func (p *Plot) DrawTo(canvas Canvas) error {
 	}
 	rb := p.RightBorder
 	if rb <= 0 {
-		rb = 2
+		rb = 1
 	}
 
 	innerRect := Rect{
