@@ -14,11 +14,13 @@ type SVG struct {
 	err     error
 }
 
-func NewSVG(width, height, textSize float64, w *xmlWriter.XMLWriter) *SVG {
+func NewSVG(context *Context, w *xmlWriter.XMLWriter) *SVG {
+	width := context.Width
+	height := context.Height
 	s := &SVG{rect: Rect{
 		Point{0, 0},
 		Point{width, height},
-	}, w: w, context: &Context{TextSize: textSize}}
+	}, w: w, context: context}
 
 	w.Open("svg").
 		Attr("class", "svg").
@@ -129,8 +131,49 @@ func (s *SVG) DrawText(a Point, text string, orientation Orientation, style *Sty
 		Attr("x", fmt.Sprintf("%0.2f", a.X)).
 		Attr("y", fmt.Sprintf("%0.2f", s.rect.Max.Y-a.Y)).
 		Attr("style", styleString(style)+st)
+
+	if s.context.LaTeX {
+		text = toLaTeX(text)
+	}
+
 	s.w.Write(text)
 	s.w.Close()
+}
+
+func toLaTeX(text string) string {
+	var buf bytes.Buffer
+	inMath := false
+	for _, r := range text {
+		switch r {
+		case 'ω':
+			inMath = writeInMath(&buf, inMath, "\\omega")
+		case 'Φ':
+			inMath = writeInMath(&buf, inMath, "\\Phi")
+		case '°':
+			inMath = writeInMath(&buf, inMath, "^\\circ")
+		case 'ₛ':
+			inMath = writeInMath(&buf, inMath, "_s")
+		default:
+			if inMath {
+				buf.WriteString("$")
+				inMath = false
+			}
+			buf.WriteRune(r)
+		}
+	}
+	if inMath {
+		buf.WriteString("$")
+	}
+	return buf.String()
+}
+
+func writeInMath(b *bytes.Buffer, inMath bool, s string) bool {
+	if !inMath {
+		b.WriteString("$")
+		inMath = true
+	}
+	b.WriteString(s)
+	return inMath
 }
 
 func (s *SVG) Context() *Context {

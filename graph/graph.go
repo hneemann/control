@@ -239,7 +239,16 @@ const (
 )
 
 type Context struct {
+	Width    float64
+	Height   float64
 	TextSize float64
+	LaTeX    bool
+}
+
+var DefaultContext = Context{
+	Width:    800,
+	Height:   600,
+	TextSize: 15,
 }
 
 type Image interface {

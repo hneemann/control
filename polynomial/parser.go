@@ -469,23 +469,12 @@ func exp(st funcGen.Stack[value.Value], a value.Value, b value.Value) (value.Val
 
 type BodePlotValue struct {
 	grParser.Holder[*BodePlot]
-	textSize      float64
-	width, height float64
+	context graph.Context
 }
 
 var (
-	_ grParser.TextSizeProvider   = BodePlotValue{}
-	_ grParser.OutputSizeProvider = BodePlotValue{}
-	_ export.ToHtmlInterface      = BodePlotValue{}
+	_ export.ToHtmlInterface = BodePlotValue{}
 )
-
-func (b BodePlotValue) TextSize() float64 {
-	return b.textSize
-}
-
-func (b BodePlotValue) OutputSize() (float64, float64) {
-	return b.width, b.height
-}
 
 func (b BodePlotValue) DrawTo(canvas graph.Canvas) error {
 	return b.Value.DrawTo(canvas)
@@ -496,7 +485,7 @@ func (b BodePlotValue) GetType() value.Type {
 }
 
 func (b BodePlotValue) ToHtml(st funcGen.Stack[value.Value], w *xmlWriter.XMLWriter) error {
-	return grParser.CreateSVG(b, w)
+	return grParser.CreateSVG(b, &b.context, w)
 }
 
 var defStyleValue = grParser.StyleValue{grParser.Holder[*graph.Style]{graph.Black}, 4}
@@ -519,7 +508,7 @@ func bodeMethods() value.MethodMap {
 		}).SetMethodDescription("lin", "color", "label", "adds a linear system to the bode plot").VarArgsMethod(1, 3).Pure(false),
 		"textSize": value.MethodAtType(1, func(plot BodePlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if si, ok := stack.Get(1).ToFloat(); ok {
-				plot.textSize = si
+				plot.context.TextSize = si
 				return plot, nil
 			}
 			return nil, fmt.Errorf("textSize requires a float value")
@@ -527,8 +516,8 @@ func bodeMethods() value.MethodMap {
 		"outputSize": value.MethodAtType(2, func(plot BodePlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if width, ok := stack.Get(1).ToFloat(); ok {
 				if height, ok := stack.Get(2).ToFloat(); ok {
-					plot.width = width
-					plot.height = height
+					plot.context.Width = width
+					plot.context.Height = height
 					return plot, nil
 				}
 			}
@@ -536,7 +525,7 @@ func bodeMethods() value.MethodMap {
 		}).SetMethodDescription("width", "height", "Sets the svg-output size"),
 		"file": value.MethodAtType(1, func(plot BodePlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if name, ok := stack.Get(1).(value.String); ok {
-				return grParser.ImageToFile(plot, string(name))
+				return grParser.ImageToFile(plot, &plot.context, string(name))
 			}
 			return nil, fmt.Errorf("download requires a string value")
 		}).SetMethodDescription("filename", "Enables download"),
@@ -609,6 +598,10 @@ func bodeMethods() value.MethodMap {
 			}
 			return nil, errors.New("phaseModify requires a function that returns the modified plot")
 		}).SetMethodDescription("function", "the given function gets the phase plot and mast return the modified phase plot!").Pure(false),
+		"LaTeX": value.MethodAtType(0, func(plot BodePlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			plot.context.LaTeX = true
+			return plot, nil
+		}).SetMethodDescription("Enables LaTeX-Mode"),
 	}
 }
 
@@ -716,7 +709,7 @@ var Parser = value.New().
 			if wMin, ok := stack.Get(0).ToFloat(); ok {
 				if wMax, ok := stack.Get(1).ToFloat(); ok {
 					b := NewBode(wMin, wMax)
-					return BodePlotValue{grParser.Holder[*BodePlot]{b}, 0, 0, 0}, nil
+					return BodePlotValue{grParser.Holder[*BodePlot]{b}, graph.DefaultContext}, nil
 				}
 			}
 			return nil, fmt.Errorf("boded requires 2 float values")

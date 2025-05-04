@@ -52,18 +52,14 @@ const (
 
 type PlotValue struct {
 	Holder[*graph.Plot]
-	textSize float64
-	width    float64
-	height   float64
+	context graph.Context
 }
 
 func (p PlotValue) ToHtml(st funcGen.Stack[value.Value], w *xmlWriter.XMLWriter) error {
-	return CreateSVG(p, w)
+	return CreateSVG(p, &p.context, w)
 }
 
 var (
-	_ TextSizeProvider       = PlotValue{}
-	_ OutputSizeProvider     = PlotValue{}
 	_ export.ToHtmlInterface = PlotValue{}
 )
 
@@ -72,7 +68,7 @@ func (p PlotValue) DrawTo(canvas graph.Canvas) error {
 }
 
 func NewPlotValue(plot *graph.Plot) PlotValue {
-	return PlotValue{Holder[*graph.Plot]{plot}, 0, 0, 0}
+	return PlotValue{Holder[*graph.Plot]{plot}, graph.DefaultContext}
 }
 
 func (p PlotValue) GetType() value.Type {
@@ -92,14 +88,6 @@ func (p PlotValue) add(pc value.Value) error {
 		})
 	}
 	return errors.New("value is not a plot content")
-}
-
-func (p PlotValue) TextSize() float64 {
-	return p.textSize
-}
-
-func (b PlotValue) OutputSize() (float64, float64) {
-	return b.width, b.height
 }
 
 func createStyleMethods() value.MethodMap {
@@ -214,7 +202,7 @@ func createPlotMethods() value.MethodMap {
 		}).SetMethodDescription("color", "Adds a grid").VarArgsMethod(0, 1),
 		"file": value.MethodAtType(1, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if str, ok := stack.Get(1).(value.String); ok {
-				return ImageToFile(plot, string(str))
+				return ImageToFile(plot, &plot.context, string(str))
 			} else {
 				return nil, fmt.Errorf("download requires a string")
 			}
@@ -274,7 +262,7 @@ func createPlotMethods() value.MethodMap {
 		}).SetMethodDescription("x", "y", "Sets the position of the legend"),
 		"textSize": value.MethodAtType(1, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if si, ok := stack.Get(1).ToFloat(); ok {
-				plot.textSize = si
+				plot.context.TextSize = si
 				return plot, nil
 			}
 			return nil, fmt.Errorf("textSize requires a float values")
@@ -282,8 +270,8 @@ func createPlotMethods() value.MethodMap {
 		"outputSize": value.MethodAtType(2, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if width, ok := stack.Get(1).ToFloat(); ok {
 				if height, ok := stack.Get(2).ToFloat(); ok {
-					plot.width = width
-					plot.height = height
+					plot.context.Width = width
+					plot.context.Height = height
 					return plot, nil
 				}
 			}
@@ -320,6 +308,10 @@ func createPlotMethods() value.MethodMap {
 			}
 			return nil, fmt.Errorf("inset requires floats as arguments")
 		}).SetMethodDescription("xMin", "xMax", "yMin", "yMax", "converts plot to an inset"),
+		"LaTeX": value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			plot.context.LaTeX = true
+			return plot, nil
+		}).SetMethodDescription("Enables LaTeX-Mode"),
 	}
 }
 
@@ -708,19 +700,11 @@ func listToPoints(list *value.List) graph.Points {
 	}
 }
 
-type TextSizeProvider interface {
-	TextSize() float64
-}
-
-type OutputSizeProvider interface {
-	OutputSize() (float64, float64)
-}
-
-func ImageToFile(plot graph.Image, name string) (value.Value, error) {
+func ImageToFile(plot graph.Image, context *graph.Context, name string) (value.Value, error) {
 	var buf bytes.Buffer
 	buf.WriteString("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n")
 	w := xmlWriter.NewWithBuffer(&buf)
-	err := CreateSVG(plot, w)
+	err := CreateSVG(plot, context, w)
 	if err != nil {
 		return nil, err
 	}
@@ -730,25 +714,8 @@ func ImageToFile(plot graph.Image, name string) (value.Value, error) {
 	}, nil
 }
 
-func CreateSVG(p graph.Image, w *xmlWriter.XMLWriter) error {
-	width := 800.0
-	height := 600.0
-	if ts, ok := p.(OutputSizeProvider); ok {
-		w, h := ts.OutputSize()
-		if w > 2 && h > 2 {
-			width = w
-			height = h
-		}
-	}
-	textSize := height / 40
-	if ts, ok := p.(TextSizeProvider); ok {
-		s := ts.TextSize()
-		if s > 2 {
-			textSize = s
-		}
-	}
-
-	svg := graph.NewSVG(width, height, textSize, w)
+func CreateSVG(p graph.Image, context *graph.Context, w *xmlWriter.XMLWriter) error {
+	svg := graph.NewSVG(context, w)
 	err := p.DrawTo(svg)
 	if err != nil {
 		return err
