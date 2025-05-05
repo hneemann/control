@@ -13,6 +13,7 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
+	"syscall"
 	"time"
 )
 
@@ -108,7 +109,7 @@ func main() {
 	serv := &http.Server{Addr: ":" + strconv.Itoa(*port), Handler: mux}
 
 	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt)
+	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
 		<-c
 		log.Print("interrupted")
