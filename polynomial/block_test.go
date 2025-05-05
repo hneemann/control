@@ -38,7 +38,7 @@ func TestSimple(t *testing.T) {
 	}
 
 	assert.NoError(t, err)
-	svg := graph.NewSVG(800, 600, 15, xmlWriter.New())
+	svg := graph.NewSVG(&graph.DefaultContext, xmlWriter.New())
 	assert.NoError(t, p.DrawTo(svg))
 	assert.NoError(t, svg.Close())
 

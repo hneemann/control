@@ -267,6 +267,10 @@ func (p Polynomial) Equals(b Polynomial) bool {
 	return true
 }
 
+func (p Polynomial) IsOne() bool {
+	return len(p) == 1 && math.Abs(p[0]-1) < eps
+}
+
 type Roots struct {
 	roots  []complex128
 	factor float64

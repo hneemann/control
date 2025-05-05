@@ -55,8 +55,15 @@ func (l *Linear) intString(parse bool) string {
 	var n string
 	if l.zerosCalculated() {
 		n = l.zeros.intString(parse)
+		if l.Denominator.IsOne() {
+			return n
+		}
 	} else {
-		n = "(" + l.Numerator.intString(parse) + ")"
+		is := l.Numerator.intString(parse)
+		if l.Denominator.IsOne() {
+			return is
+		}
+		n = "(" + is + ")"
 	}
 	var d string
 	if l.polesCalculated() {
@@ -64,8 +71,7 @@ func (l *Linear) intString(parse bool) string {
 	} else {
 		d = l.Denominator.intString(parse)
 	}
-	sp := fmt.Sprintf("%s/(%s)", n, d)
-	return sp
+	return fmt.Sprintf("%s/(%s)", n, d)
 }
 
 func (l *Linear) ToHtml(st funcGen.Stack[value.Value], w *xmlWriter.XMLWriter) error {
@@ -221,6 +227,15 @@ func (l *Linear) Add(b *Linear) (*Linear, error) {
 			Numerator:   n,
 			Denominator: d,
 		}, nil
+	}
+}
+
+func (l *Linear) Derivative() *Linear {
+	n := l.Numerator.Derivative().Mul(l.Denominator).Add(l.Numerator.Mul(l.Denominator.Derivative()).MulFloat(-1))
+	d := l.Denominator.Mul(l.Denominator)
+	return &Linear{
+		Numerator:   n,
+		Denominator: d,
 	}
 }
 

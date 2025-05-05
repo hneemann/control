@@ -225,11 +225,41 @@ func (p Polynomial) ToBool() (bool, bool) {
 }
 
 func (p Polynomial) ToClosure() (funcGen.Function[value.Value], bool) {
-	return funcGen.Function[value.Value]{}, false
+	return funcGen.Function[value.Value]{
+		Func: func(st funcGen.Stack[value.Value], _ []value.Value) (value.Value, error) {
+			if sc, ok := st.Get(0).(Complex); ok {
+				return Complex(p.EvalCplx(complex128(sc))), nil
+			} else if f, ok := st.Get(0).ToFloat(); ok {
+				return value.Float(p.Eval(f)), nil
+			}
+			return nil, fmt.Errorf("eval requires a complex or a float value")
+		},
+		Args:   1,
+		IsPure: true,
+	}, true
 }
 
 func (p Polynomial) GetType() value.Type {
 	return PolynomialValueType
+}
+
+func polyMethods() value.MethodMap {
+	return value.MethodMap{
+		"derivative": value.MethodAtType(0, func(pol Polynomial, st funcGen.Stack[value.Value]) (value.Value, error) {
+			return pol.Derivative(), nil
+		}).SetMethodDescription("calculates the derivative"),
+		"roots": value.MethodAtType(0, func(pol Polynomial, st funcGen.Stack[value.Value]) (value.Value, error) {
+			r, err := pol.Roots()
+			if err != nil {
+				return nil, err
+			}
+			var val []value.Value
+			for _, v := range r.roots {
+				val = append(val, Complex(v))
+			}
+			return value.NewList(val...), nil
+		}).SetMethodDescription("returns the roots. If a pair of complex conjugates is found, only the complex number with positive imaginary part is returned"),
+	}
 }
 
 func (l *Linear) ToList() (*value.List, bool) {
@@ -280,6 +310,15 @@ func linMethods() value.MethodMap {
 		"loop": value.MethodAtType(0, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
 			return lin.Loop()
 		}).SetMethodDescription("closes the loop"),
+		"derivative": value.MethodAtType(0, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
+			return lin.Derivative(), nil
+		}).SetMethodDescription("calculates the derivative"),
+		"numerator": value.MethodAtType(0, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
+			return lin.Numerator, nil
+		}).SetMethodDescription("returns the numerator"),
+		"denominator": value.MethodAtType(0, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
+			return lin.Denominator, nil
+		}).SetMethodDescription("returns the denominator"),
 		"reduce": value.MethodAtType(0, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
 			return lin.Reduce()
 		}).SetMethodDescription("reduces the linear system"),
@@ -393,12 +432,12 @@ func linOperation(name string,
 	num func(a *Linear, fl float64) (value.Value, error)) func(st funcGen.Stack[value.Value], a value.Value, b value.Value) (value.Value, error) {
 
 	return func(st funcGen.Stack[value.Value], a value.Value, b value.Value) (value.Value, error) {
-		if ae, ok := a.(*Linear); ok {
-			if be, ok := b.(*Linear); ok {
-				// both are error values
+		if ae, ok := toLinear(a); ok {
+			if be, ok := toLinear(b); ok {
+				// both are linear systems
 				return f(ae, be)
 			} else {
-				// a is error value, b is'nt
+				// a is linear systems, b is'nt
 				if bf, ok := b.ToFloat(); ok && num != nil {
 					return num(ae, bf)
 				} else {
@@ -406,15 +445,15 @@ func linOperation(name string,
 				}
 			}
 		} else {
-			if be, ok := b.(*Linear); ok {
-				// b is error value, a is'nt
+			if be, ok := toLinear(b); ok {
+				// b is linear systems, a is'nt
 				if af, ok := a.ToFloat(); ok && num != nil {
 					return num(be, af)
 				} else {
 					return nil, fmt.Errorf("%s operation not allowed with %v and %v ", name, a, b)
 				}
 			} else {
-				// no error value at all
+				// no linear systems at all
 				return def(st, a, b)
 			}
 		}
@@ -422,15 +461,15 @@ func linOperation(name string,
 }
 
 func div(st funcGen.Stack[value.Value], a value.Value, b value.Value) (value.Value, error) {
-	if aLin, ok := a.(*Linear); ok {
-		if bLin, ok := b.(*Linear); ok {
+	if aLin, ok := toLinear(a); ok {
+		if bLin, ok := toLinear(b); ok {
 			return aLin.Div(bLin), nil
 		} else {
 			if bFl, ok := b.ToFloat(); ok {
 				return aLin.MulFloat(1 / bFl), nil
 			}
 		}
-	} else if bLin, ok := b.(*Linear); ok {
+	} else if bLin, ok := toLinear(b); ok {
 		if aFl, ok := a.ToFloat(); ok {
 			return bLin.Inv().MulFloat(aFl), nil
 		}
@@ -440,15 +479,15 @@ func div(st funcGen.Stack[value.Value], a value.Value, b value.Value) (value.Val
 }
 
 func sub(st funcGen.Stack[value.Value], a value.Value, b value.Value) (value.Value, error) {
-	if aLin, ok := a.(*Linear); ok {
-		if bLin, ok := b.(*Linear); ok {
+	if aLin, ok := toLinear(a); ok {
+		if bLin, ok := toLinear(b); ok {
 			return aLin.Add(bLin.MulFloat(-1))
 		} else {
 			if bFl, ok := b.ToFloat(); ok {
 				return aLin.Add(NewConst(-bFl))
 			}
 		}
-	} else if bLin, ok := b.(*Linear); ok {
+	} else if bLin, ok := toLinear(b); ok {
 		if aFl, ok := a.ToFloat(); ok {
 			return NewConst(aFl).Add(bLin.MulFloat(-1))
 		}
@@ -616,8 +655,19 @@ func getLinear(st funcGen.Stack[value.Value], i int) (*Linear, bool) {
 	return nil, false
 }
 
+func toLinear(v value.Value) (*Linear, bool) {
+	if l, ok := v.(*Linear); ok {
+		return l, true
+	}
+	if p, ok := v.(Polynomial); ok {
+		return &Linear{Numerator: p, Denominator: Polynomial{1}}, true
+	}
+	return nil, false
+}
+
 var Parser = value.New().
 	RegisterMethods(LinearValueType, linMethods()).
+	RegisterMethods(PolynomialValueType, polyMethods()).
 	RegisterMethods(BodeValueType, bodeMethods()).
 	RegisterMethods(ComplexValueType, cmplxMethods()).
 	RegisterMethods(TwoPortValueType, twoPortMethods()).

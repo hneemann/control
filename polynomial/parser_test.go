@@ -16,7 +16,12 @@ func TestLinear(t *testing.T) {
 		exp  string
 		res  any
 	}{
-		{name: "poly", exp: "let p=poly(1,2,3); string(p)", res: value.String("3s²+2s+1")},
+		{name: "poly1", exp: "let p=poly(1,2,3); string(p)", res: value.String("3s²+2s+1")},
+		{name: "poly2", exp: "let p=poly(1,2,3); string(p.derivative())", res: value.String("6s+2")},
+		{name: "poly3", exp: "let p=poly(1,2,3); p(1)", res: value.Float(6)},
+		{name: "poly4", exp: "let p1=poly(1,2,3);let p2=poly(1,3); string(p1*p2)", res: value.String("9s³+9s²+5s+1")},
+		{name: "poly5", exp: "let p=poly(1,0,1); string(p.roots())", res: value.String("[(-0+1i)]")},
+		{name: "poly6", exp: "let p=poly(-1,0,1); string(p.roots())", res: value.String("[(1+0i), (-1+0i)]")},
 		{name: "linPoly", exp: "let n=poly(1,2); let d=poly(1,2,3);string(lin(n,d))", res: value.String("(2s+1)/(3s²+2s+1)")},
 		{name: "linPoly2", exp: "let n=poly(2,3,1); let d=poly(24,26,9,1);string(lin(n,d).reduce())", res: value.String("(s+1)/((s+3)*(s+4))")},
 

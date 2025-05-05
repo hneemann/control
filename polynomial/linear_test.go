@@ -107,6 +107,22 @@ func addRoots(t *testing.T, a *Linear) (*Linear, *Linear, *Linear, *Linear) {
 		&Linear{Numerator: a.Numerator, zeros: nr, Denominator: a.Denominator, poles: dr}
 }
 
+func TestLinear_Deriv(t *testing.T) {
+	lin := &Linear{
+		Numerator:   Polynomial{1, 3},
+		Denominator: Polynomial{1, 2, 3},
+	}
+
+	// externally checked
+	expected := &Linear{
+		Numerator:   Polynomial{1, -6, -9},
+		Denominator: Polynomial{1, 4, 10, 12, 9},
+	}
+
+	derivative := lin.Derivative()
+	assert.True(t, expected.Equals(derivative))
+}
+
 func TestFromRoots(t *testing.T) {
 	tests := []struct {
 		name        string
@@ -303,7 +319,7 @@ func Test_Evans7(t *testing.T) {
 
 func exportPlot(pl graph.Image, name string) error {
 	w := xmlWriter.New()
-	c := graph.NewSVG(800, 600, 15, w)
+	c := graph.NewSVG(&graph.DefaultContext, w)
 	pl.DrawTo(c)
 	c.Close()
 
