@@ -17,8 +17,6 @@ import (
 	"time"
 )
 
-type persist struct{}
-
 func retry(count int, delay time.Duration, task func() bool) bool {
 	for i := range count {
 		if i > 0 {
@@ -31,6 +29,8 @@ func retry(count int, delay time.Duration, task func() bool) bool {
 	}
 	return false
 }
+
+type persist struct{}
 
 func (p persist) Load(f fileSys.FileSystem) (*data.UserData, error) {
 	r, err := f.Reader("data.json")
@@ -111,8 +111,8 @@ func main() {
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
-		<-c
-		log.Print("interrupted")
+		sig := <-c
+		log.Print("terminated by signal ", sig.String())
 
 		err := serv.Shutdown(context.Background())
 		if err != nil {
