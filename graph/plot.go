@@ -645,7 +645,7 @@ func NewLogParameterFunc(tMin, tMax float64) *ParameterFunc {
 }
 
 func (p *ParameterFunc) String() string {
-	return fmt.Sprintf("Parameter curve with %d points", p.Points)
+	return "Parameter curve"
 }
 
 func (p *ParameterFunc) PreferredBounds(_, _ Bounds) (Bounds, Bounds, error) {
