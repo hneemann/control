@@ -361,42 +361,19 @@ func (f Function) PreferredBounds(xGiven, _ Bounds) (Bounds, Bounds, error) {
 	return Bounds{}, Bounds{}, nil
 }
 
-type funcPath struct {
-	f func(x float64) (float64, error)
-	r Rect
-	e error
-}
-
-func (f *funcPath) Iter(yield func(rune, Point) bool) {
-	width := f.r.Width()
-	xo := f.r.Min.X
-	for i := 0; i <= functionSteps; i++ {
-		x := xo + width*float64(i)/functionSteps
-		y, err := f.f(x)
-		if err != nil {
-			f.e = err
-			return
-		}
-		mode := 'L'
-		if i == 0 {
-			mode = 'M'
-		}
-		if !yield(mode, Point{x, y}) {
-			return
-		}
+func (f Function) DrawTo(plot *Plot, canvas Canvas) error {
+	r := canvas.Rect()
+	p := NewLinearParameterFunc(r.Min.X, r.Max.X)
+	p.Func = func(x float64) (Point, error) {
+		y, err := f.Function(x)
+		return Point{x, y}, err
 	}
-}
-
-func (f *funcPath) IsClosed() bool {
-	return false
-}
-
-func (f Function) DrawTo(_ *Plot, canvas Canvas) error {
-	path := funcPath{
-		f: f.Function,
-		r: canvas.Rect(),
+	path := pFuncPath{
+		pf:   p,
+		plot: plot,
+		r:    r,
 	}
-	canvas.DrawPath(canvas.Rect().IntersectPath(&path), f.Style)
+	canvas.DrawPath(r.IntersectPath(&path), f.Style)
 	return path.e
 }
 
