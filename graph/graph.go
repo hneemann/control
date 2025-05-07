@@ -264,12 +264,12 @@ type Canvas interface {
 	Rect() Rect
 }
 
-type SplitImage struct {
+type SplitHorizontal struct {
 	Top    Image
 	Bottom Image
 }
 
-func (s SplitImage) DrawTo(canvas Canvas) error {
+func (s SplitHorizontal) DrawTo(canvas Canvas) error {
 	r := canvas.Rect()
 	half := (r.Min.Y + r.Max.Y) / 2
 	bottom := TransformCanvas{transform: Translate(Point{0, 0}), parent: canvas, size: Rect{Min: r.Min, Max: Point{r.Max.X, half}}}
@@ -280,6 +280,24 @@ func (s SplitImage) DrawTo(canvas Canvas) error {
 		return err
 	}
 	return s.Bottom.DrawTo(bottom)
+}
+
+type SplitVertical struct {
+	Left  Image
+	Right Image
+}
+
+func (s SplitVertical) DrawTo(canvas Canvas) error {
+	r := canvas.Rect()
+	half := (r.Min.X + r.Max.X) / 2
+	left := TransformCanvas{transform: Translate(Point{0, 0}), parent: canvas, size: Rect{Min: r.Min, Max: Point{half, r.Max.Y}}}
+	right := TransformCanvas{transform: Translate(Point{0, 0}), parent: canvas, size: Rect{Min: Point{half, r.Min.Y}, Max: r.Max}}
+
+	err := s.Left.DrawTo(left)
+	if err != nil {
+		return err
+	}
+	return s.Right.DrawTo(right)
 }
 
 type PathElement struct {

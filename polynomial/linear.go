@@ -728,7 +728,7 @@ type BodePlot struct {
 	wMin, wMax float64
 	amplitude  *graph.Plot
 	phase      *graph.Plot
-	bode       graph.SplitImage
+	bode       graph.SplitHorizontal
 }
 
 func (b *BodePlot) DrawTo(canvas graph.Canvas) error {
@@ -802,7 +802,7 @@ func NewBode(wMin, wMax float64) *BodePlot {
 	}
 	b := BodePlot{wMin, wMax,
 		amplitude, phase,
-		graph.SplitImage{Top: amplitude, Bottom: phase}}
+		graph.SplitHorizontal{Top: amplitude, Bottom: phase}}
 	return &b
 }
 

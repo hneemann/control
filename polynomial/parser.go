@@ -511,8 +511,13 @@ type BodePlotValue struct {
 	context graph.Context
 }
 
+func (b BodePlotValue) ToImage() graph.Image {
+	return b.Value.bode
+}
+
 var (
-	_ export.ToHtmlInterface = BodePlotValue{}
+	_ export.ToHtmlInterface    = BodePlotValue{}
+	_ grParser.ToImageInterface = BodePlotValue{}
 )
 
 func (b BodePlotValue) DrawTo(canvas graph.Canvas) error {

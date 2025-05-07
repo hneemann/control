@@ -48,19 +48,80 @@ const (
 	PlotType        value.Type = 20
 	PlotContentType value.Type = 21
 	StyleType       value.Type = 22
+	ImageType       value.Type = 23
 )
+
+type ToImageInterface interface {
+	ToImage() graph.Image
+}
+
+type ImageValue struct {
+	Holder[graph.Image]
+	context graph.Context
+}
+
+func (i ImageValue) ToImage() graph.Image {
+	return i.Value
+}
+
+func (i ImageValue) GetType() value.Type {
+	return ImageType
+}
+
+func (i ImageValue) ToHtml(_ funcGen.Stack[value.Value], w *xmlWriter.XMLWriter) error {
+	return CreateSVG(i.Value, &i.context, w)
+}
+
+var (
+	_ export.ToHtmlInterface = ImageValue{}
+	_ ToImageInterface       = ImageValue{}
+)
+
+func createImageMethods() value.MethodMap {
+	return value.MethodMap{
+		"file": value.MethodAtType(1, func(im ImageValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			if str, ok := stack.Get(1).(value.String); ok {
+				return ImageToFile(im.Value, &im.context, string(str))
+			} else {
+				return nil, fmt.Errorf("file requires a string")
+			}
+		}).SetMethodDescription("name", "Enables download"),
+		"textSize": value.MethodAtType(1, func(im ImageValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			if si, ok := stack.Get(1).ToFloat(); ok {
+				im.context.TextSize = si
+				return im, nil
+			}
+			return nil, fmt.Errorf("textSize requires a float values")
+		}).SetMethodDescription("size", "Sets the text size"),
+		"outputSize": value.MethodAtType(2, func(im ImageValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			if width, ok := stack.Get(1).ToFloat(); ok {
+				if height, ok := stack.Get(2).ToFloat(); ok {
+					im.context.Width = width
+					im.context.Height = height
+					return im, nil
+				}
+			}
+			return nil, fmt.Errorf("outputSize requires two float values")
+		}).SetMethodDescription("width", "height", "Sets the svg-output size"),
+	}
+}
 
 type PlotValue struct {
 	Holder[*graph.Plot]
 	context graph.Context
 }
 
-func (p PlotValue) ToHtml(st funcGen.Stack[value.Value], w *xmlWriter.XMLWriter) error {
+func (p PlotValue) ToImage() graph.Image {
+	return p.Value
+}
+
+func (p PlotValue) ToHtml(_ funcGen.Stack[value.Value], w *xmlWriter.XMLWriter) error {
 	return CreateSVG(p, &p.context, w)
 }
 
 var (
 	_ export.ToHtmlInterface = PlotValue{}
+	_ ToImageInterface       = PlotValue{}
 )
 
 func (p PlotValue) DrawTo(canvas graph.Canvas) error {
@@ -360,6 +421,7 @@ func Setup(fg *value.FunctionGenerator) {
 	fg.RegisterMethods(PlotType, createPlotMethods())
 	fg.RegisterMethods(PlotContentType, createPlotContentMethods())
 	fg.RegisterMethods(StyleType, createStyleMethods())
+	fg.RegisterMethods(ImageType, createImageMethods())
 	export.AddZipHelpers(fg)
 	fg.AddConstant("black", StyleValue{Holder[*graph.Style]{graph.Black}, defSize})
 	fg.AddConstant("green", StyleValue{Holder[*graph.Style]{graph.Green}, defSize})
@@ -633,6 +695,44 @@ func Setup(fg *value.FunctionGenerator) {
 		Args:   7,
 		IsPure: true,
 	}.SetDescription("x1", "y1", "x2", "y2", "text", "marker", "color", "Creates a new scatter dataset").VarArgs(5, 7))
+	fg.AddStaticFunction("splitHorizontal", funcGen.Function[value.Value]{
+		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
+			if i1, ok := st.Get(0).(ToImageInterface); ok {
+				if i2, ok := st.Get(1).(ToImageInterface); ok {
+					im := graph.SplitHorizontal{
+						Top:    i1.ToImage(),
+						Bottom: i2.ToImage(),
+					}
+					return ImageValue{
+						Holder:  Holder[graph.Image]{im},
+						context: graph.DefaultContext,
+					}, nil
+				}
+			}
+			return nil, fmt.Errorf("hintDir requires four floats and a string")
+		},
+		Args:   2,
+		IsPure: true,
+	}.SetDescription("image1", "image2", "Combines two images by a horizontal splitting"))
+	fg.AddStaticFunction("splitVertical", funcGen.Function[value.Value]{
+		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
+			if i1, ok := st.Get(0).(ToImageInterface); ok {
+				if i2, ok := st.Get(1).(ToImageInterface); ok {
+					im := graph.SplitVertical{
+						Left:  i1.ToImage(),
+						Right: i2.ToImage(),
+					}
+					return ImageValue{
+						Holder:  Holder[graph.Image]{im},
+						context: graph.DefaultContext,
+					}, nil
+				}
+			}
+			return nil, fmt.Errorf("hintDir requires four floats and a string")
+		},
+		Args:   2,
+		IsPure: true,
+	}.SetDescription("image1", "image2", "Combines two images by a horizontal splitting"))
 }
 
 func GetStyle(st funcGen.Stack[value.Value], index int, defStyle *graph.Style) (StyleValue, error) {
