@@ -15,10 +15,10 @@ plot(
  function( x->sin(pi*x) )
 )</example>
     <example name="Graph 2" desc="Funktionsplotter">plot(
- function( x->sin(pi*x), black, "sin(x)"),
- function( x->cos(pi*x), blue,  "cos(x)"),
- function( x->tan(pi*x), red,   "tan(x)")
-).xBounds(0,2).yBounds(-2,2)</example>
+ function( x->sin(x), black, "sin(x)"),
+ function( x->cos(x), blue,  "cos(x)"),
+ function( x->tan(x), red,   "tan(x)")
+).xBounds(0,2*pi).yBounds(-2,2)</example>
     <example name="Ortskurve" desc="Darstellung der Ortskurve">let s = lin();
 let g = 3/((s+1)*(s+2));
 
