@@ -338,7 +338,7 @@ type Function struct {
 	Style    *Style
 }
 
-const functionSteps = 200
+const functionSteps = 100
 
 func (f Function) String() string {
 	return "Function"
@@ -674,13 +674,17 @@ func (p *ParameterFunc) DrawTo(plot *Plot, canvas Canvas) error {
 }
 
 type pFuncPath struct {
-	pf   *ParameterFunc
-	plot *Plot
-	r    Rect
-	e    error
+	pf      *ParameterFunc
+	plot    *Plot
+	r       Rect
+	e       error
+	maxDist float64
 }
 
 func (p *pFuncPath) Iter(yield func(rune, Point) bool) {
+	if p.maxDist == 0 {
+		p.maxDist = p.plot.canvas.Rect().Width() / functionSteps * 2
+	}
 	pf := p.pf
 	t0 := pf.InitialT
 	p0, err := pf.Func(t0)
@@ -717,7 +721,7 @@ func (p *pFuncPath) IsClosed() bool {
 }
 
 func (p *pFuncPath) refine(w0 float64, p0 Point, w1 float64, p1 Point, yield func(rune, Point) bool, depth int) bool {
-	if p.plot.Dist(p0, p1) > 5 && depth > 0 {
+	if p.plot.Dist(p0, p1) > p.maxDist && depth > 0 {
 		w := (w0 + w1) / 2
 		point, err := p.pf.Func(w)
 		if err != nil {
