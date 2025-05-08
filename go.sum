@@ -24,8 +24,8 @@ github.com/hneemann/iterator v0.0.0-20240630073221-aab15310e28c h1:itki31EzEjJar
 github.com/hneemann/iterator v0.0.0-20240630073221-aab15310e28c/go.mod h1:Y4LjHwBja9p9vaWnjpEzDorwPp/9UcDmycAJPX6WBEI=
 github.com/hneemann/parser2 v0.0.0-20250429183911-7aed5ff4b6f4 h1:Og8xwzAhJrnq4nZK5wMrqR0mdl3MxpWPRzu9pHpXwnk=
 github.com/hneemann/parser2 v0.0.0-20250429183911-7aed5ff4b6f4/go.mod h1:SS7YsssqCfYO9w+HMtAff0UDfXqdjkq2rhElFNl7tZ4=
-github.com/hneemann/session v0.0.0-20250502091328-02aac0ec2a2f h1:JkWFiJHkK7KBoUg/EW5wjpD4K3ZXFnFZzncQLVCQOhg=
-github.com/hneemann/session v0.0.0-20250502091328-02aac0ec2a2f/go.mod h1:ldjS1vGSjejww/dhUCgNtxEPL0u4fCGvXJAfHUSKJbo=
+github.com/hneemann/session v0.0.0-20250506050838-17caf730c285 h1:Z636Qe5KKVVm5dclqxXlFw4BxVxneY8vFTJ5Lh5Mg3I=
+github.com/hneemann/session v0.0.0-20250506050838-17caf730c285/go.mod h1:ldjS1vGSjejww/dhUCgNtxEPL0u4fCGvXJAfHUSKJbo=
 github.com/jeremija/gosubmit v0.2.8 h1:mmSITBz9JxVtu8eqbN+zmmwX7Ij2RidQxhcwRVI4wqA=
 github.com/jeremija/gosubmit v0.2.8/go.mod h1:Ui+HS073lCFREXBbdfrJzMB57OI/bdxTiLtrDHHhFPI=
 github.com/kr/pretty v0.3.1 h1:flRD4NNwYAUpkphVc1HcthR4KEIFJ65n8Mw5qdRn3LE=
