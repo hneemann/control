@@ -800,7 +800,15 @@ func NewBode(wMin, wMax float64) *BodePlot {
 		YLabel:       "Phase [°]",
 		YLabelExtend: true,
 	}
-	b := BodePlot{wMin, wMax,
+
+	// compensate expansion of x-axis to make the graphs fill the complete x-range
+	logMin := math.Log10(wMin)
+	logMax := math.Log10(wMax)
+	delta := (logMax - logMin) * 0.02
+	logMin -= delta
+	logMax += delta
+
+	b := BodePlot{math.Pow(10, logMin), math.Pow(10, logMax),
 		amplitude, phase,
 		graph.SplitHorizontal{Top: amplitude, Bottom: phase}}
 	return &b
