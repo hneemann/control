@@ -39,6 +39,7 @@ type Plot struct {
 	LeftBorder     float64
 	RightBorder    float64
 	Grid           *Style
+	Frame          *Style
 	Title          string
 	XLabel         string
 	YLabel         string
@@ -159,8 +160,13 @@ func (p *Plot) DrawTo(canvas Canvas) error {
 	large := textSize / 2
 	small := textSize / 4
 
-	thickLine := Black.SetStrokeWidth(2)
-	thinLine := Black.SetStrokeWidth(1)
+	var thinLine *Style
+	if p.Frame != nil {
+		thinLine = p.Frame
+	} else {
+		thinLine = Black
+	}
+	thickLine := thinLine.SetStrokeWidth(thinLine.StrokeWidth * 2)
 
 	for _, tick := range xTicks {
 		xp := xTrans(tick.Position)

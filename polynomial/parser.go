@@ -616,6 +616,15 @@ func bodeMethods() value.MethodMap {
 			}
 			return plot, nil
 		}).SetMethodDescription("color", "Adds a grid").VarArgsMethod(0, 1),
+		"frame": value.MethodAtType(1, func(plot BodePlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			if styleVal, ok := stack.Get(1).(grParser.StyleValue); ok {
+				plot.Value.amplitude.Grid = styleVal.Value
+				plot.Value.phase.Grid = styleVal.Value
+				return plot, nil
+			} else {
+				return nil, fmt.Errorf("frame requires a style")
+			}
+		}).SetMethodDescription("color", "Sets the frame color"),
 		"ampModify": value.MethodAtType(1, func(bode BodePlotValue, st funcGen.Stack[value.Value]) (value.Value, error) {
 			if cl, ok := st.Get(1).ToClosure(); ok {
 				a, err := cl.Eval(st, grParser.NewPlotValue(bode.Value.amplitude))

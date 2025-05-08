@@ -261,6 +261,14 @@ func createPlotMethods() value.MethodMap {
 			plot.Value.Grid = styleVal.Value
 			return plot, nil
 		}).SetMethodDescription("color", "Adds a grid").VarArgsMethod(0, 1),
+		"frame": value.MethodAtType(1, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			if styleVal, ok := stack.Get(1).(StyleValue); ok {
+				plot.Value.Frame = styleVal.Value
+				return plot, nil
+			} else {
+				return nil, fmt.Errorf("frame requires a style")
+			}
+		}).SetMethodDescription("color", "Sets the frame color"),
 		"file": value.MethodAtType(1, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if str, ok := stack.Get(1).(value.String); ok {
 				return ImageToFile(plot, &plot.context, string(str))
