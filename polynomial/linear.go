@@ -728,7 +728,6 @@ func (ec *evansCurves) String() string {
 
 func (ec *evansCurves) refine(p1 evansPoint, p2 evansPoint, m metric, maxDist float64, depth int) error {
 	if depth > 0 && p1.dist(p2, m) > maxDist {
-		fmt.Println("refine", p1.gain, p2.gain)
 		nk := (p1.gain + p2.gain) / 2
 		points, err := ec.l.getPoles(nk, ec.poleCount)
 		if err != nil {
