@@ -229,6 +229,10 @@ func (p *Plot) DrawTo(canvas Canvas) error {
 	return nil
 }
 
+func (p *Plot) GetTransform() Transform {
+	return p.trans
+}
+
 func (p *Plot) GetXTicks() []Tick {
 	return p.xTicks
 }

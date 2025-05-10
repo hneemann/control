@@ -204,6 +204,13 @@ func (p Polynomial) MulFloat(f float64) Polynomial {
 	return mp
 }
 
+func (p Polynomial) AddFloat(f float64) Polynomial {
+	mp := make(Polynomial, len(p))
+	copy(mp, p)
+	mp[0] += f
+	return mp
+}
+
 func (p Polynomial) Normalize() Polynomial {
 	poly := p.Canonical()
 	mp := make(Polynomial, len(poly))

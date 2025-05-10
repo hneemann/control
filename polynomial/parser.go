@@ -52,7 +52,7 @@ func (c Complex) ToFloat() (float64, bool) {
 	return 0, false
 }
 
-func (c Complex) ToString(st funcGen.Stack[value.Value]) (string, error) {
+func (c Complex) ToString(_ funcGen.Stack[value.Value]) (string, error) {
 	return fmt.Sprintf("%v", c), nil
 }
 
@@ -166,38 +166,6 @@ func twoPortMethods() value.MethodMap {
 	}
 }
 
-func complexOperation(name string,
-	def func(st funcGen.Stack[value.Value], a value.Value, b value.Value) (value.Value, error),
-	f func(a, b Complex) (value.Value, error)) func(st funcGen.Stack[value.Value], a value.Value, b value.Value) (value.Value, error) {
-	return func(st funcGen.Stack[value.Value], a value.Value, b value.Value) (value.Value, error) {
-		if ae, ok := a.(Complex); ok {
-			if be, ok := b.(Complex); ok {
-				// both are error values
-				return f(ae, be)
-			} else {
-				// a is Complex value, b is'nt
-				if bf, ok := b.ToFloat(); ok {
-					return f(ae, Complex(complex(bf, 0)))
-				} else {
-					return nil, fmt.Errorf("%s operation not allowed with %v and %v ", name, a, b)
-				}
-			}
-		} else {
-			if be, ok := b.(Complex); ok {
-				// b is complex value, a is'nt
-				if af, ok := a.ToFloat(); ok {
-					return f(Complex(complex(af, 0)), be)
-				} else {
-					return nil, fmt.Errorf("%s operation not allowed with %v and %v ", name, a, b)
-				}
-			} else {
-				// no error value at all
-				return def(st, a, b)
-			}
-		}
-	}
-}
-
 func (p Polynomial) ToList() (*value.List, bool) {
 	return value.NewListConvert(func(i float64) value.Value {
 		return value.Float(i)
@@ -216,7 +184,7 @@ func (p Polynomial) ToFloat() (float64, bool) {
 	return 0, false
 }
 
-func (p Polynomial) ToString(st funcGen.Stack[value.Value]) (string, error) {
+func (p Polynomial) ToString(_ funcGen.Stack[value.Value]) (string, error) {
 	return p.String(), nil
 }
 
@@ -278,7 +246,7 @@ func (l *Linear) ToFloat() (float64, bool) {
 	return 0, false
 }
 
-func (l *Linear) ToString(st funcGen.Stack[value.Value]) (string, error) {
+func (l *Linear) ToString(_ funcGen.Stack[value.Value]) (string, error) {
 	return l.String(), nil
 }
 
@@ -426,86 +394,6 @@ func linMethods() value.MethodMap {
 	}
 }
 
-func linOperation(name string,
-	def func(st funcGen.Stack[value.Value], a value.Value, b value.Value) (value.Value, error),
-	f func(a, b *Linear) (value.Value, error),
-	num func(a *Linear, fl float64) (value.Value, error)) func(st funcGen.Stack[value.Value], a value.Value, b value.Value) (value.Value, error) {
-
-	return func(st funcGen.Stack[value.Value], a value.Value, b value.Value) (value.Value, error) {
-		if ae, ok := toLinear(a); ok {
-			if be, ok := toLinear(b); ok {
-				// both are linear systems
-				return f(ae, be)
-			} else {
-				// a is linear systems, b is'nt
-				if bf, ok := b.ToFloat(); ok && num != nil {
-					return num(ae, bf)
-				} else {
-					return nil, fmt.Errorf("%s operation not allowed with %v and %v ", name, a, b)
-				}
-			}
-		} else {
-			if be, ok := toLinear(b); ok {
-				// b is linear systems, a is'nt
-				if af, ok := a.ToFloat(); ok && num != nil {
-					return num(be, af)
-				} else {
-					return nil, fmt.Errorf("%s operation not allowed with %v and %v ", name, a, b)
-				}
-			} else {
-				// no linear systems at all
-				return def(st, a, b)
-			}
-		}
-	}
-}
-
-func div(st funcGen.Stack[value.Value], a value.Value, b value.Value) (value.Value, error) {
-	if aLin, ok := toLinear(a); ok {
-		if bLin, ok := toLinear(b); ok {
-			return aLin.Div(bLin), nil
-		} else {
-			if bFl, ok := b.ToFloat(); ok {
-				return aLin.MulFloat(1 / bFl), nil
-			}
-		}
-	} else if bLin, ok := toLinear(b); ok {
-		if aFl, ok := a.ToFloat(); ok {
-			return bLin.Inv().MulFloat(aFl), nil
-		}
-	}
-
-	return value.Div(st, a, b)
-}
-
-func sub(st funcGen.Stack[value.Value], a value.Value, b value.Value) (value.Value, error) {
-	if aLin, ok := toLinear(a); ok {
-		if bLin, ok := toLinear(b); ok {
-			return aLin.Add(bLin.MulFloat(-1))
-		} else {
-			if bFl, ok := b.ToFloat(); ok {
-				return aLin.Add(NewConst(-bFl))
-			}
-		}
-	} else if bLin, ok := toLinear(b); ok {
-		if aFl, ok := a.ToFloat(); ok {
-			return NewConst(aFl).Add(bLin.MulFloat(-1))
-		}
-	}
-
-	return value.Sub(st, a, b)
-}
-
-func exp(st funcGen.Stack[value.Value], a value.Value, b value.Value) (value.Value, error) {
-	if aLin, ok := a.(*Linear); ok {
-		if bInt, ok := b.(value.Int); ok {
-			return aLin.Pow(int(bInt)), nil
-		}
-	}
-
-	return value.Pow(st, a, b)
-}
-
 type BodePlotValue struct {
 	grParser.Holder[*BodePlot]
 	context graph.Context
@@ -528,11 +416,9 @@ func (b BodePlotValue) GetType() value.Type {
 	return BodeValueType
 }
 
-func (b BodePlotValue) ToHtml(st funcGen.Stack[value.Value], w *xmlWriter.XMLWriter) error {
+func (b BodePlotValue) ToHtml(_ funcGen.Stack[value.Value], w *xmlWriter.XMLWriter) error {
 	return grParser.CreateSVG(b, &b.context, w)
 }
-
-var defStyleValue = grParser.StyleValue{grParser.Holder[*graph.Style]{graph.Black}, 4}
 
 func bodeMethods() value.MethodMap {
 	return value.MethodMap{
@@ -590,18 +476,18 @@ func bodeMethods() value.MethodMap {
 			return nil, errors.New("addWithLatency requires a linear system, a latency, a color and a legend")
 		}).SetMethodDescription("lin", "Tt", "color", "label", "adds a linear system with latency to the bode plot").VarArgsMethod(2, 4).Pure(false),
 		"aBounds": value.MethodAtType(2, func(bode BodePlotValue, st funcGen.Stack[value.Value]) (value.Value, error) {
-			if min, ok := st.Get(1).ToFloat(); ok {
-				if max, ok := st.Get(2).ToFloat(); ok {
-					bode.Value.SetAmplitudeBounds(min, max)
+			if aMin, ok := st.Get(1).ToFloat(); ok {
+				if aMax, ok := st.Get(2).ToFloat(); ok {
+					bode.Value.SetAmplitudeBounds(aMin, aMax)
 					return bode, nil
 				}
 			}
 			return nil, errors.New("aBounds requires two float values")
 		}).SetMethodDescription("min", "max", "sets the amplitude bounds").Pure(false),
 		"pBounds": value.MethodAtType(2, func(bode BodePlotValue, st funcGen.Stack[value.Value]) (value.Value, error) {
-			if min, ok := st.Get(1).ToFloat(); ok {
-				if max, ok := st.Get(2).ToFloat(); ok {
-					bode.Value.SetPhaseBounds(min, max)
+			if aMin, ok := st.Get(1).ToFloat(); ok {
+				if aMax, ok := st.Get(2).ToFloat(); ok {
+					bode.Value.SetPhaseBounds(aMin, aMax)
 					return bode, nil
 				}
 			}
@@ -663,18 +549,11 @@ func getLinear(st funcGen.Stack[value.Value], i int) (*Linear, bool) {
 	if l, ok := v.(*Linear); ok {
 		return l, true
 	}
-	if f, ok := v.ToFloat(); ok {
-		return NewConst(f), true
-	}
-	return nil, false
-}
-
-func toLinear(v value.Value) (*Linear, bool) {
-	if l, ok := v.(*Linear); ok {
-		return l, true
-	}
 	if p, ok := v.(Polynomial); ok {
 		return &Linear{Numerator: p, Denominator: Polynomial{1}}, true
+	}
+	if f, ok := v.ToFloat(); ok {
+		return NewConst(f), true
 	}
 	return nil, false
 }
@@ -694,10 +573,7 @@ var Parser = value.New().
 	AddStaticFunction("lin", funcGen.Function[value.Value]{
 		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
 			if stack.Size() == 0 {
-				return &Linear{
-					Numerator:   Polynomial{0, 1},
-					Denominator: Polynomial{1},
-				}, nil
+				return Polynomial{0, 1}, nil
 			} else if stack.Size() == 2 {
 				if np, ok := stack.Get(0).(Polynomial); ok {
 					if dp, ok := stack.Get(1).(Polynomial); ok {
@@ -713,7 +589,7 @@ var Parser = value.New().
 		},
 		Args:   -1,
 		IsPure: true,
-	}.SetDescription("a linear system 's'")).
+	}.SetDescription("a linear system in 's'")).
 	AddStaticFunction("cmplx", funcGen.Function[value.Value]{
 		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
 			if re, ok := stack.Get(0).ToFloat(); ok {
@@ -741,16 +617,6 @@ var Parser = value.New().
 		Args:   -1,
 		IsPure: true,
 	}.SetDescription("", "declares a polynomial")).
-	AddStaticFunction("linConst", funcGen.Function[value.Value]{
-		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
-			if c, ok := stack.Get(0).ToFloat(); ok {
-				return NewConst(c), nil
-			}
-			return nil, fmt.Errorf("linConst requires a float value")
-		},
-		Args:   1,
-		IsPure: true,
-	}.SetDescription("val", "converts a constant to a linear system")).
 	AddStaticFunction("pid", funcGen.Function[value.Value]{
 		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
 			if kp, ok := stack.Get(0).ToFloat(); ok {
@@ -799,9 +665,9 @@ var Parser = value.New().
 	}.SetDescription("func", "initial", "delta", "iterations", "calculates a Nelder&Mead optimization").VarArgs(2, 4)).
 	AddStaticFunction("blockLimiter", funcGen.Function[value.Value]{
 		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
-			if min, ok := stack.Get(0).ToFloat(); ok {
-				if max, ok := stack.Get(1).ToFloat(); ok {
-					return BlockFactoryValue{grParser.Holder[BlockFactory]{Limit(math.Min(min, max), math.Max(min, max))}}, nil
+			if aMin, ok := stack.Get(0).ToFloat(); ok {
+				if aMax, ok := stack.Get(1).ToFloat(); ok {
+					return BlockFactoryValue{grParser.Holder[BlockFactory]{Limit(math.Min(aMin, aMax), math.Max(aMin, aMax))}}, nil
 				}
 			}
 			return nil, fmt.Errorf("blockLimiter requires 2 float values")
@@ -839,7 +705,7 @@ var Parser = value.New().
 	}.SetDescription("k_p", "T_I", "T_D", "a PID block").VarArgs(2, 3)).
 	AddStaticFunction("tpCascade", funcGen.Function[value.Value]{
 		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
-			tpl := []*TwoPort{}
+			var tpl []*TwoPort
 			for i := 0; i < stack.Size(); i++ {
 				if _, ok := stack.Get(i).(*TwoPort); ok {
 					tpl = append(tpl, stack.Get(i).(*TwoPort))
@@ -894,47 +760,263 @@ var Parser = value.New().
 		Args:   2,
 		IsPure: true,
 	}.SetDescription("def", "tMax", "simulates the given model")).
-	AddOp("*", true, complexOperation("*", linOperation("*", value.Mul,
-		func(a, b *Linear) (value.Value, error) {
-			return a.Mul(b), nil
-		},
-		func(a *Linear, f float64) (value.Value, error) {
-			return a.MulFloat(f), nil
-		}), func(a, b Complex) (value.Value, error) {
-		return a * b, nil
-	}),
-	).
-	AddOp("/", false, complexOperation("/", div, func(a, b Complex) (value.Value, error) {
-		return a / b, nil
-	})).
-	AddOp("-", false, complexOperation("-", sub, func(a, b Complex) (value.Value, error) {
-		return a - b, nil
-	})).
-	AddOp("^", false, exp).
-	AddOp("+", false, complexOperation("+", linOperation("+", value.Add,
-		func(a, b *Linear) (value.Value, error) {
-			return a.Add(b)
-		},
-		func(a *Linear, f float64) (value.Value, error) {
-			return a.Add(NewConst(f))
-		}), func(a, b Complex) (value.Value, error) {
-		return a + b, nil
-	},
-	))
+	AddOp("^", false, createExp()).
+	AddOp("*", true, createMul()).
+	AddOp("/", false, createDiv()).
+	AddOp("-", false, createSub()).
+	AddOp("+", false, createAdd())
 
-func getComplex(stack funcGen.Stack[value.Value], i int) (complex128, error) {
-	var z complex128
-	v := stack.Get(i)
-	if c, ok := v.(Complex); ok {
-		z = complex128(c)
-	} else {
-		if f, ok := v.ToFloat(); ok {
-			z = complex(f, 0)
+func typeOperationCommutative[T value.Value](
+	def func(st funcGen.Stack[value.Value], a value.Value, b value.Value) (value.Value, error),
+	f func(a, b T) (value.Value, error),
+	fl func(a T, b value.Value) (value.Value, error)) func(st funcGen.Stack[value.Value], a value.Value, b value.Value) (value.Value, error) {
+	return typeOperation[T](def, f, fl, func(a value.Value, T T) (value.Value, error) {
+		return fl(T, a)
+	})
+}
+
+func typeOperation[T value.Value](
+	def func(st funcGen.Stack[value.Value], a value.Value, b value.Value) (value.Value, error),
+	f func(a, b T) (value.Value, error),
+	fl1 func(a T, b value.Value) (value.Value, error),
+	fl2 func(a value.Value, T T) (value.Value, error)) func(st funcGen.Stack[value.Value], a value.Value, b value.Value) (value.Value, error) {
+
+	return func(st funcGen.Stack[value.Value], a value.Value, b value.Value) (value.Value, error) {
+		if ae, ok := a.(T); ok {
+			if be, ok := b.(T); ok {
+				// both are of type T
+				return f(ae, be)
+			} else {
+				// a is of type T, b isn't
+				return fl1(ae, b)
+			}
 		} else {
-			return 0, fmt.Errorf("complex or a float value required")
+			if be, ok := b.(T); ok {
+				// b is of type T, a isn't
+				return fl2(a, be)
+			} else {
+				// no value of Type T at all
+				return def(st, a, b)
+			}
 		}
 	}
-	return z, nil
+}
+
+func createExp() func(st funcGen.Stack[value.Value], a value.Value, b value.Value) (value.Value, error) {
+	cplx := typeOperation(value.Pow, func(a, b Complex) (value.Value, error) {
+		return Complex(cmplx.Pow(complex128(a), complex128(b))), nil
+	}, func(a Complex, b value.Value) (value.Value, error) {
+		if bf, ok := b.ToFloat(); ok {
+			return Complex(cmplx.Pow(complex128(a), complex(bf, 0))), nil
+		}
+		return nil, fmt.Errorf("complex exp requires a complex or a float value")
+	}, func(a value.Value, b Complex) (value.Value, error) {
+		if af, ok := a.ToFloat(); ok {
+			return Complex(cmplx.Pow(complex(af, 0), complex128(b))), nil
+		}
+		return nil, fmt.Errorf("complex exp requires a complex or a float value")
+	})
+	poly := typeOperation(cplx, func(a, b Polynomial) (value.Value, error) {
+		return nil, fmt.Errorf("polynomial exp requires an int value")
+	}, func(a Polynomial, b value.Value) (value.Value, error) {
+		if bi, ok := b.(value.Int); ok {
+			return a.Pow(int(bi)), nil
+		}
+		return nil, fmt.Errorf("polynomial exp requires an int value")
+	}, func(a value.Value, b Polynomial) (value.Value, error) {
+		return nil, fmt.Errorf("polynomial exp requires an int value")
+	})
+	lin := typeOperation(poly, func(a, b *Linear) (value.Value, error) {
+		return nil, fmt.Errorf("linear exp requires an int value")
+	}, func(a *Linear, b value.Value) (value.Value, error) {
+		if bf, ok := b.(value.Int); ok {
+			return a.Pow(int(bf)), nil
+		}
+		return nil, fmt.Errorf("linear exp requires an int value")
+	}, func(a value.Value, b *Linear) (value.Value, error) {
+		return nil, fmt.Errorf("linear exp requires an int value")
+	})
+	return lin
+}
+
+func createMul() func(st funcGen.Stack[value.Value], a value.Value, b value.Value) (value.Value, error) {
+	cplx := typeOperationCommutative(value.Mul, func(a, b Complex) (value.Value, error) {
+		return a * b, nil
+	}, func(a Complex, b value.Value) (value.Value, error) {
+		if bf, ok := b.ToFloat(); ok {
+			return a * Complex(complex(bf, 0)), nil
+		}
+		return nil, fmt.Errorf("complex multiplication requires a complex or a float value")
+	})
+	poly := typeOperationCommutative(cplx, func(a, b Polynomial) (value.Value, error) {
+		return a.Mul(b), nil
+	}, func(a Polynomial, b value.Value) (value.Value, error) {
+		if bf, ok := b.ToFloat(); ok {
+			return a.MulFloat(bf), nil
+		}
+		return nil, fmt.Errorf("polynomial multiplication requires a polynomial or a float value")
+	})
+	lin := typeOperationCommutative(poly, func(a, b *Linear) (value.Value, error) {
+		return a.Mul(b), nil
+	}, func(a *Linear, b value.Value) (value.Value, error) {
+		if bf, ok := b.ToFloat(); ok {
+			return a.MulFloat(bf), nil
+		}
+		if bp, ok := b.(Polynomial); ok {
+			return a.MulPoly(bp), nil
+		}
+		return nil, fmt.Errorf("linear multiplication requires a linear system, a polynomial or a float value")
+	})
+	return lin
+}
+
+func createDiv() func(st funcGen.Stack[value.Value], a value.Value, b value.Value) (value.Value, error) {
+	cplx := typeOperation(value.Div, func(a, b Complex) (value.Value, error) {
+		return a / b, nil
+	}, func(a Complex, b value.Value) (value.Value, error) {
+		if bf, ok := b.ToFloat(); ok {
+			return a / Complex(complex(bf, 0)), nil
+		}
+		return nil, fmt.Errorf("complex div requires a complex or a float value")
+	}, func(a value.Value, b Complex) (value.Value, error) {
+		if af, ok := a.ToFloat(); ok {
+			return Complex(complex(af, 0)) / b, nil
+		}
+		return nil, fmt.Errorf("complex div requires a complex or a float value")
+	})
+	poly := typeOperation(cplx, func(a, b Polynomial) (value.Value, error) {
+		return &Linear{
+			Numerator:   a,
+			Denominator: b,
+		}, nil
+	}, func(a Polynomial, b value.Value) (value.Value, error) {
+		if bf, ok := b.ToFloat(); ok {
+			return a.MulFloat(1 / bf), nil
+		}
+		return nil, fmt.Errorf("polynomial div requires a polynomial or a float value")
+	}, func(a value.Value, b Polynomial) (value.Value, error) {
+		if af, ok := a.ToFloat(); ok {
+			return &Linear{
+				Numerator:   Polynomial{af},
+				Denominator: b,
+			}, nil
+		}
+		return nil, fmt.Errorf("polynomial div requires a polynomial or a float value")
+	})
+	lin := typeOperation(poly, func(a, b *Linear) (value.Value, error) {
+		return a.Div(b), nil
+	}, func(a *Linear, b value.Value) (value.Value, error) {
+		if bf, ok := b.ToFloat(); ok {
+			return a.MulFloat(1 / bf), nil
+		}
+		if bp, ok := b.(Polynomial); ok {
+			return a.DivPoly(bp), nil
+		}
+		return nil, fmt.Errorf("linear div requires a linear system, a polynomial or a float value")
+	}, func(a value.Value, b *Linear) (value.Value, error) {
+		if af, ok := a.ToFloat(); ok {
+			return b.Inv().MulFloat(af), nil
+		}
+		if ap, ok := a.(Polynomial); ok {
+			linear := Linear{
+				Numerator:   ap,
+				Denominator: Polynomial{1},
+			}
+			return linear.Div(b), nil
+		}
+		return nil, fmt.Errorf("linear div requires a linear system, a polynomial or a float value")
+	})
+	return lin
+}
+
+func createAdd() func(st funcGen.Stack[value.Value], a value.Value, b value.Value) (value.Value, error) {
+	cplx := typeOperationCommutative(value.Add, func(a, b Complex) (value.Value, error) {
+		return a + b, nil
+	}, func(a Complex, b value.Value) (value.Value, error) {
+		if bf, ok := b.ToFloat(); ok {
+			return a + Complex(complex(bf, 0)), nil
+		}
+		return nil, fmt.Errorf("complex add requires a complex or a float value")
+	})
+	poly := typeOperationCommutative(cplx, func(a, b Polynomial) (value.Value, error) {
+		return a.Add(b), nil
+	}, func(a Polynomial, b value.Value) (value.Value, error) {
+		if bf, ok := b.ToFloat(); ok {
+			return a.AddFloat(bf), nil
+		}
+		return nil, fmt.Errorf("polynomial add requires a polynomial or a float value")
+	})
+	lin := typeOperationCommutative(poly, func(a, b *Linear) (value.Value, error) {
+		return a.Add(b)
+	}, func(a *Linear, b value.Value) (value.Value, error) {
+		if bf, ok := b.ToFloat(); ok {
+			return a.Add(NewConst(bf))
+		}
+		if bp, ok := b.(Polynomial); ok {
+			return a.Add(&Linear{
+				Numerator:   bp,
+				Denominator: Polynomial{1},
+			})
+		}
+		return nil, fmt.Errorf("linear add requires a linear system, a polynomial or a float value")
+	})
+	return lin
+}
+
+func createSub() func(st funcGen.Stack[value.Value], a value.Value, b value.Value) (value.Value, error) {
+	cplx := typeOperation(value.Sub, func(a, b Complex) (value.Value, error) {
+		return a - b, nil
+	}, func(a Complex, b value.Value) (value.Value, error) {
+		if bf, ok := b.ToFloat(); ok {
+			return a - Complex(complex(bf, 0)), nil
+		}
+		return nil, fmt.Errorf("complex sub requires a complex or a float value")
+	}, func(a value.Value, b Complex) (value.Value, error) {
+		if af, ok := a.ToFloat(); ok {
+			return Complex(complex(af, 0)) - b, nil
+		}
+		return nil, fmt.Errorf("complex sub requires a complex or a float value")
+	})
+	poly := typeOperation(cplx, func(a, b Polynomial) (value.Value, error) {
+		return a.Add(b.MulFloat(-1)), nil
+	}, func(a Polynomial, b value.Value) (value.Value, error) {
+		if bf, ok := b.ToFloat(); ok {
+			return a.AddFloat(-bf), nil
+		}
+		return nil, fmt.Errorf("polynomial sub requires a polynomial or a float value")
+	}, func(a value.Value, b Polynomial) (value.Value, error) {
+		if af, ok := a.ToFloat(); ok {
+			return b.MulFloat(-1).AddFloat(af), nil
+		}
+		return nil, fmt.Errorf("polynomial sub requires a polynomial or a float value")
+	})
+	lin := typeOperation(poly, func(a, b *Linear) (value.Value, error) {
+		return a.Add(b.MulFloat(-1))
+	}, func(a *Linear, b value.Value) (value.Value, error) {
+		if bf, ok := b.ToFloat(); ok {
+			return a.Add(NewConst(-bf))
+		}
+		if bp, ok := b.(Polynomial); ok {
+			return a.Add(&Linear{
+				Numerator:   bp.MulFloat(-1),
+				Denominator: Polynomial{1},
+			})
+		}
+		return nil, fmt.Errorf("linear sub requires a linear system, a polynomial or a float value")
+	}, func(a value.Value, b *Linear) (value.Value, error) {
+		if af, ok := a.ToFloat(); ok {
+			return b.MulFloat(-1).Add(NewConst(af))
+		}
+		if ap, ok := a.(Polynomial); ok {
+			linear := Linear{
+				Numerator:   ap,
+				Denominator: Polynomial{1},
+			}
+			return linear.Add(b.MulFloat(-1))
+		}
+		return nil, fmt.Errorf("linear sub requires a linear system, a polynomial or a float value")
+	})
+	return lin
 }
 
 func NelderMead(fu funcGen.Function[value.Value], initial *value.List, delta *value.List, iter int) (value.Value, error) {
@@ -1014,6 +1096,21 @@ func NelderMead(fu funcGen.Function[value.Value], initial *value.List, delta *va
 	m["min"] = value.Float(minVal)
 
 	return value.NewMap(value.RealMap(m)), nil
+}
+
+func getComplex(stack funcGen.Stack[value.Value], i int) (complex128, error) {
+	var z complex128
+	v := stack.Get(i)
+	if c, ok := v.(Complex); ok {
+		z = complex128(c)
+	} else {
+		if f, ok := v.ToFloat(); ok {
+			z = complex(f, 0)
+		} else {
+			return 0, fmt.Errorf("complex or a float value required")
+		}
+	}
+	return z, nil
 }
 
 func createTwoPort(typ TpType) funcGen.Function[value.Value] {

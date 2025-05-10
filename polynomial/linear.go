@@ -309,6 +309,20 @@ func (l *Linear) MulFloat(f float64) *Linear {
 	}
 }
 
+func (l *Linear) MulPoly(p Polynomial) *Linear {
+	return &Linear{
+		Numerator:   l.Numerator.Mul(p),
+		Denominator: l.Denominator,
+	}
+}
+
+func (l *Linear) DivPoly(p Polynomial) *Linear {
+	return &Linear{
+		Numerator:   l.Numerator,
+		Denominator: l.Denominator.Mul(p),
+	}
+}
+
 func PID(kp, ti, td, tp float64) (*Linear, error) {
 	if ti == 0 {
 		return nil, errors.New("ti must not be zero")
@@ -324,14 +338,18 @@ type evansPoint struct {
 	gain   float64
 }
 
-func (e evansPoint) dist(other evansPoint) float64 {
+type (
+	metric func(graph.Point, graph.Point) float64
+)
+
+func (e evansPoint) dist(other evansPoint, m metric) float64 {
 	var maxDist float64
 	op := other.points
 	for i, ep := range e.points {
 		var best int
 		bestDist := math.Inf(1)
 		for j := i; j < len(op); j++ {
-			d := ep.DistTo(op[j])
+			d := m(ep, op[j])
 			if d < bestDist {
 				best = j
 				bestDist = d
@@ -340,7 +358,7 @@ func (e evansPoint) dist(other evansPoint) float64 {
 		if best != i {
 			op[i], op[best] = op[best], op[i]
 		}
-		d := ep.DistTo(op[i])
+		d := m(ep, op[i])
 		if d > maxDist {
 			maxDist = d
 		}
@@ -515,11 +533,15 @@ func (l *Linear) CreateEvans(kMax float64) (*graph.Plot, error) {
 
 	poleCount := p.Count()
 
-	points, err := l.getPoles(kMax, poleCount)
-	if err != nil {
-		return nil, err
+	const scalePoints = 20
+	for i := 1; i <= scalePoints; i++ {
+		k := kMax * float64(i) / float64(scalePoints)
+		points, err := l.getPoles(k, poleCount)
+		if err != nil {
+			return nil, err
+		}
+		evPoints = append(evPoints, evansPoint{points: points, gain: k})
 	}
-	evPoints = append(evPoints, evansPoint{points: points, gain: kMax})
 
 	splitGains, err := l.EvansSplitGains()
 	if err != nil {
@@ -528,7 +550,7 @@ func (l *Linear) CreateEvans(kMax float64) (*graph.Plot, error) {
 
 	for _, k := range splitGains {
 		if k < kMax {
-			points, err = l.getPoles(k, poleCount)
+			points, err := l.getPoles(k, poleCount)
 			if err != nil {
 				return nil, err
 			}
@@ -538,20 +560,13 @@ func (l *Linear) CreateEvans(kMax float64) (*graph.Plot, error) {
 
 	sort.Sort(evPoints)
 
-	le := len(evPoints)
-	for i := 1; i < le; i++ {
-		err = l.refine(evPoints[i-1], evPoints[i], &evPoints, poleCount)
-		if err != nil {
-			return nil, err
-		}
+	ecs := evansCurves{
+		l:         l,
+		evPoints:  evPoints,
+		poleCount: poleCount,
 	}
 
-	sort.Sort(evPoints)
-	for i := 1; i < len(evPoints); i++ {
-		evPoints[i-1].dist(evPoints[i])
-	}
-
-	curveList := make([]graph.PlotContent, 0, poleCount+5)
+	curveList := make([]graph.PlotContent, 0, 5)
 	curveList = append(curveList, Polar{})
 	var legend []graph.Legend
 
@@ -563,9 +578,7 @@ func (l *Linear) CreateEvans(kMax float64) (*graph.Plot, error) {
 		curveList = append(curveList, Asymptotes{Point: graph.Point{X: as, Y: 0}, Order: order})
 	}
 
-	for i := range poleCount {
-		curveList = append(curveList, graph.Scatter{Points: evPoints.getPoints(i), LineStyle: graph.GetColor(i).SetStrokeWidth(2)})
-	}
+	curveList = append(curveList, &ecs)
 
 	markerStyle := graph.Black.SetStrokeWidth(2)
 	if poleCount > 0 {
@@ -618,28 +631,6 @@ func (l *Linear) CreateEvans(kMax float64) (*graph.Plot, error) {
 	}, nil
 
 }
-func (l *Linear) refine(p1 evansPoint, p2 evansPoint, e *evansPoints, poleCount int) error {
-	dist := p1.dist(p2)
-	if dist > 0.1 {
-		nk := (p1.gain + p2.gain) / 2
-		points, err := l.getPoles(nk, poleCount)
-		if err != nil {
-			return err
-		}
-		evPoint := evansPoint{points: points, gain: nk}
-		*e = append(*e, evPoint)
-
-		err = l.refine(p1, evPoint, e, poleCount)
-		if err != nil {
-			return err
-		}
-		err = l.refine(evPoint, p2, e, poleCount)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
 
 func (l *Linear) getPoles(k float64, poleCount int) ([]graph.Point, error) {
 	gw, err := l.MulFloat(k).Loop()
@@ -654,7 +645,7 @@ func (l *Linear) getPoles(k float64, poleCount int) ([]graph.Point, error) {
 	points := poles.ToPoints()
 
 	if len(points) != poleCount {
-		return nil, fmt.Errorf("unexpected pole count: %d", len(points))
+		return nil, fmt.Errorf("unexpected pole count %d for k=%g", len(points), k)
 	}
 
 	return points, nil
@@ -707,7 +698,7 @@ func (l *Linear) EvansSplitGains() ([]float64, error) {
 	var kList []float64
 	for _, sp := range f.roots {
 		k := -l.Denominator.EvalCplx(sp) / l.Numerator.EvalCplx(sp)
-		if math.Abs(imag(k)) < 1e-6 && real(k) > 0 {
+		if /*math.Abs(imag(k)) < 1e-6 && */ real(k) > 0 {
 			found := false
 			for _, ki := range kList {
 				if math.Abs(real(k)-ki) < 1e-6 {
@@ -722,6 +713,91 @@ func (l *Linear) EvansSplitGains() ([]float64, error) {
 	}
 	sort.Float64s(kList)
 	return kList, nil
+}
+
+type evansCurves struct {
+	l           *Linear
+	evPoints    evansPoints
+	poleCount   int
+	isGenerated bool
+}
+
+func (ec *evansCurves) String() string {
+	return "Evans Curves"
+}
+
+func (ec *evansCurves) refine(p1 evansPoint, p2 evansPoint, m metric, maxDist float64, depth int) error {
+	if depth > 0 && p1.dist(p2, m) > maxDist {
+		fmt.Println("refine", p1.gain, p2.gain)
+		nk := (p1.gain + p2.gain) / 2
+		points, err := ec.l.getPoles(nk, ec.poleCount)
+		if err != nil {
+			return fmt.Errorf("error in evans refine: %w", err)
+		}
+		evPoint := evansPoint{points: points, gain: nk}
+		ec.evPoints = append(ec.evPoints, evPoint)
+
+		err = ec.refine(p1, evPoint, m, maxDist, depth-1)
+		if err != nil {
+			return err
+		}
+		err = ec.refine(evPoint, p2, m, maxDist, depth-1)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (ec *evansCurves) generate(tr graph.Transform) error {
+	if ec.isGenerated {
+		return nil
+	}
+	ec.isGenerated = true
+
+	const maxDist = 4
+	var m metric = func(p1, p2 graph.Point) float64 {
+		return tr(p1).DistTo(tr(p2))
+	}
+
+	le := len(ec.evPoints)
+	for i := 1; i < le; i++ {
+		err := ec.refine(ec.evPoints[i-1], ec.evPoints[i], m, maxDist, 10)
+		if err != nil {
+			return err
+		}
+	}
+
+	sort.Sort(ec.evPoints)
+	for i := 1; i < len(ec.evPoints); i++ {
+		ec.evPoints[i-1].dist(ec.evPoints[i], m)
+	}
+
+	return nil
+}
+
+func (ec *evansCurves) PreferredBounds(_, _ graph.Bounds) (x, y graph.Bounds, err error) {
+	for _, ep := range ec.evPoints {
+		for _, p := range ep.points {
+			x.Merge(p.X)
+			y.Merge(p.Y)
+		}
+	}
+	return x, y, nil
+}
+
+func (ec *evansCurves) DrawTo(plot *graph.Plot, canvas graph.Canvas) error {
+	err := ec.generate(plot.GetTransform())
+	if err != nil {
+		return err
+	}
+
+	r := canvas.Rect()
+	for i := 0; i < ec.poleCount; i++ {
+		canvas.DrawPath(r.IntersectPath(ec.evPoints.getPoints(i)), graph.GetColor(i).SetStrokeWidth(2))
+	}
+
+	return nil
 }
 
 type BodePlot struct {

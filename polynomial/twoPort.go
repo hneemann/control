@@ -102,9 +102,9 @@ func (tp *TwoPort) ToHtml(st funcGen.Stack[value.Value], w *xmlWriter.XMLWriter)
 
 func cmplxStr(c complex128) string {
 	if imag(c) == 0 {
-		return fmt.Sprintf("%g", real(c))
+		return fmt.Sprintf("%.6g", real(c))
 	}
-	return fmt.Sprintf("%g", c)
+	return fmt.Sprintf("%.6g", c)
 }
 
 var _ export.ToHtmlInterface = &TwoPort{}

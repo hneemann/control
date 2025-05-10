@@ -22,10 +22,35 @@ func TestLinear(t *testing.T) {
 		{name: "poly4", exp: "let p1=poly(1,2,3);let p2=poly(1,3); string(p1*p2)", res: value.String("9s³+9s²+5s+1")},
 		{name: "poly5", exp: "let p=poly(1,0,1); string(p.roots())", res: value.String("[(-0+1i)]")},
 		{name: "poly6", exp: "let p=poly(-1,0,1); string(p.roots())", res: value.String("[(1+0i), (-1+0i)]")},
-		{name: "linPoly", exp: "let n=poly(1,2); let d=poly(1,2,3);string(lin(n,d))", res: value.String("(2s+1)/(3s²+2s+1)")},
-		{name: "linPoly2", exp: "let n=poly(2,3,1); let d=poly(24,26,9,1);string(lin(n,d).reduce())", res: value.String("(s+1)/((s+3)*(s+4))")},
+		{name: "poly7", exp: "let p=poly(4,2)/2; string(p)", res: value.String("s+2")},
 
-		{name: "simple", exp: "let s=lin(); string(12*(1+1/(1.5*s)+2*s))", res: value.String("(36s²+18s+12)/(1.5s)")},
+		{name: "polySub1", exp: "let p=poly(4,2)-poly(1,1); string(p)", res: value.String("s+3")},
+		{name: "polySub2", exp: "let p=poly(4,2)-1; string(p)", res: value.String("2s+3")},
+		{name: "polySub3", exp: "let p=1-poly(4,2); string(p)", res: value.String("-2s-3")},
+
+		{name: "linDiv1", exp: "let l=lin(poly(4,2),poly(1,1))/2; string(l)", res: value.String("(s+2)/(s+1)")},
+		{name: "linDiv2", exp: "let l=2/lin(poly(4,2),poly(1,1)); string(l)", res: value.String("(2s+2)/(2s+4)")},
+
+		{name: "linDiv3", exp: "let l=lin(poly(4,2),poly(1,1))/poly(2,1); string(l)", res: value.String("(2s+4)/(s²+3s+2)")},
+		{name: "linDiv4", exp: "let l=poly(2,1)/lin(poly(4,2),poly(1,1)); string(l)", res: value.String("(s²+3s+2)/(2s+4)")},
+
+		{name: "linDiv5", exp: "let l=lin(poly(4,2),poly(1,1))/lin(poly(1,2),poly(2,1)); string(l)", res: value.String("(2s²+8s+8)/(2s²+3s+1)")},
+
+		{name: "linPoly", exp: "let n=poly(1,2); let d=poly(1,2,3);string(lin(n,d))", res: value.String("(2s+1)/(3s²+2s+1)")},
+		{name: "linPoly2", exp: "let l=lin(poly(1,2),poly(1,3)); let d=l*poly(1,4);string(d)", res: value.String("(8s²+6s+1)/(3s+1)")},
+		{name: "linPoly3", exp: "let n=poly(2,3,1); let d=poly(24,26,9,1);string(lin(n,d).reduce())", res: value.String("(s+1)/((s+3)*(s+4))")},
+
+		{name: "linSub1", exp: "string(lin(poly(2,2),poly(2,1))-lin(poly(1,1),poly(3,1)))", res: value.String("(s²+5s+4)/(s²+5s+6)")},
+		{name: "linSub2", exp: "string(lin(poly(2,2),poly(2,1))-poly(1,1))", res: value.String("(-s²-s)/(s+2)")},
+		{name: "linSub3", exp: "string(poly(1,1)-lin(poly(2,2),poly(2,1)))", res: value.String("(s²+s)/(s+2)")},
+
+		{name: "linSub4", exp: "string(1-lin(poly(2,2),poly(2,1)))", res: value.String("(-s)/(s+2)")},
+		{name: "linSub5", exp: "string(lin(poly(2,2),poly(2,1))-1)", res: value.String("(s)/(s+2)")},
+
+		{name: "linExp", exp: "string(lin(poly(2,2),poly(2,1))^2)", res: value.String("(4s²+8s+4)/(s²+4s+4)")},
+
+		{name: "simple", exp: "let s=poly(0,1); string(12*(1+1/(1.5*s)+2*s))", res: value.String("(36s²+18s+12)/(1.5s)")},
+		{name: "simple2", exp: "let s=lin(poly(0,1),poly(1)); string(12*(1+1/(1.5*s)+2*s))", res: value.String("(36s²+18s+12)/(1.5s)")},
 		{name: "pid", exp: "let kp=12;let ti=1.5;let td=2;let s=pid(kp,ti,td); string(s)", res: value.String("(36s²+18s+12)/(1.5s)")},
 
 		{name: "loop", exp: "let s=lin(); let g=(s+1)/(s^2+4*s+5); string(g.loop())", res: value.String("(s+1)/(s²+5s+6)")},
@@ -42,7 +67,7 @@ let gw=g0.loop();
 string(gw)
 `, res: value.String("30*(s²+s+0.5)/(4s⁴+18s³+62.4s²+54.6s+21.2)")}, // externally checked
 
-		{name: "evans", exp: "let s=lin(); let g=(s+1)/(s^2+4*s+5); string(g.evans(10))", res: value.String("Plot: Polar Grid, Asymptotes, Scatter, Scatter, Scatter, Scatter")},
+		{name: "evans", exp: "let s=lin(); let g=(s+1)/(s^2+4*s+5); string(g.evans(10))", res: value.String("Plot: Polar Grid, Asymptotes, Evans Curves, Scatter, Scatter")},
 		{name: "nyquist", exp: "let s=lin(); let g=(s+1)/(s^2+4*s+5); string(g.nyquist())", res: value.String("Plot: coordinate cross, Parameter curve, Scatter")},
 	}
 
@@ -76,11 +101,19 @@ func TestComplex(t *testing.T) {
 		res  any
 	}{
 		{name: "add", exp: "2+_i*3", res: Complex(complex(2, 3))},
-		{name: "sub", exp: "2-_i*3", res: Complex(complex(2, -3))},
+		{name: "add2", exp: "cmplx(1,2)+cmplx(3,4)", res: Complex(complex(4, 6))},
+		{name: "sub1", exp: "cmplx(1,2)-cmplx(3,4)", res: Complex(complex(-2, -2))},
+		{name: "sub2", exp: "2-_i*3", res: Complex(complex(2, -3))},
+		{name: "sub3", exp: "_i*3-2", res: Complex(complex(-2, 3))},
 		{name: "mul", exp: "cmplx(1,2)*cmplx(3,4)", res: Complex(complex(-5, 10))},
 		{name: "div", exp: "cmplx(1,2)/cmplx(3,4)", res: Complex(complex(11.0/25, 2.0/25))},
 		{name: "div2", exp: "25*cmplx(1,2)/cmplx(3,4)", res: Complex(complex(11, 2))},
 		{name: "div3", exp: "cmplx(1,2)/cmplx(3,4)*25", res: Complex(complex(11, 2))},
+		{name: "div4", exp: "1/cmplx(1,2)", res: Complex(complex(0.2, -0.4))},
+		{name: "div5", exp: "cmplx(1,2)/2", res: Complex(complex(0.5, 1))},
+		{name: "exp1", exp: "cmplx(1,2)^cmplx(3,4)", res: Complex(complex(0.1290095940, 0.03392409290))},
+		{name: "exp2", exp: "cmplx(1,2)^2", res: Complex(complex(-3, 4))},
+		{name: "exp3", exp: "2^cmplx(1,2)", res: Complex(complex(0.3669139494, 1.966055480))},
 	}
 	for _, test := range tests {
 		test := test
@@ -120,6 +153,18 @@ func TestSVGExport(t *testing.T) {
 		{name: "bode", exp: "let s=lin();\nlet g=(1.5*s+1)/((2*s+1)*(s+1)*(s^2+3*s+3.1));\nlet k=pid(12,1.5,1);\nbode(0.01,100)\n  .add(g,green,\"g\")\n  .add(k,blue,\"k\")\n  .add(k*g,black,\"k*g\")", file: "z.html"},
 		{name: "test", exp: "let p=list(10).map(i->[i,i*i]); plot(scatter(p,red,1),curve(p,green.darker().dash(10,10,2,10)))", file: "z.html"},
 		{name: "func", exp: "plot(function(x->sin(x),black,\"sin\"),function(x->cos(x),red,\"cos\")).xBounds(0,2*pi)", file: "z.html"},
+		{name: "evans-zoom", exp: `let s = lin();
+
+let g = (s^2+2.5*s+2.234)/((s+1)*(s+2)*(s)*(s+3)*(s+4));
+
+let p = g.numerator()*g.denominator().derivative()-g.denominator()*g.numerator().derivative();
+let r = p.roots();
+let cr = r.accept(r->r.imag()>1).single();
+
+g.evans(24)
+  .add(scatter(r.map(c->[c.real(),c.imag()]),red.stroke(2)))
+  .zoom(cr.real(),cr.imag(),20)
+`, file: "z.html"},
 	}
 	for _, test := range tests {
 		test := test
