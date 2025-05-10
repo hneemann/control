@@ -570,26 +570,7 @@ var Parser = value.New().
 		p.AllowComments()
 	}).
 	AddConstant("_i", Complex(complex(0, 1))).
-	AddStaticFunction("lin", funcGen.Function[value.Value]{
-		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
-			if stack.Size() == 0 {
-				return Polynomial{0, 1}, nil
-			} else if stack.Size() == 2 {
-				if np, ok := stack.Get(0).(Polynomial); ok {
-					if dp, ok := stack.Get(1).(Polynomial); ok {
-						return &Linear{
-							Numerator:   np,
-							Denominator: dp,
-						}, nil
-					}
-				}
-				return nil, errors.New("lin requires polynomials as arguments")
-			}
-			return nil, errors.New("lin requires no or two arguments")
-		},
-		Args:   -1,
-		IsPure: true,
-	}.SetDescription("a linear system in 's'")).
+	AddConstant("s", Polynomial{0, 1}).
 	AddStaticFunction("cmplx", funcGen.Function[value.Value]{
 		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
 			if re, ok := stack.Get(0).ToFloat(); ok {

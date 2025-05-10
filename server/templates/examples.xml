@@ -19,12 +19,10 @@ plot(
  function( x->cos(x), blue,  "cos(x)"),
  function( x->tan(x), red,   "tan(x)")
 ).xBounds(0,2*pi).yBounds(-2,2)</example>
-    <example name="Ortskurve" desc="Darstellung der Ortskurve">let s = lin();
-let g = 3/((s+1)*(s+2));
+    <example name="Ortskurve" desc="Darstellung der Ortskurve">let g = 3/((s+1)*(s+2));
 
 g.nyquist()</example>
-    <example name="Ortskurve 2" desc="Darstellung der Ortskurve">let s = lin();
-let g = 3/((s+1)*(s+1.5)*(s+2));
+    <example name="Ortskurve 2" desc="Darstellung der Ortskurve">let g = 3/((s+1)*(s+1.5)*(s+2));
 
 func h(w)
   let c1 = g( _i*w );
@@ -38,17 +36,14 @@ g.nyquist()
   .add( h(1)    )
   .add( h(2)    )
   .add( h(5)    )</example>
-    <example name="Nyquist" desc="Anwendung des Nyquistkriteriums">let s = lin();
-let g = 6*(s+1)/((s-1)*(s-3));
+    <example name="Nyquist" desc="Anwendung des Nyquistkriteriums">let g = 6*(s+1)/((s-1)*(s-3));
 
 g.nyquist(true)</example>
-    <example name="Bode" desc="Darstellung eines Bode-Diagramms">let s = lin();
-let g = 3/((s+1)*(s+2));
+    <example name="Bode" desc="Darstellung eines Bode-Diagramms">let g = 3/((s+1)*(s+2));
 
 bode(0.01,100)
   .add(g)</example>
-    <example name="Bode 2" desc="Darstellung mehrerer Kurven in einem Bode-Diagramm">let s = lin();
-let g = 3/((s+1)*(s+2));
+    <example name="Bode 2" desc="Darstellung mehrerer Kurven in einem Bode-Diagramm">let g = 3/((s+1)*(s+2));
 let k = 1.6*(1+1/(1.7*s));
 
 let g0=k*g;
@@ -67,18 +62,15 @@ bode(0.01,100)
  ["pid(2,3,1)",      "=", pid(2,3,1)],
  ["pid(2,3,1,0.01)", "=", pid(2,3,1,0.01)]
 ]</example>
-    <example name="Evans" desc="Darstellung einer Wurzelortskurve">let s = lin();
-let g = 3/((s+1)*(s+2));
+    <example name="Evans" desc="Darstellung einer Wurzelortskurve">let g = 3/((s+1)*(s+2));
 let k = 1+1/(0.9*s);
 
 (k*g).evans(2)</example>
 
-    <example name="Evans 2" desc="Darstellung einer Wurzelortskurve">let l = 352*lin(poly(5,1),poly(0,0,2000,200,25,1));
+    <example name="Evans 2" desc="Darstellung einer Wurzelortskurve">let l = 352*(poly(5,1)/poly(0,0,2000,200,25,1));
 l.evans(100)</example>
 
-    <example name="Simulation" desc="Simulation des Systems">let s=lin();
-
-let g = 70/((s+1)*(s+2)*(s+2.5));
+    <example name="Simulation" desc="Simulation des Systems">let g = 70/((s+1)*(s+2)*(s+2.5));
 let k1 = 0.2*(0.6*s+1)/(0.002*s+1);
 let k2 = pid(0.1,2);
 let k3 = pid(0.3,2,0.5);
@@ -89,8 +81,7 @@ plot(
   curve((k3*g).loop().simStep(10),green,"PID")
 ).labels("t [s]","h(t)").legendPos(5,0.87)</example>
 
-<example name="Simulation nicht linear" desc="Simulation eines nicht linearen Systems">let s = lin();
-let G = 70/((s+1)*(s+2)*(s+2.5));
+<example name="Simulation nicht linear" desc="Simulation eines nicht linearen Systems">let G = 70/((s+1)*(s+2)*(s+2.5));
 
 let kp = 0.24;
 let Ti = 1.05;
