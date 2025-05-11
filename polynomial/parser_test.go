@@ -24,6 +24,9 @@ func TestLinear(t *testing.T) {
 		{name: "poly6", exp: "let p=poly(-1,0,1); string(p.roots())", res: value.String("[(1+0i), (-1+0i)]")},
 		{name: "poly7", exp: "let p=poly(4,2)/2; string(p)", res: value.String("s+2")},
 
+		{name: "polyExp1", exp: "let p=poly(1,1)^2; string(p)", res: value.String("s²+2s+1")},
+		{name: "polyExp2", exp: "let p=poly(1,1)^(-2); string(p)", res: value.String("1/(s²+2s+1)")},
+
 		{name: "polySub1", exp: "let p=poly(4,2)-poly(1,1); string(p)", res: value.String("s+3")},
 		{name: "polySub2", exp: "let p=poly(4,2)-1; string(p)", res: value.String("2s+3")},
 		{name: "polySub3", exp: "let p=1-poly(4,2); string(p)", res: value.String("-2s-3")},
@@ -46,10 +49,11 @@ func TestLinear(t *testing.T) {
 		{name: "linSub2", exp: "string((poly(2,2)/poly(2,1))-poly(1,1))", res: value.String("(-s²-s)/(s+2)")},
 		{name: "linSub3", exp: "string(poly(1,1)-(poly(2,2)/poly(2,1)))", res: value.String("(s²+s)/(s+2)")},
 
-		{name: "linSub4", exp: "string(1-(poly(2,2)/poly(2,1)))", res: value.String("(-s)/(s+2)")},
-		{name: "linSub5", exp: "string((poly(2,2)/poly(2,1))-1)", res: value.String("(s)/(s+2)")},
+		{name: "linSub4", exp: "string(1-(poly(2,2)/poly(2,1)))", res: value.String("-s/(s+2)")},
+		{name: "linSub5", exp: "string((poly(2,2)/poly(2,1))-1)", res: value.String("s/(s+2)")},
 
 		{name: "linExp", exp: "string((poly(2,2)/poly(2,1))^2)", res: value.String("(4s²+8s+4)/(s²+4s+4)")},
+		{name: "linExp2", exp: "string((poly(2,2)/poly(2,1))^(-2))", res: value.String("(s²+4s+4)/(4s²+8s+4)")},
 
 		{name: "simple", exp: "string(12*(1+1/(1.5*s)+2*s))", res: value.String("(36s²+18s+12)/(1.5s)")},
 		{name: "simple2", exp: "string(12*(1+1/(1.5*s)+2*s))", res: value.String("(36s²+18s+12)/(1.5s)")},

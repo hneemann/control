@@ -217,6 +217,9 @@ func polyMethods() value.MethodMap {
 		"derivative": value.MethodAtType(0, func(pol Polynomial, st funcGen.Stack[value.Value]) (value.Value, error) {
 			return pol.Derivative(), nil
 		}).SetMethodDescription("calculates the derivative"),
+		"normalize": value.MethodAtType(0, func(pol Polynomial, st funcGen.Stack[value.Value]) (value.Value, error) {
+			return pol.Normalize(), nil
+		}).SetMethodDescription("calculates the normalized polynomial"),
 		"roots": value.MethodAtType(0, func(pol Polynomial, st funcGen.Stack[value.Value]) (value.Value, error) {
 			r, err := pol.Roots()
 			if err != nil {
@@ -812,9 +815,13 @@ func createExp() func(st funcGen.Stack[value.Value], a value.Value, b value.Valu
 		return nil, fmt.Errorf("polynomial exp requires an int value")
 	}, func(a Polynomial, b value.Value) (value.Value, error) {
 		if bi, ok := b.(value.Int); ok {
-			return a.Pow(int(bi)), nil
+			n := int(bi)
+			if n < 0 {
+				return &Linear{Numerator: Polynomial{1}, Denominator: a.Pow(-n)}, nil
+			}
+			return a.Pow(n), nil
 		}
-		return nil, fmt.Errorf("polynomial exp requires an int value")
+		return nil, fmt.Errorf("polynomial exp requires a positive int value")
 	}, func(a value.Value, b Polynomial) (value.Value, error) {
 		return nil, fmt.Errorf("polynomial exp requires an int value")
 	})
@@ -822,7 +829,11 @@ func createExp() func(st funcGen.Stack[value.Value], a value.Value, b value.Valu
 		return nil, fmt.Errorf("linear exp requires an int value")
 	}, func(a *Linear, b value.Value) (value.Value, error) {
 		if bf, ok := b.(value.Int); ok {
-			return a.Pow(int(bf)), nil
+			n := int(bf)
+			if n < 0 {
+				return a.Pow(-n).Inv(), nil
+			}
+			return a.Pow(n), nil
 		}
 		return nil, fmt.Errorf("linear exp requires an int value")
 	}, func(a value.Value, b *Linear) (value.Value, error) {
