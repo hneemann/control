@@ -63,7 +63,11 @@ func (l *Linear) intString(parse bool) string {
 		if l.Denominator.IsOne() {
 			return is
 		}
-		n = "(" + is + ")"
+		if l.Numerator.IsSum() {
+			n = "(" + is + ")"
+		} else {
+			n = is
+		}
 	}
 	var d string
 	if l.polesCalculated() {

@@ -179,7 +179,7 @@ func (p Polynomial) Add(q Polynomial) Polynomial {
 		for i := range q {
 			result[i] += q[i]
 		}
-		return result
+		return result.Canonical()
 	} else {
 		return q.Add(p)
 	}
@@ -276,6 +276,19 @@ func (p Polynomial) Equals(b Polynomial) bool {
 
 func (p Polynomial) IsOne() bool {
 	return len(p) == 1 && math.Abs(p[0]-1) < eps
+}
+
+func (p Polynomial) IsSum() bool {
+	n := 0
+	for i := range p {
+		if math.Abs(p[i]) > eps {
+			n++
+			if n > 1 {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 type Roots struct {
