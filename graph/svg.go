@@ -3,8 +3,10 @@ package graph
 import (
 	"bytes"
 	"fmt"
+	"github.com/hneemann/control/graph/grParser/mathml"
 	"github.com/hneemann/parser2/value/export/xmlWriter"
 	"math"
+	"strings"
 )
 
 type SVG struct {
@@ -118,62 +120,44 @@ func (s *SVG) DrawText(a Point, text string, orientation Orientation, style *Sty
 		st += ";text-anchor:end"
 		a.X -= textSize / 4
 	}
-	switch (orientation >> 2) & 3 {
-	case 0:
-		a.Y += textSize / 4
-	case 1:
-		a.Y -= textSize / 3
-	case 2:
-		a.Y -= textSize / 10 * 9
-	}
 
-	s.w.Open("text").
-		Attr("x", fmt.Sprintf("%0.2f", a.X)).
-		Attr("y", fmt.Sprintf("%0.2f", s.rect.Max.Y-a.Y)).
-		Attr("style", styleString(style)+st)
-
-	if s.context.LaTeX {
-		text = toLaTeX(text)
-	}
-
-	s.w.Write(text)
-	s.w.Close()
-}
-
-func toLaTeX(text string) string {
-	var buf bytes.Buffer
-	inMath := false
-	for _, r := range text {
-		switch r {
-		case 'ω':
-			inMath = writeInMath(&buf, inMath, "\\omega")
-		case 'Φ':
-			inMath = writeInMath(&buf, inMath, "\\Phi")
-		case '°':
-			inMath = writeInMath(&buf, inMath, "^\\circ")
-		case 'ₛ':
-			inMath = writeInMath(&buf, inMath, "_s")
-		default:
-			if inMath {
-				buf.WriteString("$")
-				inMath = false
+	if strings.HasPrefix(text, "$$") {
+		ast, err := mathml.ParseLaTeX(text[2:])
+		if err != nil {
+			s.w.Write(text)
+		} else {
+			switch (orientation >> 2) & 3 {
+			case 0:
+				a.Y += textSize * 1.2
+			case 1:
+				a.Y += textSize * 2 / 3
 			}
-			buf.WriteRune(r)
-		}
-	}
-	if inMath {
-		buf.WriteString("$")
-	}
-	return buf.String()
-}
+			s.w.Open("foreignObject").
+				Attr("style", styleString(style)+st).
+				Attr("x", fmt.Sprintf("%0.2f", a.X)).
+				Attr("y", fmt.Sprintf("%0.2f", s.rect.Max.Y-a.Y)).
+				Attr("width", fmt.Sprintf("%0.2f", textSize*float64(len(text)))).
+				Attr("height", fmt.Sprintf("%0.2f", textSize*2))
 
-func writeInMath(b *bytes.Buffer, inMath bool, s string) bool {
-	if !inMath {
-		b.WriteString("$")
-		inMath = true
+			ast.ToMathMl(s.w, nil)
+			s.w.Close()
+		}
+	} else {
+		switch (orientation >> 2) & 3 {
+		case 0:
+			a.Y += textSize / 4
+		case 1:
+			a.Y -= textSize / 3
+		case 2:
+			a.Y -= textSize / 10 * 9
+		}
+		s.w.Open("text").
+			Attr("x", fmt.Sprintf("%0.2f", a.X)).
+			Attr("y", fmt.Sprintf("%0.2f", s.rect.Max.Y-a.Y)).
+			Attr("style", styleString(style)+st)
+		s.w.Write(text)
+		s.w.Close()
 	}
-	b.WriteString(s)
-	return inMath
 }
 
 func (s *SVG) Context() *Context {

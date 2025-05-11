@@ -3,11 +3,13 @@ package server
 import (
 	"embed"
 	"encoding/xml"
+	"github.com/hneemann/control/graph/grParser/mathml"
 	"github.com/hneemann/control/polynomial"
 	"github.com/hneemann/control/server/data"
 	"github.com/hneemann/parser2/funcGen"
 	"github.com/hneemann/parser2/value"
 	"github.com/hneemann/parser2/value/export"
+	"github.com/hneemann/parser2/value/export/xmlWriter"
 	"github.com/hneemann/session"
 	"html"
 	"html/template"
@@ -103,7 +105,7 @@ func Execute(writer http.ResponseWriter, request *http.Request) {
 			var res value.Value
 			res, err = fu(funcGen.NewEmptyStack[value.Value]())
 			if err == nil {
-				resHtml, _, err = export.ToHtml(res, 50, nil, true)
+				resHtml, _, err = export.ToHtml(res, 50, customHtml, true)
 			}
 		}
 		log.Println("calculation on server took", time.Since(start))
@@ -117,6 +119,22 @@ func Execute(writer http.ResponseWriter, request *http.Request) {
 
 	writer.Header().Set("Content-Type", "text/html; charset=utf-8")
 	writer.Write([]byte(resHtml))
+}
+
+func customHtml(v value.Value) (template.HTML, bool, error) {
+	if str, ok := v.(value.String); ok {
+		s := string(str)
+		if strings.HasPrefix(s, "$$") {
+			ast, err := mathml.ParseLaTeX(s[2:])
+			if err != nil {
+				return "", true, err
+			}
+			w := xmlWriter.New()
+			ast.ToMathMl(w, nil)
+			return template.HTML(w.String()), true, nil
+		}
+	}
+	return "", false, nil
 }
 
 var loadListTemp = Templates.Lookup("loadList.html")

@@ -223,3 +223,31 @@ func TestNelderMead(t *testing.T) {
 		})
 	}
 }
+
+func Test_toUniCode(t *testing.T) {
+	tests := []struct {
+		name string
+		want string
+	}{
+		{name: "#alpha", want: "⍺"},
+		{name: "##", want: "#"},
+		{name: "####", want: "##"},
+		{name: "##a", want: "#a"},
+		{name: "#omega", want: "ω"},
+		{name: "###omega", want: "#ω"},
+		{name: "#omega#s", want: "ωₛ"},
+		{name: "#Omega", want: "Ω"},
+		{name: "#Omega s", want: "Ωs"},
+		{name: "#Omega#i", want: "Ωᵢ"},
+		{name: "#Omega  s", want: "Ω s"},
+		{name: "#alpha#beta", want: "⍺β"},
+		{name: "#Phi#0", want: "Φ₀"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := toUniCode(tt.name)
+			assert.NoError(t, err, fmt.Sprintf("toUniCode(%v)", tt.name))
+			assert.Equalf(t, tt.want, got, "toUniCode(%v)", tt.name)
+		})
+	}
+}

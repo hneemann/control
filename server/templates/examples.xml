@@ -49,10 +49,12 @@ let k = 1.6*(1+1/(1.7*s));
 let g0=k*g;
 let pm=g0.pMargin();
 
+const str=toUnicode("G#0, #Phi#r=%.1f°, #omega#s=%.2f rad/s");
+
 bode(0.01,100)
   .add(g,  green, "G")
   .add(k,  blue,  "K")
-  .add(g0, black, sprintf("G0, Φ=%.1f°, ωₛ=%.2f rad/s", pm.pMargin, pm.w0) )
+  .add(g0, black, sprintf(str, pm.pMargin, pm.w0) )
   .phaseModify( p->p.add(yConst(-180+70,red.dash(7,7)))
                     .add(yConst(-180+50,red.dash(7,7)))
                     .add(xConst(pm.w0,  red.dash(7,7))) )

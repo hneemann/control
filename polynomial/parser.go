@@ -12,6 +12,7 @@ import (
 	"github.com/hneemann/parser2/value/export/xmlWriter"
 	"math"
 	"math/cmplx"
+	"strings"
 )
 
 const (
@@ -537,10 +538,6 @@ func bodeMethods() value.MethodMap {
 			}
 			return nil, errors.New("phaseModify requires a function that returns the modified plot")
 		}).SetMethodDescription("function", "the given function gets the phase plot and mast return the modified phase plot!").Pure(false),
-		"LaTeX": value.MethodAtType(0, func(plot BodePlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
-			plot.context.LaTeX = true
-			return plot, nil
-		}).SetMethodDescription("Enables LaTeX-Mode"),
 	}
 }
 
@@ -571,6 +568,20 @@ var Parser = value.New().
 	}).
 	AddConstant("_i", Complex(complex(0, 1))).
 	AddConstant("s", Polynomial{0, 1}).
+	AddStaticFunction("toUnicode", funcGen.Function[value.Value]{
+		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
+			if str, ok := stack.Get(0).(value.String); ok {
+				code, err := toUniCode(string(str))
+				if err != nil {
+					return nil, err
+				}
+				return value.String(code), nil
+			}
+			return nil, errors.New("unicode requires a string as argument")
+		},
+		Args:   1,
+		IsPure: true,
+	}.SetDescription("str", "converts commands like '#alpha' to UniCode characters")).
 	AddStaticFunction("cmplx", funcGen.Function[value.Value]{
 		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
 			if re, ok := stack.Get(0).ToFloat(); ok {
@@ -1110,4 +1121,138 @@ func createTwoPort(typ TpType) funcGen.Function[value.Value] {
 		Args:   4,
 		IsPure: true,
 	}.SetDescription("m11", "m12", "m21", "m21", "creates a new two-port of type "+typ.String())
+}
+
+func toUniCode(str string) (string, error) {
+	inCommand := false
+	var out, command strings.Builder
+	for _, r := range str {
+		switch r {
+		case '#':
+			if inCommand {
+				if command.Len() == 0 {
+					out.WriteRune('#')
+					inCommand = false
+				} else {
+					c, err := getUnicode(command.String())
+					if err != nil {
+						return "", err
+					}
+					out.WriteRune(c)
+					command.Reset()
+				}
+			} else {
+				inCommand = true
+			}
+		default:
+			if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') {
+				if inCommand {
+					command.WriteRune(r)
+				} else {
+					out.WriteRune(r)
+				}
+			} else {
+				if inCommand {
+					c, err := getUnicode(command.String())
+					if err != nil {
+						return "", err
+					}
+					out.WriteRune(c)
+					command.Reset()
+					inCommand = false
+					if r != ' ' {
+						out.WriteRune(r)
+					}
+				} else {
+					out.WriteRune(r)
+				}
+			}
+		}
+	}
+	if inCommand {
+		c, err := getUnicode(command.String())
+		if err != nil {
+			return "", err
+		}
+		out.WriteRune(c)
+	}
+	return out.String(), nil
+}
+
+var unicodeMap = map[string]rune{
+	"alpha":   '⍺',
+	"beta":    '\u03B2',
+	"gamma":   '\u03B3',
+	"delta":   '\u03B4',
+	"epsilon": '\u03B5',
+	"zeta":    '\u03B6',
+	"eta":     '\u03B7',
+	"theta":   '\u03B8',
+	"iota":    '\u03B9',
+	"kappa":   '\u03BA',
+	"lambda":  '\u03BB',
+	"mu":      '\u03BC',
+	"nu":      '\u03BD',
+	"xi":      '\u03BE',
+	"pi":      '\u03C0',
+	"rho":     '\u03C1',
+	"sigma":   '\u03C3',
+	"tau":     '\u03C4',
+	"upsilon": '\u03C5',
+	"phi":     '\u03C6',
+	"chi":     '\u03C7',
+	"psi":     '\u03C8',
+	"omega":   '\u03C9',
+	"Gamma":   '\u0393',
+	"Delta":   '\u0394',
+	"Theta":   '\u0398',
+	"Lambda":  '\u039B',
+	"Xi":      '\u039E',
+	"Pi":      '\u03A0',
+	"Sigma":   '\u03A3',
+	"Upsilon": '\u03A5',
+	"Phi":     '\u03A6',
+	"Psi":     '\u03A8',
+	"Omega":   '\u03A9',
+	"0":       '₀',
+	"1":       '₁',
+	"2":       '₂',
+	"3":       '₃',
+	"4":       '₄',
+	"5":       '₅',
+	"6":       '₆',
+	"7":       '₇',
+	"8":       '₈',
+	"9":       '₉',
+	"degree":  '°',
+	"pm":      '±',
+	"times":   '×',
+	"div":     '÷',
+	"cdot":    '⋅',
+	"circ":    '∘',
+	"a":       'ₐ',
+	"e":       'ₑ',
+	"h":       'ₕ',
+	"i":       'ᵢ',
+	"j":       'ⱼ',
+	"k":       'ₖ',
+	"l":       'ₗ',
+	"m":       'ₘ',
+	"n":       'ₙ',
+	"o":       'ₒ',
+	"p":       'ₚ',
+	"r":       'ᵣ',
+	"s":       'ₛ',
+	"t":       'ₜ',
+	"u":       'ᵤ',
+	"v":       'ᵥ',
+	"x":       'ₓ',
+}
+
+func getUnicode(s string) (rune, error) {
+	u, ok := unicodeMap[s]
+	if ok {
+		return u, nil
+	}
+	return '_', fmt.Errorf("unknown unicode command %s", s)
 }

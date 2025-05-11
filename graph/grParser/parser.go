@@ -377,10 +377,6 @@ func createPlotMethods() value.MethodMap {
 			}
 			return nil, fmt.Errorf("inset requires floats as arguments")
 		}).SetMethodDescription("xMin", "xMax", "yMin", "yMax", "converts plot to an inset"),
-		"LaTeX": value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
-			plot.context.LaTeX = true
-			return plot, nil
-		}).SetMethodDescription("Enables LaTeX-Mode"),
 	}
 }
 
@@ -811,7 +807,7 @@ func listToPoints(list *value.List) graph.Points {
 func ImageToFile(plot graph.Image, context *graph.Context, name string) (value.Value, error) {
 	var buf bytes.Buffer
 	buf.WriteString("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n")
-	w := xmlWriter.NewWithBuffer(&buf)
+	w := xmlWriter.NewWithBuffer(&buf).PrettyPrint()
 	err := CreateSVG(plot, context, w)
 	if err != nil {
 		return nil, err
