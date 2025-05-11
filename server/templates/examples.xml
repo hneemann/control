@@ -69,7 +69,7 @@ let k = 1+1/(0.9*s);
 
 (k*g).evans(2)</example>
 
-    <example name="Evans 2" desc="Darstellung einer Wurzelortskurve">let l = 352*(poly(5,1)/poly(0,0,2000,200,25,1));
+    <example name="Evans 2" desc="Darstellung einer Wurzelortskurve">let l = 352*poly(5,1)/poly(0,0,2000,200,25,1);
 l.evans(100)</example>
 
     <example name="Simulation" desc="Simulation des Systems">let g = 70/((s+1)*(s+2)*(s+2.5));
