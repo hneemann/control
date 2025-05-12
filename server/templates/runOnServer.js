@@ -7,3 +7,20 @@ function runSource() {
         source.focus();
     });
 }
+
+let myWindow;
+
+function runSourceInWindow() {
+    let source = document.getElementById('source');
+
+    fetchHelper("/execute/", source.value, a => {
+        if (myWindow && !myWindow.closed) {
+            myWindow.document.body.innerHTML = "";
+        } else {
+            myWindow = window.open("", "", "width=810,height=620");
+        }
+
+        myWindow.document.write(a);
+        source.focus();
+    });
+}
