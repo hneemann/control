@@ -1191,7 +1191,8 @@ func toUniCode(str string) (string, error) {
 }
 
 var unicodeMap = map[string]rune{
-	"alpha":   '⍺',
+	"hs":      '\u2009',
+	"alpha":   '\u03B1',
 	"beta":    '\u03B2',
 	"gamma":   '\u03B3',
 	"delta":   '\u03B4',
