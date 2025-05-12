@@ -527,7 +527,7 @@ func bodeMethods() value.MethodMap {
 				}
 			}
 			return nil, errors.New("ampModify requires a function that returns the modified plot")
-		}).SetMethodDescription("function", "the given function gets the amplitude plot and mast return the modified amplitude plot!").Pure(false),
+		}).SetMethodDescription("function", "the given function gets the amplitude plot and must return the modified amplitude plot!").Pure(false),
 		"phaseModify": value.MethodAtType(1, func(bode BodePlotValue, st funcGen.Stack[value.Value]) (value.Value, error) {
 			if cl, ok := st.Get(1).ToClosure(); ok {
 				a, err := cl.Eval(st, grParser.NewPlotValue(bode.Value.phase))
@@ -540,7 +540,13 @@ func bodeMethods() value.MethodMap {
 				}
 			}
 			return nil, errors.New("phaseModify requires a function that returns the modified plot")
-		}).SetMethodDescription("function", "the given function gets the phase plot and mast return the modified phase plot!").Pure(false),
+		}).SetMethodDescription("function", "the given function gets the phase plot and must return the modified phase plot!").Pure(false),
+		"amplitude": value.MethodAtType(0, func(bode BodePlotValue, st funcGen.Stack[value.Value]) (value.Value, error) {
+			return grParser.NewPlotValue(bode.Value.amplitude), nil
+		}).SetMethodDescription("returns the amplitude plot"),
+		"phase": value.MethodAtType(0, func(bode BodePlotValue, st funcGen.Stack[value.Value]) (value.Value, error) {
+			return grParser.NewPlotValue(bode.Value.phase), nil
+		}).SetMethodDescription("returns the phase plot"),
 	}
 }
 
