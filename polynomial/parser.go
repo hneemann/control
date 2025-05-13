@@ -1270,7 +1270,7 @@ var unicodeMap = map[string]rune{
 func getUnicode(s string) (rune, error) {
 	u, ok := unicodeMap[s]
 	if ok {
-		fmt.Printf("command %s -> \\u%x\n", s, u)
+		//fmt.Printf("command %s -> \\u%x\n", s, u)
 		return u, nil
 	}
 	return '_', fmt.Errorf("unknown unicode command %s", s)
