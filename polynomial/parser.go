@@ -1198,7 +1198,7 @@ func toUniCode(str string) (string, error) {
 
 var unicodeMap = map[string]rune{
 	"hs":      '\u2009',
-	"alpha":   '\u03B1',
+	"alpha":   '\u237a',
 	"beta":    '\u03B2',
 	"gamma":   '\u03B3',
 	"delta":   '\u03B4',
@@ -1270,6 +1270,7 @@ var unicodeMap = map[string]rune{
 func getUnicode(s string) (rune, error) {
 	u, ok := unicodeMap[s]
 	if ok {
+		fmt.Printf("command %s -> \\u%x\n", s, u)
 		return u, nil
 	}
 	return '_', fmt.Errorf("unknown unicode command %s", s)
