@@ -815,3 +815,18 @@ func (xc XConst) DrawTo(_ *Plot, canvas Canvas) error {
 	}
 	return nil
 }
+
+type Text struct {
+	Pos   Point
+	Text  string
+	Style *Style
+}
+
+func (t Text) PreferredBounds(_, _ Bounds) (x, y Bounds, err error) {
+	return NewBounds(t.Pos.X, t.Pos.X), NewBounds(t.Pos.Y, t.Pos.Y), nil
+}
+
+func (t Text) DrawTo(_ *Plot, canvas Canvas) error {
+	canvas.DrawText(t.Pos, t.Text, Left|Bottom, t.Style.Text(), canvas.Context().TextSize)
+	return nil
+}

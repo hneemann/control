@@ -665,6 +665,29 @@ func Setup(fg *value.FunctionGenerator) {
 		Args:   6,
 		IsPure: true,
 	}.SetDescription("x1", "y1", "x2", "y2", "text", "color", "Creates a new hint").VarArgs(5, 6))
+	fg.AddStaticFunction("text", funcGen.Function[value.Value]{
+		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
+			if x, ok := st.Get(0).ToFloat(); ok {
+				if y, ok := st.Get(1).ToFloat(); ok {
+					if text, ok := st.Get(2).(value.String); ok {
+						t := graph.Text{
+							Text: string(text),
+							Pos:  graph.Point{x, y},
+						}
+						styleVal, err := GetStyle(st, 3, graph.Black)
+						if err != nil {
+							return nil, fmt.Errorf("text: %w", err)
+						}
+						t.Style = styleVal.Value
+						return PlotContentValue{Holder: Holder[graph.PlotContent]{t}}, nil
+					}
+				}
+			}
+			return nil, fmt.Errorf("text requires two floats and a string")
+		},
+		Args:   4,
+		IsPure: true,
+	}.SetDescription("x", "y", "text", "color", "Adds an arbitrary text to the plot").VarArgs(3, 4))
 	fg.AddStaticFunction("arrow", funcGen.Function[value.Value]{
 		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
 			if x1, ok := st.Get(0).ToFloat(); ok {

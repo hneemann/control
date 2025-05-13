@@ -137,7 +137,7 @@ func (s *SVG) DrawText(a Point, text string, orientation Orientation, style *Sty
 				Attr("x", fmt.Sprintf("%0.2f", a.X)).
 				Attr("y", fmt.Sprintf("%0.2f", s.rect.Max.Y-a.Y)).
 				Attr("width", fmt.Sprintf("%0.2f", textSize*float64(len(text)))).
-				Attr("height", fmt.Sprintf("%0.2f", textSize*2))
+				Attr("height", fmt.Sprintf("%0.2f", textSize*3))
 
 			ast.ToMathMl(s.w, nil)
 			s.w.Close()
