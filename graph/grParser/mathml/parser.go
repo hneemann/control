@@ -436,6 +436,19 @@ func (p *parser) ParseFunc(isEnd func(token Token) bool) (Ast, Token) {
 	}
 }
 
+var mathFunctions = map[string]struct{}{
+	"sin":    {},
+	"cos":    {},
+	"tan":    {},
+	"ln":     {},
+	"exp":    {},
+	"arctan": {},
+	"arcsin": {},
+	"arccos": {},
+	"lim":    {},
+	"log":    {},
+}
+
 func (p *parser) ParseCommand(value string) Ast {
 	switch value {
 	case "frac":
@@ -494,17 +507,10 @@ func (p *parser) ParseCommand(value string) Ast {
 		return SimpleOperator("&leftarrow;")
 	case "Leftarrow":
 		return SimpleOperator("&Leftarrow;")
-	case "sin":
-		return SimpleIdent("sin")
-	case "cos":
-		return SimpleIdent("cos")
-	case "tan":
-		return SimpleIdent("tan")
-	case "ln":
-		return SimpleIdent("ln")
-	case "lim":
-		return SimpleIdent("lim")
 	default:
+		if _, ok := mathFunctions[value]; ok {
+			return SimpleIdent(value)
+		}
 		// assuming it's a symbol
 		return SimpleIdent("&" + value + ";")
 	}
