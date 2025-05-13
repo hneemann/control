@@ -284,6 +284,14 @@ func createPlotMethods() value.MethodMap {
 			plot.Value.YAxis = graph.LogAxis
 			return plot, nil
 		}).SetMethodDescription("Enables log scaling of y-Axis"),
+		"xLin": value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			plot.Value.XAxis = graph.LinearAxis
+			return plot, nil
+		}).SetMethodDescription("Enables linear scaling of x-Axis"),
+		"yLin": value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			plot.Value.YAxis = graph.LinearAxis
+			return plot, nil
+		}).SetMethodDescription("Enables linear scaling of y-Axis"),
 		"xDate": value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			plot.Value.XAxis = graph.CreateDateAxis("02.01.06", "02.01.06 15:04")
 			return plot, nil

@@ -851,7 +851,7 @@ func (l *Linear) AddToBode(b *BodePlot, style *graph.Style, latency float64) {
 		}
 
 		lastAngle = angle
-		amplitude = append(amplitude, graph.Point{X: w, Y: 20 * math.Log10(amp)})
+		amplitude = append(amplitude, graph.Point{X: w, Y: amp})
 		phase = append(phase, graph.Point{X: w, Y: angle + angleOffset - latFactor*w})
 		w *= wMult
 	}
@@ -864,7 +864,7 @@ func NewBode(wMin, wMax float64) *BodePlot {
 	amplitude := &graph.Plot{
 		XBounds:      graph.NewBounds(wMin, wMax),
 		XAxis:        graph.LogAxis,
-		YAxis:        graph.CreateFixedStepAxis(20),
+		YAxis:        graph.DBAxis,
 		Grid:         grParser.GridStyle,
 		XLabel:       "ω [rad/s]",
 		YLabel:       "Amplitude [dB]",

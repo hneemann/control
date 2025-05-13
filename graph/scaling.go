@@ -212,6 +212,31 @@ func CreateFixedStepAxis(step float64) Axis {
 	}
 }
 
+func DBAxis(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth, expand float64) (func(v float64) float64, []Tick, Bounds) {
+	if bounds.Min <= 0 {
+		return LinearAxis(minParent, maxParent, bounds, ctw, expand)
+	}
+
+	logMin := 20 * math.Log10(bounds.Min)
+	logMax := 20 * math.Log10(bounds.Max)
+
+	if logMax-logMin < 1 {
+		return LinearAxis(minParent, maxParent, bounds, ctw, expand)
+	}
+
+	tr, ticks, b := CreateFixedStepAxis(20)(minParent, maxParent, Bounds{bounds.valid, logMin, logMax}, ctw, expand)
+	for i := range ticks {
+		ticks[i].Position = math.Pow(10, ticks[i].Position/20)
+	}
+	return func(v float64) float64 {
+			return tr(20 * math.Log10(v))
+		}, ticks, Bounds{
+			valid: true,
+			Min:   math.Pow(10, b.Min/20),
+			Max:   math.Pow(10, b.Max/20),
+		}
+}
+
 func CreateDateAxis(formatDate, formatMin string) Axis {
 	return func(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth, expand float64) (func(v float64) float64, []Tick, Bounds) {
 		delta := bounds.Width() * expand
