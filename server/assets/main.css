@@ -25,10 +25,6 @@
         display: grid;
         grid-template-columns: 1fr 1fr;
     }
-    svg.svg {
-        width: 100%;
-        height: 100%;
-    }
 }
 
 @media (orientation: portrait) {
@@ -43,14 +39,15 @@
         grid-template-columns: 1fr;
         grid-template-rows: min-content 1fr;
     }
-    svg.svg {
-        width: 100%;
-        height: 100%;
-    }
 }
 
 #result {
     margin: 0.3em;
+}
+
+svg.svg {
+    width: 100%;
+    height: 100%;
 }
 
 div.window {
