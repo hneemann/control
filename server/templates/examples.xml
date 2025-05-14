@@ -59,7 +59,7 @@ bode(0.01,100)
                     .add(yConst(-180+50,red.dash(7,7)))
                     .add(xConst(pm.w0,  red.dash(7,7))) )
   .ampModify( a->a.add(xConst(pm.w0,red.dash(7,7))) )</example>
-    <example name="pid" desc="Die pid-Funktion">[
+    <example name="PID" desc="Die pid-Funktion">[
  ["pid(2,2)",        "=", pid(2,2)  ],
  ["pid(2,3,1)",      "=", pid(2,3,1)],
  ["pid(2,3,1,0.01)", "=", pid(2,3,1,0.01)]
@@ -114,7 +114,7 @@ plot(
 ).legendPos(2,0.7)
  .labels("t [s]", "h(t)")
  .title("Effect of a Limiter")</example>
-    <example name="Zweitore" desc="Berechnung von Zweitoren">let Rin   = 2000;
+    <example name="Zweitor Travo" desc="Berechnung realer Travo">let Rin   = 2000;
 let Lh    = 10;
 let ueber = 10;
 let Rout  = 5;
@@ -138,6 +138,26 @@ let gain=transformer.voltageGain(Rload).abs();
  ["Voltage Gain:",gain],
  ["Uout:",gain*240]
 ]</example>
+    <example name="Zweitor Transistor" desc="Berechnung Transistorschaltung">let tr=tpH(2700, 1.5e-4, 220, 18e-6);
+
+let t2=tr.series(tpShunt(3300));
+
+let ges=tpCascade(
+  tr,
+  tpShunt(15000),
+  tpShunt(82000),
+  tpShunt(820000),
+  t2
+);
+
+[
+ ["Trans:", tr],
+ ["Ges:",   ges],
+ ["Vuf:",   ges.voltageGain(15000)],
+ ["Rin:",   ges.inputImp(15000)],
+]</example>
+
+
             <!--example name="Nelder&amp;Mead" desc="Nichtlineare Optimierung">let s=lin();
 let g=7/((s+1)*(s+2)*(s-1));
 

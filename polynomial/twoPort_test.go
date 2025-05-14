@@ -14,10 +14,36 @@ func TestTwoPort_VoltageGain(t *testing.T) {
 	})
 }
 
+func TestTwoPort_VoltageGainOpen(t *testing.T) {
+	tp := NewTwoPort(1, 2+2i, 3, 4-1i, YParam)
+
+	g1 := tp.VoltageGain(1e6)
+	g2 := tp.VoltageGainOpen()
+	assert.InDelta(t, real(g1), real(g2), 1e-6)
+	assert.InDelta(t, imag(g1), imag(g2), 1e-6)
+
+	check(t, tp, func(tp *TwoPort) complex128 {
+		return tp.VoltageGainOpen()
+	})
+}
+
 func TestTwoPort_CurrentGain(t *testing.T) {
 	tp := NewTwoPort(1, 2+2i, 3, 4-1i, ZParam)
 	check(t, tp, func(tp *TwoPort) complex128 {
 		return tp.CurrentGain(10)
+	})
+}
+
+func TestTwoPort_CurrentGainShort(t *testing.T) {
+	tp := NewTwoPort(1, 2+2i, 3, 4-1i, ZParam)
+
+	g1 := tp.CurrentGain(1e-6)
+	g2 := tp.CurrentGainShort()
+	assert.InDelta(t, real(g1), real(g2), 1e-6)
+	assert.InDelta(t, imag(g1), imag(g2), 1e-6)
+
+	check(t, tp, func(tp *TwoPort) complex128 {
+		return tp.CurrentGainShort()
 	})
 }
 
@@ -28,10 +54,62 @@ func TestTwoPort_InputImpedance(t *testing.T) {
 	})
 }
 
+func TestTwoPort_InputImpedanceOpen(t *testing.T) {
+	tp := NewTwoPort(1, 2+2i, 3, 4-1i, HParam)
+
+	g1 := tp.InputImpedance(1e+6)
+	g2 := tp.InputImpedanceOpen()
+	assert.InDelta(t, real(g1), real(g2), 1e-6)
+	assert.InDelta(t, imag(g1), imag(g2), 1e-6)
+
+	check(t, tp, func(tp *TwoPort) complex128 {
+		return tp.InputImpedanceOpen()
+	})
+}
+
+func TestTwoPort_InputImpedanceShort(t *testing.T) {
+	tp := NewTwoPort(1, 2+2i, 3, 4-1i, HParam)
+
+	g1 := tp.InputImpedance(1e-7)
+	g2 := tp.InputImpedanceShort()
+	assert.InDelta(t, real(g1), real(g2), 1e-6)
+	assert.InDelta(t, imag(g1), imag(g2), 1e-6)
+
+	check(t, tp, func(tp *TwoPort) complex128 {
+		return tp.InputImpedanceShort()
+	})
+}
+
 func TestTwoPort_OutputImpedance(t *testing.T) {
 	tp := NewTwoPort(1, 2+2i, 3, 4-1i, AParam)
 	check(t, tp, func(tp *TwoPort) complex128 {
 		return tp.OutputImpedance(10)
+	})
+}
+
+func TestTwoPort_OutputImpedanceOpen(t *testing.T) {
+	tp := NewTwoPort(1, 2+2i, 3, 4-1i, AParam)
+
+	g1 := tp.OutputImpedance(1e+6)
+	g2 := tp.OutputImpedanceOpen()
+	assert.InDelta(t, real(g1), real(g2), 1e-6)
+	assert.InDelta(t, imag(g1), imag(g2), 1e-6)
+
+	check(t, tp, func(tp *TwoPort) complex128 {
+		return tp.OutputImpedanceOpen()
+	})
+}
+
+func TestTwoPort_OutputImpedanceShort(t *testing.T) {
+	tp := NewTwoPort(1, 2+2i, 3, 4-1i, AParam)
+
+	g1 := tp.OutputImpedance(1e-7)
+	g2 := tp.OutputImpedanceShort()
+	assert.InDelta(t, real(g1), real(g2), 1e-6)
+	assert.InDelta(t, imag(g1), imag(g2), 1e-6)
+
+	check(t, tp, func(tp *TwoPort) complex128 {
+		return tp.OutputImpedanceShort()
 	})
 }
 

@@ -282,6 +282,9 @@ func (tp *TwoPort) GetC() (*TwoPort, error) {
 }
 
 func (tp *TwoPort) VoltageGain(load complex128) complex128 {
+	if load == 0 {
+		return 0
+	}
 	switch tp.typ {
 	case YParam:
 		return -tp.m21 / (tp.m22 + 1/load)
@@ -297,7 +300,26 @@ func (tp *TwoPort) VoltageGain(load complex128) complex128 {
 	panic("Invalid type")
 }
 
+func (tp *TwoPort) VoltageGainOpen() complex128 {
+	switch tp.typ {
+	case YParam:
+		return -tp.m21 / tp.m22
+	case AParam:
+		return 1 / tp.m11
+	case HParam:
+		return -tp.m21 / tp.det()
+	case ZParam:
+		return tp.m21 / tp.m11
+	case CParam:
+		return tp.m21
+	}
+	panic("Invalid type")
+}
+
 func (tp *TwoPort) CurrentGain(load complex128) complex128 {
+	if load == 0 {
+		return tp.CurrentGainShort()
+	}
 	switch tp.typ {
 	case YParam:
 		return tp.m21 / load / (tp.det() + tp.m11/load)
@@ -313,7 +335,26 @@ func (tp *TwoPort) CurrentGain(load complex128) complex128 {
 	panic("Invalid type")
 }
 
+func (tp *TwoPort) CurrentGainShort() complex128 {
+	switch tp.typ {
+	case YParam:
+		return tp.m21 / tp.m11
+	case AParam:
+		return -1 / tp.m22
+	case HParam:
+		return tp.m21
+	case ZParam:
+		return -tp.m21 / tp.m22
+	case CParam:
+		return -tp.m21 / tp.det()
+	}
+	panic("Invalid type")
+}
+
 func (tp *TwoPort) InputImpedance(load complex128) complex128 {
+	if load == 0 {
+		return tp.InputImpedanceShort()
+	}
 	switch tp.typ {
 	case YParam:
 		return (tp.m22 + 1/load) / (tp.det() + tp.m11/load)
@@ -329,7 +370,42 @@ func (tp *TwoPort) InputImpedance(load complex128) complex128 {
 	panic("Invalid type")
 }
 
+func (tp *TwoPort) InputImpedanceOpen() complex128 {
+	switch tp.typ {
+	case YParam:
+		return (tp.m22) / tp.det()
+	case ZParam:
+		return tp.m11
+	case HParam:
+		return tp.det() / tp.m22
+	case CParam:
+		return 1 / tp.m11
+	case AParam:
+		return tp.m11 / tp.m21
+	}
+	panic("Invalid type")
+}
+
+func (tp *TwoPort) InputImpedanceShort() complex128 {
+	switch tp.typ {
+	case YParam:
+		return 1 / tp.m11
+	case ZParam:
+		return tp.det() / tp.m22
+	case HParam:
+		return tp.m11
+	case CParam:
+		return tp.m22 / tp.det()
+	case AParam:
+		return tp.m12 / tp.m22
+	}
+	panic("Invalid type")
+}
+
 func (tp *TwoPort) OutputImpedance(load complex128) complex128 {
+	if load == 0 {
+		return tp.OutputImpedanceShort()
+	}
 	switch tp.typ {
 	case YParam:
 		return (tp.m11 + 1/load) / (tp.det() + tp.m22/load)
@@ -345,6 +421,38 @@ func (tp *TwoPort) OutputImpedance(load complex128) complex128 {
 	panic("Invalid type")
 }
 
+func (tp *TwoPort) OutputImpedanceOpen() complex128 {
+	switch tp.typ {
+	case YParam:
+		return tp.m11 / tp.det()
+	case ZParam:
+		return tp.m22
+	case HParam:
+		return 1 / tp.m22
+	case CParam:
+		return tp.det() / tp.m11
+	case AParam:
+		return tp.m22 / tp.m21
+	}
+	panic("Invalid type")
+}
+
+func (tp *TwoPort) OutputImpedanceShort() complex128 {
+	switch tp.typ {
+	case YParam:
+		return 1 / tp.m22
+	case ZParam:
+		return tp.det() / tp.m11
+	case HParam:
+		return tp.m11 / tp.det()
+	case CParam:
+		return tp.m22
+	case AParam:
+		return tp.m12 / tp.m11
+	}
+	panic("Invalid type")
+}
+
 func (tp TwoPort) div(d complex128) (*TwoPort, error) {
 	if d == 0 {
 		return nil, fmt.Errorf("cannot create parameters: division by zero")
@@ -356,9 +464,9 @@ func (tp TwoPort) div(d complex128) (*TwoPort, error) {
 	return &tp, nil
 }
 
-func (tp *TwoPort) add(o *TwoPort) *TwoPort {
+func (tp *TwoPort) add(o *TwoPort) (*TwoPort, error) {
 	if tp.typ != o.typ {
-		panic("Two ports must be of the same type")
+		return nil, fmt.Errorf("cannot add two ports of different types: %s and %s", tp.typ, o.typ)
 	}
 	return &TwoPort{
 		m11: tp.m11 + o.m11,
@@ -366,7 +474,7 @@ func (tp *TwoPort) add(o *TwoPort) *TwoPort {
 		m21: tp.m21 + o.m21,
 		m22: tp.m22 + o.m22,
 		typ: tp.typ,
-	}
+	}, nil
 }
 
 func (tp *TwoPort) Cascade(port *TwoPort) (*TwoPort, error) {
@@ -397,7 +505,7 @@ func (tp *TwoPort) Series(o *TwoPort) (*TwoPort, error) {
 	if err != nil {
 		return nil, err
 	}
-	return z1.add(z2), nil
+	return z1.add(z2)
 }
 
 func (tp *TwoPort) Parallel(o *TwoPort) (*TwoPort, error) {
@@ -409,7 +517,7 @@ func (tp *TwoPort) Parallel(o *TwoPort) (*TwoPort, error) {
 	if err != nil {
 		return nil, err
 	}
-	return y1.add(y2), nil
+	return y1.add(y2)
 }
 
 func (tp *TwoPort) SeriesParallel(o *TwoPort) (*TwoPort, error) {
@@ -421,7 +529,7 @@ func (tp *TwoPort) SeriesParallel(o *TwoPort) (*TwoPort, error) {
 	if err != nil {
 		return nil, err
 	}
-	return h1.add(h2), nil
+	return h1.add(h2)
 }
 
 func (tp *TwoPort) ParallelSeries(o *TwoPort) (*TwoPort, error) {
@@ -433,5 +541,5 @@ func (tp *TwoPort) ParallelSeries(o *TwoPort) (*TwoPort, error) {
 	if err != nil {
 		return nil, err
 	}
-	return c1.add(c2), nil
+	return c1.add(c2)
 }
