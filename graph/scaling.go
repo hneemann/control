@@ -6,14 +6,21 @@ import (
 	"time"
 )
 
-// CheckTextWidth returns true if a number with the given number of digits fits in the given space width
+// CheckTextWidth returns true if a number with the given number of digits fits in the given width.
+// The decimal point and a negative sign are counted as digits. So "-0.2" has 4 digits.
 type CheckTextWidth func(width float64, digits int) bool
 
 type Tick struct {
+	// Position is the position of the tick in the axis coordinate space
 	Position float64
-	Label    string
+	// Label is the label of the tick
+	// If Label is empty, a short tick mark is drawn
+	Label string
 }
 
+// Axis is a function that takes the parent coordinate space and the bounds of the axis and returns a function
+// to convert values to the parent space, a slice of ticks, and the expanded bounds of the axis.
+// The expanded bounds are required to ensure that the axis labels are not too close to the ends of the coordinate space.
 type Axis func(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth, expand float64) (func(v float64) float64, []Tick, Bounds)
 
 func LinearAxis(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth, expand float64) (func(v float64) float64, []Tick, Bounds) {
@@ -141,11 +148,11 @@ func LogAxis(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth, ex
 		f := (math.Log10(v) - logMin) / (logMax - logMin)
 		return f*(maxParent-minParent) + minParent
 	}
-	ticks := CreateLogTicks(logMin, minParent, maxParent, tr, ctw)
+	ticks := createLogTicks(logMin, minParent, maxParent, tr)
 	return tr, ticks, Bounds{bounds.valid, math.Pow(10, logMin), math.Pow(10, logMax)}
 }
 
-func CreateLogTicks(logMin, parentMin, parentMax float64, tr func(v float64) float64, ctw CheckTextWidth) []Tick {
+func createLogTicks(logMin, parentMin, parentMax float64, tr func(v float64) float64) []Tick {
 	m := int(math.Floor(logMin))
 	var ticks []Tick
 	for {
@@ -169,6 +176,9 @@ func CreateLogTicks(logMin, parentMin, parentMax float64, tr func(v float64) flo
 	}
 }
 
+// CreateFixedStepAxis creates an axis with a fixed step size.
+// If there are less than two or more than 20 tick marks in the available space,
+// it falls back to a linear axis.
 func CreateFixedStepAxis(step float64) Axis {
 	return func(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth, expand float64) (func(v float64) float64, []Tick, Bounds) {
 		tr, ticks, b := LinearAxis(minParent, maxParent, bounds, ctw, expand)
@@ -212,6 +222,10 @@ func CreateFixedStepAxis(step float64) Axis {
 	}
 }
 
+// DBAxis creates a dB axis.
+// To draw the ticks in bB scale, it uses a linear axis.
+// It uses a common linear axis if the bounds are less than 40 dB apart.
+// Otherwise, it uses a linear axis with a fixed step size of 20 dB.
 func DBAxis(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth, expand float64) (func(v float64) float64, []Tick, Bounds) {
 	if bounds.Min <= 0 {
 		return LinearAxis(minParent, maxParent, bounds, ctw, expand)
@@ -220,7 +234,7 @@ func DBAxis(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth, exp
 	logMin := 20 * math.Log10(bounds.Min)
 	logMax := 20 * math.Log10(bounds.Max)
 
-	if logMax-logMin < 1 {
+	if logMax-logMin < 2 {
 		return LinearAxis(minParent, maxParent, bounds, ctw, expand)
 	}
 
@@ -237,6 +251,8 @@ func DBAxis(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth, exp
 		}
 }
 
+// CreateDateAxis creates a date axis.
+// The values are expected to be in seconds since the epoch.
 func CreateDateAxis(formatDate, formatMin string) Axis {
 	return func(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth, expand float64) (func(v float64) float64, []Tick, Bounds) {
 		delta := bounds.Width() * expand
