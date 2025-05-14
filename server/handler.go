@@ -54,27 +54,29 @@ func ReadExamples() []Example {
 
 	log.Printf("loaded %d examples", len(examples.Examples))
 
-	if bi, ok := debug.ReadBuildInfo(); ok {
-		var vs = "// Written by H.Neemann in 2025\n\n// Build info: "
-		for _, v := range bi.Settings {
-			if !strings.HasPrefix(v.Key, "CGO_") {
-				vs += "\n// " + v.Key + " = " + v.Value
-			}
-		}
-		vs += "\n\n0"
-		return append(examples.Examples, Example{
-			Name: "Info",
-			Desc: "Info",
-			Code: vs,
-		})
-	}
-
 	return examples.Examples
 }
 
 func CreateMain(examples []Example) http.HandlerFunc {
+
+	var info = "Written by H.Neemann in 2025\n\nBuild info: "
+	if bi, ok := debug.ReadBuildInfo(); ok {
+		for _, v := range bi.Settings {
+			if !strings.HasPrefix(v.Key, "CGO_") {
+				info += "\n  " + v.Key + " = " + v.Value
+			}
+		}
+	}
+
 	return func(writer http.ResponseWriter, request *http.Request) {
-		err := mainViewTemp.Execute(writer, examples)
+		data := struct {
+			Examples []Example
+			InfoText string
+		}{
+			Examples: examples,
+			InfoText: info,
+		}
+		err := mainViewTemp.Execute(writer, data)
 		if err != nil {
 			log.Println(err)
 		}

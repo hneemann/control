@@ -42,9 +42,10 @@
 </div>
 
 <nav class="menu-content" id="examples">
-    {{range .}}
+    {{range .Examples}}
     <a class="menu-item" onclick="loadExample('{{.Name}}')" title="{{.Desc}}">{{.Name}}</a>
     {{end}}
+    <a class="menu-item" onclick="showPopUpById('info')">Info</a>
 </nav>
 
 <div class="fileDialog" id="saveDiv">
@@ -121,6 +122,15 @@
     <div>
     Es ist ein Netzwerkfehler aufgetreten!<br>
     Der Server konnte nicht erreicht werden!
+    </div>
+    <div style="text-align:right;margin-top:0.5em;">
+        <button onclick="hidePopUp();">Ok</button>
+    </div>
+</div>
+
+<div class="fileDialog" id="info">
+    <div>
+        <pre>{{.InfoText}}</pre>
     </div>
     <div style="text-align:right;margin-top:0.5em;">
         <button onclick="hidePopUp();">Ok</button>
