@@ -21,7 +21,7 @@ func TestLinear(t *testing.T) {
 		{name: "poly3", exp: "let p=poly(1,2,3); p(1)", res: value.Float(6)},
 		{name: "poly4", exp: "let p1=poly(1,2,3);let p2=poly(1,3); string(p1*p2)", res: value.String("9s³+9s²+5s+1")},
 		{name: "poly5", exp: "let p=poly(1,0,1); string(p.roots())", res: value.String("[(-0+1i)]")},
-		{name: "poly6", exp: "let p=poly(-1,0,1); string(p.roots())", res: value.String("[(1+0i), (-1+0i)]")},
+		{name: "poly6", exp: "let p=poly(-1,0,1); string(p.roots())", res: value.String("[1, -1]")},
 		{name: "poly7", exp: "let p=poly(4,2)/2; string(p)", res: value.String("s+2")},
 
 		{name: "polyExp1", exp: "let p=poly(1,1)^2; string(p)", res: value.String("s²+2s+1")},
