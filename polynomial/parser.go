@@ -54,6 +54,9 @@ func (c Complex) ToFloat() (float64, bool) {
 }
 
 func (c Complex) ToString(_ funcGen.Stack[value.Value]) (string, error) {
+	if imag(c) == 0 {
+		return fmt.Sprintf("%v", real(c)), nil
+	}
 	return fmt.Sprintf("%v", c), nil
 }
 
