@@ -36,6 +36,10 @@ type Example struct {
 	Code string `xml:",chardata"`
 }
 
+func (e Example) SaveName() string {
+	return strings.ReplaceAll(e.Name, " ", "_")
+}
+
 type Examples struct {
 	Examples []Example `xml:"example"`
 }

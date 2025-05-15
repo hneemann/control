@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <title>Control</title>
+  <link rel="icon" type="image/svg" href="icon.svg">
+  <link rel="stylesheet" type="text/css" href="main.css"/>
+  <script src="wasm_exec.js"></script>
+  <script>
+    const go = new Go();
+	WebAssembly.instantiateStreaming(fetch("generate.wasm"), go.importObject).then((result) => {
+	  go.run(result.instance);
+	});
+  </script>
+  <script type="text/javascript" src="main.js"></script>
+  <script type="text/javascript" src="runInBrowser.js"></script>
+</head>
+<body>
+<div class="main">
+  <div id="result" onclick="runSource();"></div>
+  <div class="window">
+    <div class="mainHead">
+      <label for="source" id="filenameLabel"></label><br>
+    </div>
+    <div class="toolbar">
+        <button id="new" onclick="newScript();" title="Neu"><img class="icon" src="new.svg"/></button>
+        <button id="run" onclick="runSource();" title="Ausführen und Ausgabe aktualisieren"><img class="icon" src="refresh.svg"/></button>
+        <button id="runInWindow" onclick="runSourceInWindow();" title="Ausführen und Ausgabe in Fenster aktualisieren" style="margin-left:1em;"><img class="icon" src="refreshWindow.svg"/></button>
+        <button id="example" style="margin-left:auto" onclick="showPopUpById('examples');" title="Beispiele"><img class="icon" src="help.svg"/></button>
+    </div>
+    <div style="display:flex;">
+      <textarea class="source" rows="10" autocorrect="off" id="source" placeholder="Enter script" onkeyup="updateRow()" onclick="updateRow()"></textarea>
+    </div>
+    <div class="footer">
+        <span style="display:inline-block;width:3em;text-align:center;" id="row">1</span>
+    </div>
+  </div>
+</div>
+
+<nav class="menu-content" id="examples">
+    {{range .Examples}}
+    <a class="menu-item" onclick="loadExample('{{.SaveName}}')" title="{{.Desc}}">{{.Name}}</a>
+    {{end}}
+    <a class="menu-item" onclick="showPopUpById('info')">Info</a>
+</nav>
+
+<div class="fileDialog" id="networkError">
+    <div>
+    Es ist ein Netzwerkfehler aufgetreten!<br>
+    Der Server konnte nicht erreicht werden!
+    </div>
+    <div style="text-align:right;margin-top:0.5em;">
+        <button onclick="hidePopUp();">Ok</button>
+    </div>
+</div>
+
+<div class="fileDialog" id="info">
+    <div class="head">Info</div>
+    <div>
+        <pre>{{.InfoText}}</pre>
+    </div>
+    <div style="text-align:right;margin-top:0.5em;">
+        <button onclick="hidePopUp();">Ok</button>
+    </div>
+</div>
+
+<div class="fileDialog" id="overwriteConfirm">
+    <div>
+    Soll das aktuelle Skript wirklich verworfen werden?
+    </div>
+    <div style="text-align:right;margin-top:0.5em;">
+        <button onclick="hidePopUp();">Abbrechen</button>
+        <button onclick="overwriteConfirmed();">Verwerfen</button>
+    </div>
+</div>
+
+</body>
+</html>
