@@ -7,8 +7,6 @@ import (
 	"github.com/hneemann/parser2/value"
 	"github.com/hneemann/parser2/value/export/xmlWriter"
 	"github.com/stretchr/testify/assert"
-	"os"
-	"path/filepath"
 	"testing"
 )
 
@@ -320,12 +318,15 @@ func Test_Evans7(t *testing.T) {
 func exportPlot(pl graph.Image, name string) error {
 	w := xmlWriter.New()
 	c := graph.NewSVG(&graph.DefaultContext, w)
-	pl.DrawTo(c)
-	c.Close()
+	err := pl.DrawTo(c)
+	if err != nil {
+		return err
+	}
+	err = c.Close()
 
-	f, _ := os.Create(filepath.Join(testFolder, name))
-	defer f.Close()
-	_, err := f.Write(w.Bytes())
+	//f, _ := os.Create(filepath.Join(testFolder, name))
+	//defer f.Close()
+	//_, err := f.Write(w.Bytes())
 	return err
 }
 
