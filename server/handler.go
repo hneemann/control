@@ -60,9 +60,7 @@ func ReadExamples() []Example {
 
 	return examples.Examples
 }
-
-func CreateMain(examples []Example) http.HandlerFunc {
-
+func GetBuildInfo() string {
 	var info = "Written by H.Neemann in 2025\n\nBuild info: "
 	if bi, ok := debug.ReadBuildInfo(); ok {
 		for _, v := range bi.Settings {
@@ -71,6 +69,12 @@ func CreateMain(examples []Example) http.HandlerFunc {
 			}
 		}
 	}
+	return info
+}
+
+func CreateMain(examples []Example) http.HandlerFunc {
+
+	info := GetBuildInfo()
 
 	return func(writer http.ResponseWriter, request *http.Request) {
 		data := struct {

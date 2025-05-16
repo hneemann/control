@@ -1,36 +1,40 @@
 package main
 
 import (
+	"flag"
 	"github.com/hneemann/control/server"
 	"html/template"
 	"io"
+	"log"
 	"os"
 	"path/filepath"
 )
 
 func main() {
+	folder := flag.String("folder", "pages", "pages folder")
+	flag.Parse()
+
+	log.Println("Folder:", *folder)
+
 	examples := server.ReadExamples()
 
-	folder := "/home/hneemann/Dokumente/myGo/control_static"
-	_, err := os.Stat(folder)
+	_, err := os.Stat(*folder)
 	if err != nil {
-		panic(err)
-	}
-
-	for _, ex := range examples {
-		f, err := os.Create(filepath.Join(folder, "examples/"+ex.SaveName()+".control"))
-		defer f.Close()
+		err = os.MkdirAll(*folder+"/examples", 0755)
 		if err != nil {
 			panic(err)
 		}
-		_, err = f.WriteString(ex.Code)
+	}
+
+	for _, ex := range examples {
+		copyExample(*folder, ex)
 	}
 
 	t, err := template.ParseFiles("static/index.html")
 	if err != nil {
 		panic(err)
 	}
-	f, err := os.Create(filepath.Join(folder, "index.html"))
+	f, err := os.Create(filepath.Join(*folder, "index.html"))
 	defer f.Close()
 
 	data := struct {
@@ -38,7 +42,7 @@ func main() {
 		InfoText string
 	}{
 		Examples: examples,
-		InfoText: "Written in 2025 by H. Neemann",
+		InfoText: server.GetBuildInfo(),
 	}
 
 	err = t.Execute(f, data)
@@ -46,7 +50,7 @@ func main() {
 		panic(err)
 	}
 
-	copyFiles(folder,
+	copyFiles(*folder,
 		"static/main.js",
 		"server/templates/runInBrowser.js",
 		"server/assets/help.svg",
@@ -61,23 +65,36 @@ func main() {
 
 }
 
+func copyExample(folder string, ex server.Example) {
+	f, err := os.Create(filepath.Join(folder, "examples/"+ex.SaveName()+".control"))
+	defer f.Close()
+	if err != nil {
+		panic(err)
+	}
+	_, err = f.WriteString(ex.Code)
+}
+
 func copyFiles(target string, name ...string) {
 	for _, n := range name {
-		src, err := os.Open(n)
-		if err != nil {
-			panic(err)
-		}
-		defer src.Close()
+		copyFile(target, n)
+	}
+}
 
-		dst, err := os.Create(filepath.Join(target, filepath.Base(n)))
-		if err != nil {
-			panic(err)
-		}
-		defer dst.Close()
+func copyFile(target string, n string) {
+	src, err := os.Open(n)
+	if err != nil {
+		panic(err)
+	}
+	defer src.Close()
 
-		_, err = io.Copy(dst, src)
-		if err != nil {
-			panic(err)
-		}
+	dst, err := os.Create(filepath.Join(target, filepath.Base(n)))
+	if err != nil {
+		panic(err)
+	}
+	defer dst.Close()
+
+	_, err = io.Copy(dst, src)
+	if err != nil {
+		panic(err)
 	}
 }
