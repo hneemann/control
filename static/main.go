@@ -11,7 +11,7 @@ import (
 )
 
 func main() {
-	folder := flag.String("folder", "pages", "pages folder")
+	folder := flag.String("folder", "./pages", "pages folder")
 	flag.Parse()
 
 	log.Println("Folder:", *folder)
@@ -59,8 +59,6 @@ func main() {
 		"server/assets/new.svg",
 		"server/assets/refresh.svg",
 		"server/assets/refreshWindow.svg",
-		"server/assets/wasm_exec.js",
-		"server/assets/generate.wasm",
 	)
 
 }
