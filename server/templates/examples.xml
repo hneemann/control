@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Examples>
-    <example name="Daten-Plot">let data = [
+    <example name="Daten-Plot"
+             st-name="Data-Plot" >let data = [
   [0, 0],
   [1, 1],
   [2, 4],
@@ -11,18 +12,22 @@
 plot(
  scatter( data )
 )</example>
-    <example name="Graph" desc="Funktionsplot">plot(
+    <example name="Graph" desc="Funktionsplot"
+             st-name="Graph" st-desc="Function plot">plot(
  function( x->sin(pi*x) )
 )</example>
-    <example name="Graph 2" desc="Funktionsplotter">plot(
+    <example name="Graph 2" desc="Funktionsplotter"
+             st-name="Graph 2" st-desc="Function plot">plot(
  function( x->sin(x), black, "sin(x)"),
  function( x->cos(x), blue,  "cos(x)"),
  function( x->tan(x), red,   "tan(x)")
 ).xBounds(0,2*pi).yBounds(-2,2)</example>
-    <example name="Ortskurve" desc="Darstellung der Ortskurve">let g = 3/((s+1)*(s+2));
+    <example name="Ortskurve" desc="Darstellung der Ortskurve"
+             st-name="Nyquist plot" st-desc="Nyquist plot">let g = 3/((s+1)*(s+2));
 
 g.nyquist()</example>
-    <example name="Ortskurve 2" desc="Darstellung der Ortskurve">let g = 3/((s+1)*(s+1.5)*(s+2));
+    <example name="Ortskurve 2" desc="Darstellung der Ortskurve"
+             st-name="Nyquist plot 2" st-desc="Nyquist plot" >let g = 3/((s+1)*(s+1.5)*(s+2));
 
 func h(w)
   let c1 = g( _i*w );
@@ -36,14 +41,17 @@ g.nyquist()
   .add( h(1)    )
   .add( h(2)    )
   .add( h(5)    )</example>
-    <example name="Nyquist" desc="Anwendung des Nyquistkriteriums">let g = 6*(s+1)/((s-1)*(s-3));
+    <example name="Nyquist" desc="Anwendung des Nyquistkriteriums"
+             st-name="Nyquist stability criterion">let g = 6*(s+1)/((s-1)*(s-3));
 
 g.nyquist(true)</example>
-    <example name="Bode" desc="Darstellung eines Bode-Diagramms">let g = 3/((s+1)*(s+2));
+    <example name="Bode" desc="Darstellung eines Bode-Diagramms"
+             st-name="Bode plot" st-desc="Bode plot">let g = 3/((s+1)*(s+2));
 
 bode(0.01,100)
   .add(g)</example>
-    <example name="Bode 2" desc="Darstellung mehrerer Kurven in einem Bode-Diagramm">let g = 3/((s+1)*(s+2));
+    <example name="Bode 2" desc="Darstellung mehrerer Kurven in einem Bode-Diagramm"
+             st-name="Bode plot 2" st-desc="Multiple systems">let g = 3/((s+1)*(s+2));
 let k = 1.6*(1+1/(1.7*s));
 
 let g0=k*g;
@@ -59,20 +67,24 @@ bode(0.01,100)
                     .add(yConst(-180+50,red.dash(7,7)))
                     .add(xConst(pm.w0,  red.dash(7,7))) )
   .ampModify( a->a.add(xConst(pm.w0,red.dash(7,7))) )</example>
-    <example name="PID" desc="Die pid-Funktion">[
+    <example name="PID" desc="Die pid-Funktion"
+             st-name="PID" st-desc="The pid function">[
  ["pid(2,2)",        "=", pid(2,2)  ],
  ["pid(2,3,1)",      "=", pid(2,3,1)],
  ["pid(2,3,1,0.01)", "=", pid(2,3,1,0.01)]
 ]</example>
-    <example name="Evans" desc="Darstellung einer Wurzelortskurve">let g = 3/((s+1)*(s+2));
+    <example name="WOK" desc="Darstellung einer Wurzelortskurve"
+             st-name="Root locus analysis" st-desc="Root locus analysis">let g = 3/((s+1)*(s+2));
 let k = 1+1/(0.9*s);
 
 (k*g).evans(2)</example>
 
-    <example name="Evans 2" desc="Darstellung einer Wurzelortskurve">let l = 352*poly(5,1)/poly(0,0,2000,200,25,1);
+    <example name="WOK 2" desc="Darstellung einer Wurzelortskurve"
+             st-name="Root locus analysis 2" st-desc="Root locus analysis">let l = 352*poly(5,1)/poly(0,0,2000,200,25,1);
 l.evans(100)</example>
 
-    <example name="Simulation" desc="Simulation des Systems">let g = 70/((s+1)*(s+2)*(s+2.5));
+    <example name="Simulation" desc="Simulation des Systems"
+             st-name="Simulation" st-desc="Simulation of a linear system">let g = 70/((s+1)*(s+2)*(s+2.5));
 let k1 = 0.2*(0.6*s+1)/(0.002*s+1);
 let k2 = pid(0.1,2);
 let k3 = pid(0.3,2,0.5);
@@ -83,7 +95,8 @@ plot(
   curve((k3*g).loop().simStep(10),green,"PID")
 ).labels("t [s]","h(t)").legendPos(5,0.87)</example>
 
-<example name="Simulation nicht linear" desc="Simulation eines nicht linearen Systems">let G = 70/((s+1)*(s+2)*(s+2.5));
+<example name="Simulation nicht linear" desc="Simulation eines nicht linearen Systems"
+         st-name="Simulation non linear" st-desc="Simulation of a non linear system">let G = 70/((s+1)*(s+2)*(s+2.5));
 
 let kp = 0.24;
 let Ti = 1.05;
@@ -114,7 +127,8 @@ plot(
 ).legendPos(2,0.7)
  .labels("t [s]", "h(t)")
  .title("Effect of a Limiter")</example>
-    <example name="Zweitor Travo" desc="Berechnung realer Travo">let Rin   = 2000;
+    <example name="Zweitor Travo" desc="Berechnung realer Travo"
+             st-name="Two-Port Transformer" st-desc="Two-Port real transformer">let Rin   = 2000;
 let Lh    = 10;
 let ueber = 10;
 let Rout  = 5;
@@ -138,7 +152,8 @@ let gain=transformer.voltageGain(Rload).abs();
  ["Voltage Gain:",gain],
  ["Uout:",gain*240]
 ]</example>
-    <example name="Zweitor Transistor" desc="Berechnung Transistorschaltung">let tr=tpH(2700, 1.5e-4, 220, 18e-6);
+    <example name="Zweitor Transistor" desc="Berechnung Transistorschaltung"
+             st-name="Two-Port Transistor" st-desc="Two-Port Transistor">let tr=tpH(2700, 1.5e-4, 220, 18e-6);
 
 let t2=tr.series(tpShunt(3300));
 
@@ -156,54 +171,5 @@ let ges=tpCascade(
  ["Vuf:",   ges.voltageGain(15000)],
  ["Rin:",   ges.inputImp(15000)],
 ]</example>
-
-
-            <!--example name="Nelder&amp;Mead" desc="Nichtlineare Optimierung">let s=lin();
-let g=7/((s+1)*(s+2)*(s-1));
-
-
-func getSim(kp,T)
-  let k=kp*(T*s+1)/(0.01*s+1);
-  let g0=k*g;
-  let k0=g0(0);
-  let v=(1+k0)/k0;
-  let vor=v*(g0.loop());
-  vor.simStep(10);
-
-const maxPercent=3;
-const minStartTime=4;
-
-const minBorder=1-maxPercent/100;
-const maxBorder=1+maxPercent/100;
-
-func targetMax(kp,T)
-  let sim = getSim(kp,T);
-  let ma=sim.minMax(e-&gt;e[1]).maxItem;
-  let mi=sim.accept(e-&gt;e[0]&gt;minStartTime).minMax(e-&gt;e[1]).minItem;
-  sqr(ma[1]-maxBorder)+sqr(mi[1]-minBorder);
-
-const maxTimePercent=4;
-const maxTimeDif = maxTimePercent/100;
-
-func targetTime(kp,T)
-  let sim=getSim(kp,T);
-  let l = sim.combine((a,b)-&gt;{a:a,b:b}).accept(e-&gt;abs(e.a[1]-1)&gt;maxTimeDif &amp; abs(e.b[1]-1)&lt;=maxTimeDif).last();
-  let bez = if l.a[1]&lt;1 then 1-maxTimeDif else 1+maxTimeDif;
-  l.a[0]+(bez-l.a[1])/(l.b[1]-l.a[1])*(l.b[0]-l.a[0]);
-
-func getCurve(kp,T, color)
-  curve( getSim(kp,T),color,sprintf(&quot;kp=%.2f, Ti=%.2f, Tm=%.2f&quot;,kp,T,targetTime(kp,T)) );
-
-let kp = 0.4;
-let T = 1.1;
-
-let o1 = nelderMead(targetMax,[kp,T]);
-let o2 = nelderMead(targetTime,o1.vec);
-
-plot(
-  getCurve(kp,T,black),
-  getCurve(o1.vec[0],o1.vec[1],blue),
-  getCurve(o2.vec[0],o2.vec[1],red)
-).xLabel(&quot;t&quot;).yLabel(&quot;h(t)&quot;).grid().legendPos(5,0.9)</example-->
 
 </Examples>

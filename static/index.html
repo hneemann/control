@@ -40,7 +40,7 @@
 
 <nav class="menu-content" id="examples">
     {{range .Examples}}
-    <a class="menu-item" onclick="loadExample('{{.SaveName}}')" title="{{.Desc}}">{{.Name}}</a>
+    <a class="menu-item" onclick="loadExample('{{.StNameSave}}')" title="{{.StDesc}}">{{.StName}}</a>
     {{end}}
     <a class="menu-item" onclick="showPopUpById('info')">Info</a>
 </nav>

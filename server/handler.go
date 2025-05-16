@@ -31,13 +31,15 @@ var Templates = template.Must(template.New("").ParseFS(templateFS, "templates/*.
 var mainViewTemp = Templates.Lookup("main.html")
 
 type Example struct {
-	Name string `xml:"name,attr"`
-	Desc string `xml:"desc,attr"`
-	Code string `xml:",chardata"`
+	Name   string `xml:"name,attr"`
+	Desc   string `xml:"desc,attr"`
+	StName string `xml:"st-name,attr"`
+	StDesc string `xml:"st-desc,attr"`
+	Code   string `xml:",chardata"`
 }
 
-func (e Example) SaveName() string {
-	return strings.ReplaceAll(e.Name, " ", "_")
+func (e Example) StNameSave() string {
+	return strings.ReplaceAll(e.StName, " ", "_")
 }
 
 type Examples struct {

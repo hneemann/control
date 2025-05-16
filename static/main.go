@@ -64,7 +64,7 @@ func main() {
 }
 
 func copyExample(folder string, ex server.Example) {
-	f, err := os.Create(filepath.Join(folder, "examples/"+ex.SaveName()+".control"))
+	f, err := os.Create(filepath.Join(folder, "examples/"+ex.StNameSave()+".control"))
 	defer f.Close()
 	if err != nil {
 		panic(err)
