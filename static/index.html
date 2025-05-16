@@ -24,10 +24,10 @@
       <label for="source" id="filenameLabel"></label><br>
     </div>
     <div class="toolbar">
-        <button id="new" onclick="newScript();" title="Neu"><img class="icon" src="new.svg"/></button>
-        <button id="run" onclick="runSource();" title="Ausführen und Ausgabe aktualisieren"><img class="icon" src="refresh.svg"/></button>
-        <button id="runInWindow" onclick="runSourceInWindow();" title="Ausführen und Ausgabe in Fenster aktualisieren" style="margin-left:1em;"><img class="icon" src="refreshWindow.svg"/></button>
-        <button id="example" style="margin-left:auto" onclick="showPopUpById('examples');" title="Beispiele"><img class="icon" src="help.svg"/></button>
+        <button id="new" onclick="newScript();" title="New"><img class="icon" src="new.svg"/></button>
+        <button id="run" onclick="runSource();" title="Execute and Update Output"><img class="icon" src="refresh.svg"/></button>
+        <button id="runInWindow" onclick="runSourceInWindow();" title="Execute and Update Output in Window" style="margin-left:1em;"><img class="icon" src="refreshWindow.svg"/></button>
+        <button id="example" style="margin-left:auto" onclick="showPopUpById('examples');" title="Examples"><img class="icon" src="help.svg"/></button>
     </div>
     <div style="display:flex;">
       <textarea class="source" rows="10" autocorrect="off" id="source" placeholder="Enter script" onkeyup="updateRow()" onclick="updateRow()"></textarea>
@@ -47,8 +47,8 @@
 
 <div class="fileDialog" id="networkError">
     <div>
-    Es ist ein Netzwerkfehler aufgetreten!<br>
-    Der Server konnte nicht erreicht werden!
+    There was a network error!<br>
+    The server could not be reached!
     </div>
     <div style="text-align:right;margin-top:0.5em;">
         <button onclick="hidePopUp();">Ok</button>
@@ -67,11 +67,11 @@
 
 <div class="fileDialog" id="overwriteConfirm">
     <div>
-    Soll das aktuelle Skript wirklich verworfen werden?
+    Should the current script be discarded?
     </div>
     <div style="text-align:right;margin-top:0.5em;">
-        <button onclick="hidePopUp();">Abbrechen</button>
-        <button onclick="overwriteConfirmed();">Verwerfen</button>
+        <button onclick="hidePopUp();">Cancel</button>
+        <button onclick="overwriteConfirmed();">Discard</button>
     </div>
 </div>
 
