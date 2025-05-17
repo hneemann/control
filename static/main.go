@@ -20,6 +20,7 @@ func main() {
 
 	_, err := os.Stat(*folder)
 	if err != nil {
+		log.Println("Creating pages folder")
 		err = os.MkdirAll(*folder+"/examples", 0755)
 		if err != nil {
 			panic(err)
