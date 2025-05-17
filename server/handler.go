@@ -33,13 +33,13 @@ var mainViewTemp = Templates.Lookup("main.html")
 type Example struct {
 	Name   string `xml:"name,attr"`
 	Desc   string `xml:"desc,attr"`
-	StName string `xml:"st-name,attr"`
-	StDesc string `xml:"st-desc,attr"`
+	NameEn string `xml:"name-en,attr"`
+	DescEn string `xml:"desc-en,attr"`
 	Code   string `xml:",chardata"`
 }
 
-func (e Example) StNameSave() string {
-	return strings.ReplaceAll(e.StName, " ", "_")
+func (e Example) NameEnSave() string {
+	return strings.ReplaceAll(e.NameEn, " ", "_")
 }
 
 type Examples struct {

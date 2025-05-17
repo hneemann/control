@@ -49,7 +49,7 @@ jobs:
       run: go run ./static/main.go
 
     - name: Build WASM
-      run: ./server/wasm/build.sh
+      run: ./server/wasm/buildPages.sh
 
     - name: Setup Pages
       uses: actions/configure-pages@v5

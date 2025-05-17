@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Examples>
     <example name="Daten-Plot"
-             st-name="Data-Plot" >let data = [
+             name-en="Data-Plot" >let data = [
   [0, 0],
   [1, 1],
   [2, 4],
@@ -13,21 +13,21 @@ plot(
  scatter( data )
 )</example>
     <example name="Graph" desc="Funktionsplot"
-             st-name="Graph" st-desc="Function plot">plot(
+             name-en="Graph" desc-en="Function plot">plot(
  function( x->sin(pi*x) )
 )</example>
     <example name="Graph 2" desc="Funktionsplotter"
-             st-name="Graph 2" st-desc="Function plot">plot(
+             name-en="Graph 2" desc-en="Function plot">plot(
  function( x->sin(x), black, "sin(x)"),
  function( x->cos(x), blue,  "cos(x)"),
  function( x->tan(x), red,   "tan(x)")
 ).xBounds(0,2*pi).yBounds(-2,2)</example>
     <example name="Ortskurve" desc="Darstellung der Ortskurve"
-             st-name="Nyquist plot" st-desc="Nyquist plot">let g = 3/((s+1)*(s+2));
+             name-en="Nyquist plot" desc-en="Nyquist plot">let g = 3/((s+1)*(s+2));
 
 g.nyquist()</example>
     <example name="Ortskurve 2" desc="Darstellung der Ortskurve"
-             st-name="Nyquist plot 2" st-desc="Nyquist plot" >let g = 3/((s+1)*(s+1.5)*(s+2));
+             name-en="Nyquist plot 2" desc-en="Nyquist plot" >let g = 3/((s+1)*(s+1.5)*(s+2));
 
 func h(w)
   let c1 = g( _i*w );
@@ -42,49 +42,50 @@ g.nyquist()
   .add( h(2)    )
   .add( h(5)    )</example>
     <example name="Nyquist" desc="Anwendung des Nyquistkriteriums"
-             st-name="Nyquist stability criterion">let g = 6*(s+1)/((s-1)*(s-3));
+             name-en="Nyquist stability criterion">let g = 6*(s+1)/((s-1)*(s-3));
 
 g.nyquist(true)</example>
     <example name="Bode" desc="Darstellung eines Bode-Diagramms"
-             st-name="Bode plot" st-desc="Bode plot">let g = 3/((s+1)*(s+2));
+             name-en="Bode plot" desc-en="Bode plot">let g = 3/((s+1)*(s+2));
 
 bode(0.01,100)
   .add(g)</example>
     <example name="Bode 2" desc="Darstellung mehrerer Kurven in einem Bode-Diagramm"
-             st-name="Bode plot 2" st-desc="Multiple systems">let g = 3/((s+1)*(s+2));
+             name-en="Bode plot 2" desc-en="Multiple systems">let g = 3/((s+1)*(s+2));
 let k = 1.6*(1+1/(1.7*s));
 
 let g0=k*g;
 let pm=g0.pMargin();
 
-const str=toUnicode("G#0, #Phi#r=%.1f°, #omega#s=%.2f rad/s");
+let g0Leg = sprintf(toUnicode("G#0, #Phi#r=%.1f°, #omega#s=%.2f rad/s"),
+                    pm.pMargin, pm.w0);
 
 bode(0.01,100)
   .add(g,  green, "G")
   .add(k,  blue,  "K")
-  .add(g0, black, sprintf(str, pm.pMargin, pm.w0) )
+  .add(g0, black, g0Leg)
   .phaseModify( p->p.add(yConst(-180+70,red.dash(7,7)))
                     .add(yConst(-180+50,red.dash(7,7)))
                     .add(xConst(pm.w0,  red.dash(7,7))) )
   .ampModify( a->a.add(xConst(pm.w0,red.dash(7,7))) )</example>
     <example name="PID" desc="Die pid-Funktion"
-             st-name="PID" st-desc="The pid function">[
+             name-en="PID" desc-en="The pid function">[
  ["pid(2,2)",        "=", pid(2,2)  ],
  ["pid(2,3,1)",      "=", pid(2,3,1)],
  ["pid(2,3,1,0.01)", "=", pid(2,3,1,0.01)]
 ]</example>
     <example name="WOK" desc="Darstellung einer Wurzelortskurve"
-             st-name="Root locus analysis" st-desc="Root locus analysis">let g = 3/((s+1)*(s+2));
+             name-en="Root locus analysis" desc-en="Root locus analysis">let g = 3/((s+1)*(s+2));
 let k = 1+1/(0.9*s);
 
 (k*g).evans(2)</example>
 
     <example name="WOK 2" desc="Darstellung einer Wurzelortskurve"
-             st-name="Root locus analysis 2" st-desc="Root locus analysis">let l = 352*poly(5,1)/poly(0,0,2000,200,25,1);
+             name-en="Root locus analysis 2" desc-en="Root locus analysis">let l = 352*poly(5,1)/poly(0,0,2000,200,25,1);
 l.evans(100)</example>
 
     <example name="Simulation" desc="Simulation des Systems"
-             st-name="Simulation" st-desc="Simulation of a linear system">let g = 70/((s+1)*(s+2)*(s+2.5));
+             name-en="Simulation" desc-en="Simulation of a linear system">let g = 70/((s+1)*(s+2)*(s+2.5));
 let k1 = 0.2*(0.6*s+1)/(0.002*s+1);
 let k2 = pid(0.1,2);
 let k3 = pid(0.3,2,0.5);
@@ -96,7 +97,7 @@ plot(
 ).labels("t [s]","h(t)").legendPos(5,0.87)</example>
 
 <example name="Simulation nicht linear" desc="Simulation eines nicht linearen Systems"
-         st-name="Simulation non linear" st-desc="Simulation of a non linear system">let G = 70/((s+1)*(s+2)*(s+2.5));
+         name-en="Simulation non linear" desc-en="Simulation of a non linear system">let G = 70/((s+1)*(s+2)*(s+2.5));
 
 let kp = 0.24;
 let Ti = 1.05;
@@ -128,7 +129,7 @@ plot(
  .labels("t [s]", "h(t)")
  .title("Effect of a Limiter")</example>
     <example name="Zweitor Travo" desc="Berechnung realer Travo"
-             st-name="Two-Port Transformer" st-desc="Two-Port real transformer">let Rin   = 2000;
+             name-en="Two-Port Transformer" desc-en="Two-Port real transformer">let Rin   = 2000;
 let Lh    = 10;
 let ueber = 10;
 let Rout  = 5;
@@ -153,7 +154,7 @@ let gain=transformer.voltageGain(Rload).abs();
  ["Uout:",gain*240]
 ]</example>
     <example name="Zweitor Transistor" desc="Berechnung Transistorschaltung"
-             st-name="Two-Port Transistor" st-desc="Two-Port Transistor">let tr=tpH(2700, 1.5e-4, 220, 18e-6);
+             name-en="Two-Port Transistor" desc-en="Two-Port Transistor">let tr=tpH(2700, 1.5e-4, 220, 18e-6);
 
 let t2=tr.series(tpShunt(3300));
 
