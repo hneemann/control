@@ -44,11 +44,11 @@ func (w Holder[T]) ToClosure() (funcGen.Function[value.Value], bool) {
 	return funcGen.Function[value.Value]{}, false
 }
 
-const (
-	PlotType        value.Type = 20
-	PlotContentType value.Type = 21
-	StyleType       value.Type = 22
-	ImageType       value.Type = 23
+var (
+	PlotType        value.Type
+	PlotContentType value.Type
+	StyleType       value.Type
+	ImageType       value.Type
 )
 
 type ToImageInterface interface {
@@ -438,6 +438,11 @@ var (
 )
 
 func Setup(fg *value.FunctionGenerator) {
+	PlotType = fg.RegisterType()
+	PlotContentType = fg.RegisterType()
+	StyleType = fg.RegisterType()
+	ImageType = fg.RegisterType()
+
 	fg.RegisterMethods(PlotType, createPlotMethods())
 	fg.RegisterMethods(PlotContentType, createPlotContentMethods())
 	fg.RegisterMethods(StyleType, createStyleMethods())

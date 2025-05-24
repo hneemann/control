@@ -15,13 +15,13 @@ import (
 	"strings"
 )
 
-const (
-	BodeValueType         value.Type = 30
-	ComplexValueType      value.Type = 31
-	PolynomialValueType   value.Type = 32
-	LinearValueType       value.Type = 33
-	BlockFactoryValueType value.Type = 34
-	TwoPortValueType      value.Type = 35
+var (
+	BodeValueType         value.Type
+	ComplexValueType      value.Type
+	PolynomialValueType   value.Type
+	LinearValueType       value.Type
+	BlockFactoryValueType value.Type
+	TwoPortValueType      value.Type
 )
 
 type BlockFactoryValue struct {
@@ -577,16 +577,20 @@ func getLinear(st funcGen.Stack[value.Value], i int) (*Linear, bool) {
 }
 
 var Parser = value.New().
+	Modify(func(fg *value.FunctionGenerator) {
+		ComplexValueType = fg.RegisterType()
+		PolynomialValueType = fg.RegisterType()
+		LinearValueType = fg.RegisterType()
+		BlockFactoryValueType = fg.RegisterType()
+		TwoPortValueType = fg.RegisterType()
+		BodeValueType = fg.RegisterType()
+	}).
 	RegisterMethods(LinearValueType, linMethods()).
 	RegisterMethods(PolynomialValueType, polyMethods()).
 	RegisterMethods(BodeValueType, bodeMethods()).
 	RegisterMethods(ComplexValueType, cmplxMethods()).
 	RegisterMethods(TwoPortValueType, twoPortMethods()).
-	AddFinalizerValue(grParser.Setup).
-	AddFinalizerValue(func(f *value.FunctionGenerator) {
-		p := f.GetParser()
-		p.AllowComments()
-	}).
+	Modify(grParser.Setup).
 	AddConstant("_i", Complex(complex(0, 1))).
 	AddConstant("s", Polynomial{0, 1}).
 	AddStaticFunction("toUnicode", funcGen.Function[value.Value]{
@@ -773,11 +777,15 @@ var Parser = value.New().
 		Args:   2,
 		IsPure: true,
 	}.SetDescription("def", "tMax", "simulates the given model")).
-	AddOp("^", false, createExp()).
-	AddOp("*", true, createMul()).
-	AddOp("/", false, createDiv()).
-	AddOp("-", false, createSub()).
-	AddOp("+", false, createAdd())
+	ReplaceOp("^", false, true, createExp).
+	ReplaceOp("*", true, true, createMul).
+	ReplaceOp("/", false, true, createDiv).
+	ReplaceOp("-", false, true, createSub).
+	ReplaceOp("+", false, true, createAdd).
+	Modify(func(f *funcGen.FunctionGenerator[value.Value]) {
+		p := f.GetParser()
+		p.AllowComments()
+	})
 
 func typeOperationCommutative[T value.Value](
 	def func(st funcGen.Stack[value.Value], a value.Value, b value.Value) (value.Value, error),
@@ -815,8 +823,8 @@ func typeOperation[T value.Value](
 	}
 }
 
-func createExp() func(st funcGen.Stack[value.Value], a value.Value, b value.Value) (value.Value, error) {
-	cplx := typeOperation(value.Pow, func(a, b Complex) (value.Value, error) {
+func createExp(old funcGen.OperatorImpl[value.Value]) funcGen.OperatorImpl[value.Value] {
+	cplx := typeOperation(old, func(a, b Complex) (value.Value, error) {
 		return Complex(cmplx.Pow(complex128(a), complex128(b))), nil
 	}, func(a Complex, b value.Value) (value.Value, error) {
 		if bf, ok := b.ToFloat(); ok {
@@ -860,8 +868,8 @@ func createExp() func(st funcGen.Stack[value.Value], a value.Value, b value.Valu
 	return lin
 }
 
-func createMul() func(st funcGen.Stack[value.Value], a value.Value, b value.Value) (value.Value, error) {
-	cplx := typeOperationCommutative(value.Mul, func(a, b Complex) (value.Value, error) {
+func createMul(old funcGen.OperatorImpl[value.Value]) funcGen.OperatorImpl[value.Value] {
+	cplx := typeOperationCommutative(old, func(a, b Complex) (value.Value, error) {
 		return a * b, nil
 	}, func(a Complex, b value.Value) (value.Value, error) {
 		if bf, ok := b.ToFloat(); ok {
@@ -891,8 +899,8 @@ func createMul() func(st funcGen.Stack[value.Value], a value.Value, b value.Valu
 	return lin
 }
 
-func createDiv() func(st funcGen.Stack[value.Value], a value.Value, b value.Value) (value.Value, error) {
-	cplx := typeOperation(value.Div, func(a, b Complex) (value.Value, error) {
+func createDiv(old funcGen.OperatorImpl[value.Value]) funcGen.OperatorImpl[value.Value] {
+	cplx := typeOperation(old, func(a, b Complex) (value.Value, error) {
 		return a / b, nil
 	}, func(a Complex, b value.Value) (value.Value, error) {
 		if bf, ok := b.ToFloat(); ok {
@@ -950,8 +958,8 @@ func createDiv() func(st funcGen.Stack[value.Value], a value.Value, b value.Valu
 	return lin
 }
 
-func createAdd() func(st funcGen.Stack[value.Value], a value.Value, b value.Value) (value.Value, error) {
-	cplx := typeOperationCommutative(value.Add, func(a, b Complex) (value.Value, error) {
+func createAdd(old funcGen.OperatorImpl[value.Value]) funcGen.OperatorImpl[value.Value] {
+	cplx := typeOperationCommutative(old, func(a, b Complex) (value.Value, error) {
 		return a + b, nil
 	}, func(a Complex, b value.Value) (value.Value, error) {
 		if bf, ok := b.ToFloat(); ok {
@@ -984,8 +992,8 @@ func createAdd() func(st funcGen.Stack[value.Value], a value.Value, b value.Valu
 	return lin
 }
 
-func createSub() func(st funcGen.Stack[value.Value], a value.Value, b value.Value) (value.Value, error) {
-	cplx := typeOperation(value.Sub, func(a, b Complex) (value.Value, error) {
+func createSub(old funcGen.OperatorImpl[value.Value]) funcGen.OperatorImpl[value.Value] {
+	cplx := typeOperation(old, func(a, b Complex) (value.Value, error) {
 		return a - b, nil
 	}, func(a Complex, b value.Value) (value.Value, error) {
 		if bf, ok := b.ToFloat(); ok {
