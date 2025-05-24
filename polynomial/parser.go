@@ -782,10 +782,27 @@ var Parser = value.New().
 	ReplaceOp("/", false, true, createDiv).
 	ReplaceOp("-", false, true, createSub).
 	ReplaceOp("+", false, true, createAdd).
+	ReplaceUnary("-", createNeg()).
 	Modify(func(f *funcGen.FunctionGenerator[value.Value]) {
 		p := f.GetParser()
 		p.AllowComments()
 	})
+
+func createNeg() func(orig funcGen.UnaryOperatorImpl[value.Value]) funcGen.UnaryOperatorImpl[value.Value] {
+	return func(orig funcGen.UnaryOperatorImpl[value.Value]) funcGen.UnaryOperatorImpl[value.Value] {
+		return func(a value.Value) (value.Value, error) {
+			switch aa := a.(type) {
+			case *Linear:
+				return aa.MulFloat(-1), nil
+			case Polynomial:
+				return aa.MulFloat(-1), nil
+			case Complex:
+				return -aa, nil
+			}
+			return orig(a)
+		}
+	}
+}
 
 func typeOperationCommutative[T value.Value](
 	def func(st funcGen.Stack[value.Value], a value.Value, b value.Value) (value.Value, error),
