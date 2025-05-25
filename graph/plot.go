@@ -708,7 +708,7 @@ type pFuncPath struct {
 
 func (p *pFuncPath) Iter(yield func(rune, Point) bool) {
 	if p.maxDist == 0 {
-		p.maxDist = p.plot.canvas.Rect().Width() / functionSteps * 2
+		p.maxDist = p.plot.canvas.Rect().Width() / float64(p.pf.Points) * 2
 	}
 	pf := p.pf
 	t0 := pf.InitialT
