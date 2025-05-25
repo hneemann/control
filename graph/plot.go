@@ -346,9 +346,17 @@ type PlotContent interface {
 type Function struct {
 	Function func(x float64) (float64, error)
 	Style    *Style
+	Steps    int
 }
 
 const functionSteps = 100
+
+func (f Function) steps() int {
+	if f.Steps <= 0 {
+		return functionSteps
+	}
+	return f.Steps
+}
 
 func (f Function) String() string {
 	return "Function"
@@ -358,8 +366,9 @@ func (f Function) PreferredBounds(xGiven, _ Bounds) (Bounds, Bounds, error) {
 	if xGiven.valid {
 		yBounds := Bounds{}
 		width := xGiven.Width()
-		for i := 0; i <= functionSteps; i++ {
-			x := xGiven.Min + width*float64(i)/functionSteps
+		steps := f.steps()
+		for i := 0; i <= steps; i++ {
+			x := xGiven.Min + width*float64(i)/float64(steps)
 			y, err := f.Function(x)
 			if err != nil {
 				return Bounds{}, Bounds{}, err
@@ -373,7 +382,7 @@ func (f Function) PreferredBounds(xGiven, _ Bounds) (Bounds, Bounds, error) {
 
 func (f Function) DrawTo(plot *Plot, canvas Canvas) error {
 	r := canvas.Rect()
-	p := NewLinearParameterFunc(r.Min.X, r.Max.X)
+	p := NewLinearParameterFunc(r.Min.X, r.Max.X, f.steps())
 	p.Func = func(x float64) (Point, error) {
 		y, err := f.Function(x)
 		return Point{x, y}, err
@@ -632,10 +641,13 @@ type ParameterFunc struct {
 	Style    *Style
 }
 
-func NewLinearParameterFunc(tMin, tMax float64) *ParameterFunc {
-	delta := (tMax - tMin) / float64(functionSteps)
+func NewLinearParameterFunc(tMin, tMax float64, steps int) *ParameterFunc {
+	if steps <= 0 {
+		steps = functionSteps
+	}
+	delta := (tMax - tMin) / float64(steps)
 	return &ParameterFunc{
-		Points:   functionSteps,
+		Points:   steps,
 		InitialT: tMin,
 		NextT: func(t float64) float64 {
 			return t + delta
@@ -643,10 +655,13 @@ func NewLinearParameterFunc(tMin, tMax float64) *ParameterFunc {
 	}
 }
 
-func NewLogParameterFunc(tMin, tMax float64) *ParameterFunc {
-	f := math.Pow(tMax/tMin, 1/float64(functionSteps))
+func NewLogParameterFunc(tMin, tMax float64, steps int) *ParameterFunc {
+	if steps <= 0 {
+		steps = functionSteps
+	}
+	f := math.Pow(tMax/tMin, 1/float64(steps))
 	return &ParameterFunc{
-		Points:   functionSteps,
+		Points:   steps,
 		InitialT: tMin,
 		NextT: func(t float64) float64 {
 			return t * f

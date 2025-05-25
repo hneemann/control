@@ -894,7 +894,7 @@ func NewBode(wMin, wMax float64) *BodePlot {
 }
 
 func (l *Linear) NyquistPos(style *graph.Style) graph.PlotContent {
-	pfPos := graph.NewLogParameterFunc(0.001, 1000)
+	pfPos := graph.NewLogParameterFunc(0.001, 1000, 0)
 	pfPos.Func = func(w float64) (graph.Point, error) {
 		c := l.EvalCplx(complex(0, w))
 		return graph.Point{X: real(c), Y: imag(c)}, nil
@@ -904,7 +904,7 @@ func (l *Linear) NyquistPos(style *graph.Style) graph.PlotContent {
 }
 
 func (l *Linear) NyquistNeg(style *graph.Style) graph.PlotContent {
-	pfNeg := graph.NewLogParameterFunc(0.001, 1000)
+	pfNeg := graph.NewLogParameterFunc(0.001, 1000, 0)
 	pfNeg.Func = func(w float64) (graph.Point, error) {
 		c := l.EvalCplx(complex(0, -w))
 		return graph.Point{X: real(c), Y: imag(c)}, nil

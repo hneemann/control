@@ -580,6 +580,13 @@ func Setup(fg *value.FunctionGenerator) {
 				return nil, fmt.Errorf("function requires a string as third argument")
 			}
 
+			steps := 0
+			if s, ok := st.GetOptional(3, value.Int(0)).ToFloat(); ok {
+				steps = int(s)
+			} else {
+				return nil, fmt.Errorf("function requires a number as fourth argument")
+			}
+
 			var f func(x float64) (float64, error)
 			if cl, ok := st.Get(0).ToClosure(); ok {
 				if cl.Args != 1 {
@@ -597,12 +604,12 @@ func Setup(fg *value.FunctionGenerator) {
 					return 0, fmt.Errorf("function must return a float")
 				}
 			}
-			gf := graph.Function{Function: f, Style: styleVal.Value}
+			gf := graph.Function{Function: f, Style: styleVal.Value, Steps: steps}
 			return PlotContentValue{Holder[graph.PlotContent]{gf}, graph.Legend{Name: leg, LineStyle: styleVal.Value}}, nil
 		},
 		Args:   -1,
 		IsPure: true,
-	}.SetDescription("data", "style", "label", "Creates a new scatter dataset").VarArgs(1, 3))
+	}.SetDescription("data", "style", "label", "steps", "Creates a new function").VarArgs(1, 4))
 	fg.AddStaticFunction("yConst", funcGen.Function[value.Value]{
 		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
 			if y, ok := st.Get(0).ToFloat(); ok {
