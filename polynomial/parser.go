@@ -805,19 +805,36 @@ func createNeg() func(orig funcGen.UnaryOperatorImpl[value.Value]) funcGen.Unary
 }
 
 func typeOperationCommutative[T value.Value](
-	def func(st funcGen.Stack[value.Value], a value.Value, b value.Value) (value.Value, error),
+	orig funcGen.OperatorImpl[value.Value],
 	f func(a, b T) (value.Value, error),
-	fl func(a T, b value.Value) (value.Value, error)) func(st funcGen.Stack[value.Value], a value.Value, b value.Value) (value.Value, error) {
-	return typeOperation[T](def, f, fl, func(a value.Value, T T) (value.Value, error) {
-		return fl(T, a)
-	})
+	fl func(a T, b value.Value) (value.Value, error)) funcGen.OperatorImpl[value.Value] {
+
+	return func(st funcGen.Stack[value.Value], a value.Value, b value.Value) (value.Value, error) {
+		if ae, ok := a.(T); ok {
+			if be, ok := b.(T); ok {
+				// both are of type T
+				return f(ae, be)
+			} else {
+				// a is of type T, b isn't
+				return fl(ae, b)
+			}
+		} else {
+			if be, ok := b.(T); ok {
+				// b is of type T, a isn't
+				return fl(be, a)
+			} else {
+				// no value of Type T at all
+				return orig(st, a, b)
+			}
+		}
+	}
 }
 
 func typeOperation[T value.Value](
-	def func(st funcGen.Stack[value.Value], a value.Value, b value.Value) (value.Value, error),
+	orig funcGen.OperatorImpl[value.Value],
 	f func(a, b T) (value.Value, error),
 	fl1 func(a T, b value.Value) (value.Value, error),
-	fl2 func(a value.Value, T T) (value.Value, error)) func(st funcGen.Stack[value.Value], a value.Value, b value.Value) (value.Value, error) {
+	fl2 func(a value.Value, T T) (value.Value, error)) funcGen.OperatorImpl[value.Value] {
 
 	return func(st funcGen.Stack[value.Value], a value.Value, b value.Value) (value.Value, error) {
 		if ae, ok := a.(T); ok {
@@ -834,7 +851,7 @@ func typeOperation[T value.Value](
 				return fl2(a, be)
 			} else {
 				// no value of Type T at all
-				return def(st, a, b)
+				return orig(st, a, b)
 			}
 		}
 	}
