@@ -91,6 +91,7 @@ let k2 = pid(0.1,2);
 let k3 = pid(0.3,2,0.5);
 
 plot(
+  yConst(1),
   curve((k1*g).loop().simStep(10),blue,"phasenanhebendes Korrekturglied"),
   curve((k2*g).loop().simStep(10),black,"PI"),
   curve((k3*g).loop().simStep(10),green,"PID")
@@ -154,7 +155,8 @@ let gain=transformer.voltageGain(Rload).abs();
  ["Uout:",gain*240]
 ]</example>
     <example name="Zweitor Transistor" desc="Berechnung Transistorschaltung"
-             name-en="Two-Port Transistor" desc-en="Two-Port Transistor">let tr=tpH(2700, 1.5e-4, 220, 18e-6);
+             name-en="Two-Port Transistor" desc-en="Two-Port Transistor">let tr=tpH(2700, 1.5e-4,
+            220,  18e-6);
 
 let t2=tr.series(tpShunt(3300));
 
