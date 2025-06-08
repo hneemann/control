@@ -131,11 +131,10 @@ plot(
  .title("Effect of a Limiter")</example>
     <example name="Zweitor Travo" desc="Berechnung realer Travo"
              name-en="Two-Port Transformer" desc-en="Two-Port real transformer">let Rin   = 2000;
-let Lh    = 10;
-let ueber = 10;
-let Rout  = 5;
-let Cout  = 400e-6;
-let Rload = 500;
+let Lh    =   10;
+let ueber =   10;
+let Rout  =    5;
+let Rload =  100;
 let omega = 2*pi*50;
 
 let transformer =
@@ -145,7 +144,6 @@ let transformer =
     tpH(   0  , ueber,
         -ueber,   0  ),
     tpSeries(Rout),
-    tpShunt(1/(_i*omega*Cout))
   );
 
 let gain=transformer.voltageGain(Rload).abs();
