@@ -142,7 +142,8 @@ let transformer =
   tpCascade (
     tpSeries(Rin),
     tpShunt(_i*omega*Lh),
-    tpH(0,ueber,-ueber,0),
+    tpH(   0  , ueber,
+        -ueber,   0  ),
     tpSeries(Rout),
     tpShunt(1/(_i*omega*Cout))
   );
