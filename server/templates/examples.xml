@@ -57,7 +57,7 @@ let k = 1.6*(1+1/(1.7*s));
 let g0=k*g;
 let pm=g0.pMargin();
 
-let g0Leg = sprintf(toUnicode("G#0, #Phi#r=%.1f°, #omega#s=%.2f rad/s"),
+let g0Leg = sprintf("G#0, #Phi#r=%.1f°, #omega#s=%.2f rad/s",
                     pm.pMargin, pm.w0);
 
 bode(0.01,100)

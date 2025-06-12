@@ -6,6 +6,7 @@ import (
 	"github.com/hneemann/control/graph"
 	"github.com/hneemann/control/graph/grParser"
 	"github.com/hneemann/control/nelderMead"
+	"github.com/hneemann/parser2"
 	"github.com/hneemann/parser2/funcGen"
 	"github.com/hneemann/parser2/value"
 	"github.com/hneemann/parser2/value/export"
@@ -593,20 +594,6 @@ var Parser = value.New().
 	Modify(grParser.Setup).
 	AddConstant("_i", Complex(complex(0, 1))).
 	AddConstant("s", Polynomial{0, 1}).
-	AddStaticFunction("toUnicode", funcGen.Function[value.Value]{
-		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
-			if str, ok := stack.Get(0).(value.String); ok {
-				code, err := toUniCode(string(str))
-				if err != nil {
-					return nil, err
-				}
-				return value.String(code), nil
-			}
-			return nil, errors.New("unicode requires a string as argument")
-		},
-		Args:   1,
-		IsPure: true,
-	}.SetDescription("str", "converts commands like '#alpha' to UniCode characters")).
 	AddStaticFunction("cmplx", funcGen.Function[value.Value]{
 		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
 			if re, ok := stack.Get(0).ToFloat(); ok {
@@ -785,6 +772,9 @@ var Parser = value.New().
 	ReplaceUnary("-", createNeg).
 	Modify(func(f *funcGen.FunctionGenerator[value.Value]) {
 		p := f.GetParser()
+		p.SetStringConverter(parser2.StringConverterFunc[value.Value](func(s string) value.Value {
+			return value.String(toUniCode(s))
+		}))
 		p.AllowComments()
 	})
 
@@ -1192,7 +1182,7 @@ func createTwoPort(typ TpType) funcGen.Function[value.Value] {
 	}.SetDescription("m11", "m12", "m21", "m21", "creates a new two-port of type "+typ.String())
 }
 
-func toUniCode(str string) (string, error) {
+func toUniCode(str string) string {
 	inCommand := false
 	var out, command strings.Builder
 	for _, r := range str {
@@ -1203,11 +1193,7 @@ func toUniCode(str string) (string, error) {
 					out.WriteRune('#')
 					inCommand = false
 				} else {
-					c, err := getUnicode(command.String())
-					if err != nil {
-						return "", err
-					}
-					out.WriteRune(c)
+					writeUnicodeTo(&out, command.String())
 					command.Reset()
 				}
 			} else {
@@ -1222,11 +1208,7 @@ func toUniCode(str string) (string, error) {
 				}
 			} else {
 				if inCommand {
-					c, err := getUnicode(command.String())
-					if err != nil {
-						return "", err
-					}
-					out.WriteRune(c)
+					writeUnicodeTo(&out, command.String())
 					command.Reset()
 					inCommand = false
 					if r != ' ' {
@@ -1239,13 +1221,18 @@ func toUniCode(str string) (string, error) {
 		}
 	}
 	if inCommand {
-		c, err := getUnicode(command.String())
-		if err != nil {
-			return "", err
-		}
-		out.WriteRune(c)
+		writeUnicodeTo(&out, command.String())
 	}
-	return out.String(), nil
+	return out.String()
+}
+
+func writeUnicodeTo(out *strings.Builder, command string) {
+	if c, ok := unicodeMap[command]; ok {
+		out.WriteRune(c)
+	} else {
+		out.WriteRune('#')
+		out.WriteString(command)
+	}
 }
 
 var unicodeMap = map[string]rune{
@@ -1317,13 +1304,4 @@ var unicodeMap = map[string]rune{
 	"u":       'ᵤ',
 	"v":       'ᵥ',
 	"x":       'ₓ',
-}
-
-func getUnicode(s string) (rune, error) {
-	u, ok := unicodeMap[s]
-	if ok {
-		//fmt.Printf("command %s -> \\u%x\n", s, u)
-		return u, nil
-	}
-	return '_', fmt.Errorf("unknown unicode command %s", s)
 }

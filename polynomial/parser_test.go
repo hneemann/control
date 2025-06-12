@@ -234,6 +234,9 @@ func Test_toUniCode(t *testing.T) {
 		want string
 	}{
 		{name: "#alpha", want: "⍺"},
+		{name: "#blabla", want: "#blabla"},
+		{name: "#blabla q", want: "#blablaq"},
+		{name: "#blabla#blabla", want: "#blabla#blabla"},
 		{name: "##", want: "#"},
 		{name: "####", want: "##"},
 		{name: "##a", want: "#a"},
@@ -249,8 +252,7 @@ func Test_toUniCode(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := toUniCode(tt.name)
-			assert.NoError(t, err, fmt.Sprintf("toUniCode(%v)", tt.name))
+			got := toUniCode(tt.name)
 			assert.Equalf(t, tt.want, got, "toUniCode(%v)", tt.name)
 		})
 	}
