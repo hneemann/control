@@ -79,7 +79,7 @@ func (s Simplex) size() float64 {
 				max = v
 			}
 		}
-		d := max - min
+		d := (max - min) / max
 		if d > delta {
 			delta = d
 		}
@@ -128,7 +128,7 @@ func NelderMeadBase(f Solvable, initial []Vector, alpha, gamma, beta, sigma floa
 			return nil, 0, errors.New("nelderMead: max iterations reached")
 		}
 
-		if s.size() < 1e-15 {
+		if s.size() < 1e-13 {
 			return s[0].x, s[0].val, nil
 		}
 
