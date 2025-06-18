@@ -132,6 +132,12 @@ func (s *SVG) DrawText(a Point, text string, orientation Orientation, style *Sty
 			case 1:
 				a.Y += textSize * 2 / 3
 			}
+			switch orientation & 3 {
+			case 1:
+				a.X -= float64(len(text)-3) * textSize / 6
+			case 2:
+				a.X -= float64(len(text)-3) * textSize / 3
+			}
 			s.w.Open("foreignObject").
 				Attr("style", styleString(style)+st).
 				Attr("x", fmt.Sprintf("%0.2f", a.X)).
