@@ -85,14 +85,14 @@ func createImageMethods() value.MethodMap {
 			} else {
 				return nil, fmt.Errorf("file requires a string")
 			}
-		}).SetMethodDescription("name", "Enables download"),
+		}).SetMethodDescription("name", "Enables a file download."),
 		"textSize": value.MethodAtType(1, func(im ImageValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if si, ok := stack.Get(1).ToFloat(); ok {
 				im.context.TextSize = si
 				return im, nil
 			}
 			return nil, fmt.Errorf("textSize requires a float values")
-		}).SetMethodDescription("size", "Sets the text size"),
+		}).SetMethodDescription("size", "Sets the text size."),
 		"outputSize": value.MethodAtType(2, func(im ImageValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if width, ok := stack.Get(1).ToFloat(); ok {
 				if height, ok := stack.Get(2).ToFloat(); ok {
@@ -102,7 +102,7 @@ func createImageMethods() value.MethodMap {
 				}
 			}
 			return nil, fmt.Errorf("outputSize requires two float values")
-		}).SetMethodDescription("width", "height", "Sets the svg-output size"),
+		}).SetMethodDescription("width", "height", "Sets the svg-output size."),
 	}
 }
 
@@ -165,15 +165,15 @@ func createStyleMethods() value.MethodMap {
 				}
 			}
 			return StyleValue{Holder[*graph.Style]{style.SetDash(dash...)}, styleValue.Size}, nil
-		}).SetMethodDescription("l1", "l2", "l3", "l4", "l5", "l6", "Sets the dash style").VarArgsMethod(2, 6),
+		}).SetMethodDescription("l1", "l2", "l3", "l4", "l5", "l6", "Sets the dash style.").VarArgsMethod(2, 6),
 		"darker": value.MethodAtType(0, func(styleValue StyleValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			style := styleValue.Value
 			return StyleValue{Holder[*graph.Style]{style.Darker()}, styleValue.Size}, nil
-		}).SetMethodDescription("Makes the color darker"),
+		}).SetMethodDescription("Makes the color darker."),
 		"brighter": value.MethodAtType(0, func(styleValue StyleValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			style := styleValue.Value
 			return StyleValue{Holder[*graph.Style]{style.Brighter()}, styleValue.Size}, nil
-		}).SetMethodDescription("Makes the color brighter"),
+		}).SetMethodDescription("Makes the color brighter."),
 		"stroke": value.MethodAtType(1, func(styleValue StyleValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			style := styleValue.Value
 			sw, ok := stack.Get(1).ToFloat()
@@ -181,14 +181,14 @@ func createStyleMethods() value.MethodMap {
 				return nil, fmt.Errorf("stroke requires a float")
 			}
 			return StyleValue{Holder[*graph.Style]{style.SetStrokeWidth(sw)}, styleValue.Size}, nil
-		}).SetMethodDescription("width", "Sets the stroke width"),
+		}).SetMethodDescription("width", "Sets the stroke width."),
 		"size": value.MethodAtType(1, func(styleValue StyleValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			size, ok := stack.Get(1).ToFloat()
 			if !ok {
 				return nil, fmt.Errorf("size requires a float")
 			}
 			return StyleValue{Holder[*graph.Style]{styleValue.Value}, size}, nil
-		}).SetMethodDescription("width", "Sets the symbol size"),
+		}).SetMethodDescription("width", "Sets the symbol size."),
 		"fill": value.MethodAtType(1, func(styleValue StyleValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			style := styleValue.Value
 			styleVal, ok := stack.Get(1).(StyleValue)
@@ -196,7 +196,7 @@ func createStyleMethods() value.MethodMap {
 				return nil, fmt.Errorf("fill requires a style")
 			}
 			return StyleValue{Holder[*graph.Style]{style.SetFill(styleVal.Value)}, styleValue.Size}, nil
-		}).SetMethodDescription("color", "The color used to fill"),
+		}).SetMethodDescription("color", "The color used to fill."),
 	}
 }
 
@@ -214,7 +214,7 @@ func createPlotMethods() value.MethodMap {
 				return nil, fmt.Errorf("add requires a plot content")
 			}
 			return plot, nil
-		}).SetMethodDescription("plotContent", "Adds a plot content to the plot"),
+		}).SetMethodDescription("plotContent", "Adds a plot content to the plot."),
 		"title": value.MethodAtType(1, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if str, ok := stack.Get(1).(value.String); ok {
 				plot.Value.Title = string(str)
@@ -222,7 +222,7 @@ func createPlotMethods() value.MethodMap {
 				return nil, fmt.Errorf("title requires a string")
 			}
 			return plot, nil
-		}).SetMethodDescription("label", "Sets the title"),
+		}).SetMethodDescription("label", "Sets the title."),
 		"labels": value.MethodAtType(2, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if xStr, ok := stack.Get(1).(value.String); ok {
 				if yStr, ok := stack.Get(2).(value.String); ok {
@@ -232,7 +232,7 @@ func createPlotMethods() value.MethodMap {
 				}
 			}
 			return nil, fmt.Errorf("xLabel requires a string")
-		}).SetMethodDescription("x label", "y label", "Sets the axis labels"),
+		}).SetMethodDescription("x label", "y label", "Sets the axis labels."),
 		"xLabel": value.MethodAtType(1, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if str, ok := stack.Get(1).(value.String); ok {
 				plot.Value.XLabel = string(str)
@@ -240,7 +240,7 @@ func createPlotMethods() value.MethodMap {
 				return nil, fmt.Errorf("xLabel requires a string")
 			}
 			return plot, nil
-		}).SetMethodDescription("label", "Sets the x-label"),
+		}).SetMethodDescription("label", "Sets the x-label."),
 		"yLabel": value.MethodAtType(1, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if str, ok := stack.Get(1).(value.String); ok {
 				plot.Value.YLabel = string(str)
@@ -248,11 +248,11 @@ func createPlotMethods() value.MethodMap {
 				return nil, fmt.Errorf("yLabel requires a string")
 			}
 			return plot, nil
-		}).SetMethodDescription("label", "Sets the y-label"),
+		}).SetMethodDescription("label", "Sets the y-label."),
 		"protectLabels": value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			plot.Value.YLabelExtend = true
 			return plot, nil
-		}).SetMethodDescription("Autoscaling protects the labels"),
+		}).SetMethodDescription("Autoscaling protects the labels."),
 		"grid": value.MethodAtType(1, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			styleVal, err := GetStyle(stack, 1, GridStyle)
 			if err != nil {
@@ -260,7 +260,7 @@ func createPlotMethods() value.MethodMap {
 			}
 			plot.Value.Grid = styleVal.Value
 			return plot, nil
-		}).SetMethodDescription("color", "Adds a grid").VarArgsMethod(0, 1),
+		}).SetMethodDescription("color", "Adds a grid.").VarArgsMethod(0, 1),
 		"frame": value.MethodAtType(1, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if styleVal, ok := stack.Get(1).(StyleValue); ok {
 				plot.Value.Frame = styleVal.Value
@@ -268,46 +268,46 @@ func createPlotMethods() value.MethodMap {
 			} else {
 				return nil, fmt.Errorf("frame requires a style")
 			}
-		}).SetMethodDescription("color", "Sets the frame color"),
+		}).SetMethodDescription("color", "Sets the frame color."),
 		"file": value.MethodAtType(1, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if str, ok := stack.Get(1).(value.String); ok {
 				return ImageToFile(plot, &plot.context, string(str))
 			} else {
 				return nil, fmt.Errorf("download requires a string")
 			}
-		}).SetMethodDescription("name", "Enables download"),
+		}).SetMethodDescription("name", "Enables a file download."),
 		"xLog": value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			plot.Value.XAxis = graph.LogAxis
 			return plot, nil
-		}).SetMethodDescription("Enables log scaling of x-Axis"),
+		}).SetMethodDescription("Enables log scaling of x-Axis."),
 		"yLog": value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			plot.Value.YAxis = graph.LogAxis
 			return plot, nil
-		}).SetMethodDescription("Enables log scaling of y-Axis"),
+		}).SetMethodDescription("Enables log scaling of y-Axis."),
 		"xdB": value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			plot.Value.XAxis = graph.DBAxis
 			return plot, nil
-		}).SetMethodDescription("Enables dB scaling of x-Axis"),
+		}).SetMethodDescription("Enables dB scaling of x-Axis."),
 		"ydB": value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			plot.Value.YAxis = graph.DBAxis
 			return plot, nil
-		}).SetMethodDescription("Enables dB scaling of y-Axis"),
+		}).SetMethodDescription("Enables dB scaling of y-Axis."),
 		"xLin": value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			plot.Value.XAxis = graph.LinearAxis
 			return plot, nil
-		}).SetMethodDescription("Enables linear scaling of x-Axis"),
+		}).SetMethodDescription("Enables linear scaling of x-Axis."),
 		"yLin": value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			plot.Value.YAxis = graph.LinearAxis
 			return plot, nil
-		}).SetMethodDescription("Enables linear scaling of y-Axis"),
+		}).SetMethodDescription("Enables linear scaling of y-Axis."),
 		"xDate": value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			plot.Value.XAxis = graph.CreateDateAxis("02.01.06", "02.01.06 15:04")
 			return plot, nil
-		}).SetMethodDescription("Enables date scaling of x-Axis"),
+		}).SetMethodDescription("Enables date scaling of x-Axis."),
 		"yDate": value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			plot.Value.YAxis = graph.CreateDateAxis("02.01.06", "02.01.06 15:04")
 			return plot, nil
-		}).SetMethodDescription("Enables date scaling of y-Axis"),
+		}).SetMethodDescription("Enables date scaling of y-Axis."),
 		"borders": value.MethodAtType(2, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if l, ok := stack.Get(1).ToFloat(); ok {
 				if r, ok := stack.Get(2).ToFloat(); ok {
@@ -317,7 +317,7 @@ func createPlotMethods() value.MethodMap {
 				}
 			}
 			return nil, fmt.Errorf("leftBorder requires an int value")
-		}).SetMethodDescription("left", "right", "Sets the width of the left and right border measured in characters"),
+		}).SetMethodDescription("left", "right", "Sets the width of the left and right border measured in characters."),
 		"xBounds": value.MethodAtType(2, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if vmin, ok := stack.Get(1).ToFloat(); ok {
 				if vmax, ok := stack.Get(2).ToFloat(); ok {
@@ -326,7 +326,7 @@ func createPlotMethods() value.MethodMap {
 				}
 			}
 			return nil, fmt.Errorf("xBounds requires two float values")
-		}).SetMethodDescription("xMin", "xMax", "Sets the x-bounds"),
+		}).SetMethodDescription("xMin", "xMax", "Sets the x-bounds."),
 		"yBounds": value.MethodAtType(2, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if vmin, ok := stack.Get(1).ToFloat(); ok {
 				if vmax, ok := stack.Get(2).ToFloat(); ok {
@@ -335,7 +335,7 @@ func createPlotMethods() value.MethodMap {
 				}
 			}
 			return nil, fmt.Errorf("yBounds requires two float values")
-		}).SetMethodDescription("yMin", "yMax", "Sets the y-bounds"),
+		}).SetMethodDescription("yMin", "yMax", "Sets the y-bounds."),
 		"legendPos": value.MethodAtType(2, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if x, ok := stack.Get(1).ToFloat(); ok {
 				if y, ok := stack.Get(2).ToFloat(); ok {
@@ -344,14 +344,14 @@ func createPlotMethods() value.MethodMap {
 				}
 			}
 			return nil, fmt.Errorf("legendPos requires two float values")
-		}).SetMethodDescription("x", "y", "Sets the position of the legend"),
+		}).SetMethodDescription("x", "y", "Sets the position of the legend."),
 		"textSize": value.MethodAtType(1, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if si, ok := stack.Get(1).ToFloat(); ok {
 				plot.context.TextSize = si
 				return plot, nil
 			}
 			return nil, fmt.Errorf("textSize requires a float values")
-		}).SetMethodDescription("size", "Sets the text size"),
+		}).SetMethodDescription("size", "Sets the text size."),
 		"outputSize": value.MethodAtType(2, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if width, ok := stack.Get(1).ToFloat(); ok {
 				if height, ok := stack.Get(2).ToFloat(); ok {
@@ -361,7 +361,7 @@ func createPlotMethods() value.MethodMap {
 				}
 			}
 			return nil, fmt.Errorf("outputSize requires two float values")
-		}).SetMethodDescription("width", "height", "Sets the svg-output size"),
+		}).SetMethodDescription("width", "height", "Sets the svg-output size."),
 		"zoom": value.MethodAtType(3, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if x, ok := stack.Get(1).ToFloat(); ok {
 				if y, ok := stack.Get(2).ToFloat(); ok {
@@ -375,7 +375,7 @@ func createPlotMethods() value.MethodMap {
 				}
 			}
 			return nil, fmt.Errorf("zoom requires three float values")
-		}).SetMethodDescription("x", "y", "factor", "Zoom at the given point by the given factor"),
+		}).SetMethodDescription("x", "y", "factor", "Zoom at the given point by the given factor."),
 		"inset": value.MethodAtType(4, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if xmin, ok := stack.Get(1).ToFloat(); ok {
 				if xmax, ok := stack.Get(2).ToFloat(); ok {
@@ -392,7 +392,7 @@ func createPlotMethods() value.MethodMap {
 				}
 			}
 			return nil, fmt.Errorf("inset requires floats as arguments")
-		}).SetMethodDescription("xMin", "xMax", "yMin", "yMax", "converts plot to an inset"),
+		}).SetMethodDescription("xMin", "xMax", "yMin", "yMax", "Converts plot to an inset."),
 	}
 }
 
@@ -402,10 +402,10 @@ func createPlotContentMethods() value.MethodMap {
 			if leg, ok := stack.Get(1).(value.String); ok {
 				plot.Legend.Name = string(leg)
 			} else {
-				return nil, fmt.Errorf("Legend requires a string")
+				return nil, fmt.Errorf("legend requires a string")
 			}
 			return plot, nil
-		}).SetMethodDescription("str", "sets a legend"),
+		}).SetMethodDescription("str", "Sets a legend."),
 	}
 }
 
@@ -466,7 +466,7 @@ func Setup(fg *value.FunctionGenerator) {
 		},
 		Args:   1,
 		IsPure: true,
-	}.SetDescription("int", "Gets the color with number int"))
+	}.SetDescription("int", "Gets the color with number int."))
 	fg.AddStaticFunction("plot", funcGen.Function[value.Value]{
 		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
 			p := NewPlotValue(&graph.Plot{})
@@ -480,7 +480,7 @@ func Setup(fg *value.FunctionGenerator) {
 		},
 		Args:   -1,
 		IsPure: true,
-	}.SetDescription("content", "Creates a new plot"))
+	}.SetDescription("content", "Creates a new plot."))
 	fg.AddStaticFunction("scatter", funcGen.Function[value.Value]{
 		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
 			var list *value.List
@@ -509,7 +509,7 @@ func Setup(fg *value.FunctionGenerator) {
 		},
 		Args:   4,
 		IsPure: true,
-	}.SetDescription("data", "color", "markerType", "label", "Creates a new scatter dataset").VarArgs(1, 4))
+	}.SetDescription("data", "color", "markerType", "label", "Creates a new scatter dataset.").VarArgs(1, 4))
 	fg.AddStaticFunction("curve", funcGen.Function[value.Value]{
 		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
 			var list *value.List
@@ -566,7 +566,7 @@ func Setup(fg *value.FunctionGenerator) {
 		},
 		Args:   4,
 		IsPure: true,
-	}.SetDescription("data", "color", "markerType", "label", "Creates a new scatter dataset drawn with a curve").VarArgs(1, 4))
+	}.SetDescription("data", "color", "markerType", "label", "Creates a new scatter dataset drawn with a curve.").VarArgs(1, 4))
 	fg.AddStaticFunction("function", funcGen.Function[value.Value]{
 		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
 			styleVal, err := GetStyle(st, 1, graph.Black)
@@ -609,7 +609,7 @@ func Setup(fg *value.FunctionGenerator) {
 		},
 		Args:   -1,
 		IsPure: true,
-	}.SetDescription("data", "style", "label", "steps", "Creates a new function").VarArgs(1, 4))
+	}.SetDescription("data", "style", "label", "steps", "Creates a new function.").VarArgs(1, 4))
 	fg.AddStaticFunction("yConst", funcGen.Function[value.Value]{
 		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
 			if y, ok := st.Get(0).ToFloat(); ok {
@@ -662,7 +662,7 @@ func Setup(fg *value.FunctionGenerator) {
 		},
 		Args:   4,
 		IsPure: true,
-	}.SetDescription("x", "y", "text", "color", "Creates a new hint").VarArgs(3, 4))
+	}.SetDescription("x", "y", "text", "color", "Creates a new hint.").VarArgs(3, 4))
 	fg.AddStaticFunction("hintDir", funcGen.Function[value.Value]{
 		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
 			if x1, ok := st.Get(0).ToFloat(); ok {
@@ -692,7 +692,7 @@ func Setup(fg *value.FunctionGenerator) {
 		},
 		Args:   6,
 		IsPure: true,
-	}.SetDescription("x1", "y1", "x2", "y2", "text", "color", "Creates a new hint").VarArgs(5, 6))
+	}.SetDescription("x1", "y1", "x2", "y2", "text", "color", "Creates a new directional hint.").VarArgs(5, 6))
 	fg.AddStaticFunction("text", funcGen.Function[value.Value]{
 		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
 			if x, ok := st.Get(0).ToFloat(); ok {
@@ -715,7 +715,7 @@ func Setup(fg *value.FunctionGenerator) {
 		},
 		Args:   4,
 		IsPure: true,
-	}.SetDescription("x", "y", "text", "color", "Adds an arbitrary text to the plot").VarArgs(3, 4))
+	}.SetDescription("x", "y", "text", "color", "Adds an arbitrary text to the plot.").VarArgs(3, 4))
 	fg.AddStaticFunction("arrow", funcGen.Function[value.Value]{
 		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
 			if x1, ok := st.Get(0).ToFloat(); ok {
@@ -749,7 +749,7 @@ func Setup(fg *value.FunctionGenerator) {
 		},
 		Args:   7,
 		IsPure: true,
-	}.SetDescription("x1", "y1", "x2", "y2", "text", "marker", "color", "Creates a new scatter dataset").VarArgs(5, 7))
+	}.SetDescription("x1", "y1", "x2", "y2", "text", "marker", "color", "Creates a new scatter dataset.").VarArgs(5, 7))
 	fg.AddStaticFunction("splitHorizontal", funcGen.Function[value.Value]{
 		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
 			if i1, ok := st.Get(0).(ToImageInterface); ok {
@@ -768,7 +768,7 @@ func Setup(fg *value.FunctionGenerator) {
 		},
 		Args:   2,
 		IsPure: true,
-	}.SetDescription("image1", "image2", "Combines two images by a horizontal splitting"))
+	}.SetDescription("image1", "image2", "Combines two images by a horizontal splitting."))
 	fg.AddStaticFunction("splitVertical", funcGen.Function[value.Value]{
 		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
 			if i1, ok := st.Get(0).(ToImageInterface); ok {
@@ -787,7 +787,7 @@ func Setup(fg *value.FunctionGenerator) {
 		},
 		Args:   2,
 		IsPure: true,
-	}.SetDescription("image1", "image2", "Combines two images by a horizontal splitting"))
+	}.SetDescription("image1", "image2", "Combines two images by a vertical splitting."))
 }
 
 func GetStyle(st funcGen.Stack[value.Value], index int, defStyle *graph.Style) (StyleValue, error) {

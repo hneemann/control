@@ -80,16 +80,16 @@ func cmplxMethods() value.MethodMap {
 	return value.MethodMap{
 		"real": value.MethodAtType(0, func(c Complex, st funcGen.Stack[value.Value]) (value.Value, error) {
 			return value.Float(real(c)), nil
-		}).SetMethodDescription("returns the real component"),
+		}).SetMethodDescription("Returns the real component."),
 		"imag": value.MethodAtType(0, func(c Complex, st funcGen.Stack[value.Value]) (value.Value, error) {
 			return value.Float(imag(c)), nil
-		}).SetMethodDescription("returns the imaginary component"),
+		}).SetMethodDescription("Returns the imaginary component."),
 		"abs": value.MethodAtType(0, func(c Complex, st funcGen.Stack[value.Value]) (value.Value, error) {
 			return value.Float(cmplx.Abs(complex128(c))), nil
-		}).SetMethodDescription("returns the amplitude"),
+		}).SetMethodDescription("Returns the amplitude."),
 		"phase": value.MethodAtType(0, func(c Complex, st funcGen.Stack[value.Value]) (value.Value, error) {
 			return value.Float(cmplx.Phase(complex128(c))), nil
-		}).SetMethodDescription("returns the phase"),
+		}).SetMethodDescription("Returns the phase."),
 	}
 }
 
@@ -101,82 +101,82 @@ func twoPortMethods() value.MethodMap {
 				return nil, fmt.Errorf("voltageGain requires a complex value")
 			}
 			return Complex(tp.VoltageGain(z)), nil
-		}).SetMethodDescription("load", "returns the voltage gain"),
+		}).SetMethodDescription("load", "Returns the voltage gain."),
 		"voltageGainOpen": value.MethodAtType(0, func(tp *TwoPort, st funcGen.Stack[value.Value]) (value.Value, error) {
 			return Complex(tp.VoltageGainOpen()), nil
-		}).SetMethodDescription("returns the open circuit voltage gain"),
+		}).SetMethodDescription("Returns the open circuit voltage gain."),
 		"currentGain": value.MethodAtType(1, func(tp *TwoPort, st funcGen.Stack[value.Value]) (value.Value, error) {
 			z, err := getComplex(st, 1)
 			if err != nil {
 				return nil, fmt.Errorf("voltageGain requires a complex value")
 			}
 			return Complex(tp.CurrentGain(z)), nil
-		}).SetMethodDescription("load", "returns the current gain"),
+		}).SetMethodDescription("load", "Returns the current gain."),
 		"inputImp": value.MethodAtType(1, func(tp *TwoPort, st funcGen.Stack[value.Value]) (value.Value, error) {
 			z, err := getComplex(st, 1)
 			if err != nil {
 				return nil, fmt.Errorf("inputImp requires a complex value")
 			}
 			return Complex(tp.InputImpedance(z)), nil
-		}).SetMethodDescription("load", "returns the input impedance"),
+		}).SetMethodDescription("load", "Returns the input impedance."),
 		"inputImpOpen": value.MethodAtType(0, func(tp *TwoPort, st funcGen.Stack[value.Value]) (value.Value, error) {
 			return Complex(tp.InputImpedanceOpen()), nil
-		}).SetMethodDescription("returns the open circuit input impedance"),
+		}).SetMethodDescription("Returns the open circuit input impedance."),
 		"outputImp": value.MethodAtType(1, func(tp *TwoPort, st funcGen.Stack[value.Value]) (value.Value, error) {
 			z, err := getComplex(st, 1)
 			if err != nil {
 				return nil, fmt.Errorf("outputImp requires a complex value")
 			}
 			return Complex(tp.OutputImpedance(z)), nil
-		}).SetMethodDescription("load", "returns the output impedance"),
+		}).SetMethodDescription("load", "Returns the output impedance."),
 		"outputImpOpen": value.MethodAtType(0, func(tp *TwoPort, st funcGen.Stack[value.Value]) (value.Value, error) {
 			return Complex(tp.OutputImpedanceOpen()), nil
-		}).SetMethodDescription("returns the open circuit output impedance"),
+		}).SetMethodDescription("Returns the open circuit output impedance."),
 		"cascade": value.MethodAtType(1, func(tp *TwoPort, st funcGen.Stack[value.Value]) (value.Value, error) {
 			if o, ok := st.Get(1).(*TwoPort); ok {
 				return tp.Cascade(o)
 			}
 			return nil, fmt.Errorf("cascade requires a two-port value")
-		}).SetMethodDescription("tp", "returns a series-series connection"),
+		}).SetMethodDescription("tp", "Returns a series-series connection."),
 		"series": value.MethodAtType(1, func(tp *TwoPort, st funcGen.Stack[value.Value]) (value.Value, error) {
 			if o, ok := st.Get(1).(*TwoPort); ok {
 				return tp.Series(o)
 			}
 			return nil, fmt.Errorf("series requires a two-port value")
-		}).SetMethodDescription("tp", "returns a series-series connection"),
+		}).SetMethodDescription("tp", "Returns a series-series connection."),
 		"parallel": value.MethodAtType(1, func(tp *TwoPort, st funcGen.Stack[value.Value]) (value.Value, error) {
 			if o, ok := st.Get(1).(*TwoPort); ok {
 				return tp.Parallel(o)
 			}
 			return nil, fmt.Errorf("parallel requires a two-port value")
-		}).SetMethodDescription("tp", "returns a parallel-parallel connection"),
+		}).SetMethodDescription("tp", "Returns a parallel-parallel connection."),
 		"seriesParallel": value.MethodAtType(1, func(tp *TwoPort, st funcGen.Stack[value.Value]) (value.Value, error) {
 			if o, ok := st.Get(1).(*TwoPort); ok {
 				return tp.SeriesParallel(o)
 			}
 			return nil, fmt.Errorf("seriesParallel requires a two-port value")
-		}).SetMethodDescription("tp", "returns a series-parallel connection"),
+		}).SetMethodDescription("tp", "Returns a series-parallel connection."),
 		"parallelSeries": value.MethodAtType(1, func(tp *TwoPort, st funcGen.Stack[value.Value]) (value.Value, error) {
 			if o, ok := st.Get(1).(*TwoPort); ok {
 				return tp.ParallelSeries(o)
 			}
 			return nil, fmt.Errorf("ParallelSeries requires a two-port value")
-		}).SetMethodDescription("tp", "returns a parallel-series connection"),
+		}).SetMethodDescription("tp", "Returns a parallel-series connection."),
 		"getZ": value.MethodAtType(0, func(tp *TwoPort, st funcGen.Stack[value.Value]) (value.Value, error) {
 			return tp.GetZ()
-		}).SetMethodDescription("returns the Z-parameters"),
+		}).SetMethodDescription("Returns the Z-parameters."),
 		"getY": value.MethodAtType(0, func(tp *TwoPort, st funcGen.Stack[value.Value]) (value.Value, error) {
 			return tp.GetY()
-		}).SetMethodDescription("returns the Y-parameters"),
+		}).SetMethodDescription("Returns the Y-parameters."),
 		"getH": value.MethodAtType(0, func(tp *TwoPort, st funcGen.Stack[value.Value]) (value.Value, error) {
 			return tp.GetH()
-		}).SetMethodDescription("returns the H-parameters"),
+		}).SetMethodDescription("Returns the H-parameters."),
 		"getA": value.MethodAtType(0, func(tp *TwoPort, st funcGen.Stack[value.Value]) (value.Value, error) {
 			return tp.GetA()
-		}).SetMethodDescription("returns the A-parameters"),
+		}).SetMethodDescription("Returns the A-parameters."),
 		"getC": value.MethodAtType(0, func(tp *TwoPort, st funcGen.Stack[value.Value]) (value.Value, error) {
 			return tp.GetC()
-		}).SetMethodDescription("returns the C-parameters"),
+		}).SetMethodDescription("Returns the C-parameters."),
 	}
 }
 
@@ -229,10 +229,10 @@ func polyMethods() value.MethodMap {
 	return value.MethodMap{
 		"derivative": value.MethodAtType(0, func(pol Polynomial, st funcGen.Stack[value.Value]) (value.Value, error) {
 			return pol.Derivative(), nil
-		}).SetMethodDescription("calculates the derivative"),
+		}).SetMethodDescription("Calculates the derivative."),
 		"normalize": value.MethodAtType(0, func(pol Polynomial, st funcGen.Stack[value.Value]) (value.Value, error) {
 			return pol.Normalize(), nil
-		}).SetMethodDescription("calculates the normalized polynomial"),
+		}).SetMethodDescription("Calculates the normalized polynomial."),
 		"roots": value.MethodAtType(0, func(pol Polynomial, st funcGen.Stack[value.Value]) (value.Value, error) {
 			r, err := pol.Roots()
 			if err != nil {
@@ -243,7 +243,7 @@ func polyMethods() value.MethodMap {
 				val = append(val, Complex(v))
 			}
 			return value.NewList(val...), nil
-		}).SetMethodDescription("returns the roots. If a pair of complex conjugates is found, only the complex number with positive imaginary part is returned"),
+		}).SetMethodDescription("Returns the roots. If a pair of complex conjugates is found, only the complex number with positive imaginary part is returned."),
 	}
 }
 
@@ -294,22 +294,22 @@ func linMethods() value.MethodMap {
 	return value.MethodMap{
 		"loop": value.MethodAtType(0, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
 			return lin.Loop()
-		}).SetMethodDescription("closes the loop"),
+		}).SetMethodDescription("Closes the loop."),
 		"derivative": value.MethodAtType(0, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
 			return lin.Derivative(), nil
-		}).SetMethodDescription("calculates the derivative"),
+		}).SetMethodDescription("Calculates the derivative."),
 		"numerator": value.MethodAtType(0, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
 			return lin.Numerator, nil
-		}).SetMethodDescription("returns the numerator"),
+		}).SetMethodDescription("Returns the numerator."),
 		"denominator": value.MethodAtType(0, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
 			return lin.Denominator, nil
-		}).SetMethodDescription("returns the denominator"),
+		}).SetMethodDescription("Returns the denominator."),
 		"reduce": value.MethodAtType(0, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
 			return lin.Reduce()
-		}).SetMethodDescription("reduces the linear system"),
+		}).SetMethodDescription("Reduces the linear system."),
 		"stringPoly": value.MethodAtType(0, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
 			return value.String(lin.StringPoly(false)), nil
-		}).SetMethodDescription("creates a string representation of the linear system"),
+		}).SetMethodDescription("Creates a string representation of the linear system."),
 		"evans": value.MethodAtType(1, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
 			if k, ok := st.Get(1).ToFloat(); ok {
 				red, err := lin.Reduce()
@@ -323,7 +323,7 @@ func linMethods() value.MethodMap {
 				return grParser.NewPlotValue(plot), nil
 			}
 			return nil, fmt.Errorf("evans requires a float")
-		}).SetMethodDescription("k_max", "creates an evans plot"),
+		}).SetMethodDescription("k_max", "Creates an evans plot."),
 		"nyquist": value.MethodAtType(1, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
 			neg, ok := st.GetOptional(1, value.Bool(false)).ToBool()
 			if !ok {
@@ -334,7 +334,7 @@ func linMethods() value.MethodMap {
 				return nil, err
 			}
 			return grParser.NewPlotValue(plot), nil
-		}).SetMethodDescription("also negative", "creates a nyquist plot").VarArgsMethod(0, 1),
+		}).SetMethodDescription("also negative", "Creates a nyquist plot.").VarArgsMethod(0, 1),
 		"nyquistPos": value.MethodAtType(2, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
 			if style, err := grParser.GetStyle(st, 1, graph.Black); err == nil {
 				if leg, ok := st.GetOptional(2, value.String("")).(value.String); ok {
@@ -348,7 +348,7 @@ func linMethods() value.MethodMap {
 				}
 			}
 			return nil, fmt.Errorf("nyquistPos requires a style")
-		}).SetMethodDescription("color", "leg", "creates a nyquist plot content with positive ω").VarArgsMethod(0, 2),
+		}).SetMethodDescription("color", "leg", "Creates a nyquist plot content with positive ω.").VarArgsMethod(0, 2),
 		"nyquistNeg": value.MethodAtType(2, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
 			if style, err := grParser.GetStyle(st, 1, graph.Black); err == nil {
 				if leg, ok := st.GetOptional(2, value.String("")).(value.String); ok {
@@ -362,21 +362,21 @@ func linMethods() value.MethodMap {
 				}
 			}
 			return nil, fmt.Errorf("nyquistNeg requires a style")
-		}).SetMethodDescription("color", "leg", "creates a nyquist plot content with negative ω").VarArgsMethod(0, 2),
+		}).SetMethodDescription("color", "leg", "Creates a nyquist plot content with negative ω.").VarArgsMethod(0, 2),
 		"pMargin": value.MethodAtType(0, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
 			w0, margin, err := lin.PMargin()
 			return value.NewMap(value.RealMap{
 				"w0":      value.Float(w0),
 				"pMargin": value.Float(margin),
 			}), err
-		}).SetMethodDescription("returns the crossover frequency and the phase margin"),
+		}).SetMethodDescription("Returns the crossover frequency and the phase margin."),
 		"gMargin": value.MethodAtType(0, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
 			w180, margin, err := lin.GMargin()
 			return value.NewMap(value.RealMap{
 				"w180":    value.Float(w180),
 				"gMargin": value.Float(margin),
 			}), err
-		}).SetMethodDescription("returns the crossover frequency and the phase margin"),
+		}).SetMethodDescription("Returns the stability frequency and the gain margin."),
 		"simStep": value.MethodAtType(1, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
 			if tMax, ok := st.Get(1).ToFloat(); ok {
 				return lin.Simulate(tMax, func(t float64) (float64, error) {
@@ -387,7 +387,7 @@ func linMethods() value.MethodMap {
 				})
 			}
 			return nil, fmt.Errorf("sim requires a float")
-		}).SetMethodDescription("tMax", "simulates the transfer function with the step function as input signal"),
+		}).SetMethodDescription("tMax", "Simulates the transfer function with the step function as input signal."),
 		"sim": value.MethodAtType(2, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
 			if cl, ok := st.Get(1).ToClosure(); ok {
 				stack := funcGen.NewEmptyStack[value.Value]()
@@ -407,7 +407,7 @@ func linMethods() value.MethodMap {
 				}
 			}
 			return nil, fmt.Errorf("sim requires a function and a float")
-		}).SetMethodDescription("u(t)", "tMax", "simulates the transfer function"),
+		}).SetMethodDescription("u(t)", "tMax", "Simulates the transfer function."),
 	}
 }
 
@@ -452,14 +452,14 @@ func bodeMethods() value.MethodMap {
 				}
 			}
 			return nil, errors.New("add requires a linear system, a color and a legend")
-		}).SetMethodDescription("lin", "color", "label", "adds a linear system to the bode plot").VarArgsMethod(1, 3).Pure(false),
+		}).SetMethodDescription("lin", "color", "label", "Adds a linear system to the bode plot.").VarArgsMethod(1, 3).Pure(false),
 		"textSize": value.MethodAtType(1, func(plot BodePlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if si, ok := stack.Get(1).ToFloat(); ok {
 				plot.context.TextSize = si
 				return plot, nil
 			}
 			return nil, fmt.Errorf("textSize requires a float value")
-		}).SetMethodDescription("size", "Sets the text size").Pure(false),
+		}).SetMethodDescription("size", "Sets the text size.").Pure(false),
 		"outputSize": value.MethodAtType(2, func(plot BodePlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if width, ok := stack.Get(1).ToFloat(); ok {
 				if height, ok := stack.Get(2).ToFloat(); ok {
@@ -469,13 +469,13 @@ func bodeMethods() value.MethodMap {
 				}
 			}
 			return nil, fmt.Errorf("outputSize requires two float values")
-		}).SetMethodDescription("width", "height", "Sets the svg-output size"),
+		}).SetMethodDescription("width", "height", "Sets the svg-output size."),
 		"file": value.MethodAtType(1, func(plot BodePlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if name, ok := stack.Get(1).(value.String); ok {
 				return grParser.ImageToFile(plot, &plot.context, string(name))
 			}
 			return nil, fmt.Errorf("download requires a string value")
-		}).SetMethodDescription("filename", "Enables download"),
+		}).SetMethodDescription("filename", "Enables a file download."),
 		"addWithLatency": value.MethodAtType(-1, func(bode BodePlotValue, st funcGen.Stack[value.Value]) (value.Value, error) {
 			if linVal, ok := getLinear(st, 1); ok {
 				if latency, ok := st.Get(2).ToFloat(); ok {
@@ -491,7 +491,7 @@ func bodeMethods() value.MethodMap {
 				}
 			}
 			return nil, errors.New("addWithLatency requires a linear system, a latency, a color and a legend")
-		}).SetMethodDescription("lin", "Tt", "color", "label", "adds a linear system with latency to the bode plot").VarArgsMethod(2, 4).Pure(false),
+		}).SetMethodDescription("lin", "Tt", "color", "label", "Adds a linear system with latency to the bode plot.").VarArgsMethod(2, 4).Pure(false),
 		"aBounds": value.MethodAtType(2, func(bode BodePlotValue, st funcGen.Stack[value.Value]) (value.Value, error) {
 			if aMin, ok := st.Get(1).ToFloat(); ok {
 				if aMax, ok := st.Get(2).ToFloat(); ok {
@@ -500,7 +500,7 @@ func bodeMethods() value.MethodMap {
 				}
 			}
 			return nil, errors.New("aBounds requires two float values")
-		}).SetMethodDescription("min", "max", "sets the amplitude bounds").Pure(false),
+		}).SetMethodDescription("min", "max", "Sets the amplitude bounds.").Pure(false),
 		"pBounds": value.MethodAtType(2, func(bode BodePlotValue, st funcGen.Stack[value.Value]) (value.Value, error) {
 			if aMin, ok := st.Get(1).ToFloat(); ok {
 				if aMax, ok := st.Get(2).ToFloat(); ok {
@@ -509,7 +509,7 @@ func bodeMethods() value.MethodMap {
 				}
 			}
 			return nil, errors.New("pBounds requires two float values")
-		}).SetMethodDescription("min", "max", "sets the phase bounds").Pure(false),
+		}).SetMethodDescription("min", "max", "Sets the phase bounds.").Pure(false),
 		"grid": value.MethodAtType(1, func(plot BodePlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if style, err := grParser.GetStyle(stack, 1, grParser.GridStyle); err == nil {
 				plot.Value.amplitude.Grid = style.Value
@@ -518,7 +518,7 @@ func bodeMethods() value.MethodMap {
 				return nil, err
 			}
 			return plot, nil
-		}).SetMethodDescription("color", "Adds a grid").VarArgsMethod(0, 1),
+		}).SetMethodDescription("color", "Adds a grid.").VarArgsMethod(0, 1),
 		"frame": value.MethodAtType(1, func(plot BodePlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if styleVal, ok := stack.Get(1).(grParser.StyleValue); ok {
 				plot.Value.amplitude.Grid = styleVal.Value
@@ -527,7 +527,7 @@ func bodeMethods() value.MethodMap {
 			} else {
 				return nil, fmt.Errorf("frame requires a style")
 			}
-		}).SetMethodDescription("color", "Sets the frame color"),
+		}).SetMethodDescription("color", "Sets the frame color."),
 		"ampModify": value.MethodAtType(1, func(bode BodePlotValue, st funcGen.Stack[value.Value]) (value.Value, error) {
 			if cl, ok := st.Get(1).ToClosure(); ok {
 				a, err := cl.Eval(st, grParser.NewPlotValue(bode.Value.amplitude))
@@ -540,7 +540,7 @@ func bodeMethods() value.MethodMap {
 				}
 			}
 			return nil, errors.New("ampModify requires a function that returns the modified plot")
-		}).SetMethodDescription("function", "the given function gets the amplitude plot and must return the modified amplitude plot!").Pure(false),
+		}).SetMethodDescription("function", "The given function gets the amplitude plot and must return the modified amplitude plot.").Pure(false),
 		"phaseModify": value.MethodAtType(1, func(bode BodePlotValue, st funcGen.Stack[value.Value]) (value.Value, error) {
 			if cl, ok := st.Get(1).ToClosure(); ok {
 				a, err := cl.Eval(st, grParser.NewPlotValue(bode.Value.phase))
@@ -553,13 +553,13 @@ func bodeMethods() value.MethodMap {
 				}
 			}
 			return nil, errors.New("phaseModify requires a function that returns the modified plot")
-		}).SetMethodDescription("function", "the given function gets the phase plot and must return the modified phase plot!").Pure(false),
+		}).SetMethodDescription("function", "The given function gets the phase plot and must return the modified phase plot.").Pure(false),
 		"amplitude": value.MethodAtType(0, func(bode BodePlotValue, st funcGen.Stack[value.Value]) (value.Value, error) {
 			return grParser.NewPlotValue(bode.Value.amplitude), nil
-		}).SetMethodDescription("returns the amplitude plot"),
+		}).SetMethodDescription("Returns the amplitude plot."),
 		"phase": value.MethodAtType(0, func(bode BodePlotValue, st funcGen.Stack[value.Value]) (value.Value, error) {
 			return grParser.NewPlotValue(bode.Value.phase), nil
-		}).SetMethodDescription("returns the phase plot"),
+		}).SetMethodDescription("Returns the phase plot."),
 	}
 }
 
@@ -605,7 +605,7 @@ var Parser = value.New().
 		},
 		Args:   2,
 		IsPure: true,
-	}.SetDescription("re", "im", "creates a complex value")).
+	}.SetDescription("re", "im", "Creates a complex value.")).
 	AddStaticFunction("poly", funcGen.Function[value.Value]{
 		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
 			var p Polynomial
@@ -620,7 +620,7 @@ var Parser = value.New().
 		},
 		Args:   -1,
 		IsPure: true,
-	}.SetDescription("", "declares a polynomial")).
+	}.SetDescription("", "Declares a polynomial.")).
 	AddStaticFunction("pid", funcGen.Function[value.Value]{
 		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
 			if kp, ok := stack.Get(0).ToFloat(); ok {
@@ -636,7 +636,7 @@ var Parser = value.New().
 		},
 		Args:   4,
 		IsPure: true,
-	}.SetDescription("k_p", "T_I", "T_D", "T_P", "a PID linear system. The fourth time T_P is the time "+
+	}.SetDescription("k_p", "T_I", "T_D", "T_P", "Creates a PID linear system. The fourth time T_P is the time "+
 		"constant that describes the parasitic PT1 term occurring in a real differentiation.").VarArgs(2, 4)).
 	AddStaticFunction("bode", funcGen.Function[value.Value]{
 		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
@@ -650,7 +650,7 @@ var Parser = value.New().
 		},
 		Args:   2,
 		IsPure: false,
-	}.SetDescription("wMin", "wMax", "creates a bode plot")).
+	}.SetDescription("wMin", "wMax", "Creates a bode plot.")).
 	AddStaticFunction("nelderMead", funcGen.Function[value.Value]{
 		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
 			if fu, ok := stack.Get(0).ToClosure(); ok {
@@ -666,7 +666,7 @@ var Parser = value.New().
 		},
 		Args:   4,
 		IsPure: true,
-	}.SetDescription("func", "initial", "delta", "iterations", "calculates a Nelder&Mead optimization").VarArgs(2, 4)).
+	}.SetDescription("func", "initial", "delta", "iterations", "Calculates a Nelder&Mead optimization.").VarArgs(2, 4)).
 	AddStaticFunction("blockLimiter", funcGen.Function[value.Value]{
 		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
 			if aMin, ok := stack.Get(0).ToFloat(); ok {
@@ -678,7 +678,7 @@ var Parser = value.New().
 		},
 		Args:   2,
 		IsPure: true,
-	}.SetDescription("min", "max", "creates a limiter block")).
+	}.SetDescription("min", "max", "Creates a limiter block.")).
 	AddStaticFunction("blockGain", funcGen.Function[value.Value]{
 		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
 			if g, ok := stack.Get(0).ToFloat(); ok {
@@ -688,7 +688,7 @@ var Parser = value.New().
 		},
 		Args:   1,
 		IsPure: true,
-	}.SetDescription("gain", "creates a gain block")).
+	}.SetDescription("gain", "Creates a gain block.")).
 	AddStaticFunction("blockPid", funcGen.Function[value.Value]{
 		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
 			if kp, ok := stack.Get(0).ToFloat(); ok {
@@ -706,7 +706,7 @@ var Parser = value.New().
 		},
 		Args:   3,
 		IsPure: true,
-	}.SetDescription("k_p", "T_I", "T_D", "a PID block").VarArgs(2, 3)).
+	}.SetDescription("k_p", "T_I", "T_D", "Creates a PID block.").VarArgs(2, 3)).
 	AddStaticFunction("tpCascade", funcGen.Function[value.Value]{
 		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
 			var tpl []*TwoPort
@@ -724,7 +724,7 @@ var Parser = value.New().
 		},
 		Args:   -1,
 		IsPure: true,
-	}.SetDescription("tp1", "tp2", "cascade the given two-ports")).
+	}.SetDescription("tp1", "tp2", "Cascade the given two-ports.")).
 	AddStaticFunction("tpSeries", funcGen.Function[value.Value]{
 		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
 			z, err := getComplex(stack, 0)
@@ -735,7 +735,7 @@ var Parser = value.New().
 		},
 		Args:   1,
 		IsPure: true,
-	}.SetDescription("z", "returns a series two-port")).
+	}.SetDescription("z", "Returns a series two-port.")).
 	AddStaticFunction("tpShunt", funcGen.Function[value.Value]{
 		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
 			z, err := getComplex(stack, 0)
@@ -746,7 +746,7 @@ var Parser = value.New().
 		},
 		Args:   1,
 		IsPure: true,
-	}.SetDescription("z", "returns a shunt two-port")).
+	}.SetDescription("z", "Returns a shunt two-port.")).
 	AddStaticFunction("tpY", createTwoPort(YParam)).
 	AddStaticFunction("tpZ", createTwoPort(ZParam)).
 	AddStaticFunction("tpH", createTwoPort(HParam)).
@@ -763,7 +763,7 @@ var Parser = value.New().
 		},
 		Args:   2,
 		IsPure: true,
-	}.SetDescription("def", "tMax", "simulates the given model")).
+	}.SetDescription("def", "tMax", "Simulates the given model.")).
 	ReplaceOp("^", false, true, createExp).
 	ReplaceOp("*", true, true, createMul).
 	ReplaceOp("/", false, true, createDiv).
@@ -1179,7 +1179,7 @@ func createTwoPort(typ TpType) funcGen.Function[value.Value] {
 		},
 		Args:   4,
 		IsPure: true,
-	}.SetDescription("m11", "m12", "m21", "m21", "creates a new two-port of type "+typ.String())
+	}.SetDescription("m11", "m12", "m21", "m21", "Creates a new two-port of type "+typ.String()+".")
 }
 
 func toUniCode(str string) string {
