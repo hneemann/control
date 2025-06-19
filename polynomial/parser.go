@@ -579,12 +579,12 @@ func getLinear(st funcGen.Stack[value.Value], i int) (*Linear, bool) {
 
 var Parser = value.New().
 	Modify(func(fg *value.FunctionGenerator) {
-		ComplexValueType = fg.RegisterType()
-		PolynomialValueType = fg.RegisterType()
-		LinearValueType = fg.RegisterType()
-		BlockFactoryValueType = fg.RegisterType()
-		TwoPortValueType = fg.RegisterType()
-		BodeValueType = fg.RegisterType()
+		ComplexValueType = fg.RegisterType("complex")
+		PolynomialValueType = fg.RegisterType("polynomial")
+		LinearValueType = fg.RegisterType("linearSystem")
+		BlockFactoryValueType = fg.RegisterType("block")
+		TwoPortValueType = fg.RegisterType("twoPort")
+		BodeValueType = fg.RegisterType("bodePlot")
 	}).
 	RegisterMethods(LinearValueType, linMethods()).
 	RegisterMethods(PolynomialValueType, polyMethods()).

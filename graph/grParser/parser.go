@@ -433,21 +433,18 @@ func (p StyleValue) GetType() value.Type {
 
 const defSize = 4
 
-var (
-	defStyle = StyleValue{Holder[*graph.Style]{graph.Black}, defSize}
-)
-
 func Setup(fg *value.FunctionGenerator) {
-	PlotType = fg.RegisterType()
-	PlotContentType = fg.RegisterType()
-	StyleType = fg.RegisterType()
-	ImageType = fg.RegisterType()
+	PlotType = fg.RegisterType("plot")
+	PlotContentType = fg.RegisterType("plotContent")
+	StyleType = fg.RegisterType("style")
+	ImageType = fg.RegisterType("image")
 
 	fg.RegisterMethods(PlotType, createPlotMethods())
 	fg.RegisterMethods(PlotContentType, createPlotContentMethods())
 	fg.RegisterMethods(StyleType, createStyleMethods())
 	fg.RegisterMethods(ImageType, createImageMethods())
 	export.AddZipHelpers(fg)
+	export.AddHTMLStylingHelpers(fg)
 	fg.AddConstant("black", StyleValue{Holder[*graph.Style]{graph.Black}, defSize})
 	fg.AddConstant("green", StyleValue{Holder[*graph.Style]{graph.Green}, defSize})
 	fg.AddConstant("red", StyleValue{Holder[*graph.Style]{graph.Red}, defSize})
