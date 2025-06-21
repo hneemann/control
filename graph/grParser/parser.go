@@ -385,7 +385,7 @@ func createPlotMethods() value.MethodMap {
 				}
 			}
 			return nil, fmt.Errorf("inset requires floats as arguments")
-		}).SetMethodDescription("xMin", "xMax", "yMin", "yMax", "Converts plot to an inset."),
+		}).SetMethodDescription("xMin", "xMax", "yMin", "yMax", "Converts the plot into an inset that can be added to another plot."),
 	}
 }
 
