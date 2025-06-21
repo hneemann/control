@@ -56,6 +56,18 @@ type Plot struct {
 	canvas         Canvas
 }
 
+func checkSomethingVisible(shape Shape, shapeStyle, lineStyle *Style) (Shape, *Style, bool) {
+	if lineStyle == nil {
+		if shape == nil {
+			shape = NewCrossMarker(4)
+		}
+		if shapeStyle == nil {
+			shapeStyle = Black
+		}
+	}
+	return shape, shapeStyle, shape != nil && shapeStyle != nil
+}
+
 func (p *Plot) DrawTo(canvas Canvas) error {
 	p.canvas = canvas
 	c := canvas.Context()
@@ -216,8 +228,8 @@ func (p *Plot) DrawTo(canvas Canvas) error {
 		}
 		for _, leg := range p.Legend {
 			canvas.DrawText(lp, leg.Name, Left|VCenter, textStyle, textSize)
-			if leg.Shape != nil && leg.ShapeStyle != nil {
-				canvas.DrawShape(lp.Add(Point{-1*textSize - small, 0}), leg.Shape, leg.ShapeStyle)
+			if shape, shapeStyle, ok := checkSomethingVisible(leg.Shape, leg.ShapeStyle, leg.LineStyle); ok {
+				canvas.DrawShape(lp.Add(Point{-1*textSize - small, 0}), shape, shapeStyle)
 			}
 			if leg.LineStyle != nil {
 				canvas.DrawPath(NewPointsPath(false, lp.Add(Point{-2*textSize - small, 0}), lp.Add(Point{-small, 0})), leg.LineStyle)
@@ -343,10 +355,23 @@ type PlotContent interface {
 	DrawTo(*Plot, Canvas) error
 }
 
+type HasLine interface {
+	SetLine(*Style) PlotContent
+}
+
+type HasShape interface {
+	SetShape(Shape, *Style) PlotContent
+}
+
 type Function struct {
 	Function func(x float64) (float64, error)
 	Style    *Style
 	Steps    int
+}
+
+func (f Function) SetLine(style *Style) PlotContent {
+	f.Style = style
+	return f
 }
 
 const functionSteps = 100
@@ -403,6 +428,17 @@ type Scatter struct {
 	LineStyle  *Style
 }
 
+func (s Scatter) SetShape(shape Shape, style *Style) PlotContent {
+	s.Shape = shape
+	s.ShapeStyle = style
+	return s
+}
+
+func (s Scatter) SetLine(style *Style) PlotContent {
+	s.LineStyle = style
+	return s
+}
+
 func (s Scatter) String() string {
 	return "Scatter"
 }
@@ -421,15 +457,15 @@ func (s Scatter) PreferredBounds(_, _ Bounds) (Bounds, Bounds, error) {
 
 func (s Scatter) DrawTo(_ *Plot, canvas Canvas) error {
 	rect := canvas.Rect()
-	if s.ShapeStyle != nil && s.Shape != nil {
-		for p := range s.Points {
-			if rect.Inside(p) {
-				canvas.DrawShape(p, s.Shape, s.ShapeStyle)
-			}
-		}
-	}
 	if s.LineStyle != nil {
 		canvas.DrawPath(canvas.Rect().IntersectPath(s.Points), s.LineStyle)
+	}
+	if shape, shapeStyle, ok := checkSomethingVisible(s.Shape, s.ShapeStyle, s.LineStyle); ok {
+		for p := range s.Points {
+			if rect.Inside(p) {
+				canvas.DrawShape(p, shape, shapeStyle)
+			}
+		}
 	}
 	return nil
 }
