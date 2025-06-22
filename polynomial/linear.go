@@ -472,13 +472,13 @@ func (p Polar) DrawTo(plot *graph.Plot, canvas graph.Canvas) error {
 		}
 	}
 
-	if r.Inside(zero) {
+	if r.Contains(zero) {
 		for _, t := range plot.GetXTicks() {
 			radius = -t.Position
 			if radius > 1e-5 {
 				canvas.DrawPath(r.IntersectPath(polarPath{radius: radius, r: r}), style)
 				point := graph.Point{X: 0, Y: radius}
-				if r.Inside(point) {
+				if r.Contains(point) {
 					canvas.DrawText(point, t.Label, graph.VCenter|graph.Left, text, textSize)
 				}
 			}
@@ -589,16 +589,20 @@ func (l *Linear) CreateEvans(kMax float64) (*graph.Plot, error) {
 		polesMarker := graph.NewCrossMarker(4)
 		curveList = append(curveList,
 			graph.Scatter{
-				Points:     graph.PointsFromSlice(p.ToPoints()),
-				Shape:      polesMarker,
-				ShapeStyle: markerStyle,
+				Points: graph.PointsFromSlice(p.ToPoints()),
+				ShapeLineStyle: graph.ShapeLineStyle{
+					Shape:      polesMarker,
+					ShapeStyle: markerStyle,
+				},
 			},
 		)
 		legend = append(legend,
 			graph.Legend{
-				Name:       "Poles",
-				Shape:      polesMarker,
-				ShapeStyle: markerStyle,
+				Name: "Poles",
+				ShapeLineStyle: graph.ShapeLineStyle{
+					Shape:      polesMarker,
+					ShapeStyle: markerStyle,
+				},
 			},
 		)
 	}
@@ -606,24 +610,30 @@ func (l *Linear) CreateEvans(kMax float64) (*graph.Plot, error) {
 		zeroMarker := graph.NewCircleMarker(4)
 		curveList = append(curveList,
 			graph.Scatter{
-				Points:     graph.PointsFromSlice(z.ToPoints()),
-				Shape:      zeroMarker,
-				ShapeStyle: markerStyle,
+				Points: graph.PointsFromSlice(z.ToPoints()),
+				ShapeLineStyle: graph.ShapeLineStyle{
+					Shape:      zeroMarker,
+					ShapeStyle: markerStyle,
+				},
 			},
 		)
 		legend = append(legend,
 			graph.Legend{
-				Name:       "Zeros",
-				Shape:      zeroMarker,
-				ShapeStyle: markerStyle,
+				Name: "Zeros",
+				ShapeLineStyle: graph.ShapeLineStyle{
+					Shape:      zeroMarker,
+					ShapeStyle: markerStyle,
+				},
 			},
 		)
 	}
 
 	if order > 0 {
 		legend = append(legend, graph.Legend{
-			Name:      "Asymptotes",
-			LineStyle: asymptotesStyle,
+			Name: "Asymptotes",
+			ShapeLineStyle: graph.ShapeLineStyle{
+				LineStyle: asymptotesStyle,
+			},
 		})
 	}
 
@@ -856,8 +866,8 @@ func (l *Linear) AddToBode(b *BodePlot, style *graph.Style, latency float64) {
 		w *= wMult
 	}
 
-	b.amplitude.AddContent(graph.Scatter{Points: graph.PointsFromSlice(amplitude), LineStyle: style})
-	b.phase.AddContent(graph.Scatter{Points: graph.PointsFromSlice(phase), LineStyle: style})
+	b.amplitude.AddContent(graph.Scatter{Points: graph.PointsFromSlice(amplitude), ShapeLineStyle: graph.ShapeLineStyle{LineStyle: style}})
+	b.phase.AddContent(graph.Scatter{Points: graph.PointsFromSlice(phase), ShapeLineStyle: graph.ShapeLineStyle{LineStyle: style}})
 }
 
 func NewBode(wMin, wMax float64) *BodePlot {
@@ -927,20 +937,20 @@ func (l *Linear) Nyquist(alsoNeg bool) (*graph.Plot, error) {
 	cp = append(cp, l.NyquistPos(posStyle))
 	if alsoNeg {
 		cp = append(cp, l.NyquistNeg(negStyle))
-		cp = append(cp, graph.Scatter{Points: graph.PointsFromPoint(graph.Point{X: -1, Y: 0}), Shape: graph.NewCrossMarker(4), ShapeStyle: graph.Red})
+		cp = append(cp, graph.Scatter{Points: graph.PointsFromPoint(graph.Point{X: -1, Y: 0}), ShapeLineStyle: graph.ShapeLineStyle{Shape: graph.NewCrossMarker(4), ShapeStyle: graph.Red}})
 	}
 	zeroMarker := graph.NewCircleMarker(4)
 	if isZero {
-		cp = append(cp, graph.Scatter{Points: graph.PointsFromPoint(graph.Point{X: real(cZero), Y: imag(cZero)}), Shape: zeroMarker, ShapeStyle: graph.Black})
+		cp = append(cp, graph.Scatter{Points: graph.PointsFromPoint(graph.Point{X: real(cZero), Y: imag(cZero)}), ShapeLineStyle: graph.ShapeLineStyle{Shape: zeroMarker, ShapeStyle: graph.Black}})
 	}
 
 	var legend []graph.Legend
-	legend = append(legend, graph.Legend{Name: "ω>0", LineStyle: posStyle})
+	legend = append(legend, graph.Legend{Name: "ω>0", ShapeLineStyle: graph.ShapeLineStyle{LineStyle: posStyle}})
 	if isZero {
-		legend = append(legend, graph.Legend{Name: "ω=0", Shape: zeroMarker, ShapeStyle: graph.Black})
+		legend = append(legend, graph.Legend{Name: "ω=0", ShapeLineStyle: graph.ShapeLineStyle{Shape: zeroMarker, ShapeStyle: graph.Black}})
 	}
 	if alsoNeg {
-		legend = append(legend, graph.Legend{Name: "ω<0", LineStyle: negStyle})
+		legend = append(legend, graph.Legend{Name: "ω<0", ShapeLineStyle: graph.ShapeLineStyle{LineStyle: negStyle}})
 	}
 
 	return &graph.Plot{

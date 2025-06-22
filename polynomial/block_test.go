@@ -30,8 +30,8 @@ func TestSimple(t *testing.T) {
 	for n, name := range s.outputs {
 		style := graph.GetColor(n)
 		p.AddContent(graph.Scatter{
-			Points:    data.toPoints(0, n+1),
-			LineStyle: style,
+			Points:         data.toPoints(0, n+1),
+			ShapeLineStyle: graph.ShapeLineStyle{LineStyle: style},
 		})
 		p.AddLegend(name, style, nil, nil)
 		n++

@@ -29,7 +29,7 @@ func (r Rect) Poly() SlicePath {
 	}
 }
 
-func (r Rect) Inside(p Point) bool {
+func (r Rect) Contains(p Point) bool {
 	return p.X >= r.Min.X && p.X <= r.Max.X && p.Y >= r.Min.Y && p.Y <= r.Max.Y
 }
 
@@ -205,7 +205,7 @@ func (i interPath) Iter(yield func(rune, Point) bool) {
 	var lastPoint Point
 	var lastInside bool
 	for m, point := range i.p.Iter {
-		inside := i.r.Inside(point)
+		inside := i.r.Contains(point)
 		if m == 'M' {
 			if inside {
 				if !yield('M', point) {

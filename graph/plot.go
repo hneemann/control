@@ -6,11 +6,36 @@ import (
 	"math"
 )
 
-type Legend struct {
-	Name       string
+type ShapeLineStyle struct {
 	LineStyle  *Style
 	Shape      Shape
 	ShapeStyle *Style
+}
+
+var defShapeLineStyle = ShapeLineStyle{
+	LineStyle:  Black.SetDash(7, 7),
+	Shape:      NewCircleMarker(4),
+	ShapeStyle: Black.SetFill(White),
+}
+
+func (ml ShapeLineStyle) IsShape() bool {
+	return ml.Shape != nil && ml.ShapeStyle != nil
+}
+
+func (ml ShapeLineStyle) IsLine() bool {
+	return ml.LineStyle != nil
+}
+
+func (ml ShapeLineStyle) EnsureSomethingIsVisible() ShapeLineStyle {
+	if ml.IsShape() || ml.IsLine() {
+		return ml
+	}
+	return defShapeLineStyle
+}
+
+type Legend struct {
+	ShapeLineStyle
+	Name string
 }
 
 type BoundsModifier func(xBounds, yBounds Bounds, p *Plot, canvas Canvas) (Bounds, Bounds)
@@ -54,18 +79,6 @@ type Plot struct {
 	legendPos      Point
 	trans          Transform
 	canvas         Canvas
-}
-
-func checkSomethingVisible(shape Shape, shapeStyle, lineStyle *Style) (Shape, *Style, bool) {
-	if lineStyle == nil {
-		if shape == nil {
-			shape = NewCrossMarker(4)
-		}
-		if shapeStyle == nil {
-			shapeStyle = Black
-		}
-	}
-	return shape, shapeStyle, shape != nil && shapeStyle != nil
 }
 
 func (p *Plot) DrawTo(canvas Canvas) error {
@@ -228,11 +241,12 @@ func (p *Plot) DrawTo(canvas Canvas) error {
 		}
 		for _, leg := range p.Legend {
 			canvas.DrawText(lp, leg.Name, Left|VCenter, textStyle, textSize)
-			if shape, shapeStyle, ok := checkSomethingVisible(leg.Shape, leg.ShapeStyle, leg.LineStyle); ok {
-				canvas.DrawShape(lp.Add(Point{-1*textSize - small, 0}), shape, shapeStyle)
+			sls := leg.EnsureSomethingIsVisible()
+			if sls.IsLine() {
+				canvas.DrawPath(NewPointsPath(false, lp.Add(Point{-2*textSize - small, 0}), lp.Add(Point{-small, 0})), sls.LineStyle)
 			}
-			if leg.LineStyle != nil {
-				canvas.DrawPath(NewPointsPath(false, lp.Add(Point{-2*textSize - small, 0}), lp.Add(Point{-small, 0})), leg.LineStyle)
+			if sls.IsShape() {
+				canvas.DrawShape(lp.Add(Point{-1*textSize - small, 0}), sls.Shape, sls.ShapeStyle)
 			}
 			lp = lp.Add(Point{0, -textSize * 1.5})
 		}
@@ -259,10 +273,12 @@ func (p *Plot) AddContent(content PlotContent) {
 
 func (p *Plot) AddLegend(name string, lineStyle *Style, shape Shape, shapeStyle *Style) {
 	p.Legend = append(p.Legend, Legend{
-		Name:       name,
-		LineStyle:  lineStyle,
-		Shape:      shape,
-		ShapeStyle: shapeStyle,
+		Name: name,
+		ShapeLineStyle: ShapeLineStyle{
+			LineStyle:  lineStyle,
+			Shape:      shape,
+			ShapeStyle: shapeStyle,
+		},
 	})
 }
 
@@ -422,10 +438,8 @@ func (f Function) DrawTo(plot *Plot, canvas Canvas) error {
 }
 
 type Scatter struct {
-	Points     Points
-	Shape      Shape
-	ShapeStyle *Style
-	LineStyle  *Style
+	ShapeLineStyle
+	Points Points
 }
 
 func (s Scatter) SetShape(shape Shape, style *Style) PlotContent {
@@ -457,13 +471,15 @@ func (s Scatter) PreferredBounds(_, _ Bounds) (Bounds, Bounds, error) {
 
 func (s Scatter) DrawTo(_ *Plot, canvas Canvas) error {
 	rect := canvas.Rect()
-	if s.LineStyle != nil {
-		canvas.DrawPath(canvas.Rect().IntersectPath(s.Points), s.LineStyle)
+
+	sls := s.EnsureSomethingIsVisible()
+	if sls.IsLine() {
+		canvas.DrawPath(canvas.Rect().IntersectPath(s.Points), sls.LineStyle)
 	}
-	if shape, shapeStyle, ok := checkSomethingVisible(s.Shape, s.ShapeStyle, s.LineStyle); ok {
+	if sls.IsShape() {
 		for p := range s.Points {
-			if rect.Inside(p) {
-				canvas.DrawShape(p, shape, shapeStyle)
+			if rect.Contains(p) {
+				canvas.DrawShape(p, sls.Shape, sls.ShapeStyle)
 			}
 		}
 	}
@@ -486,7 +502,7 @@ func (h Hint) PreferredBounds(_, _ Bounds) (Bounds, Bounds, error) {
 
 func (h Hint) DrawTo(plot *Plot, canvas Canvas) error {
 	r := canvas.Rect()
-	if r.Inside(h.Pos) {
+	if r.Contains(h.Pos) {
 		tPos := h.Pos
 		dx := r.Width() / 30
 		if r.IsInLeftHalf(h.Pos) {
@@ -512,7 +528,7 @@ type HintDir struct {
 
 func (h HintDir) DrawTo(plot *Plot, canvas Canvas) error {
 	r := canvas.Rect()
-	if r.Inside(h.Pos) {
+	if r.Contains(h.Pos) {
 		p1 := plot.trans(h.Pos)
 		p2 := plot.trans(h.PosDir)
 
@@ -659,7 +675,7 @@ func (c Cross) PreferredBounds(_, _ Bounds) (Bounds, Bounds, error) {
 
 func (c Cross) DrawTo(_ *Plot, canvas Canvas) error {
 	r := canvas.Rect()
-	if r.Inside(Point{0, 0}) {
+	if r.Contains(Point{0, 0}) {
 		canvas.DrawPath(NewPath(false).
 			MoveTo(Point{r.Min.X, 0}).
 			LineTo(Point{r.Max.X, 0}).
@@ -764,7 +780,7 @@ func (p *pFuncPath) Iter(yield func(rune, Point) bool) {
 			p.e = err
 			return
 		}
-		if p.r.Inside(p1) || p.r.Inside(p0) {
+		if p.r.Contains(p1) || p.r.Contains(p0) {
 			if !p.refine(t0, p0, t1, p1, yield, 10) {
 				return
 			}
