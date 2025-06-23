@@ -574,7 +574,9 @@ func Setup(fg *value.FunctionGenerator) {
 				}
 			}
 			gf := graph.Function{Function: f, Steps: steps}
-			return PlotContentValue{Holder[graph.PlotContent]{gf}, graph.Legend{}}, nil
+			return PlotContentValue{Holder[graph.PlotContent]{gf}, graph.Legend{
+				ShapeLineStyle: graph.ShapeLineStyle{LineStyle: graph.Black},
+			}}, nil
 		},
 		Args:   -1,
 		IsPure: true,
