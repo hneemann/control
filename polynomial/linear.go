@@ -843,13 +843,13 @@ func (l *Linear) AddToBode(b *BodePlot, style *graph.Style, latency float64) {
 		lastAngle = -180
 	}
 
-	wMult := math.Pow(b.wMax/b.wMin, 0.01)
+	wMult := math.Pow(b.wMax/b.wMin, 0.005)
 	var amplitude []graph.Point
 	var phase []graph.Point
 	angleOffset := 0.0
 	w := b.wMin
 	latFactor := latency / math.Pi * 180
-	for i := 0; i <= 100; i++ {
+	for i := 0; i <= 200; i++ {
 		c := l.EvalCplx(complex(0, w))
 		amp := cmplx.Abs(c)
 		angle := cmplx.Phase(c) / math.Pi * 180
@@ -903,23 +903,21 @@ func NewBode(wMin, wMax float64) *BodePlot {
 	return &b
 }
 
-func (l *Linear) NyquistPos(style *graph.Style) graph.PlotContent {
-	pfPos := graph.NewLogParameterFunc(0.001, 1000, 0)
+func (l *Linear) NyquistPos(sMax float64) *graph.ParameterFunc {
+	pfPos := graph.NewLogParameterFunc(0.001, sMax, 0)
 	pfPos.Func = func(w float64) (graph.Point, error) {
 		c := l.EvalCplx(complex(0, w))
 		return graph.Point{X: real(c), Y: imag(c)}, nil
 	}
-	pfPos.Style = style
 	return pfPos
 }
 
-func (l *Linear) NyquistNeg(style *graph.Style) graph.PlotContent {
-	pfNeg := graph.NewLogParameterFunc(0.001, 1000, 0)
+func (l *Linear) NyquistNeg(sMax float64) *graph.ParameterFunc {
+	pfNeg := graph.NewLogParameterFunc(0.001, sMax, 0)
 	pfNeg.Func = func(w float64) (graph.Point, error) {
 		c := l.EvalCplx(complex(0, -w))
 		return graph.Point{X: real(c), Y: imag(c)}, nil
 	}
-	pfNeg.Style = style
 	return pfNeg
 }
 
@@ -928,15 +926,15 @@ var (
 	negStyle = graph.Black.SetDash(4, 4).SetStrokeWidth(2)
 )
 
-func (l *Linear) Nyquist(alsoNeg bool) (*graph.Plot, error) {
+func (l *Linear) Nyquist(sMax float64, alsoNeg bool) (*graph.Plot, error) {
 	cZero := l.EvalCplx(complex(0, 0))
 	isZero := !(math.IsNaN(real(cZero)) || math.IsNaN(imag(cZero)))
 
 	var cp []graph.PlotContent
 	cp = append(cp, graph.Cross{Style: graph.Gray})
-	cp = append(cp, l.NyquistPos(posStyle))
+	cp = append(cp, l.NyquistPos(sMax).SetLine(posStyle))
 	if alsoNeg {
-		cp = append(cp, l.NyquistNeg(negStyle))
+		cp = append(cp, l.NyquistNeg(sMax).SetLine(negStyle))
 		cp = append(cp, graph.Scatter{Points: graph.PointsFromPoint(graph.Point{X: -1, Y: 0}), ShapeLineStyle: graph.ShapeLineStyle{Shape: graph.NewCrossMarker(4), ShapeStyle: graph.Red}})
 	}
 	zeroMarker := graph.NewCircleMarker(4)

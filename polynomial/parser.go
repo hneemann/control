@@ -324,45 +324,39 @@ func linMethods() value.MethodMap {
 			}
 			return nil, fmt.Errorf("evans requires a float")
 		}).SetMethodDescription("k_max", "Creates an evans plot."),
-		"nyquist": value.MethodAtType(1, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
-			neg, ok := st.GetOptional(1, value.Bool(false)).ToBool()
+		"nyquist": value.MethodAtType(2, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
+			sMax, ok := st.GetOptional(1, value.Float(1000)).ToFloat()
 			if !ok {
-				return nil, fmt.Errorf("nyquist requires a boolean")
+				return nil, fmt.Errorf("nyquist requires a float as first argument")
 			}
-			plot, err := lin.Nyquist(neg)
+			neg, ok := st.GetOptional(2, value.Bool(false)).ToBool()
+			if !ok {
+				return nil, fmt.Errorf("nyquist requires a boolean as second argument")
+			}
+			plot, err := lin.Nyquist(sMax, neg)
 			if err != nil {
 				return nil, err
 			}
 			return grParser.NewPlotValue(plot), nil
-		}).SetMethodDescription("also negative", "Creates a nyquist plot.").VarArgsMethod(0, 1),
-		"nyquistPos": value.MethodAtType(2, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
-			if style, err := grParser.GetStyle(st, 1, graph.Black); err == nil {
-				if leg, ok := st.GetOptional(2, value.String("")).(value.String); ok {
-					plotContent := lin.NyquistPos(style.Value)
-					contentValue := grParser.NewPlotContentValue(plotContent)
-					if leg != "" {
-						contentValue.Legend.Name = string(leg)
-						contentValue.Legend.LineStyle = style.Value
-					}
-					return contentValue, nil
-				}
+		}).SetMethodDescription("wMax", "also negative", "Creates a nyquist plot.").VarArgsMethod(0, 2),
+		"nyquistPos": value.MethodAtType(1, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
+			sMax, ok := st.GetOptional(1, value.Float(1000)).ToFloat()
+			if !ok {
+				return nil, fmt.Errorf("nyquistPos requires a float as first argument")
 			}
-			return nil, fmt.Errorf("nyquistPos requires a style")
-		}).SetMethodDescription("color", "leg", "Creates a nyquist plot content with positive ω.").VarArgsMethod(0, 2),
-		"nyquistNeg": value.MethodAtType(2, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
-			if style, err := grParser.GetStyle(st, 1, graph.Black); err == nil {
-				if leg, ok := st.GetOptional(2, value.String("")).(value.String); ok {
-					plotContent := lin.NyquistNeg(style.Value)
-					contentValue := grParser.NewPlotContentValue(plotContent)
-					if leg != "" {
-						contentValue.Legend.Name = string(leg)
-						contentValue.Legend.LineStyle = style.Value
-					}
-					return contentValue, nil
-				}
+			plotContent := lin.NyquistPos(sMax)
+			contentValue := grParser.NewPlotContentValue(plotContent)
+			return contentValue, nil
+		}).SetMethodDescription("wMax", "Creates a nyquist plot content with positive ω.").VarArgsMethod(0, 1),
+		"nyquistNeg": value.MethodAtType(1, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
+			sMax, ok := st.GetOptional(1, value.Float(1000)).ToFloat()
+			if !ok {
+				return nil, fmt.Errorf("nyquistPos requires a float as first argument")
 			}
-			return nil, fmt.Errorf("nyquistNeg requires a style")
-		}).SetMethodDescription("color", "leg", "Creates a nyquist plot content with negative ω.").VarArgsMethod(0, 2),
+			plotContent := lin.NyquistNeg(sMax)
+			contentValue := grParser.NewPlotContentValue(plotContent)
+			return contentValue, nil
+		}).SetMethodDescription("wMax", "Creates a nyquist plot content with negative ω.").VarArgsMethod(0, 1),
 		"pMargin": value.MethodAtType(0, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
 			w0, margin, err := lin.PMargin()
 			return value.NewMap(value.RealMap{

@@ -693,6 +693,11 @@ type ParameterFunc struct {
 	Style    *Style
 }
 
+func (p *ParameterFunc) SetLine(style *Style) PlotContent {
+	p.Style = style
+	return p
+}
+
 func NewLinearParameterFunc(tMin, tMax float64, steps int) *ParameterFunc {
 	if steps <= 0 {
 		steps = functionSteps
