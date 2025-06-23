@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"github.com/hneemann/control/polynomial"
 	"github.com/hneemann/control/server"
 	"html/template"
 	"io"
@@ -31,22 +32,18 @@ func main() {
 		copyExample(*folder, ex)
 	}
 
-	t, err := template.ParseFiles("static/index.html")
-	if err != nil {
-		panic(err)
-	}
-	f, err := os.Create(filepath.Join(*folder, "index.html"))
-	defer f.Close()
-
-	data := struct {
+	err = runTemplate(*folder, "static/index.html", struct {
 		Examples []server.Example
 		InfoText string
 	}{
 		Examples: examples,
 		InfoText: server.GetBuildInfo(),
+	})
+	if err != nil {
+		panic(err)
 	}
 
-	err = t.Execute(f, data)
+	err = runTemplate(*folder, "server/templates/help.html", polynomial.ParserFunctionGenerator.GetDocumentation())
 	if err != nil {
 		panic(err)
 	}
@@ -62,6 +59,20 @@ func main() {
 		"server/assets/refreshWindow.svg",
 	)
 
+}
+
+func runTemplate(folder, file string, data any) error {
+	t, err := template.ParseFiles(file)
+	if err != nil {
+		return err
+	}
+	f, err := os.Create(filepath.Join(folder, filepath.Base(file)))
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	return t.Execute(f, data)
 }
 
 func copyExample(folder string, ex server.Example) {

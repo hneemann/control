@@ -577,6 +577,8 @@ func getLinear(st funcGen.Stack[value.Value], i int) (*Linear, bool) {
 	return nil, false
 }
 
+var ParserFunctionGenerator *value.FunctionGenerator
+
 var Parser = value.New().
 	Modify(func(fg *value.FunctionGenerator) {
 		ComplexValueType = fg.RegisterType("complex")
@@ -585,6 +587,8 @@ var Parser = value.New().
 		BlockFactoryValueType = fg.RegisterType("block")
 		TwoPortValueType = fg.RegisterType("twoPort")
 		BodeValueType = fg.RegisterType("bodePlot")
+
+		ParserFunctionGenerator = fg
 	}).
 	RegisterMethods(LinearValueType, linMethods()).
 	RegisterMethods(PolynomialValueType, polyMethods()).

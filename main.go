@@ -100,6 +100,7 @@ func main() {
 
 	examples := server.ReadExamples()
 	mux.HandleFunc("/", sc.CheckSessionFunc(server.CreateMain(examples)))
+	mux.HandleFunc("/help.html", server.CreateHelp())
 	mux.Handle("/assets/", Cache(http.FileServer(http.FS(server.Assets)), 180, !*debug))
 	mux.Handle("/js/execute.js", Cache(server.RunMode(*onServer), 180, !*debug))
 	mux.HandleFunc("/execute/", sc.CheckSessionRestFunc(server.Execute))

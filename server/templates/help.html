@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Control - Help</title>
+  <link rel="icon" type="image/svg" href="/assets/icon.svg">
+</head>
+<body>
+    <h2>Control - Documentation</h2>
+    Content
+    <ol>
+    {{range .}}
+        <li><a href="#{{.Name}}">{{.Name}}, {{.Description}}</a></li>
+    {{end}}
+    </ol>
+    {{range .}}
+    <div class="help-section">
+        <hr/>
+        <h3 id="{{.Name}}">{{.Name}}</h3>
+        {{.Description}}:
+        <div style="margin-left: 1em;">
+        {{range .Functions}}
+           <h4>{{.Name}}({{range $i,$a := .Description.Args}}{{if $i}}, {{end}}{{$a}}{{end}})</h4>
+           <div style="margin-left: 1em;">
+             {{.Description.Description}}
+           </div>
+        {{end}}
+        </div>
+    {{end}}
+</body>
+</html>

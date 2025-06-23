@@ -222,3 +222,15 @@ func RunMode(onServer bool) http.Handler {
 		writer.Write(data)
 	})
 }
+
+var helpTemp = Templates.Lookup("help.html")
+
+func CreateHelp() http.HandlerFunc {
+	return func(writer http.ResponseWriter, request *http.Request) {
+		writer.Header().Set("Content-Type", "text/html; charset=utf-8")
+		err := helpTemp.Execute(writer, polynomial.ParserFunctionGenerator.GetDocumentation())
+		if err != nil {
+			log.Println(err)
+		}
+	}
+}
