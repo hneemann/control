@@ -2,6 +2,7 @@ package graph
 
 import (
 	"github.com/stretchr/testify/assert"
+	"math"
 	"testing"
 )
 
@@ -43,5 +44,20 @@ func TestBounds_MergeBounds(t *testing.T) {
 			tt.b.MergeBounds(tt.other)
 			assert.Equalf(t, tt.want, tt.b, "Merge(%v)", tt.b)
 		})
+	}
+}
+
+func Test_angleBetween(t *testing.T) {
+	expected := 10 * math.Pi / 180
+	for i := range 400 {
+		a0 := float64(i) * math.Pi / 180
+		a1 := a0 + expected
+
+		d0 := Point{X: math.Cos(a0), Y: math.Sin(a0)}
+		d1 := Point{X: math.Cos(a1), Y: math.Sin(a1)}
+
+		angle := angleBetween(d0, d1)
+		assert.InDelta(t, expected, angle, 1e-7, "angleBetween(%v, %v)", d0, d1)
+
 	}
 }

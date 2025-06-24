@@ -763,13 +763,30 @@ type pFuncPath struct {
 	maxDist float64
 }
 
+// f returns the point at time t and the derivative at that point.
+// The derivative is calculated by evaluating the function at t and t+dt/100.
+func (p *pFuncPath) f(t, dt float64) (Point, Point, error) {
+	p0, err := p.pf.Func(t)
+	if err != nil {
+		return Point{}, Point{}, err
+	}
+
+	dt = dt / 100
+
+	p1, err := p.pf.Func(t + dt)
+	if err != nil {
+		return Point{}, Point{}, err
+	}
+	return p0, p1.Sub(p0).Div(dt), nil
+}
+
 func (p *pFuncPath) Iter(yield func(rune, Point) bool) {
 	if p.maxDist == 0 {
 		p.maxDist = p.plot.canvas.Rect().Width() / float64(p.pf.Points) * 2
 	}
 	pf := p.pf
 	t0 := pf.InitialT
-	p0, err := pf.Func(t0)
+	p0, d0, err := p.f(t0, pf.NextT(t0)-t0)
 	if err != nil {
 		p.e = err
 		return
@@ -777,16 +794,15 @@ func (p *pFuncPath) Iter(yield func(rune, Point) bool) {
 	if !yield('M', p0) {
 		return
 	}
-	t1 := t0
 	for i := 1; i <= pf.Points; i++ {
-		t1 = pf.NextT(t1)
-		p1, err := pf.Func(t1)
+		t1 := pf.NextT(t0)
+		p1, d1, err := p.f(t1, t1-t0)
 		if err != nil {
 			p.e = err
 			return
 		}
 		if p.r.Contains(p1) || p.r.Contains(p0) {
-			if !p.refine(t0, p0, t1, p1, yield, 10) {
+			if !p.refine(t0, p0, d0, t1, p1, d1, yield, 10) {
 				return
 			}
 		}
@@ -795,6 +811,7 @@ func (p *pFuncPath) Iter(yield func(rune, Point) bool) {
 		}
 		t0 = t1
 		p0 = p1
+		d0 = d1
 	}
 }
 
@@ -802,21 +819,39 @@ func (p *pFuncPath) IsClosed() bool {
 	return false
 }
 
-func (p *pFuncPath) refine(w0 float64, p0 Point, w1 float64, p1 Point, yield func(rune, Point) bool, depth int) bool {
-	if p.plot.Dist(p0, p1) > p.maxDist && depth > 0 {
+func angleBetween(d0, d1 Point) float64 {
+	d0n := d0.Norm()
+	d1n := d1.Norm()
+	if d0n.X == 0 && d0n.Y == 0 || d1n.X == 0 && d1n.Y == 0 {
+		return 0
+	}
+	cos := d0n.X*d1n.X + d0n.Y*d1n.Y
+	if cos < -1 {
+		cos = -1
+	} else if cos > 1 {
+		cos = 1
+	}
+	return math.Acos(cos)
+}
+
+func (p *pFuncPath) refine(w0 float64, p0, d0 Point, w1 float64, p1, d1 Point, yield func(rune, Point) bool, depth int) bool {
+	dw := w1 - w0
+	if (p.plot.Dist(p0, p1) > p.maxDist ||
+		p.plot.Dist(p1, p0.Add(d0.Mul(dw))) > p.maxDist/50 ||
+		angleBetween(d0, d1) > 10*math.Pi/180) && depth > 0 {
 		w := (w0 + w1) / 2
-		point, err := p.pf.Func(w)
+		point, delta, err := p.f(w, dw)
 		if err != nil {
 			p.e = err
 			return false
 		}
-		if !p.refine(w0, p0, w, point, yield, depth-1) {
+		if !p.refine(w0, p0, d0, w, point, delta, yield, depth-1) {
 			return false
 		}
 		if !yield('L', point) {
 			return false
 		}
-		if !p.refine(w, point, w1, p1, yield, depth-1) {
+		if !p.refine(w, point, delta, w1, p1, d1, yield, depth-1) {
 			return false
 		}
 	}
