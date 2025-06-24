@@ -57,7 +57,7 @@ g.nyquist()
     <example name="Nyquist" desc="Anwendung des Nyquistkriteriums"
              name-en="Nyquist stability criterion">let g = 6*(s+1)/((s-1)*(s-3));
 
-g.nyquist(1000, true)</example>
+g.nyquist(true)</example>
     <example name="Bode" desc="Darstellung eines Bode-Diagramms"
              name-en="Bode plot" desc-en="Bode plot">let g = 3/((s+1)*(s+2));
 
