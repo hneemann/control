@@ -325,20 +325,20 @@ func linMethods() value.MethodMap {
 			return nil, fmt.Errorf("evans requires a float")
 		}).SetMethodDescription("k_max", "Creates an evans plot."),
 		"nyquist": value.MethodAtType(2, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
-			sMax, ok := st.GetOptional(1, value.Float(1000)).ToFloat()
+			neg, ok := st.GetOptional(1, value.Bool(false)).ToBool()
 			if !ok {
-				return nil, fmt.Errorf("nyquist requires a float as first argument")
+				return nil, fmt.Errorf("nyquist requires a boolean as first argument")
 			}
-			neg, ok := st.GetOptional(2, value.Bool(false)).ToBool()
+			sMax, ok := st.GetOptional(2, value.Float(1000)).ToFloat()
 			if !ok {
-				return nil, fmt.Errorf("nyquist requires a boolean as second argument")
+				return nil, fmt.Errorf("nyquist requires a float as second argument")
 			}
 			plot, err := lin.Nyquist(sMax, neg)
 			if err != nil {
 				return nil, err
 			}
 			return grParser.NewPlotValue(plot), nil
-		}).SetMethodDescription("wMax", "also negative", "Creates a nyquist plot.").VarArgsMethod(0, 2),
+		}).SetMethodDescription("also negative", "wMax", "Creates a nyquist plot.").VarArgsMethod(0, 2),
 		"nyquistPos": value.MethodAtType(1, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
 			sMax, ok := st.GetOptional(1, value.Float(1000)).ToFloat()
 			if !ok {
