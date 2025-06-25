@@ -21,7 +21,7 @@ function runSourceInWindow() {
         "  <meta charset=\"UTF-8\">\n" +
         "  <title>Control</title>\n" +
         "  <link rel=\"icon\" type=\"image/svg\" href=\"/assets/icon.svg\">\n" +
-        "  <link rel=\"stylesheet\" type=\"text/css\" href=\"/assets/main.css\"/>\n" +
+        "  <link rel=\"stylesheet\" type=\"text/css\" href=\"/assets/window.css\"/>\n" +
         "</head>\n" +
         "<body>\n");
     myWindow.document.write(generateOutput(source.value));

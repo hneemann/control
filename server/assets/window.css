@@ -1,0 +1,29 @@
+@media (pointer: coarse) {
+    body {
+        font-family: Arial, sans-serif;
+        font-size: 120%;
+    }
+
+    html {
+        -moz-text-size-adjust: none;
+        -webkit-text-size-adjust: none;
+    }
+}
+
+@media (pointer: fine) {
+    body {
+        font-family: Arial, sans-serif;
+    }
+}
+
+
+svg.svg {
+    width: 100%;
+    height: 100%;
+}
+
+math {
+    font-size: 110%;
+}
+
+
