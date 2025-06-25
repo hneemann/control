@@ -22,8 +22,8 @@ plot(
 ];
 
 plot(
-  data.points(p->p[0], p->p[1]).mark(1,blue),
-  data.points(p->p[0], p->p[2]).mark(2,green),
+  data.points(p->p[0], p->p[1]).mark(1,blue) .line(blue.dash(7,7)),
+  data.points(p->p[0], p->p[2]).mark(2,green).line(green.dash(7,7)),
 )</example>
     <example name="Graph" desc="Funktionsplot"
              name-en="Graph" desc-en="Function plot">plot(
@@ -64,15 +64,14 @@ g.nyquist(true)</example>
 bode(0.01,100)
   .add(g)</example>
     <example name="Bode 2" desc="Darstellung mehrerer Kurven in einem Bode-Diagramm"
-             name-en="Bode plot 2" desc-en="Multiple systems">let g = 3/((s+1)*(s+2));
-let k = 1.6*(1+1/(1.7*s));
+             name-en="Bode plot 2" desc-en="Multiple systems">let g  = 3/((s+1)*(s+2));
+let k  = 1.6*(1+1/(1.7*s));
+let g0 = k*g;
 
-let g0=k*g;
-let pm=g0.pMargin();
+let pm = g0.pMargin();
 
 let g0Leg = sprintf("G#0, #Phi#r=%.1f°, #omega#s=%.2f rad/s",
                     pm.pMargin, pm.w0);
-
 bode(0.01,100)
   .add(g,  green, "G")
   .add(k,  blue,  "K")
