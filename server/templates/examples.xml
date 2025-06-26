@@ -78,10 +78,14 @@ plot(
   g.bode(green, "G"),
   k.bode(blue,  "K"),
   g0.bode(black, g0Leg)
-).phaseModify( p->p.add(yConst(-180+70,red.dash(7,7)))
-                   .add(yConst(-180+50,red.dash(7,7)))
-                   .add(xConst(pm.w0,  red.dash(7,7))) )
- .ampModify( a->a.add(xConst(pm.w0,red.dash(7,7))) )</example>
+).phaseModify(
+    p->p.add(yConst(-180+70,red.dash(7,7)))
+        .add(yConst(-180+50,red.dash(7,7)))
+        .add(xConst(pm.w0,  red.dash(7,7)))
+  )
+ .ampModify(
+    a->a.add(xConst(pm.w0,red.dash(7,7)))
+  )</example>
     <example name="PID" desc="Die pid-Funktion"
              name-en="PID" desc-en="The pid function">[
  ["pid(2,2)",        "=", pid(2,2)  ],
