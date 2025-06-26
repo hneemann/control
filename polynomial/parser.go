@@ -513,8 +513,8 @@ func bodeMethods() value.MethodMap {
 					return bode, nil
 				}
 			}
-			return nil, errors.New("aBounds requires two float values")
-		}).SetMethodDescription("min", "max", "Sets the amplitude bounds.").Pure(false),
+			return nil, errors.New("wBounds requires two float values")
+		}).SetMethodDescription("min", "max", "Sets the frequency bounds.").Pure(false),
 		"aBounds": value.MethodAtType(2, func(bode BodePlotValue, st funcGen.Stack[value.Value]) (value.Value, error) {
 			if aMin, ok := st.Get(1).ToFloat(); ok {
 				if aMax, ok := st.Get(2).ToFloat(); ok {
