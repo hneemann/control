@@ -712,6 +712,16 @@ var Parser = value.New().
 		Args:   4,
 		IsPure: true,
 	}.SetDescription("func", "initial", "delta", "iterations", "Calculates a Nelder&Mead optimization.").VarArgs(2, 4)).
+	AddStaticFunction("blockDelay", funcGen.Function[value.Value]{
+		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
+			if delay, ok := stack.Get(0).ToFloat(); ok {
+				return BlockFactoryValue{grParser.Holder[BlockFactory]{Delay(delay)}}, nil
+			}
+			return nil, fmt.Errorf("blockDelay requires a float values")
+		},
+		Args:   1,
+		IsPure: true,
+	}.SetDescription("dt", "Creates a delay block.")).
 	AddStaticFunction("blockLimiter", funcGen.Function[value.Value]{
 		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
 			if aMin, ok := stack.Get(0).ToFloat(); ok {

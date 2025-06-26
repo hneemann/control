@@ -202,6 +202,36 @@ func Differentiate() BlockFactory {
 	}
 }
 
+func Delay(delayTime float64) BlockFactory {
+	return BlockFactory{
+		creator: func(args []*float64) (BlockNextFunc, error) {
+			if delayTime <= 0 {
+				return nil, fmt.Errorf("delay time must be greater than zero")
+			}
+			a := args[0]
+			var buffer []float64
+			i := 0
+			n := 0
+			return func(_, dt float64) (float64, error) {
+				if n == 0 {
+					n = int(delayTime / dt)
+					buffer = make([]float64, n)
+				}
+
+				d := buffer[i]
+				buffer[i] = *a
+				i++
+				if i >= n {
+					i = 0
+				}
+				return d, nil
+			}, nil
+		},
+		inputs: 1,
+		name:   "Delay",
+	}
+}
+
 func BlockLinear(lin *Linear) BlockFactory {
 	return BlockFactory{
 		creator: func(args []*float64) (BlockNextFunc, error) {

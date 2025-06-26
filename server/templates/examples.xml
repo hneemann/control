@@ -34,7 +34,8 @@ plot(
  function( x->sin(x) ).line(black, "sin(x)"),
  function( x->cos(x) ).line(blue, "cos(x)"),
  function( x->tan(x) ).line(red, "tan(x)")
-).xBounds(0,2*pi).yBounds(-2,2)</example>
+).xBounds(0,2*pi)
+ .yBounds(-2,2)</example>
     <example name="Ortskurve" desc="Darstellung der Ortskurve"
              name-en="Nyquist plot" desc-en="Nyquist plot">let g = 3/((s+1)*(s+2));
 
