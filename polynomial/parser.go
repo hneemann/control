@@ -301,6 +301,14 @@ func (b BodePlotContentValue) GetType() value.Type {
 
 func bodePlotContentMethods() value.MethodMap {
 	return value.MethodMap{
+		"latency": value.MethodAtType(1, func(plot BodePlotContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			if lat, ok := stack.Get(1).ToFloat(); ok {
+				plot.Value.Latency = lat
+			} else {
+				return nil, fmt.Errorf("latency requires a float")
+			}
+			return plot, nil
+		}).Pure(false).SetMethodDescription("latency", "Adds a latency to the bode plot ."),
 		"title": value.MethodAtType(1, func(plot BodePlotContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if leg, ok := stack.Get(1).(value.String); ok {
 				plot.Value.Title = string(leg)
