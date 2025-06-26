@@ -650,6 +650,16 @@ var Parser = value.New().
 		Args:   -1,
 		IsPure: true,
 	}.SetDescription("", "Declares a polynomial.")).
+	AddStaticFunction("linear", funcGen.Function[value.Value]{
+		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
+			if lin, ok := getLinear(stack, 0); ok {
+				return lin, nil
+			}
+			return nil, fmt.Errorf("linear requires a linear system, polynomial or float value")
+		},
+		Args:   1,
+		IsPure: true,
+	}.SetDescription("arg", "Creates a linear system. Can be used to cast a float, int or polynomial to a linear system.")).
 	AddStaticFunction("pid", funcGen.Function[value.Value]{
 		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
 			if kp, ok := stack.Get(0).ToFloat(); ok {
