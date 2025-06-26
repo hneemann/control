@@ -31,9 +31,9 @@ plot(
 )</example>
     <example name="Graph 2" desc="Funktionsplotter"
              name-en="Graph 2" desc-en="Function plot">plot(
- function( x->sin(x) ).line(black).title("sin(x)"),
- function( x->cos(x) ).line(blue). title("cos(x)"),
- function( x->tan(x) ).line(red).  title("tan(x)")
+ function( x->sin(x) ).line(black, "sin(x)"),
+ function( x->cos(x) ).line(blue, "cos(x)"),
+ function( x->tan(x) ).line(red, "tan(x)")
 ).xBounds(0,2*pi).yBounds(-2,2)</example>
     <example name="Ortskurve" desc="Darstellung der Ortskurve"
              name-en="Nyquist plot" desc-en="Nyquist plot">let g = 3/((s+1)*(s+2));

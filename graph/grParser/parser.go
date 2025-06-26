@@ -396,7 +396,7 @@ func createPlotContentMethods() value.MethodMap {
 				return nil, fmt.Errorf("title requires a string")
 			}
 			return plot, nil
-		}).Pure(false).SetMethodDescription("str", "Sets a string to show in the legend."),
+		}).Pure(false).SetMethodDescription("str", "Sets a string to show as title in the legend."),
 		"mark": value.MethodAtType(3, func(plot PlotContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			style, err := GetStyle(stack, 2, graph.Black)
 			if err != nil {
@@ -433,18 +433,27 @@ func createPlotContentMethods() value.MethodMap {
 			}
 			return plot, nil
 		}).Pure(false).SetMethodDescription("type", "color", "size", "Sets the marker type.").VarArgsMethod(1, 3),
-		"line": value.MethodAtType(1, func(plot PlotContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+		"line": value.MethodAtType(2, func(plot PlotContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if style, ok := stack.Get(1).(StyleValue); ok {
 				if sc, ok := plot.Value.(graph.HasLine); ok {
 					plot.Value = sc.SetLine(style.Value)
 				} else {
 					return nil, fmt.Errorf("line can only be set for plots using a line")
 				}
+				if title, ok := stack.GetOptional(2, value.String("")).(value.String); ok {
+					if title != "" {
+						if sc, ok := plot.Value.(graph.HasTitle); ok {
+							plot.Value = sc.SetTitle(string(title))
+						} else {
+							return nil, fmt.Errorf("a title can only be set for plots using a title")
+						}
+					}
+				}
 			} else {
 				return nil, fmt.Errorf("line requires a style")
 			}
 			return plot, nil
-		}).Pure(false).SetMethodDescription("color", "Sets the line style."),
+		}).Pure(false).SetMethodDescription("color", "title", "Sets the line style and title.").VarArgsMethod(1, 2),
 	}
 }
 
