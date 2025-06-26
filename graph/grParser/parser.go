@@ -136,13 +136,13 @@ func (p PlotValue) GetType() value.Type {
 	return PlotType
 }
 
-func (p PlotValue) add(pc value.Value) error {
+func (p PlotValue) Add(pc value.Value) error {
 	if c, ok := pc.(PlotContentValue); ok {
 		p.Holder.Value.AddContent(c.Value)
 		return nil
 	} else if l, ok := pc.ToList(); ok {
 		return l.Iterate(funcGen.NewEmptyStack[value.Value](), func(v value.Value) error {
-			return p.add(v)
+			return p.Add(v)
 		})
 	}
 	return errors.New("value is not a plot content")
@@ -520,7 +520,7 @@ func Setup(fg *value.FunctionGenerator) {
 		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
 			p := NewPlotValue(&graph.Plot{})
 			for i := 0; i < st.Size(); i++ {
-				err := p.add(st.Get(i))
+				err := p.Add(st.Get(i))
 				if err != nil {
 					return nil, err
 				}

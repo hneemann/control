@@ -62,8 +62,9 @@ plot(
     <example name="Bode" desc="Darstellung eines Bode-Diagramms"
              name-en="Bode plot" desc-en="Bode plot">let g = 3/((s+1)*(s+2));
 
-bode(0.01,100)
-  .add(g)</example>
+plot(
+  g.bode()
+)</example>
     <example name="Bode 2" desc="Darstellung mehrerer Kurven in einem Bode-Diagramm"
              name-en="Bode plot 2" desc-en="Multiple systems">let g  = 3/((s+1)*(s+2));
 let k  = 1.6*(1+1/(1.7*s));
@@ -73,14 +74,14 @@ let pm = g0.pMargin();
 
 let g0Leg = sprintf("G#0, #Phi#r=%.1f°, #omega#s=%.2f rad/s",
                     pm.pMargin, pm.w0);
-bode(0.01,100)
-  .add(g,  green, "G")
-  .add(k,  blue,  "K")
-  .add(g0, black, g0Leg)
-  .phaseModify( p->p.add(yConst(-180+70,red.dash(7,7)))
-                    .add(yConst(-180+50,red.dash(7,7)))
-                    .add(xConst(pm.w0,  red.dash(7,7))) )
-  .ampModify( a->a.add(xConst(pm.w0,red.dash(7,7))) )</example>
+plot(
+  g.bode(green, "G"),
+  k.bode(blue,  "K"),
+  g0.bode(black, g0Leg)
+).phaseModify( p->p.add(yConst(-180+70,red.dash(7,7)))
+                   .add(yConst(-180+50,red.dash(7,7)))
+                   .add(xConst(pm.w0,  red.dash(7,7))) )
+ .ampModify( a->a.add(xConst(pm.w0,red.dash(7,7))) )</example>
     <example name="PID" desc="Die pid-Funktion"
              name-en="PID" desc-en="The pid function">[
  ["pid(2,2)",        "=", pid(2,2)  ],

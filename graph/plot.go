@@ -15,6 +15,7 @@ type ShapeLineStyle struct {
 var defShapeLineStyle = ShapeLineStyle{
 	Shape:      NewCircleMarker(4),
 	ShapeStyle: Black.SetFill(White),
+	LineStyle:  Black.SetDash(7, 7),
 }
 
 func (ml ShapeLineStyle) IsShape() bool {
@@ -736,6 +737,11 @@ type ParameterFunc struct {
 	NextT    func(float64) float64
 	Style    *Style
 	Title    string
+}
+
+func (p *ParameterFunc) SetTitle(title string) PlotContent {
+	p.Title = title
+	return p
 }
 
 func (p *ParameterFunc) SetLine(style *Style) PlotContent {

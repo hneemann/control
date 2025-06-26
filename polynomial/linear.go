@@ -78,7 +78,7 @@ func (l *Linear) intString(parse bool) string {
 	return fmt.Sprintf("%s/(%s)", n, d)
 }
 
-func (l *Linear) ToHtml(st funcGen.Stack[value.Value], w *xmlWriter.XMLWriter) error {
+func (l *Linear) ToHtml(_ funcGen.Stack[value.Value], w *xmlWriter.XMLWriter) error {
 	w.Open("math").
 		Attr("xmlns", "http://www.w3.org/1998/Math/MathML")
 
@@ -538,7 +538,7 @@ func (p PlotPreferences) PreferredBounds(_, _ graph.Bounds) (x, y graph.Bounds, 
 	return graph.Bounds{}, graph.Bounds{}, nil
 }
 
-func (p PlotPreferences) DrawTo(plot *graph.Plot, canvas graph.Canvas) error {
+func (p PlotPreferences) DrawTo(plot *graph.Plot, _ graph.Canvas) error {
 	p.Modify(plot)
 	return nil
 }
@@ -819,15 +819,30 @@ func (ec *evansCurves) Legend() graph.Legend {
 	return graph.Legend{}
 }
 
-type BodePlot struct {
+type BodePlotContent struct {
+	Linear  *Linear
+	Latency float64
+	Style   *graph.Style
+	Title   string
+
 	wMin, wMax float64
-	amplitude  *graph.Plot
-	phase      *graph.Plot
-	bode       graph.SplitHorizontal
+	amplitude  []graph.Point
+	phase      []graph.Point
+}
+
+type BodePlot struct {
+	amplitude *graph.Plot
+	phase     *graph.Plot
+	bode      graph.SplitHorizontal
 }
 
 func (b *BodePlot) DrawTo(canvas graph.Canvas) error {
 	return b.bode.DrawTo(canvas)
+}
+
+func (b *BodePlot) SetFrequencyBounds(min, max float64) {
+	b.amplitude.XBounds = graph.NewBounds(min, max)
+	b.phase.XBounds = graph.NewBounds(min, max)
 }
 
 func (b *BodePlot) SetAmplitudeBounds(min, max float64) {
@@ -838,38 +853,12 @@ func (b *BodePlot) SetPhaseBounds(min, max float64) {
 	b.phase.YBounds = graph.NewBounds(min, max)
 }
 
-func (l *Linear) AddToBode(b *BodePlot, style *graph.Style, latency float64, title string) {
-	cZero := l.EvalCplx(complex(0, 0))
-	lastAngle := 0.0
-	if real(cZero) < 0 {
-		lastAngle = -180
+func (l *Linear) CreateBode(style *graph.Style, title string) BodePlotContent {
+	return BodePlotContent{
+		Linear: l,
+		Style:  style,
+		Title:  title,
 	}
-
-	wMult := math.Pow(b.wMax/b.wMin, 0.005)
-	var amplitude []graph.Point
-	var phase []graph.Point
-	angleOffset := 0.0
-	w := b.wMin
-	latFactor := latency / math.Pi * 180
-	for i := 0; i <= 200; i++ {
-		c := l.EvalCplx(complex(0, w))
-		amp := cmplx.Abs(c)
-		angle := cmplx.Phase(c) / math.Pi * 180
-		if lastAngle-angle > 180 {
-			angleOffset += 360
-		}
-		if lastAngle-angle < -180 {
-			angleOffset -= 360
-		}
-
-		lastAngle = angle
-		amplitude = append(amplitude, graph.Point{X: w, Y: amp})
-		phase = append(phase, graph.Point{X: w, Y: angle + angleOffset - latFactor*w})
-		w *= wMult
-	}
-
-	b.amplitude.AddContent(graph.Scatter{Points: graph.PointsFromSlice(amplitude), ShapeLineStyle: graph.ShapeLineStyle{LineStyle: style}, Title: title})
-	b.phase.AddContent(graph.Scatter{Points: graph.PointsFromSlice(phase), ShapeLineStyle: graph.ShapeLineStyle{LineStyle: style}})
 }
 
 func NewBode(wMin, wMax float64) *BodePlot {
@@ -892,17 +881,110 @@ func NewBode(wMin, wMax float64) *BodePlot {
 		YLabelExtend: true,
 	}
 
-	// compensate expansion of x-axis to make the graphs fill the complete x-range
-	logMin := math.Log10(wMin)
-	logMax := math.Log10(wMax)
-	delta := (logMax - logMin) * 0.02
-	logMin -= delta
-	logMax += delta
-
-	b := BodePlot{math.Pow(10, logMin), math.Pow(10, logMax),
-		amplitude, phase,
-		graph.SplitHorizontal{Top: amplitude, Bottom: phase}}
+	b := BodePlot{
+		amplitude: amplitude,
+		phase:     phase,
+		bode:      graph.SplitHorizontal{Top: amplitude, Bottom: phase}}
 	return &b
+}
+
+func (b *BodePlot) Add(bpc BodePlotContent) {
+	b.amplitude.AddContent(bodeAmplitude{&bpc})
+	b.phase.AddContent(bodePhase{&bpc})
+}
+
+func (bpc *BodePlotContent) generate(wMin, wMax float64) {
+	if bpc.wMin != wMin || bpc.wMax != wMax {
+		bpc.wMin = wMin
+		bpc.wMax = wMax
+
+		// compensate expansion of x-axis to make the graphs fill the complete x-range
+		logMin := math.Log10(wMin)
+		logMax := math.Log10(wMax)
+		delta := (logMax - logMin) * 0.02
+		logMin -= delta
+		logMax += delta
+		wMin = math.Pow(10, logMin)
+		wMax = math.Pow(10, logMax)
+
+		l := bpc.Linear
+		cZero := l.EvalCplx(complex(0, 0))
+		lastAngle := 0.0
+		if real(cZero) < 0 {
+			lastAngle = -180
+		}
+
+		wMult := math.Pow(wMax/wMin, 0.005)
+		var amplitude []graph.Point
+		var phase []graph.Point
+		angleOffset := 0.0
+		w := wMin
+		latFactor := bpc.Latency / math.Pi * 180
+		for i := 0; i <= 200; i++ {
+			c := l.EvalCplx(complex(0, w))
+			amp := cmplx.Abs(c)
+			angle := cmplx.Phase(c) / math.Pi * 180
+			if lastAngle-angle > 180 {
+				angleOffset += 360
+			}
+			if lastAngle-angle < -180 {
+				angleOffset -= 360
+			}
+
+			lastAngle = angle
+			amplitude = append(amplitude, graph.Point{X: w, Y: amp})
+			phase = append(phase, graph.Point{X: w, Y: angle + angleOffset - latFactor*w})
+			w *= wMult
+		}
+		bpc.amplitude = amplitude
+		bpc.phase = phase
+	}
+}
+
+type bodePhase struct {
+	bodeContent *BodePlotContent
+}
+
+func (b bodePhase) PreferredBounds(xGiven, _ graph.Bounds) (x, y graph.Bounds, err error) {
+	b.bodeContent.generate(xGiven.Min, xGiven.Max)
+	var bounds graph.Bounds
+	for _, p := range b.bodeContent.phase {
+		bounds.Merge(p.Y)
+	}
+	return graph.Bounds{}, bounds, nil
+}
+
+func (b bodePhase) DrawTo(plot *graph.Plot, canvas graph.Canvas) error {
+	b.bodeContent.generate(plot.XBounds.Min, plot.XBounds.Max)
+	canvas.DrawPath(graph.NewPointsPath(false, b.bodeContent.phase...), b.bodeContent.Style)
+	return nil
+}
+
+func (b bodePhase) Legend() graph.Legend {
+	return graph.Legend{}
+}
+
+type bodeAmplitude struct {
+	bodeContent *BodePlotContent
+}
+
+func (b bodeAmplitude) PreferredBounds(xGiven, _ graph.Bounds) (x, y graph.Bounds, err error) {
+	b.bodeContent.generate(xGiven.Min, xGiven.Max)
+	var bounds graph.Bounds
+	for _, p := range b.bodeContent.amplitude {
+		bounds.Merge(p.Y)
+	}
+	return graph.Bounds{}, bounds, nil
+}
+
+func (b bodeAmplitude) DrawTo(plot *graph.Plot, canvas graph.Canvas) error {
+	b.bodeContent.generate(plot.XBounds.Min, plot.XBounds.Max)
+	canvas.DrawPath(graph.NewPointsPath(false, b.bodeContent.amplitude...), b.bodeContent.Style)
+	return nil
+}
+
+func (b bodeAmplitude) Legend() graph.Legend {
+	return graph.Legend{ShapeLineStyle: graph.ShapeLineStyle{LineStyle: b.bodeContent.Style}, Name: b.bodeContent.Title}
 }
 
 func (l *Linear) NyquistPos(sMax float64) *graph.ParameterFunc {
@@ -911,6 +993,7 @@ func (l *Linear) NyquistPos(sMax float64) *graph.ParameterFunc {
 		c := l.EvalCplx(complex(0, w))
 		return graph.Point{X: real(c), Y: imag(c)}, nil
 	}
+	pfPos.Style = posStyle
 	pfPos.Title = "ω>0"
 	return pfPos
 }
@@ -921,6 +1004,7 @@ func (l *Linear) NyquistNeg(sMax float64) *graph.ParameterFunc {
 		c := l.EvalCplx(complex(0, -w))
 		return graph.Point{X: real(c), Y: imag(c)}, nil
 	}
+	pfNeg.Style = negStyle
 	pfNeg.Title = "ω<0"
 	return pfNeg
 }
@@ -941,14 +1025,14 @@ func (l *Linear) Nyquist(sMax float64, alsoNeg bool) ([]graph.PlotContent, error
 	}})
 	cp = append(cp, graph.Cross{Style: graph.Gray})
 	if alsoNeg {
-		cp = append(cp, l.NyquistNeg(sMax).SetLine(negStyle))
+		cp = append(cp, l.NyquistNeg(sMax))
 		cp = append(cp, graph.Scatter{Points: graph.PointsFromPoint(graph.Point{X: -1, Y: 0}), ShapeLineStyle: graph.ShapeLineStyle{Shape: graph.NewCrossMarker(4), ShapeStyle: graph.Red}})
 	}
 	zeroMarker := graph.NewCircleMarker(4)
 	if isZero {
 		cp = append(cp, graph.Scatter{Points: graph.PointsFromPoint(graph.Point{X: real(cZero), Y: imag(cZero)}), ShapeLineStyle: graph.ShapeLineStyle{Shape: zeroMarker, ShapeStyle: graph.Black}, Title: "ω=0"})
 	}
-	cp = append(cp, l.NyquistPos(sMax).SetLine(posStyle))
+	cp = append(cp, l.NyquistPos(sMax))
 
 	return cp, nil
 }

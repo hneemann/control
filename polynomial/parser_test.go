@@ -159,7 +159,7 @@ func TestSVGExport(t *testing.T) {
 		{name: "nyquist", exp: "let g=(s+1)/(s^2+4*s+5); [\"Nyquist\",plot(g.nyquist())]", file: "z.html"},
 		{name: "nyquist2", exp: "plot(pid(1,1,1).nyquist())", file: "z.html"},
 		{name: "nyquist3", exp: "let g=60/((s+1)*(s+2)*(s+3)*(s+4));plot(g.nyquist()).zoom(0,0,10)", file: "z.html"},
-		{name: "bode", exp: "let g=(1.5*s+1)/((2*s+1)*(s+1)*(s^2+3*s+3.1));\nlet k=pid(12,1.5,1);\nbode(0.01,100)\n  .add(g,green,\"g\")\n  .add(k,blue,\"k\")\n  .add(k*g,black,\"k*g\")", file: "z.html"},
+		{name: "bode", exp: "let g=(1.5*s+1)/((2*s+1)*(s+1)*(s^2+3*s+3.1));\nlet k=pid(12,1.5,1);\nplot(\n  g.bode(green,\"g\"),\n  k.bode(blue,\"k\"),\n  (k*g).bode(black,\"k*g\") )", file: "z.html"},
 		{name: "test", exp: "let p=list(10).map(i->[i,i*i]); plot(points(p),points(p).line(green.darker().dash(10,10,2,10)))", file: "z.html"},
 		{name: "func", exp: "plot(function(x->sin(x)).line(black).title(\"sin\"),function(x->cos(x)).line(red).title(\"cos\")).xBounds(0,2*pi)", file: "z.html"},
 		{name: "evans-zoom", exp: `

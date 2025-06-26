@@ -17,12 +17,13 @@ import (
 )
 
 var (
-	BodeValueType         value.Type
-	ComplexValueType      value.Type
-	PolynomialValueType   value.Type
-	LinearValueType       value.Type
-	BlockFactoryValueType value.Type
-	TwoPortValueType      value.Type
+	BodeValueType            value.Type
+	BodePlotContentValueType value.Type
+	ComplexValueType         value.Type
+	PolynomialValueType      value.Type
+	LinearValueType          value.Type
+	BlockFactoryValueType    value.Type
+	TwoPortValueType         value.Type
 )
 
 type BlockFactoryValue struct {
@@ -290,6 +291,35 @@ func (l *Linear) GetType() value.Type {
 	return LinearValueType
 }
 
+type BodePlotContentValue struct {
+	grParser.Holder[BodePlotContent]
+}
+
+func (b BodePlotContentValue) GetType() value.Type {
+	return BodePlotContentValueType
+}
+
+func bodePlotContentMethods() value.MethodMap {
+	return value.MethodMap{
+		"title": value.MethodAtType(1, func(plot BodePlotContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			if leg, ok := stack.Get(1).(value.String); ok {
+				plot.Value.Title = string(leg)
+			} else {
+				return nil, fmt.Errorf("title requires a string")
+			}
+			return plot, nil
+		}).Pure(false).SetMethodDescription("str", "Sets a string to show in the legend."),
+		"line": value.MethodAtType(1, func(plot BodePlotContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			if style, ok := stack.Get(1).(grParser.StyleValue); ok {
+				plot.Value.Style = style.Value
+			} else {
+				return nil, fmt.Errorf("line requires a style")
+			}
+			return plot, nil
+		}).Pure(false).SetMethodDescription("color", "Sets the line style."),
+	}
+}
+
 func linMethods() value.MethodMap {
 	return value.MethodMap{
 		"loop": value.MethodAtType(0, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
@@ -310,6 +340,14 @@ func linMethods() value.MethodMap {
 		"stringPoly": value.MethodAtType(0, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
 			return value.String(lin.StringPoly(false)), nil
 		}).SetMethodDescription("Creates a string representation of the linear system."),
+		"bode": value.MethodAtType(2, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
+			if style, err := grParser.GetStyle(st, 1, graph.Black); err == nil {
+				if title, ok := st.GetOptional(2, value.String("")).(value.String); ok {
+					return BodePlotContentValue{Holder: grParser.Holder[BodePlotContent]{lin.CreateBode(style.Value, string(title))}}, nil
+				}
+			}
+			return nil, fmt.Errorf("bode requires a color and a string")
+		}).SetMethodDescription("color", "title", "Creates a bode plot content.").VarArgsMethod(0, 2),
 		"evans": value.MethodAtType(1, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
 			if k, ok := st.Get(1).ToFloat(); ok {
 				red, err := lin.Reduce()
@@ -437,17 +475,6 @@ func (b BodePlotValue) ToHtml(_ funcGen.Stack[value.Value], w *xmlWriter.XMLWrit
 
 func bodeMethods() value.MethodMap {
 	return value.MethodMap{
-		"add": value.MethodAtType(-1, func(bode BodePlotValue, st funcGen.Stack[value.Value]) (value.Value, error) {
-			if linVal, ok := getLinear(st, 1); ok {
-				if styleVal, err := grParser.GetStyle(st, 2, graph.Black); err == nil {
-					if legVal, ok := st.GetOptional(3, value.String("")).(value.String); ok {
-						linVal.AddToBode(bode.Value, styleVal.Value, 0, string(legVal))
-						return bode, nil
-					}
-				}
-			}
-			return nil, errors.New("add requires a linear system, a color and a title")
-		}).SetMethodDescription("lin", "color", "label", "Adds a linear system to the bode plot.").VarArgsMethod(1, 3).Pure(false),
 		"textSize": value.MethodAtType(1, func(plot BodePlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if si, ok := stack.Get(1).ToFloat(); ok {
 				plot.context.TextSize = si
@@ -471,19 +498,15 @@ func bodeMethods() value.MethodMap {
 			}
 			return nil, fmt.Errorf("download requires a string value")
 		}).SetMethodDescription("filename", "Enables a file download."),
-		"addWithLatency": value.MethodAtType(-1, func(bode BodePlotValue, st funcGen.Stack[value.Value]) (value.Value, error) {
-			if linVal, ok := getLinear(st, 1); ok {
-				if latency, ok := st.Get(2).ToFloat(); ok {
-					if styleVal, err := grParser.GetStyle(st, 3, graph.Black); err == nil {
-						if legVal, ok := st.GetOptional(4, value.String("")).(value.String); ok {
-							linVal.AddToBode(bode.Value, styleVal.Value, latency, string(legVal))
-							return bode, nil
-						}
-					}
+		"wBounds": value.MethodAtType(2, func(bode BodePlotValue, st funcGen.Stack[value.Value]) (value.Value, error) {
+			if aMin, ok := st.Get(1).ToFloat(); ok {
+				if aMax, ok := st.Get(2).ToFloat(); ok {
+					bode.Value.SetFrequencyBounds(aMin, aMax)
+					return bode, nil
 				}
 			}
-			return nil, errors.New("addWithLatency requires a linear system, a latency, a color and a title")
-		}).SetMethodDescription("lin", "Tt", "color", "label", "Adds a linear system with latency to the bode plot.").VarArgsMethod(2, 4).Pure(false),
+			return nil, errors.New("aBounds requires two float values")
+		}).SetMethodDescription("min", "max", "Sets the amplitude bounds.").Pure(false),
 		"aBounds": value.MethodAtType(2, func(bode BodePlotValue, st funcGen.Stack[value.Value]) (value.Value, error) {
 			if aMin, ok := st.Get(1).ToFloat(); ok {
 				if aMax, ok := st.Get(2).ToFloat(); ok {
@@ -579,12 +602,14 @@ var Parser = value.New().
 		BlockFactoryValueType = fg.RegisterType("block")
 		TwoPortValueType = fg.RegisterType("twoPort")
 		BodeValueType = fg.RegisterType("bodePlot")
+		BodePlotContentValueType = fg.RegisterType("bodePlotContent")
 
 		ParserFunctionGenerator = fg
 	}).
 	RegisterMethods(LinearValueType, linMethods()).
 	RegisterMethods(PolynomialValueType, polyMethods()).
 	RegisterMethods(BodeValueType, bodeMethods()).
+	RegisterMethods(BodePlotContentValueType, bodePlotContentMethods()).
 	RegisterMethods(ComplexValueType, cmplxMethods()).
 	RegisterMethods(TwoPortValueType, twoPortMethods()).
 	Modify(grParser.Setup).
@@ -634,19 +659,35 @@ var Parser = value.New().
 		IsPure: true,
 	}.SetDescription("k_p", "T_I", "T_D", "T_P", "Creates a PID linear system. The fourth time T_P is the time "+
 		"constant that describes the parasitic PT1 term occurring in a real differentiation.").VarArgs(2, 4)).
-	AddStaticFunction("bode", funcGen.Function[value.Value]{
+	AddStaticFunction("plot", funcGen.Function[value.Value]{
 		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
-			if wMin, ok := stack.Get(0).ToFloat(); ok {
-				if wMax, ok := stack.Get(1).ToFloat(); ok {
-					b := NewBode(wMin, wMax)
-					return BodePlotValue{grParser.Holder[*BodePlot]{b}, graph.DefaultContext}, nil
-				}
+			if stack.Size() == 0 {
+				return value.NIL, errors.New("plot requires at least one argument")
 			}
-			return nil, fmt.Errorf("boded requires 2 float values")
+			if _, ok := stack.Get(0).(BodePlotContentValue); ok {
+				b := NewBode(0.01, 100)
+				for i := 0; i < stack.Size(); i++ {
+					if bpc, ok := stack.Get(i).(BodePlotContentValue); ok {
+						b.Add(bpc.Value)
+					} else {
+						return nil, fmt.Errorf("bodePlot requires BodePlotContent values as arguments")
+					}
+				}
+				return BodePlotValue{grParser.Holder[*BodePlot]{b}, graph.DefaultContext}, nil
+			} else {
+
+				p := grParser.NewPlotValue(&graph.Plot{})
+				for i := 0; i < stack.Size(); i++ {
+					err := p.Add(stack.Get(i))
+					if err != nil {
+						return nil, err
+					}
+				}
+				return p, nil
+			}
 		},
-		Args:   2,
-		IsPure: false,
-	}.SetDescription("wMin", "wMax", "Creates a bode plot.")).
+		Args: -1,
+	}.SetDescription("Creates a plot.")).
 	AddStaticFunction("nelderMead", funcGen.Function[value.Value]{
 		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
 			if fu, ok := stack.Get(0).ToClosure(); ok {
