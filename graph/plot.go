@@ -13,7 +13,6 @@ type ShapeLineStyle struct {
 }
 
 var defShapeLineStyle = ShapeLineStyle{
-	LineStyle:  Black.SetDash(7, 7),
 	Shape:      NewCircleMarker(4),
 	ShapeStyle: Black.SetFill(White),
 }
@@ -70,7 +69,6 @@ type Plot struct {
 	YLabel         string
 	YLabelExtend   bool
 	Content        []PlotContent
-	Legend         []Legend
 	FillBackground bool
 	BoundsModifier BoundsModifier
 	xTicks         []Tick
@@ -218,10 +216,15 @@ func (p *Plot) DrawTo(canvas Canvas) error {
 		}
 	}
 
+	var legends []Legend
 	for _, plotContent := range p.Content {
 		err := plotContent.DrawTo(p, inner)
 		if err != nil {
 			return err
+		}
+		l := plotContent.Legend()
+		if l.Name != "" {
+			legends = append(legends, l)
 		}
 	}
 
@@ -232,14 +235,14 @@ func (p *Plot) DrawTo(canvas Canvas) error {
 	}
 	canvas.DrawPath(innerRect.Poly(), thickLine)
 
-	if len(p.Legend) > 0 {
+	if len(legends) > 0 {
 		var lp Point
 		if p.legendPosGiven {
 			lp = Point{xTrans(p.legendPos.X), yTrans(p.legendPos.Y)}
 		} else {
-			lp = Point{innerRect.Min.X + textSize*3, innerRect.Min.Y + textSize*(float64(len(p.Legend))*1.5-0.5)}
+			lp = Point{innerRect.Min.X + textSize*3, innerRect.Min.Y + textSize*(float64(len(legends))*1.5-0.5)}
 		}
-		for _, leg := range p.Legend {
+		for _, leg := range legends {
 			canvas.DrawText(lp, leg.Name, Left|VCenter, textStyle, textSize)
 			sls := leg.EnsureSomethingIsVisible()
 			if sls.IsLine() {
@@ -269,17 +272,6 @@ func (p *Plot) GetYTicks() []Tick {
 
 func (p *Plot) AddContent(content PlotContent) {
 	p.Content = append(p.Content, content)
-}
-
-func (p *Plot) AddLegend(name string, lineStyle *Style, shape Shape, shapeStyle *Style) {
-	p.Legend = append(p.Legend, Legend{
-		Name: name,
-		ShapeLineStyle: ShapeLineStyle{
-			LineStyle:  lineStyle,
-			Shape:      shape,
-			ShapeStyle: shapeStyle,
-		},
-	})
 }
 
 func (p *Plot) SetLegendPosition(pos Point) {
@@ -369,6 +361,8 @@ type PlotContent interface {
 	// DrawTo draws the content to the given Canvas.
 	// The *Plot is passed to allow the content to access the plot's properties.
 	DrawTo(*Plot, Canvas) error
+	// Legend returns the legend of this Content
+	Legend() Legend
 }
 
 type HasLine interface {
@@ -379,14 +373,24 @@ type HasShape interface {
 	SetShape(Shape, *Style) PlotContent
 }
 
+type HasTitle interface {
+	SetTitle(title string) PlotContent
+}
+
 type Function struct {
 	Function func(x float64) (float64, error)
 	Style    *Style
+	Title    string
 	Steps    int
 }
 
 func (f Function) SetLine(style *Style) PlotContent {
 	f.Style = style
+	return f
+}
+
+func (f Function) SetTitle(title string) PlotContent {
+	f.Title = title
 	return f
 }
 
@@ -437,9 +441,17 @@ func (f Function) DrawTo(plot *Plot, canvas Canvas) error {
 	return path.e
 }
 
+func (f Function) Legend() Legend {
+	return Legend{
+		Name:           f.Title,
+		ShapeLineStyle: ShapeLineStyle{LineStyle: f.Style},
+	}
+}
+
 type Scatter struct {
 	ShapeLineStyle
 	Points Points
+	Title  string
 }
 
 func (s Scatter) SetShape(shape Shape, style *Style) PlotContent {
@@ -450,6 +462,11 @@ func (s Scatter) SetShape(shape Shape, style *Style) PlotContent {
 
 func (s Scatter) SetLine(style *Style) PlotContent {
 	s.LineStyle = style
+	return s
+}
+
+func (s Scatter) SetTitle(title string) PlotContent {
+	s.Title = title
 	return s
 }
 
@@ -486,6 +503,13 @@ func (s Scatter) DrawTo(_ *Plot, canvas Canvas) error {
 	return nil
 }
 
+func (s Scatter) Legend() Legend {
+	return Legend{
+		Name:           s.Title,
+		ShapeLineStyle: s.EnsureSomethingIsVisible(),
+	}
+}
+
 type Hint struct {
 	Text  string
 	Style *Style
@@ -519,6 +543,10 @@ func (h Hint) DrawTo(plot *Plot, canvas Canvas) error {
 		drawArrow(plot, plot.trans(tPos), plot.trans(h.Pos), h.Style, 1, h.Text)
 	}
 	return nil
+}
+
+func (h Hint) Legend() Legend {
+	return Legend{}
 }
 
 type HintDir struct {
@@ -561,6 +589,10 @@ func (a Arrow) DrawTo(plot *Plot, _ Canvas) error {
 	to := plot.trans(a.To)
 	drawArrow(plot, from, to, a.Style, a.Mode, a.Label)
 	return nil
+}
+
+func (a Arrow) Legend() Legend {
+	return Legend{}
 }
 
 func drawArrow(plot *Plot, from, to Point, style *Style, mode int, label string) {
@@ -661,6 +693,14 @@ func NewTriangleMarker(r float64) Shape {
 	}
 }
 
+func NewDiamondMarker(r float64) Shape {
+	r = r * math.Sqrt2
+	return pointsPath{
+		points: []Point{{-r, 0}, {0, r}, {r, 0}, {0, -r}},
+		closed: true,
+	}
+}
+
 type Cross struct {
 	Style *Style
 }
@@ -685,12 +725,17 @@ func (c Cross) DrawTo(_ *Plot, canvas Canvas) error {
 	return nil
 }
 
+func (c Cross) Legend() Legend {
+	return Legend{}
+}
+
 type ParameterFunc struct {
 	Func     func(t float64) (Point, error)
 	Points   int
 	InitialT float64
 	NextT    func(float64) float64
 	Style    *Style
+	Title    string
 }
 
 func (p *ParameterFunc) SetLine(style *Style) PlotContent {
@@ -753,6 +798,13 @@ func (p *ParameterFunc) DrawTo(plot *Plot, canvas Canvas) error {
 	}
 	canvas.DrawPath(canvas.Rect().IntersectPath(&path), p.Style)
 	return path.e
+}
+
+func (p *ParameterFunc) Legend() Legend {
+	return Legend{
+		Name:           p.Title,
+		ShapeLineStyle: ShapeLineStyle{LineStyle: p.Style},
+	}
 }
 
 type pFuncPath struct {
@@ -885,6 +937,10 @@ func (s ImageInset) DrawTo(p *Plot, _ Canvas) error {
 	return s.Image.DrawTo(inner)
 }
 
+func (s ImageInset) Legend() Legend {
+	return Legend{}
+}
+
 type YConst struct {
 	Y     float64
 	Style *Style
@@ -902,6 +958,10 @@ func (yc YConst) DrawTo(_ *Plot, canvas Canvas) error {
 			LineTo(Point{r.Max.X, yc.Y}), yc.Style)
 	}
 	return nil
+}
+
+func (yc YConst) Legend() Legend {
+	return Legend{}
 }
 
 type XConst struct {
@@ -923,6 +983,10 @@ func (xc XConst) DrawTo(_ *Plot, canvas Canvas) error {
 	return nil
 }
 
+func (xc XConst) Legend() Legend {
+	return Legend{}
+}
+
 type Text struct {
 	Pos   Point
 	Text  string
@@ -936,4 +1000,8 @@ func (t Text) PreferredBounds(_, _ Bounds) (x, y Bounds, err error) {
 func (t Text) DrawTo(_ *Plot, canvas Canvas) error {
 	canvas.DrawText(t.Pos, t.Text, Left|Bottom, t.Style.Text(), canvas.Context().TextSize)
 	return nil
+}
+
+func (t Text) Legend() Legend {
+	return Legend{}
 }

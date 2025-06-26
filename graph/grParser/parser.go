@@ -139,9 +139,6 @@ func (p PlotValue) GetType() value.Type {
 func (p PlotValue) add(pc value.Value) error {
 	if c, ok := pc.(PlotContentValue); ok {
 		p.Holder.Value.AddContent(c.Value)
-		if c.Legend.Name != "" {
-			p.Holder.Value.AddLegend(c.Legend.Name, c.Legend.LineStyle, c.Legend.Shape, c.Legend.ShapeStyle)
-		}
 		return nil
 	} else if l, ok := pc.ToList(); ok {
 		return l.Iterate(funcGen.NewEmptyStack[value.Value](), func(v value.Value) error {
@@ -200,9 +197,6 @@ func createPlotMethods() value.MethodMap {
 		"add": value.MethodAtType(1, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if pc, ok := stack.Get(1).(PlotContentValue); ok {
 				plot.Value.AddContent(pc.Value)
-				if pc.Legend.Name != "" {
-					plot.Value.AddLegend(pc.Legend.Name, pc.Legend.LineStyle, pc.Legend.Shape, pc.Legend.ShapeStyle)
-				}
 			} else {
 				return nil, fmt.Errorf("add requires a plot content")
 			}
@@ -215,7 +209,7 @@ func createPlotMethods() value.MethodMap {
 				return nil, fmt.Errorf("title requires a string")
 			}
 			return plot, nil
-		}).SetMethodDescription("label", "Sets the title."),
+		}).SetMethodDescription("title", "Sets the title."),
 		"labels": value.MethodAtType(2, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if xStr, ok := stack.Get(1).(value.String); ok {
 				if yStr, ok := stack.Get(2).(value.String); ok {
@@ -225,7 +219,7 @@ func createPlotMethods() value.MethodMap {
 				}
 			}
 			return nil, fmt.Errorf("xLabel requires a string")
-		}).SetMethodDescription("x label", "y label", "Sets the axis labels."),
+		}).SetMethodDescription("xLabel", "yLabel", "Sets the axis labels."),
 		"xLabel": value.MethodAtType(1, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if str, ok := stack.Get(1).(value.String); ok {
 				plot.Value.XLabel = string(str)
@@ -393,9 +387,13 @@ func createPlotContentMethods() value.MethodMap {
 	return value.MethodMap{
 		"title": value.MethodAtType(1, func(plot PlotContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if leg, ok := stack.Get(1).(value.String); ok {
-				plot.Legend.Name = string(leg)
+				if sc, ok := plot.Value.(graph.HasTitle); ok {
+					plot.Value = sc.SetTitle(string(leg))
+				} else {
+					return nil, fmt.Errorf("title can only be set for plots using a title")
+				}
 			} else {
-				return nil, fmt.Errorf("legend requires a string")
+				return nil, fmt.Errorf("title requires a string")
 			}
 			return plot, nil
 		}).Pure(false).SetMethodDescription("str", "Sets a string to show in the legend."),
@@ -412,13 +410,15 @@ func createPlotContentMethods() value.MethodMap {
 
 			var marker graph.Shape
 			if markerInt, ok := stack.GetOptional(1, value.Int(0)).ToInt(); ok {
-				switch markerInt % 4 {
+				switch markerInt % 5 {
 				case 1:
 					marker = graph.NewCircleMarker(size)
 				case 2:
 					marker = graph.NewSquareMarker(size)
 				case 3:
 					marker = graph.NewTriangleMarker(size)
+				case 4:
+					marker = graph.NewDiamondMarker(size)
 				default:
 					marker = graph.NewCrossMarker(size)
 				}
@@ -428,8 +428,6 @@ func createPlotContentMethods() value.MethodMap {
 
 			if sc, ok := plot.Value.(graph.HasShape); ok {
 				plot.Value = sc.SetShape(marker, style.Value)
-				plot.Legend.Shape = marker
-				plot.Legend.ShapeStyle = style.Value
 			} else {
 				return nil, fmt.Errorf("marker can only be set for plots using a marker")
 			}
@@ -439,7 +437,6 @@ func createPlotContentMethods() value.MethodMap {
 			if style, ok := stack.Get(1).(StyleValue); ok {
 				if sc, ok := plot.Value.(graph.HasLine); ok {
 					plot.Value = sc.SetLine(style.Value)
-					plot.Legend.LineStyle = style.Value
 				} else {
 					return nil, fmt.Errorf("line can only be set for plots using a line")
 				}
@@ -453,11 +450,10 @@ func createPlotContentMethods() value.MethodMap {
 
 type PlotContentValue struct {
 	Holder[graph.PlotContent]
-	Legend graph.Legend
 }
 
 func NewPlotContentValue(pc graph.PlotContent) PlotContentValue {
-	return PlotContentValue{Holder[graph.PlotContent]{pc}, graph.Legend{}}
+	return PlotContentValue{Holder[graph.PlotContent]{pc}}
 }
 
 func (p PlotContentValue) GetType() value.Type {
@@ -478,7 +474,7 @@ func listMethods() value.MethodMap {
 			if xc, ok := st.Get(1).ToClosure(); ok && xc.Args == 1 {
 				if yc, ok := st.Get(2).ToClosure(); ok && yc.Args == 1 {
 					s := graph.Scatter{Points: listFuncToPoints(list, xc, yc)}
-					return PlotContentValue{Holder[graph.PlotContent]{s}, graph.Legend{}}, nil
+					return PlotContentValue{Holder[graph.PlotContent]{s}}, nil
 				}
 			}
 			return nil, fmt.Errorf("points requires a function as first and second argument")
@@ -542,7 +538,7 @@ func Setup(fg *value.FunctionGenerator) {
 				return nil, fmt.Errorf("points requires a list as first argument")
 			}
 			s := graph.Scatter{Points: listToPoints(list)}
-			return PlotContentValue{Holder[graph.PlotContent]{s}, graph.Legend{}}, nil
+			return PlotContentValue{Holder[graph.PlotContent]{s}}, nil
 		},
 		Args:   1,
 		IsPure: true,
@@ -574,9 +570,7 @@ func Setup(fg *value.FunctionGenerator) {
 				}
 			}
 			gf := graph.Function{Function: f, Steps: steps}
-			return PlotContentValue{Holder[graph.PlotContent]{gf}, graph.Legend{
-				ShapeLineStyle: graph.ShapeLineStyle{LineStyle: graph.Black},
-			}}, nil
+			return PlotContentValue{Holder[graph.PlotContent]{gf}}, nil
 		},
 		Args:   -1,
 		IsPure: true,
@@ -589,7 +583,7 @@ func Setup(fg *value.FunctionGenerator) {
 					return nil, fmt.Errorf("yConst: %w", err)
 				}
 				c := graph.YConst{float64(y), styleVal.Value}
-				return PlotContentValue{Holder[graph.PlotContent]{c}, graph.Legend{}}, nil
+				return PlotContentValue{Holder[graph.PlotContent]{c}}, nil
 			}
 			return nil, fmt.Errorf("yConst requires a float")
 		},
@@ -604,7 +598,7 @@ func Setup(fg *value.FunctionGenerator) {
 					return nil, fmt.Errorf("xConst: %w", err)
 				}
 				c := graph.XConst{float64(x), styleVal.Value}
-				return PlotContentValue{Holder[graph.PlotContent]{c}, graph.Legend{}}, nil
+				return PlotContentValue{Holder[graph.PlotContent]{c}}, nil
 			}
 			return nil, fmt.Errorf("yConst requires a float")
 		},

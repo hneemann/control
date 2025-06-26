@@ -487,6 +487,10 @@ func (p Polar) DrawTo(plot *graph.Plot, canvas graph.Canvas) error {
 	return nil
 }
 
+func (p Polar) Legend() graph.Legend {
+	return graph.Legend{}
+}
+
 type Asymptotes struct {
 	Point graph.Point
 	Order int
@@ -522,7 +526,32 @@ func (a Asymptotes) DrawTo(_ *graph.Plot, canvas graph.Canvas) error {
 	return nil
 }
 
-func (l *Linear) CreateEvans(kMax float64) (*graph.Plot, error) {
+func (a Asymptotes) Legend() graph.Legend {
+	return graph.Legend{Name: "Asymptotes", ShapeLineStyle: graph.ShapeLineStyle{LineStyle: asymptotesStyle}}
+}
+
+type PlotPreferences struct {
+	Modify func(*graph.Plot)
+}
+
+func (p PlotPreferences) PreferredBounds(_, _ graph.Bounds) (x, y graph.Bounds, err error) {
+	return graph.Bounds{}, graph.Bounds{}, nil
+}
+
+func (p PlotPreferences) DrawTo(plot *graph.Plot, canvas graph.Canvas) error {
+	p.Modify(plot)
+	return nil
+}
+
+func (p PlotPreferences) Legend() graph.Legend {
+	return graph.Legend{}
+}
+
+func (p PlotPreferences) String() string {
+	return "Plot Preferences"
+}
+
+func (l *Linear) CreateEvans(kMax float64) ([]graph.PlotContent, error) {
 	p, err := l.Poles()
 	if err != nil {
 		return nil, err
@@ -571,8 +600,11 @@ func (l *Linear) CreateEvans(kMax float64) (*graph.Plot, error) {
 	}
 
 	curveList := make([]graph.PlotContent, 0, 5)
+	curveList = append(curveList, PlotPreferences{Modify: func(plot *graph.Plot) {
+		plot.YLabel = "Im"
+		plot.XLabel = "Re"
+	}})
 	curveList = append(curveList, Polar{})
-	var legend []graph.Legend
 
 	as, order, err := l.EvansAsymptotesIntersect()
 	if err != nil {
@@ -594,15 +626,7 @@ func (l *Linear) CreateEvans(kMax float64) (*graph.Plot, error) {
 					Shape:      polesMarker,
 					ShapeStyle: markerStyle,
 				},
-			},
-		)
-		legend = append(legend,
-			graph.Legend{
-				Name: "Poles",
-				ShapeLineStyle: graph.ShapeLineStyle{
-					Shape:      polesMarker,
-					ShapeStyle: markerStyle,
-				},
+				Title: "Poles",
 			},
 		)
 	}
@@ -615,34 +639,12 @@ func (l *Linear) CreateEvans(kMax float64) (*graph.Plot, error) {
 					Shape:      zeroMarker,
 					ShapeStyle: markerStyle,
 				},
-			},
-		)
-		legend = append(legend,
-			graph.Legend{
-				Name: "Zeros",
-				ShapeLineStyle: graph.ShapeLineStyle{
-					Shape:      zeroMarker,
-					ShapeStyle: markerStyle,
-				},
+				Title: "Zeros",
 			},
 		)
 	}
 
-	if order > 0 {
-		legend = append(legend, graph.Legend{
-			Name: "Asymptotes",
-			ShapeLineStyle: graph.ShapeLineStyle{
-				LineStyle: asymptotesStyle,
-			},
-		})
-	}
-
-	return &graph.Plot{
-		XLabel:  "Re",
-		YLabel:  "Im",
-		Content: curveList,
-		Legend:  legend,
-	}, nil
+	return curveList, nil
 
 }
 
@@ -813,6 +815,10 @@ func (ec *evansCurves) DrawTo(plot *graph.Plot, canvas graph.Canvas) error {
 	return nil
 }
 
+func (ec *evansCurves) Legend() graph.Legend {
+	return graph.Legend{}
+}
+
 type BodePlot struct {
 	wMin, wMax float64
 	amplitude  *graph.Plot
@@ -824,10 +830,6 @@ func (b *BodePlot) DrawTo(canvas graph.Canvas) error {
 	return b.bode.DrawTo(canvas)
 }
 
-func (b *BodePlot) AddLegend(s string, style *graph.Style) {
-	b.amplitude.AddLegend(s, style, nil, nil)
-}
-
 func (b *BodePlot) SetAmplitudeBounds(min, max float64) {
 	b.amplitude.YBounds = graph.NewBounds(min, max)
 }
@@ -836,7 +838,7 @@ func (b *BodePlot) SetPhaseBounds(min, max float64) {
 	b.phase.YBounds = graph.NewBounds(min, max)
 }
 
-func (l *Linear) AddToBode(b *BodePlot, style *graph.Style, latency float64) {
+func (l *Linear) AddToBode(b *BodePlot, style *graph.Style, latency float64, title string) {
 	cZero := l.EvalCplx(complex(0, 0))
 	lastAngle := 0.0
 	if real(cZero) < 0 {
@@ -866,7 +868,7 @@ func (l *Linear) AddToBode(b *BodePlot, style *graph.Style, latency float64) {
 		w *= wMult
 	}
 
-	b.amplitude.AddContent(graph.Scatter{Points: graph.PointsFromSlice(amplitude), ShapeLineStyle: graph.ShapeLineStyle{LineStyle: style}})
+	b.amplitude.AddContent(graph.Scatter{Points: graph.PointsFromSlice(amplitude), ShapeLineStyle: graph.ShapeLineStyle{LineStyle: style}, Title: title})
 	b.phase.AddContent(graph.Scatter{Points: graph.PointsFromSlice(phase), ShapeLineStyle: graph.ShapeLineStyle{LineStyle: style}})
 }
 
@@ -909,6 +911,7 @@ func (l *Linear) NyquistPos(sMax float64) *graph.ParameterFunc {
 		c := l.EvalCplx(complex(0, w))
 		return graph.Point{X: real(c), Y: imag(c)}, nil
 	}
+	pfPos.Title = "ω>0"
 	return pfPos
 }
 
@@ -918,6 +921,7 @@ func (l *Linear) NyquistNeg(sMax float64) *graph.ParameterFunc {
 		c := l.EvalCplx(complex(0, -w))
 		return graph.Point{X: real(c), Y: imag(c)}, nil
 	}
+	pfNeg.Title = "ω<0"
 	return pfNeg
 }
 
@@ -926,37 +930,27 @@ var (
 	negStyle = graph.Black.SetDash(4, 4).SetStrokeWidth(2)
 )
 
-func (l *Linear) Nyquist(sMax float64, alsoNeg bool) (*graph.Plot, error) {
+func (l *Linear) Nyquist(sMax float64, alsoNeg bool) ([]graph.PlotContent, error) {
 	cZero := l.EvalCplx(complex(0, 0))
 	isZero := !(math.IsNaN(real(cZero)) || math.IsNaN(imag(cZero)))
 
 	var cp []graph.PlotContent
+	cp = append(cp, PlotPreferences{Modify: func(plot *graph.Plot) {
+		plot.YLabel = "Im"
+		plot.XLabel = "Re"
+	}})
 	cp = append(cp, graph.Cross{Style: graph.Gray})
-	cp = append(cp, l.NyquistPos(sMax).SetLine(posStyle))
 	if alsoNeg {
 		cp = append(cp, l.NyquistNeg(sMax).SetLine(negStyle))
 		cp = append(cp, graph.Scatter{Points: graph.PointsFromPoint(graph.Point{X: -1, Y: 0}), ShapeLineStyle: graph.ShapeLineStyle{Shape: graph.NewCrossMarker(4), ShapeStyle: graph.Red}})
 	}
 	zeroMarker := graph.NewCircleMarker(4)
 	if isZero {
-		cp = append(cp, graph.Scatter{Points: graph.PointsFromPoint(graph.Point{X: real(cZero), Y: imag(cZero)}), ShapeLineStyle: graph.ShapeLineStyle{Shape: zeroMarker, ShapeStyle: graph.Black}})
+		cp = append(cp, graph.Scatter{Points: graph.PointsFromPoint(graph.Point{X: real(cZero), Y: imag(cZero)}), ShapeLineStyle: graph.ShapeLineStyle{Shape: zeroMarker, ShapeStyle: graph.Black}, Title: "ω=0"})
 	}
+	cp = append(cp, l.NyquistPos(sMax).SetLine(posStyle))
 
-	var legend []graph.Legend
-	legend = append(legend, graph.Legend{Name: "ω>0", ShapeLineStyle: graph.ShapeLineStyle{LineStyle: posStyle}})
-	if isZero {
-		legend = append(legend, graph.Legend{Name: "ω=0", ShapeLineStyle: graph.ShapeLineStyle{Shape: zeroMarker, ShapeStyle: graph.Black}})
-	}
-	if alsoNeg {
-		legend = append(legend, graph.Legend{Name: "ω<0", ShapeLineStyle: graph.ShapeLineStyle{LineStyle: negStyle}})
-	}
-
-	return &graph.Plot{
-		XLabel:  "Re",
-		YLabel:  "Im",
-		Content: cp,
-		Legend:  legend,
-	}, nil
+	return cp, nil
 }
 
 type dataSet struct {

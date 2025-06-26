@@ -316,11 +316,13 @@ func linMethods() value.MethodMap {
 				if err != nil {
 					return nil, err
 				}
-				plot, err := red.CreateEvans(k)
+				contentList, err := red.CreateEvans(k)
 				if err != nil {
 					return nil, err
 				}
-				return grParser.NewPlotValue(plot), nil
+				return value.NewListConvert(func(i graph.PlotContent) value.Value {
+					return grParser.NewPlotContentValue(i)
+				}, contentList), nil
 			}
 			return nil, fmt.Errorf("evans requires a float")
 		}).SetMethodDescription("k_max", "Creates an evans plot."),
@@ -333,11 +335,13 @@ func linMethods() value.MethodMap {
 			if !ok {
 				return nil, fmt.Errorf("nyquist requires a float as second argument")
 			}
-			plot, err := lin.Nyquist(sMax, neg)
+			contentList, err := lin.Nyquist(sMax, neg)
 			if err != nil {
 				return nil, err
 			}
-			return grParser.NewPlotValue(plot), nil
+			return value.NewListConvert(func(i graph.PlotContent) value.Value {
+				return grParser.NewPlotContentValue(i)
+			}, contentList), nil
 		}).SetMethodDescription("also negative", "wMax", "Creates a nyquist plot.").VarArgsMethod(0, 2),
 		"nyquistPos": value.MethodAtType(1, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
 			sMax, ok := st.GetOptional(1, value.Float(1000)).ToFloat()
@@ -437,15 +441,12 @@ func bodeMethods() value.MethodMap {
 			if linVal, ok := getLinear(st, 1); ok {
 				if styleVal, err := grParser.GetStyle(st, 2, graph.Black); err == nil {
 					if legVal, ok := st.GetOptional(3, value.String("")).(value.String); ok {
-						linVal.AddToBode(bode.Value, styleVal.Value, 0)
-						if legVal != "" {
-							bode.Value.AddLegend(string(legVal), styleVal.Value)
-						}
+						linVal.AddToBode(bode.Value, styleVal.Value, 0, string(legVal))
 						return bode, nil
 					}
 				}
 			}
-			return nil, errors.New("add requires a linear system, a color and a legend")
+			return nil, errors.New("add requires a linear system, a color and a title")
 		}).SetMethodDescription("lin", "color", "label", "Adds a linear system to the bode plot.").VarArgsMethod(1, 3).Pure(false),
 		"textSize": value.MethodAtType(1, func(plot BodePlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if si, ok := stack.Get(1).ToFloat(); ok {
@@ -475,16 +476,13 @@ func bodeMethods() value.MethodMap {
 				if latency, ok := st.Get(2).ToFloat(); ok {
 					if styleVal, err := grParser.GetStyle(st, 3, graph.Black); err == nil {
 						if legVal, ok := st.GetOptional(4, value.String("")).(value.String); ok {
-							linVal.AddToBode(bode.Value, styleVal.Value, latency)
-							if legVal != "" {
-								bode.Value.AddLegend(string(legVal), styleVal.Value)
-							}
+							linVal.AddToBode(bode.Value, styleVal.Value, latency, string(legVal))
 							return bode, nil
 						}
 					}
 				}
 			}
-			return nil, errors.New("addWithLatency requires a linear system, a latency, a color and a legend")
+			return nil, errors.New("addWithLatency requires a linear system, a latency, a color and a title")
 		}).SetMethodDescription("lin", "Tt", "color", "label", "Adds a linear system with latency to the bode plot.").VarArgsMethod(2, 4).Pure(false),
 		"aBounds": value.MethodAtType(2, func(bode BodePlotValue, st funcGen.Stack[value.Value]) (value.Value, error) {
 			if aMin, ok := st.Get(1).ToFloat(); ok {

@@ -72,8 +72,8 @@ let gw=g0.loop();
 string(gw)
 `, res: value.String("30*(s²+s+0.5)/(4s⁴+18s³+62.4s²+54.6s+21.2)")}, // externally checked
 
-		{name: "evans", exp: "let g=(s+1)/(s^2+4*s+5); string(g.evans(10))", res: value.String("Plot: Polar Grid, Asymptotes, Evans Curves, Scatter, Scatter")},
-		{name: "nyquist", exp: "let g=(s+1)/(s^2+4*s+5); string(g.nyquist())", res: value.String("Plot: coordinate cross, Parameter curve, Scatter")},
+		{name: "evans", exp: "let g=(s+1)/(s^2+4*s+5); string(plot(g.evans(10)))", res: value.String("Plot: Plot Preferences, Polar Grid, Asymptotes, Evans Curves, Scatter, Scatter")},
+		{name: "nyquist", exp: "let g=(s+1)/(s^2+4*s+5); string(plot(g.nyquist()))", res: value.String("Plot: Plot Preferences, coordinate cross, Scatter, Parameter curve")},
 
 		{name: "gMargin", exp: "let g=(s+0.2)/((s^2+2*s+10)*(s+4)*(s^2+0.2*s+0.1));10^(g.gMargin().gMargin/20)", res: value.Float(74.45626527211962)},
 		{name: "pMargin", exp: "let g=74.45626527211962*(s+0.2)/((s^2+2*s+10)*(s+4)*(s^2+0.2*s+0.1));g.pMargin().pMargin/100", res: value.Float(0)},
@@ -156,9 +156,9 @@ func TestSVGExport(t *testing.T) {
 		exp  string
 		file string
 	}{
-		{name: "nyquist", exp: "let g=(s+1)/(s^2+4*s+5); [\"Nyquist\",g.nyquist()]", file: "z.html"},
-		{name: "nyquist2", exp: "pid(1,1,1).nyquist()", file: "z.html"},
-		{name: "nyquist3", exp: "let g=60/((s+1)*(s+2)*(s+3)*(s+4));g.nyquist().zoom(0,0,10)", file: "z.html"},
+		{name: "nyquist", exp: "let g=(s+1)/(s^2+4*s+5); [\"Nyquist\",plot(g.nyquist())]", file: "z.html"},
+		{name: "nyquist2", exp: "plot(pid(1,1,1).nyquist())", file: "z.html"},
+		{name: "nyquist3", exp: "let g=60/((s+1)*(s+2)*(s+3)*(s+4));plot(g.nyquist()).zoom(0,0,10)", file: "z.html"},
 		{name: "bode", exp: "let g=(1.5*s+1)/((2*s+1)*(s+1)*(s^2+3*s+3.1));\nlet k=pid(12,1.5,1);\nbode(0.01,100)\n  .add(g,green,\"g\")\n  .add(k,blue,\"k\")\n  .add(k*g,black,\"k*g\")", file: "z.html"},
 		{name: "test", exp: "let p=list(10).map(i->[i,i*i]); plot(points(p),points(p).line(green.darker().dash(10,10,2,10)))", file: "z.html"},
 		{name: "func", exp: "plot(function(x->sin(x)).line(black).title(\"sin\"),function(x->cos(x)).line(red).title(\"cos\")).xBounds(0,2*pi)", file: "z.html"},
@@ -169,9 +169,10 @@ let p = g.numerator()*g.denominator().derivative()-g.denominator()*g.numerator()
 let r = p.roots();
 let cr = r.accept(r->r.imag()>1).single();
 
-g.evans(24)
-  .add(points(r.map(c->[c.real(),c.imag()])))
-  .zoom(cr.real(),cr.imag(),20)
+plot(
+  g.evans(24),
+  points(r.map(c->[c.real(),c.imag()]))
+).zoom(cr.real(),cr.imag(),20)
 `, file: "z.html"},
 	}
 	for _, test := range tests {

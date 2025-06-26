@@ -32,8 +32,8 @@ func TestSimple(t *testing.T) {
 		p.AddContent(graph.Scatter{
 			Points:         data.toPoints(0, n+1),
 			ShapeLineStyle: graph.ShapeLineStyle{LineStyle: style},
+			Title:          name,
 		})
-		p.AddLegend(name, style, nil, nil)
 		n++
 	}
 

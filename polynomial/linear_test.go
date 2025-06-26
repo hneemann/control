@@ -204,11 +204,10 @@ func Test_Evans1(t *testing.T) {
 	d := NewRoots(complex(-2, 0), complex(-1, 0))
 	g0 := FromRoots(n, d)
 
-	pl, err := g0.CreateEvans(15)
+	pl := &graph.Plot{Content: Must(g0.CreateEvans(15))}
 	pl.XBounds = graph.NewBounds(-4, 0.1)
-	assert.NoError(t, err)
 	if pl != nil {
-		err = exportPlot(pl, "wok1.svg")
+		err := exportPlot(pl, "wok1.svg")
 		assert.NoError(t, err)
 	}
 }
@@ -218,14 +217,13 @@ func Test_Evans2(t *testing.T) {
 	d := NewRoots(complex(1, 0), complex(2, 0))
 	g0 := FromRoots(n, d)
 
-	pl, err := g0.CreateEvans(25)
+	pl := &graph.Plot{Content: Must(g0.CreateEvans(25))}
 	fmt.Println(pl)
-	assert.NoError(t, err)
 	if pl != nil {
 		pl.XBounds = graph.NewBounds(-1, 3)
 		pl.YBounds = graph.NewBounds(-1.5, 1.5)
 
-		err = exportPlot(pl, "wok2.svg")
+		err := exportPlot(pl, "wok2.svg")
 		assert.NoError(t, err)
 	}
 }
@@ -240,8 +238,7 @@ func Test_Evans3(t *testing.T) {
 
 	g0 := g.Mul(pid)
 
-	pl, err := g0.CreateEvans(100)
-	assert.NoError(t, err)
+	pl := &graph.Plot{Content: Must(g0.CreateEvans(100))}
 	if pl != nil {
 		pl.XBounds = graph.NewBounds(-6, 3)
 		pl.YBounds = graph.NewBounds(-4, 4)
@@ -261,8 +258,7 @@ func Test_Evans4(t *testing.T) {
 
 	g0 := g.Mul(pid)
 
-	pl, err := g0.CreateEvans(10)
-	assert.NoError(t, err)
+	pl := &graph.Plot{Content: Must(g0.CreateEvans(10))}
 	if pl != nil {
 		pl.XBounds = graph.NewBounds(-2, 0.5)
 		pl.YBounds = graph.NewBounds(-3, 3)
@@ -277,13 +273,12 @@ func Test_Evans5(t *testing.T) {
 	d := Must(Must(Must(NewRoots().Real(2, 1)).Real(1, 1)).Complex(1, 3, 3.1))
 	g0 := FromRoots(n, d)
 
-	pl, err := g0.CreateEvans(10)
-	assert.NoError(t, err)
+	pl := &graph.Plot{Content: Must(g0.CreateEvans(10))}
 	if pl != nil {
 		pl.XBounds = graph.NewBounds(-2, 0.5)
 		pl.YBounds = graph.NewBounds(-2, 2)
 
-		err = exportPlot(pl, "wok5.svg")
+		err := exportPlot(pl, "wok5.svg")
 		assert.NoError(t, err)
 	}
 }
@@ -293,10 +288,9 @@ func Test_Evans6(t *testing.T) {
 	d := NewRoots(complex(0, 0), complex(1, 0), complex(-2, 0))
 	g0 := FromRoots(n, d)
 
-	pl, err := g0.CreateEvans(50)
-	assert.NoError(t, err)
+	pl := &graph.Plot{Content: Must(g0.CreateEvans(50))}
 	if pl != nil {
-		err = exportPlot(pl, "wok6.svg")
+		err := exportPlot(pl, "wok6.svg")
 		assert.NoError(t, err)
 	}
 }
@@ -306,11 +300,10 @@ func Test_Evans7(t *testing.T) {
 	d := NewRoots(complex(-1, 1))
 	g0 := FromRoots(n, d)
 
-	pl, err := g0.CreateEvans(5)
-	assert.NoError(t, err)
+	pl := &graph.Plot{Content: Must(g0.CreateEvans(5))}
 	pl.XBounds = graph.NewBounds(-2, 0.2)
 	if pl != nil {
-		err = exportPlot(pl, "wok7.svg")
+		err := exportPlot(pl, "wok7.svg")
 		assert.NoError(t, err)
 	}
 }
@@ -363,9 +356,9 @@ func Test_Bode1(t *testing.T) {
 	assert.NoError(t, err)
 
 	pl := NewBode(0.01, 100)
-	g.AddToBode(pl, graph.Green, 0)
-	k.AddToBode(pl, graph.Blue, 0)
-	k.Mul(g).AddToBode(pl, graph.Black, 0)
+	g.AddToBode(pl, graph.Green, 0, "G")
+	k.AddToBode(pl, graph.Blue, 0, "K")
+	k.Mul(g).AddToBode(pl, graph.Black, 0, "G#0")
 
 	err = exportPlot(pl, "bode1.svg")
 	assert.NoError(t, err)
@@ -376,9 +369,8 @@ func Test_Nyquist1(t *testing.T) {
 	d := Must(Must(NewRoots().Real(1, -1)).Real(1, -3))
 	g := FromRoots(n, d)
 
-	pl, err := g.Nyquist(1000, true)
-	assert.NoError(t, err)
-	err = exportPlot(pl, "nyquist1.svg")
+	pl := &graph.Plot{Content: Must(g.Nyquist(1000, true))}
+	err := exportPlot(pl, "nyquist1.svg")
 	assert.NoError(t, err)
 }
 
@@ -387,9 +379,8 @@ func Test_Nyquist2(t *testing.T) {
 	d := Must(Must(Must(NewRoots().Complex(1, 2, 10)).Real(1, 4)).Complex(1, 0.2, 0.1))
 	g := FromRoots(n, d)
 
-	pl, err := g.Nyquist(1000, true)
-	assert.NoError(t, err)
-	err = exportPlot(pl, "nyquist2.svg")
+	pl := &graph.Plot{Content: Must(g.Nyquist(1000, true))}
+	err := exportPlot(pl, "nyquist2.svg")
 	assert.NoError(t, err)
 }
 
@@ -398,11 +389,10 @@ func Test_Nyquist3(t *testing.T) {
 	d := Must(Must(Must(Must(Must(NewRoots().Real(1, 1)).Real(1, 1)).Real(1, 1)).Real(1, 1)).Real(1, 1))
 	g := FromRoots(n, d)
 
-	pl, err := g.Nyquist(1000, true)
-	assert.NoError(t, err)
+	pl := &graph.Plot{Content: Must(g.Nyquist(1000, true))}
 	//pl.BoundsModifier = graph.Zoom(graph.Point{}, 100)
 
-	err = exportPlot(pl, "nyquist3.svg")
+	err := exportPlot(pl, "nyquist3.svg")
 	assert.NoError(t, err)
 }
 

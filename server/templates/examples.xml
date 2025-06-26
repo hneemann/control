@@ -38,7 +38,9 @@ plot(
     <example name="Ortskurve" desc="Darstellung der Ortskurve"
              name-en="Nyquist plot" desc-en="Nyquist plot">let g = 3/((s+1)*(s+2));
 
-g.nyquist()</example>
+plot(
+  g.nyquist()
+)</example>
     <example name="Ortskurve 2" desc="Darstellung der Ortskurve"
              name-en="Nyquist plot 2" desc-en="Nyquist plot" >let g = 3/((s+1)*(s+1.5)*(s+2));
 
@@ -47,17 +49,16 @@ func h(w)
   let c2 = g( _i*w*0.99 );
   hintDir(c1.real(),c1.imag(),c2.real(),c2.imag(),"ω="+w);
 
-g.nyquist()
-  .add( h(0.1)  )
-  .add( h(0.25) )
-  .add( h(0.5)  )
-  .add( h(1)    )
-  .add( h(2)    )
-  .add( h(5)    )</example>
+plot(
+  g.nyquist(),
+  [0.1, 0.25, 0.5, 1, 2, 5].map( w->h(w) )
+)</example>
     <example name="Nyquist" desc="Anwendung des Nyquistkriteriums"
              name-en="Nyquist stability criterion">let g = 6*(s+1)/((s-1)*(s-3));
 
-g.nyquist(true)</example>
+plot(
+  g.nyquist(true)
+)</example>
     <example name="Bode" desc="Darstellung eines Bode-Diagramms"
              name-en="Bode plot" desc-en="Bode plot">let g = 3/((s+1)*(s+2));
 
@@ -90,11 +91,16 @@ bode(0.01,100)
              name-en="Root locus analysis" desc-en="Root locus analysis">let g = 3/((s+1)*(s+2));
 let k = 1+1/(0.9*s);
 
-(k*g).evans(1)</example>
+plot(
+  (k*g).evans(1)
+)</example>
 
     <example name="WOK 2" desc="Darstellung einer Wurzelortskurve"
              name-en="Root locus analysis 2" desc-en="Root locus analysis">let l = 352*poly(5,1)/poly(0,0,2000,200,25,1);
-l.evans(100)</example>
+
+plot(
+  l.evans(100)
+)</example>
 
     <example name="Simulation" desc="Simulation des Systems"
              name-en="Simulation" desc-en="Simulation of a linear system">let g = 70/((s+1)*(s+2)*(s+2.5));
