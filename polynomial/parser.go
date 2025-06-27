@@ -668,7 +668,7 @@ var Parser = value.New().
 		},
 		Args:   -1,
 		IsPure: true,
-	}.SetDescription("", "Declares a polynomial.")).
+	}.SetDescription("float...", "Declares a polynomial.")).
 	AddStaticFunction("linear", funcGen.Function[value.Value]{
 		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
 			if lin, ok := getLinear(stack, 0); ok {
@@ -724,7 +724,7 @@ var Parser = value.New().
 			}
 		},
 		Args: -1,
-	}.SetDescription("Creates a plot.")).
+	}.SetDescription("content...", "Creates a plot.")).
 	AddStaticFunction("nelderMead", funcGen.Function[value.Value]{
 		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
 			if fu, ok := stack.Get(0).ToClosure(); ok {

@@ -10,7 +10,7 @@
 ];
 
 plot(
- points( data )
+ data.points()
 )</example>
     <example name="Daten-Plot 2"
              name-en="Data-Plot 2" >let data = [
@@ -105,9 +105,9 @@ let k3 = pid(0.3,2,0.5);
 
 plot(
   yConst(1),
-  points((k1*g).loop().simStep(10)).line(blue). title("phasenanhebendes Korrekturglied"),
-  points((k2*g).loop().simStep(10)).line(black).title("PI"),
-  points((k3*g).loop().simStep(10)).line(green).title("PID")
+  (k1*g).loop().simStep(10).points().line(blue). title("phasenanhebendes Korrekturglied"),
+  (k2*g).loop().simStep(10).points().line(black).title("PI"),
+  (k3*g).loop().simStep(10).points().line(green).title("PID")
 ).labels("t [s]","h(t)").legendPos(5,0.87)</example>
 
 <example name="Simulation nicht linear" desc="Simulation eines nicht linearen Systems"
@@ -136,9 +136,9 @@ let simNormal  = (K*G).loop().simStep(6);
 
 plot(
   yConst(1),
-  points(simNormal).      line(green).title("y (u unlimited)"),
-  points(simLimited.uLim).line(blue). title("u limited"),
-  points(simLimited.y).   line(black).title("y (u limited)")
+  simNormal.points().      line(green).title("y (u unlimited)"),
+  simLimited.uLim.points().line(blue). title("u limited"),
+  simLimited.y.points().   line(black).title("y (u limited)")
 ).legendPos(2,0.7)
  .labels("t [s]", "h(t)")
  .title("Effect of a Limiter")</example>

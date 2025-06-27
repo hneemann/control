@@ -480,14 +480,22 @@ func (p StyleValue) GetType() value.Type {
 func listMethods() value.MethodMap {
 	return value.MethodMap{
 		"points": value.MethodAtType(2, func(list *value.List, st funcGen.Stack[value.Value]) (value.Value, error) {
-			if xc, ok := st.Get(1).ToClosure(); ok && xc.Args == 1 {
-				if yc, ok := st.Get(2).ToClosure(); ok && yc.Args == 1 {
-					s := graph.Scatter{Points: listFuncToPoints(list, xc, yc)}
-					return PlotContentValue{Holder[graph.PlotContent]{s}}, nil
+			switch st.Size() {
+			case 1:
+				s := graph.Scatter{Points: listToPoints(list)}
+				return PlotContentValue{Holder[graph.PlotContent]{s}}, nil
+			case 3:
+				if xc, ok := st.Get(1).ToClosure(); ok && xc.Args == 1 {
+					if yc, ok := st.Get(2).ToClosure(); ok && yc.Args == 1 {
+						s := graph.Scatter{Points: listFuncToPoints(list, xc, yc)}
+						return PlotContentValue{Holder[graph.PlotContent]{s}}, nil
+					}
 				}
+			default:
+				return nil, fmt.Errorf("points requires either none or two arguments")
 			}
 			return nil, fmt.Errorf("points requires a function as first and second argument")
-		}).SetMethodDescription("func(item) x", "func(item) y", "Creates a scatter plot content."),
+		}).SetMethodDescription("func(item) x", "func(item) y", "Creates a scatter plot content.").VarArgsMethod(0, 2),
 	}
 }
 
@@ -538,20 +546,7 @@ func Setup(fg *value.FunctionGenerator) {
 		},
 		Args:   -1,
 		IsPure: true,
-	}.SetDescription("content", "Creates a new plot."))
-	fg.AddStaticFunction("points", funcGen.Function[value.Value]{
-		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
-			var list *value.List
-			var ok bool
-			if list, ok = st.Get(0).ToList(); !ok {
-				return nil, fmt.Errorf("points requires a list as first argument")
-			}
-			s := graph.Scatter{Points: listToPoints(list)}
-			return PlotContentValue{Holder[graph.PlotContent]{s}}, nil
-		},
-		Args:   1,
-		IsPure: true,
-	}.SetDescription("data", "Creates a new scatter plot content."))
+	}.SetDescription("content...", "Creates a new plot."))
 	fg.AddStaticFunction("function", funcGen.Function[value.Value]{
 		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
 			steps := 0
