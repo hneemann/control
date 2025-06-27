@@ -43,6 +43,10 @@
         margin: 0;
         padding: 0;
     }
+    #result {
+        max-height: 50vh;
+        overflow-y:scroll;
+    }
     div.main {
         height: 100%;
         display: grid;
