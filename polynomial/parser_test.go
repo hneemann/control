@@ -78,6 +78,11 @@ string(gw)
 		{name: "gMargin", exp: "let g=(s+0.2)/((s^2+2*s+10)*(s+4)*(s^2+0.2*s+0.1));10^(g.gMargin().gMargin/20)", res: value.Float(74.45626527211962)},
 		{name: "pMargin", exp: "let g=74.45626527211962*(s+0.2)/((s^2+2*s+10)*(s+4)*(s^2+0.2*s+0.1));g.pMargin().pMargin/100", res: value.Float(0)},
 		{name: "pMargin", exp: "let g=70*(s+0.2)/((s^2+2*s+10)*(s+4)*(s^2+0.2*s+0.1));g.pMargin().pMargin", res: value.Float(11.868562012450866)},
+
+		{name: "bode-lin", exp: "let g=(s+0.2)/((s+1)*(s+2));string(g.bode())", res: value.String("BodePlotContent((s+0.2)/(s²+3s+2))")},
+		{name: "bode-poly", exp: "let g=s+0.2;string(g.bode())", res: value.String("BodePlotContent(s+0.2)")},
+		{name: "bode-float", exp: "let g=0.2;string(g.bode())", res: value.String("BodePlotContent(0.2)")},
+		{name: "bode-int", exp: "let g=2;string(g.bode())", res: value.String("BodePlotContent(2)")},
 	}
 
 	for _, test := range tests {

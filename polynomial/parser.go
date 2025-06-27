@@ -245,6 +245,7 @@ func polyMethods() value.MethodMap {
 			}
 			return value.NewList(val...), nil
 		}).SetMethodDescription("Returns the roots. If a pair of complex conjugates is found, only the complex number with positive imaginary part is returned."),
+		"bode": createBodeMethod(func(poly Polynomial) *Linear { return &Linear{Numerator: poly, Denominator: Polynomial{1}} }),
 	}
 }
 
@@ -348,14 +349,7 @@ func linMethods() value.MethodMap {
 		"stringPoly": value.MethodAtType(0, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
 			return value.String(lin.StringPoly(false)), nil
 		}).SetMethodDescription("Creates a string representation of the linear system."),
-		"bode": value.MethodAtType(2, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
-			if style, err := grParser.GetStyle(st, 1, graph.Black); err == nil {
-				if title, ok := st.GetOptional(2, value.String("")).(value.String); ok {
-					return BodePlotContentValue{Holder: grParser.Holder[BodePlotContent]{lin.CreateBode(style.Value, string(title))}}, nil
-				}
-			}
-			return nil, fmt.Errorf("bode requires a color and a string")
-		}).SetMethodDescription("color", "title", "Creates a bode plot content.").VarArgsMethod(0, 2),
+		"bode": createBodeMethod(func(lin *Linear) *Linear { return lin }),
 		"evans": value.MethodAtType(1, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
 			if k, ok := st.Get(1).ToFloat(); ok {
 				red, err := lin.Reduce()
@@ -453,6 +447,17 @@ func linMethods() value.MethodMap {
 			return nil, fmt.Errorf("sim requires a function and a float")
 		}).SetMethodDescription("u(t)", "tMax", "Simulates the transfer function."),
 	}
+}
+
+func createBodeMethod[T value.Value](convert func(T) *Linear) funcGen.Function[value.Value] {
+	return value.MethodAtType(2, func(lin T, st funcGen.Stack[value.Value]) (value.Value, error) {
+		if style, err := grParser.GetStyle(st, 1, graph.Black); err == nil {
+			if title, ok := st.GetOptional(2, value.String("")).(value.String); ok {
+				return BodePlotContentValue{Holder: grParser.Holder[BodePlotContent]{convert(lin).CreateBode(style.Value, string(title))}}, nil
+			}
+		}
+		return nil, fmt.Errorf("bode requires a color and a string")
+	}).SetMethodDescription("color", "title", "Creates a bode plot content.").VarArgsMethod(0, 2)
 }
 
 type BodePlotValue struct {
@@ -586,6 +591,18 @@ func bodeMethods() value.MethodMap {
 	}
 }
 
+func floatMethods() value.MethodMap {
+	return value.MethodMap{
+		"bode": createBodeMethod(func(f value.Float) *Linear { return NewConst(float64(f)) }),
+	}
+}
+
+func intMethods() value.MethodMap {
+	return value.MethodMap{
+		"bode": createBodeMethod(func(i value.Int) *Linear { return NewConst(float64(i)) }),
+	}
+}
+
 func getLinear(st funcGen.Stack[value.Value], i int) (*Linear, bool) {
 	v := st.Get(i)
 	if l, ok := v.(*Linear); ok {
@@ -616,6 +633,8 @@ var Parser = value.New().
 	}).
 	RegisterMethods(LinearValueType, linMethods()).
 	RegisterMethods(PolynomialValueType, polyMethods()).
+	RegisterMethods(value.FloatTypeId, floatMethods()).
+	RegisterMethods(value.IntTypeId, intMethods()).
 	RegisterMethods(BodeValueType, bodeMethods()).
 	RegisterMethods(BodePlotContentValueType, bodePlotContentMethods()).
 	RegisterMethods(ComplexValueType, cmplxMethods()).
@@ -655,7 +674,7 @@ var Parser = value.New().
 			if lin, ok := getLinear(stack, 0); ok {
 				return lin, nil
 			}
-			return nil, fmt.Errorf("linear requires a linear system, polynomial or float value")
+			return nil, fmt.Errorf("linear requires a linear system, polynomial, float or int value")
 		},
 		Args:   1,
 		IsPure: true,

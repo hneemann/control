@@ -551,6 +551,17 @@ func (p PlotPreferences) String() string {
 	return "Plot Preferences"
 }
 
+func NewImReLabels() PlotPreferences {
+	return PlotPreferences{Modify: func(plot *graph.Plot) {
+		if plot.YLabel == "" {
+			plot.YLabel = "Im"
+		}
+		if plot.XLabel == "" {
+			plot.XLabel = "Re"
+		}
+	}}
+}
+
 func (l *Linear) CreateEvans(kMax float64) ([]graph.PlotContent, error) {
 	p, err := l.Poles()
 	if err != nil {
@@ -600,10 +611,7 @@ func (l *Linear) CreateEvans(kMax float64) ([]graph.PlotContent, error) {
 	}
 
 	curveList := make([]graph.PlotContent, 0, 5)
-	curveList = append(curveList, PlotPreferences{Modify: func(plot *graph.Plot) {
-		plot.YLabel = "Im"
-		plot.XLabel = "Re"
-	}})
+	curveList = append(curveList, NewImReLabels())
 	curveList = append(curveList, Polar{})
 
 	as, order, err := l.EvansAsymptotesIntersect()
@@ -830,6 +838,10 @@ type BodePlotContent struct {
 	phase      []graph.Point
 }
 
+func (bpc BodePlotContent) String() string {
+	return fmt.Sprintf("BodePlotContent(%s)", bpc.Linear.String())
+}
+
 type BodePlot struct {
 	amplitude *graph.Plot
 	phase     *graph.Plot
@@ -868,7 +880,7 @@ func NewBode(wMin, wMax float64) *BodePlot {
 		YAxis:        graph.DBAxis,
 		Grid:         grParser.GridStyle,
 		XLabel:       "ω [rad/s]",
-		YLabel:       "Amplitude [dB]",
+		YLabel:       "Amplitude",
 		YLabelExtend: true,
 	}
 	phase := &graph.Plot{
@@ -1019,10 +1031,7 @@ func (l *Linear) Nyquist(sMax float64, alsoNeg bool) ([]graph.PlotContent, error
 	isZero := !(math.IsNaN(real(cZero)) || math.IsNaN(imag(cZero)))
 
 	var cp []graph.PlotContent
-	cp = append(cp, PlotPreferences{Modify: func(plot *graph.Plot) {
-		plot.YLabel = "Im"
-		plot.XLabel = "Re"
-	}})
+	cp = append(cp, NewImReLabels())
 	cp = append(cp, graph.Cross{Style: graph.Gray})
 	if alsoNeg {
 		cp = append(cp, l.NyquistNeg(sMax))
