@@ -10,7 +10,7 @@
 ];
 
 plot(
- data.points()
+ data.graph()
 )</example>
     <example name="Daten-Plot 2"
              name-en="Data-Plot 2" >let data = [
@@ -22,18 +22,18 @@ plot(
 ];
 
 plot(
-  data.points(p->p[0], p->p[1]).mark(1,blue) .line(blue.dash(7,7)),
-  data.points(p->p[0], p->p[2]).mark(2,green).line(green.dash(7,7)),
+  data.graph(p->p[0], p->p[1]).mark(1,blue) .line(blue.dash(7,7)),
+  data.graph(p->p[0], p->p[2]).mark(2,green).line(green.dash(7,7)),
 )</example>
     <example name="Graph" desc="Funktionsplot"
              name-en="Graph" desc-en="Function plot">plot(
- function( x->sin(pi*x) )
+ graph( x->sin(pi*x) )
 )</example>
     <example name="Graph 2" desc="Funktionsplotter"
              name-en="Graph 2" desc-en="Function plot">plot(
- function( x->sin(x) ).line(black, "sin(x)"),
- function( x->cos(x) ).line(blue, "cos(x)"),
- function( x->tan(x) ).line(red, "tan(x)")
+ graph( x->sin(x) ).line(black, "sin(x)"),
+ graph( x->cos(x) ).line(blue, "cos(x)"),
+ graph( x->tan(x) ).line(red, "tan(x)")
 ).xBounds(0,2*pi)
  .yBounds(-2,2)</example>
     <example name="Ortskurve" desc="Darstellung der Ortskurve"
@@ -105,9 +105,9 @@ let k3 = pid(0.3,2,0.5);
 
 plot(
   yConst(1),
-  (k1*g).loop().simStep(10).points().line(blue). title("phasenanhebendes Korrekturglied"),
-  (k2*g).loop().simStep(10).points().line(black).title("PI"),
-  (k3*g).loop().simStep(10).points().line(green).title("PID")
+  (k1*g).loop().simStep(10).graph().line(blue). title("phasenanhebendes Korrekturglied"),
+  (k2*g).loop().simStep(10).graph().line(black).title("PI"),
+  (k3*g).loop().simStep(10).graph().line(green).title("PID")
 ).labels("t [s]","h(t)").legendPos(5,0.87)</example>
 
 <example name="Simulation nicht linear" desc="Simulation eines nicht linearen Systems"
@@ -136,9 +136,9 @@ let simNormal  = (K*G).loop().simStep(6);
 
 plot(
   yConst(1),
-  simNormal.points().      line(green).title("y (u unlimited)"),
-  simLimited.uLim.points().line(blue). title("u limited"),
-  simLimited.y.points().   line(black).title("y (u limited)")
+  simNormal.graph().      line(green).title("y (u unlimited)"),
+  simLimited.uLim.graph().line(blue). title("u limited"),
+  simLimited.y.graph().   line(black).title("y (u limited)")
 ).legendPos(2,0.7)
  .labels("t [s]", "h(t)")
  .title("Effect of a Limiter")</example>

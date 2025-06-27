@@ -479,7 +479,7 @@ func (p StyleValue) GetType() value.Type {
 
 func listMethods() value.MethodMap {
 	return value.MethodMap{
-		"points": value.MethodAtType(2, func(list *value.List, st funcGen.Stack[value.Value]) (value.Value, error) {
+		"graph": value.MethodAtType(2, func(list *value.List, st funcGen.Stack[value.Value]) (value.Value, error) {
 			switch st.Size() {
 			case 1:
 				s := graph.Scatter{Points: listToPoints(list)}
@@ -499,6 +499,38 @@ func listMethods() value.MethodMap {
 	}
 }
 
+func closureMethods() value.MethodMap {
+	return value.MethodMap{
+		"graph": value.MethodAtType(1, func(cl value.Closure, st funcGen.Stack[value.Value]) (value.Value, error) {
+			steps := 0
+			if s, ok := st.GetOptional(1, value.Int(0)).ToFloat(); ok {
+				steps = int(s)
+			} else {
+				return nil, fmt.Errorf("function requires a number as fourth argument")
+			}
+
+			var f func(x float64) (float64, error)
+			if cl.Args != 1 {
+				return nil, fmt.Errorf("function requires a function with one argument")
+			}
+			stack := funcGen.NewEmptyStack[value.Value]()
+			f = func(x float64) (float64, error) {
+				stack.Push(value.Float(x))
+				y, err := cl.Func(stack.CreateFrame(1), nil)
+				if err != nil {
+					return 0, err
+				}
+				if fl, ok := y.ToFloat(); ok {
+					return fl, nil
+				}
+				return 0, fmt.Errorf("function must return a float")
+			}
+			gf := graph.Function{Function: f, Steps: steps}
+			return PlotContentValue{Holder[graph.PlotContent]{gf}}, nil
+		}).SetMethodDescription("steps", "Creates a graph of the function to be used in the plot command.").VarArgsMethod(0, 1),
+	}
+}
+
 const defSize = 4
 
 func Setup(fg *value.FunctionGenerator) {
@@ -512,6 +544,7 @@ func Setup(fg *value.FunctionGenerator) {
 	fg.RegisterMethods(StyleType, createStyleMethods())
 	fg.RegisterMethods(ImageType, createImageMethods())
 	fg.RegisterMethods(value.ListTypeId, listMethods())
+	fg.RegisterMethods(value.ClosureTypeId, closureMethods())
 	export.AddZipHelpers(fg)
 	export.AddHTMLStylingHelpers(fg)
 	fg.AddConstant("black", StyleValue{Holder[*graph.Style]{graph.Black}})
@@ -547,7 +580,7 @@ func Setup(fg *value.FunctionGenerator) {
 		Args:   -1,
 		IsPure: true,
 	}.SetDescription("content...", "Creates a new plot."))
-	fg.AddStaticFunction("function", funcGen.Function[value.Value]{
+	fg.AddStaticFunction("graph", funcGen.Function[value.Value]{
 		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
 			steps := 0
 			if s, ok := st.GetOptional(1, value.Int(0)).ToFloat(); ok {
@@ -578,7 +611,7 @@ func Setup(fg *value.FunctionGenerator) {
 		},
 		Args:   -1,
 		IsPure: true,
-	}.SetDescription("func(float) float", "steps", "Creates a new function as plot content.").VarArgs(1, 2))
+	}.SetDescription("func(float) float", "steps", "Creates a graph of the function to be used in the plot command.").VarArgs(1, 2))
 	fg.AddStaticFunction("yConst", funcGen.Function[value.Value]{
 		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
 			if y, ok := st.Get(0).ToFloat(); ok {
