@@ -151,7 +151,7 @@ func (p *Plot) DrawTo(canvas Canvas) error {
 	}
 
 	yExp := 0.02
-	xTrans, xTicks, xBounds := xAxis(innerRect.Min.X, innerRect.Max.X, xBounds,
+	xTrans, xTicks, xBounds, xUnit := xAxis(innerRect.Min.X, innerRect.Max.X, xBounds,
 		func(width float64, digits int) bool {
 			return width > textSize*(float64(digits+1))*0.5
 		}, yExp)
@@ -160,7 +160,7 @@ func (p *Plot) DrawTo(canvas Canvas) error {
 		yExp = 1.8 * textSize / innerRect.Height()
 	}
 
-	yTrans, yTicks, yBounds := yAxis(innerRect.Min.Y, innerRect.Max.Y, yBounds,
+	yTrans, yTicks, yBounds, yUnit := yAxis(innerRect.Min.Y, innerRect.Max.Y, yBounds,
 		func(width float64, _ int) bool {
 			return width > textSize*2
 		}, yExp)
@@ -229,8 +229,12 @@ func (p *Plot) DrawTo(canvas Canvas) error {
 		}
 	}
 
-	canvas.DrawText(Point{innerRect.Max.X - small, innerRect.Min.Y + small}, p.XLabel, Bottom|Right, textStyle, textSize)
-	canvas.DrawText(Point{innerRect.Min.X + small, innerRect.Max.Y - small}, p.YLabel, Top|Left, textStyle, textSize)
+	if p.XLabel != "" || xUnit != "" {
+		canvas.DrawText(Point{innerRect.Max.X - small, innerRect.Min.Y + small}, p.XLabel+" "+xUnit, Bottom|Right, textStyle, textSize)
+	}
+	if p.YLabel != "" || yUnit != "" {
+		canvas.DrawText(Point{innerRect.Min.X + small, innerRect.Max.Y - small}, p.YLabel+" "+yUnit, Top|Left, textStyle, textSize)
+	}
 	if p.Title != "" {
 		canvas.DrawText(Point{innerRect.Max.X - small, innerRect.Max.Y - small}, p.Title, Top|Right, textStyle, textSize)
 	}
