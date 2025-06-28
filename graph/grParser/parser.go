@@ -111,6 +111,14 @@ type PlotValue struct {
 	context graph.Context
 }
 
+func (p PlotValue) Copy() PlotValue {
+	newPlot := *p.Value
+	return PlotValue{
+		Holder:  Holder[*graph.Plot]{&newPlot},
+		context: p.context,
+	}
+}
+
 func (p PlotValue) ToImage() graph.Image {
 	return p.Value
 }
@@ -196,6 +204,7 @@ func createPlotMethods() value.MethodMap {
 	return value.MethodMap{
 		"add": value.MethodAtType(1, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if pc, ok := stack.Get(1).(PlotContentValue); ok {
+				plot = plot.Copy()
 				plot.Value.AddContent(pc.Value)
 			} else {
 				return nil, fmt.Errorf("add requires a plot content")
@@ -204,6 +213,7 @@ func createPlotMethods() value.MethodMap {
 		}).SetMethodDescription("plotContent", "Adds a plot content to the plot."),
 		"title": value.MethodAtType(1, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if str, ok := stack.Get(1).(value.String); ok {
+				plot = plot.Copy()
 				plot.Value.Title = string(str)
 			} else {
 				return nil, fmt.Errorf("title requires a string")
@@ -213,6 +223,7 @@ func createPlotMethods() value.MethodMap {
 		"labels": value.MethodAtType(2, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if xStr, ok := stack.Get(1).(value.String); ok {
 				if yStr, ok := stack.Get(2).(value.String); ok {
+					plot = plot.Copy()
 					plot.Value.XLabel = string(xStr)
 					plot.Value.YLabel = string(yStr)
 					return plot, nil
@@ -222,6 +233,7 @@ func createPlotMethods() value.MethodMap {
 		}).SetMethodDescription("xLabel", "yLabel", "Sets the axis labels."),
 		"xLabel": value.MethodAtType(1, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if str, ok := stack.Get(1).(value.String); ok {
+				plot = plot.Copy()
 				plot.Value.XLabel = string(str)
 			} else {
 				return nil, fmt.Errorf("xLabel requires a string")
@@ -230,6 +242,7 @@ func createPlotMethods() value.MethodMap {
 		}).SetMethodDescription("label", "Sets the x-label."),
 		"yLabel": value.MethodAtType(1, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if str, ok := stack.Get(1).(value.String); ok {
+				plot = plot.Copy()
 				plot.Value.YLabel = string(str)
 			} else {
 				return nil, fmt.Errorf("yLabel requires a string")
@@ -237,6 +250,7 @@ func createPlotMethods() value.MethodMap {
 			return plot, nil
 		}).SetMethodDescription("label", "Sets the y-label."),
 		"protectLabels": value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			plot = plot.Copy()
 			plot.Value.YLabelExtend = true
 			return plot, nil
 		}).SetMethodDescription("Autoscaling protects the labels."),
@@ -245,11 +259,13 @@ func createPlotMethods() value.MethodMap {
 			if err != nil {
 				return nil, fmt.Errorf("grid: %w", err)
 			}
+			plot = plot.Copy()
 			plot.Value.Grid = styleVal.Value
 			return plot, nil
 		}).SetMethodDescription("color", "Adds a grid.").VarArgsMethod(0, 1),
 		"frame": value.MethodAtType(1, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if styleVal, ok := stack.Get(1).(StyleValue); ok {
+				plot = plot.Copy()
 				plot.Value.Frame = styleVal.Value
 				return plot, nil
 			} else {
@@ -264,40 +280,49 @@ func createPlotMethods() value.MethodMap {
 			}
 		}).SetMethodDescription("name", "Enables a file download."),
 		"xLog": value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			plot = plot.Copy()
 			plot.Value.XAxis = graph.LogAxis
 			return plot, nil
 		}).SetMethodDescription("Enables log scaling of x-Axis."),
 		"yLog": value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			plot = plot.Copy()
 			plot.Value.YAxis = graph.LogAxis
 			return plot, nil
 		}).SetMethodDescription("Enables log scaling of y-Axis."),
 		"xdB": value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			plot = plot.Copy()
 			plot.Value.XAxis = graph.DBAxis
 			return plot, nil
 		}).SetMethodDescription("Enables dB scaling of x-Axis."),
 		"ydB": value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			plot = plot.Copy()
 			plot.Value.YAxis = graph.DBAxis
 			return plot, nil
 		}).SetMethodDescription("Enables dB scaling of y-Axis."),
 		"xLin": value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			plot = plot.Copy()
 			plot.Value.XAxis = graph.LinearAxis
 			return plot, nil
 		}).SetMethodDescription("Enables linear scaling of x-Axis."),
 		"yLin": value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			plot = plot.Copy()
 			plot.Value.YAxis = graph.LinearAxis
 			return plot, nil
 		}).SetMethodDescription("Enables linear scaling of y-Axis."),
 		"xDate": value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			plot = plot.Copy()
 			plot.Value.XAxis = graph.CreateDateAxis("02.01.06", "02.01.06 15:04")
 			return plot, nil
 		}).SetMethodDescription("Enables date scaling of x-Axis."),
 		"yDate": value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			plot = plot.Copy()
 			plot.Value.YAxis = graph.CreateDateAxis("02.01.06", "02.01.06 15:04")
 			return plot, nil
 		}).SetMethodDescription("Enables date scaling of y-Axis."),
 		"borders": value.MethodAtType(2, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if l, ok := stack.Get(1).ToFloat(); ok {
 				if r, ok := stack.Get(2).ToFloat(); ok {
+					plot = plot.Copy()
 					plot.Value.LeftBorder = l
 					plot.Value.RightBorder = r
 					return plot, nil
@@ -308,6 +333,7 @@ func createPlotMethods() value.MethodMap {
 		"xBounds": value.MethodAtType(2, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if vmin, ok := stack.Get(1).ToFloat(); ok {
 				if vmax, ok := stack.Get(2).ToFloat(); ok {
+					plot = plot.Copy()
 					plot.Value.XBounds = graph.NewBounds(vmin, vmax)
 					return plot, nil
 				}
@@ -317,6 +343,7 @@ func createPlotMethods() value.MethodMap {
 		"yBounds": value.MethodAtType(2, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if vmin, ok := stack.Get(1).ToFloat(); ok {
 				if vmax, ok := stack.Get(2).ToFloat(); ok {
+					plot = plot.Copy()
 					plot.Value.YBounds = graph.NewBounds(vmin, vmax)
 					return plot, nil
 				}
@@ -326,6 +353,7 @@ func createPlotMethods() value.MethodMap {
 		"legendPos": value.MethodAtType(2, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if x, ok := stack.Get(1).ToFloat(); ok {
 				if y, ok := stack.Get(2).ToFloat(); ok {
+					plot = plot.Copy()
 					plot.Value.SetLegendPosition(graph.Point{x, y})
 					return plot, nil
 				}
@@ -334,6 +362,7 @@ func createPlotMethods() value.MethodMap {
 		}).SetMethodDescription("x", "y", "Sets the position of the legend."),
 		"textSize": value.MethodAtType(1, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if si, ok := stack.Get(1).ToFloat(); ok {
+				plot = plot.Copy()
 				plot.context.TextSize = si
 				return plot, nil
 			}
@@ -342,6 +371,7 @@ func createPlotMethods() value.MethodMap {
 		"outputSize": value.MethodAtType(2, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if width, ok := stack.Get(1).ToFloat(); ok {
 				if height, ok := stack.Get(2).ToFloat(); ok {
+					plot = plot.Copy()
 					plot.context.Width = width
 					plot.context.Height = height
 					return plot, nil
@@ -356,6 +386,7 @@ func createPlotMethods() value.MethodMap {
 						if f <= 0 {
 							return nil, fmt.Errorf("factor needs to be greater than 0")
 						}
+						plot = plot.Copy()
 						plot.Value.BoundsModifier = graph.Zoom(graph.Point{x, y}, f)
 						return plot, nil
 					}
@@ -388,14 +419,13 @@ func createPlotContentMethods() value.MethodMap {
 		"title": value.MethodAtType(1, func(plot PlotContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if leg, ok := stack.Get(1).(value.String); ok {
 				if sc, ok := plot.Value.(graph.HasTitle); ok {
-					plot.Value = sc.SetTitle(string(leg))
+					return PlotContentValue{Holder[graph.PlotContent]{sc.SetTitle(string(leg))}}, nil
 				} else {
 					return nil, fmt.Errorf("title can only be set for plots using a title")
 				}
 			} else {
 				return nil, fmt.Errorf("title requires a string")
 			}
-			return plot, nil
 		}).Pure(false).SetMethodDescription("str", "Sets a string to show as title in the legend."),
 		"mark": value.MethodAtType(3, func(plot PlotContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			style, err := GetStyle(stack, 2, graph.Black)
@@ -427,32 +457,32 @@ func createPlotContentMethods() value.MethodMap {
 			}
 
 			if sc, ok := plot.Value.(graph.HasShape); ok {
-				plot.Value = sc.SetShape(marker, style.Value)
+				return PlotContentValue{Holder[graph.PlotContent]{sc.SetShape(marker, style.Value)}}, nil
 			} else {
 				return nil, fmt.Errorf("marker can only be set for plots using a marker")
 			}
-			return plot, nil
 		}).Pure(false).SetMethodDescription("type", "color", "size", "Sets the marker type.").VarArgsMethod(1, 3),
 		"line": value.MethodAtType(2, func(plot PlotContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if style, ok := stack.Get(1).(StyleValue); ok {
-				if sc, ok := plot.Value.(graph.HasLine); ok {
-					plot.Value = sc.SetLine(style.Value)
+				pc := plot.Value
+				if sc, ok := pc.(graph.HasLine); ok {
+					pc = sc.SetLine(style.Value)
 				} else {
 					return nil, fmt.Errorf("line can only be set for plots using a line")
 				}
 				if title, ok := stack.GetOptional(2, value.String("")).(value.String); ok {
 					if title != "" {
-						if sc, ok := plot.Value.(graph.HasTitle); ok {
-							plot.Value = sc.SetTitle(string(title))
+						if sc, ok := pc.(graph.HasTitle); ok {
+							pc = sc.SetTitle(string(title))
 						} else {
 							return nil, fmt.Errorf("a title can only be set for plots using a title")
 						}
 					}
 				}
+				return PlotContentValue{Holder[graph.PlotContent]{pc}}, nil
 			} else {
 				return nil, fmt.Errorf("line requires a style")
 			}
-			return plot, nil
 		}).Pure(false).SetMethodDescription("color", "title", "Sets the line style and title.").VarArgsMethod(1, 2),
 	}
 }
@@ -605,6 +635,8 @@ func Setup(fg *value.FunctionGenerator) {
 					}
 					return 0, fmt.Errorf("function must return a float")
 				}
+			} else {
+				return nil, fmt.Errorf("function requires a closure as first argument")
 			}
 			gf := graph.Function{Function: f, Steps: steps}
 			return PlotContentValue{Holder[graph.PlotContent]{gf}}, nil

@@ -845,11 +845,11 @@ func (bpc BodePlotContent) String() string {
 type BodePlot struct {
 	amplitude *graph.Plot
 	phase     *graph.Plot
-	bode      graph.SplitHorizontal
 }
 
 func (b *BodePlot) DrawTo(canvas graph.Canvas) error {
-	return b.bode.DrawTo(canvas)
+	bode := graph.SplitHorizontal{Top: b.amplitude, Bottom: b.phase}
+	return bode.DrawTo(canvas)
 }
 
 func (b *BodePlot) SetFrequencyBounds(min, max float64) {
@@ -896,7 +896,7 @@ func NewBode(wMin, wMax float64) *BodePlot {
 	b := BodePlot{
 		amplitude: amplitude,
 		phase:     phase,
-		bode:      graph.SplitHorizontal{Top: amplitude, Bottom: phase}}
+	}
 	return &b
 }
 

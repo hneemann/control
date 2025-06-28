@@ -473,7 +473,7 @@ type BodePlotValue struct {
 }
 
 func (b BodePlotValue) ToImage() graph.Image {
-	return b.Value.bode
+	return graph.SplitHorizontal{Top: b.Value.amplitude, Bottom: b.Value.phase}
 }
 
 var (
@@ -556,8 +556,8 @@ func bodeMethods() value.MethodMap {
 		}).SetMethodDescription("color", "Adds a grid.").VarArgsMethod(0, 1),
 		"frame": value.MethodAtType(1, func(plot BodePlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if styleVal, ok := stack.Get(1).(grParser.StyleValue); ok {
-				plot.Value.amplitude.Grid = styleVal.Value
-				plot.Value.phase.Grid = styleVal.Value
+				plot.Value.amplitude.Frame = styleVal.Value
+				plot.Value.phase.Frame = styleVal.Value
 				return plot, nil
 			} else {
 				return nil, fmt.Errorf("frame requires a style")
@@ -570,8 +570,15 @@ func bodeMethods() value.MethodMap {
 					return nil, err
 				}
 				if aplot, ok := a.(grParser.PlotValue); ok {
-					bode.Value.amplitude = aplot.Value
-					return bode, nil
+					return BodePlotValue{
+						Holder: grParser.Holder[*BodePlot]{
+							Value: &BodePlot{
+								amplitude: aplot.Value,
+								phase:     bode.Value.phase,
+							},
+						},
+						context: bode.context,
+					}, nil
 				}
 			}
 			return nil, errors.New("ampModify requires a function that returns the modified plot")
@@ -583,8 +590,15 @@ func bodeMethods() value.MethodMap {
 					return nil, err
 				}
 				if aplot, ok := a.(grParser.PlotValue); ok {
-					bode.Value.phase = aplot.Value
-					return bode, nil
+					return BodePlotValue{
+						Holder: grParser.Holder[*BodePlot]{
+							Value: &BodePlot{
+								amplitude: bode.Value.amplitude,
+								phase:     aplot.Value,
+							},
+						},
+						context: bode.context,
+					}, nil
 				}
 			}
 			return nil, errors.New("phaseModify requires a function that returns the modified plot")
