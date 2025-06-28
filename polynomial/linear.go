@@ -1226,6 +1226,9 @@ func (l *Linear) GMargin() (float64, float64, error) {
 			w1 = 0.01
 		} else {
 			w1 = w0 * 1.1
+			if w1 > 1e8 {
+				return 0, 0, errors.New("no gain crossover frequency found")
+			}
 		}
 		g1 := l.EvalCplx(complex(0, w1))
 

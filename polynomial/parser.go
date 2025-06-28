@@ -333,16 +333,16 @@ func linMethods() value.MethodMap {
 	return value.MethodMap{
 		"loop": value.MethodAtType(0, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
 			return lin.Loop()
-		}).SetMethodDescription("Closes the loop."),
+		}).SetMethodDescription("Closes the loop. Calculates the closed loop transfer function G/(G+1)."),
 		"derivative": value.MethodAtType(0, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
 			return lin.Derivative(), nil
-		}).SetMethodDescription("Calculates the derivative."),
+		}).SetMethodDescription("Calculates the derivative of the transfer function."),
 		"numerator": value.MethodAtType(0, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
 			return lin.Numerator, nil
-		}).SetMethodDescription("Returns the numerator."),
+		}).SetMethodDescription("Returns the numerator of the transfer function."),
 		"denominator": value.MethodAtType(0, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
 			return lin.Denominator, nil
-		}).SetMethodDescription("Returns the denominator."),
+		}).SetMethodDescription("Returns the denominator of the transfer function."),
 		"reduce": value.MethodAtType(0, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
 			return lin.Reduce()
 		}).SetMethodDescription("Reduces the linear system."),
@@ -382,7 +382,8 @@ func linMethods() value.MethodMap {
 			return value.NewListConvert(func(i graph.PlotContent) value.Value {
 				return grParser.NewPlotContentValue(i)
 			}, contentList), nil
-		}).SetMethodDescription("also negative", "wMax", "Creates a nyquist plot.").VarArgsMethod(0, 2),
+		}).SetMethodDescription("neg", "wMax", "Creates a nyquist plot content. If neg is true also the range -∞<ω<0 is included. "+
+			"The value wMax gives the maximum value for ω. It defaults to 1000rad/s").VarArgsMethod(0, 2),
 		"nyquistPos": value.MethodAtType(1, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
 			sMax, ok := st.GetOptional(1, value.Float(1000)).ToFloat()
 			if !ok {
@@ -391,7 +392,8 @@ func linMethods() value.MethodMap {
 			plotContent := lin.NyquistPos(sMax)
 			contentValue := grParser.NewPlotContentValue(plotContent)
 			return contentValue, nil
-		}).SetMethodDescription("wMax", "Creates a nyquist plot content with positive ω.").VarArgsMethod(0, 1),
+		}).SetMethodDescription("wMax", "Creates a nyquist plot content with positive ω. "+
+			"The value wMax gives the maximum value for ω. It defaults to 1000rad/s").VarArgsMethod(0, 1),
 		"nyquistNeg": value.MethodAtType(1, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
 			sMax, ok := st.GetOptional(1, value.Float(1000)).ToFloat()
 			if !ok {
@@ -400,21 +402,22 @@ func linMethods() value.MethodMap {
 			plotContent := lin.NyquistNeg(sMax)
 			contentValue := grParser.NewPlotContentValue(plotContent)
 			return contentValue, nil
-		}).SetMethodDescription("wMax", "Creates a nyquist plot content with negative ω.").VarArgsMethod(0, 1),
+		}).SetMethodDescription("wMax", "Creates a nyquist plot content with negative ω. "+
+			"The value wMax gives the maximum value for ω. It defaults to 1000rad/s").VarArgsMethod(0, 1),
 		"pMargin": value.MethodAtType(0, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
 			w0, margin, err := lin.PMargin()
 			return value.NewMap(value.RealMap{
 				"w0":      value.Float(w0),
 				"pMargin": value.Float(margin),
 			}), err
-		}).SetMethodDescription("Returns the crossover frequency and the phase margin."),
+		}).SetMethodDescription("Returns the crossover frequency (ω₀ with |G(jω₀)|=1) and the phase margin."),
 		"gMargin": value.MethodAtType(0, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
 			w180, margin, err := lin.GMargin()
 			return value.NewMap(value.RealMap{
 				"w180":    value.Float(w180),
 				"gMargin": value.Float(margin),
 			}), err
-		}).SetMethodDescription("Returns the stability frequency and the gain margin."),
+		}).SetMethodDescription("Returns the stability frequency (ωₛ with G(jωₛ)=j0-1) and the gain margin given in dB."),
 		"simStep": value.MethodAtType(1, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
 			if tMax, ok := st.Get(1).ToFloat(); ok {
 				return lin.Simulate(tMax, func(t float64) (float64, error) {
@@ -425,7 +428,9 @@ func linMethods() value.MethodMap {
 				})
 			}
 			return nil, fmt.Errorf("sim requires a float")
-		}).SetMethodDescription("tMax", "Simulates the transfer function with the step function as input signal."),
+		}).SetMethodDescription("tMax", "Simulates the transfer function with the step function as input signal. "+
+			"It does not close the loop! If the closed control loop is to be simulated, the instruction is G.loop().simStep(10). "+
+			"The value tMax gives the maximum time for the simulation."),
 		"sim": value.MethodAtType(2, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
 			if cl, ok := st.Get(1).ToClosure(); ok {
 				stack := funcGen.NewEmptyStack[value.Value]()
@@ -445,7 +450,9 @@ func linMethods() value.MethodMap {
 				}
 			}
 			return nil, fmt.Errorf("sim requires a function and a float")
-		}).SetMethodDescription("u(t)", "tMax", "Simulates the transfer function."),
+		}).SetMethodDescription("u(t)", "tMax", "Simulates the transfer function with the input signal u(t) as input signal. "+
+			"It does not close the loop! If the closed control loop is to be simulated, the instruction is G.loop().sim(t->sin(t), 10). "+
+			"The value tMax gives the maximum time for the simulation."),
 	}
 }
 
