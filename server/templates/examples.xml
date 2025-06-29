@@ -54,7 +54,7 @@ plot(
   g.nyquist(),
   [0.1, 0.25, 0.5, 1, 2, 5].map( w->h(w) )
 )</example>
-    <example name="Nyquist" desc="Anwendung des Nyquistkriteriums"
+    <example name="Nyquist-Kriterium" desc="Anwendung des Nyquist-Kriteriums"
              name-en="Nyquist stability criterion">let g = 6*(s+1)/((s-1)*(s-3));
 
 plot(
