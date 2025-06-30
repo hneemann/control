@@ -525,7 +525,9 @@ func listMethods() value.MethodMap {
 				return nil, fmt.Errorf("points requires either none or two arguments")
 			}
 			return nil, fmt.Errorf("points requires a function as first and second argument")
-		}).SetMethodDescription("func(item) x", "func(item) y", "Creates a scatter plot content.").VarArgsMethod(0, 2),
+		}).SetMethodDescription("func(item) x", "func(item) y", "Creates a scatter plot content. "+
+			"The two functions are called with the list elements and must return the x respectively y values. "+
+			"If the functions are omitted, the list elements themselves must be lists of the form [x,y].").VarArgsMethod(0, 2),
 	}
 }
 
