@@ -888,33 +888,30 @@ func listFuncToPoints(list *value.List, xc funcGen.Function[value.Value], yc fun
 	return func(yield func(graph.Point, error) bool) {
 		st := funcGen.NewEmptyStack[value.Value]()
 		err := list.Iterate(st, func(v value.Value) error {
-			if vec, ok := v.ToList(); ok {
+			var x float64
+			xv, err := xc.Eval(st, v)
+			if err != nil {
+				return err
+			}
+			if xf, ok := xv.ToFloat(); ok {
+				x = xf
+			} else {
+				return fmt.Errorf("x-function needs to return a float")
+			}
 
-				var x float64
-				xv, err := xc.Eval(st, vec)
-				if err != nil {
-					return err
-				}
-				if xf, ok := xv.ToFloat(); ok {
-					x = xf
-				} else {
-					return fmt.Errorf("x-function needs to return a float")
-				}
+			var y float64
+			yv, err := yc.Eval(st, v)
+			if err != nil {
+				return err
+			}
+			if yf, ok := yv.ToFloat(); ok {
+				y = yf
+			} else {
+				return fmt.Errorf("y-function needs to return a float")
+			}
 
-				var y float64
-				yv, err := yc.Eval(st, vec)
-				if err != nil {
-					return err
-				}
-				if yf, ok := yv.ToFloat(); ok {
-					y = yf
-				} else {
-					return fmt.Errorf("y-function needs to return a float")
-				}
-
-				if !yield(graph.Point{x, y}, nil) {
-					return iterator.SBC
-				}
+			if !yield(graph.Point{x, y}, nil) {
+				return iterator.SBC
 			}
 			return nil
 		})

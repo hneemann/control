@@ -14,17 +14,17 @@ plot(
 )</example>
     <example name="Daten-Plot 2"
              name-en="Data-Plot 2" >let data = [
-  [0, 0, 4],
-  [1, 1, 5],
-  [2, 4, 6],
-  [3, 9, 7],
-  [4,16, 8],
+  {x:0, a: 0, b:4 },
+  {x:1, a: 1, b:5 },
+  {x:2, a: 4, b:6 },
+  {x:3, a: 9, b:7 },
+  {x:4, a:16, b:8 },
 ];
 
 plot(
-  data.graph(p->p[0], p->p[1]).mark(1,blue) .line(blue.dash(7,7)),
-  data.graph(p->p[0], p->p[2]).mark(2,green).line(green.dash(7,7)),
-)</example>
+  data.graph(p->p.x, p->p.a).mark(1,blue) .line(blue.dash(7,7),"a"),
+  data.graph(p->p.x, p->p.b).mark(2,green).line(green.dash(7,7),"b"),
+).legendPos(0.2,15)</example>
     <example name="Graph" desc="Funktionsplot"
              name-en="Graph" desc-en="Function plot">plot(
  graph( x->sin(pi*x) )
