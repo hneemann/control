@@ -875,6 +875,8 @@ func listToPoints(list *value.List) graph.Points {
 				} else {
 					return fmt.Errorf("list elements needs to contain two floats")
 				}
+			} else {
+				return fmt.Errorf("list elements must themselves be lists containing two floats such as [x,y]")
 			}
 			return nil
 		})
