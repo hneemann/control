@@ -536,12 +536,12 @@ func closureMethods() value.MethodMap {
 			if s, ok := st.GetOptional(1, value.Int(0)).ToFloat(); ok {
 				steps = int(s)
 			} else {
-				return nil, fmt.Errorf("function requires a number as fourth argument")
+				return nil, fmt.Errorf("graph requires a number as argument")
 			}
 
 			var f func(x float64) (float64, error)
 			if cl.Args != 1 {
-				return nil, fmt.Errorf("function requires a function with one argument")
+				return nil, fmt.Errorf("graph requires the function to have one argument")
 			}
 			stack := funcGen.NewEmptyStack[value.Value]()
 			f = func(x float64) (float64, error) {
@@ -553,7 +553,7 @@ func closureMethods() value.MethodMap {
 				if fl, ok := y.ToFloat(); ok {
 					return fl, nil
 				}
-				return 0, fmt.Errorf("function must return a float")
+				return 0, fmt.Errorf("the function given to graph must return a float")
 			}
 			gf := graph.Function{Function: f, Steps: steps}
 			return PlotContentValue{Holder[graph.PlotContent]{gf}}, nil
@@ -629,13 +629,13 @@ func Setup(fg *value.FunctionGenerator) {
 			if s, ok := st.GetOptional(1, value.Int(0)).ToFloat(); ok {
 				steps = int(s)
 			} else {
-				return nil, fmt.Errorf("function requires a number as fourth argument")
+				return nil, fmt.Errorf("graph requires a number as second argument")
 			}
 
 			var f func(x float64) (float64, error)
 			if cl, ok := st.Get(0).ToClosure(); ok {
 				if cl.Args != 1 {
-					return nil, fmt.Errorf("function requires a function with one argument")
+					return nil, fmt.Errorf("graph requires a function with one argument")
 				}
 				stack := funcGen.NewEmptyStack[value.Value]()
 				f = func(x float64) (float64, error) {
@@ -646,10 +646,10 @@ func Setup(fg *value.FunctionGenerator) {
 					if fl, ok := y.ToFloat(); ok {
 						return fl, nil
 					}
-					return 0, fmt.Errorf("function must return a float")
+					return 0, fmt.Errorf("the function given to graph must return a float")
 				}
 			} else {
-				return nil, fmt.Errorf("function requires a closure as first argument")
+				return nil, fmt.Errorf("graph requires a closure as first argument")
 			}
 			gf := graph.Function{Function: f, Steps: steps}
 			return PlotContentValue{Holder[graph.PlotContent]{gf}}, nil
