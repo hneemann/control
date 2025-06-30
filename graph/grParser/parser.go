@@ -586,16 +586,29 @@ func Setup(fg *value.FunctionGenerator) {
 	fg.AddConstant("cyan", StyleValue{Holder[*graph.Style]{graph.Cyan}})
 	fg.AddConstant("magenta", StyleValue{Holder[*graph.Style]{graph.Magenta}})
 	fg.AddConstant("yellow", StyleValue{Holder[*graph.Style]{graph.Yellow}})
-	fg.AddStaticFunction("dColor", funcGen.Function[value.Value]{
+	fg.AddStaticFunction("color", funcGen.Function[value.Value]{
 		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
-			if i, ok := st.Get(0).ToInt(); ok {
-				return StyleValue{Holder[*graph.Style]{graph.GetColor(i)}}, nil
+			if st.Size() == 1 {
+				if i, ok := st.Get(0).ToInt(); ok {
+					return StyleValue{Holder[*graph.Style]{graph.GetColor(i)}}, nil
+				}
+				return nil, fmt.Errorf("color requires an int")
+			} else if st.Size() == 3 {
+				if r, ok := st.Get(0).ToInt(); ok {
+					if g, ok := st.Get(1).ToInt(); ok {
+						if b, ok := st.Get(2).ToInt(); ok {
+							return StyleValue{Holder[*graph.Style]{graph.NewStyle(uint8(r), uint8(g), uint8(b))}}, nil
+						}
+					}
+				}
+				return nil, fmt.Errorf("color requires three ints")
+			} else {
+				return nil, fmt.Errorf("color requires either one or three arguments")
 			}
-			return nil, fmt.Errorf("color requires an int")
 		},
-		Args:   1,
+		Args:   -1,
 		IsPure: true,
-	}.SetDescription("int", "Gets the color with number int."))
+	}.SetDescription("r or n", "g", "b", "Returns the color with the number n or, if three arguments are specified, the given rgb color.").VarArgs(1, 3))
 	fg.AddStaticFunction("plot", funcGen.Function[value.Value]{
 		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
 			p := NewPlotValue(&graph.Plot{})
