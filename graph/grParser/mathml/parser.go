@@ -406,7 +406,13 @@ func (p *parser) ParseFunc(isEnd func(token Token) bool) (Ast, Token) {
 		case Number:
 			list = append(list, &SimpleItem{tok: tok})
 		case Identifier:
-			list = append(list, &SimpleItem{tok: tok})
+			if _, ok := mathFunctions[tok.value]; ok || len(tok.value) == 1 {
+				list = append(list, &SimpleItem{tok: tok})
+			} else {
+				for _, r := range tok.value {
+					list = append(list, &SimpleItem{tok: Token{value: string(r), kind: Identifier}})
+				}
+			}
 		case Operator:
 			list = append(list, &SimpleItem{tok: tok})
 		case OpenParen:
