@@ -1,6 +1,7 @@
 package polynomial
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"github.com/hneemann/control/graph"
@@ -246,6 +247,11 @@ func polyMethods() value.MethodMap {
 			return value.NewList(val...), nil
 		}).SetMethodDescription("Returns the roots. If a pair of complex conjugates is found, only the complex number with positive imaginary part is returned."),
 		"bode": createBodeMethod(func(poly Polynomial) *Linear { return &Linear{Numerator: poly, Denominator: Polynomial{1}} }),
+		"toLaTeX": value.MethodAtType(0, func(pol Polynomial, st funcGen.Stack[value.Value]) (value.Value, error) {
+			var b bytes.Buffer
+			pol.ToLaTeX(&b)
+			return value.String(b.String()), nil
+		}).SetMethodDescription("Returns a LaTeX representation of the polynomial."),
 	}
 }
 
@@ -453,6 +459,11 @@ func linMethods() value.MethodMap {
 		}).SetMethodDescription("u(t)", "tMax", "Simulates the transfer function with the input signal u(t) as input signal. "+
 			"It does not close the loop! If the closed control loop is to be simulated, the instruction is G.loop().sim(t->sin(t), 10). "+
 			"The value tMax gives the maximum time for the simulation."),
+		"toLaTeX": value.MethodAtType(0, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
+			var b bytes.Buffer
+			lin.ToLaTeX(&b)
+			return value.String(b.String()), nil
+		}).SetMethodDescription("Returns a LaTeX representation of the linear system."),
 	}
 }
 

@@ -1,6 +1,7 @@
 package polynomial
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"github.com/hneemann/control/graph"
@@ -95,6 +96,14 @@ func (l *Linear) ToHtml(_ funcGen.Stack[value.Value], w *xmlWriter.XMLWriter) er
 	w.Close()
 	w.Close()
 	return nil
+}
+
+func (l *Linear) ToLaTeX(w *bytes.Buffer) {
+	w.WriteString("\\frac{")
+	l.Numerator.ToLaTeX(w)
+	w.WriteString("}{")
+	l.Denominator.ToLaTeX(w)
+	w.WriteString("}")
 }
 
 func (l *Linear) zerosCalculated() bool {

@@ -1,6 +1,7 @@
 package polynomial
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"github.com/hneemann/control/graph"
@@ -144,7 +145,20 @@ func (p Polynomial) ToMathML(w *xmlWriter.XMLWriter) {
 				}
 			}
 			if c != 1 || n == 0 {
-				w.Open("mn").Write(fmt.Sprintf("%.6g", c)).Close()
+				numStr := fmt.Sprintf("%g", c)
+				if pos := strings.IndexRune(numStr, 'e'); pos < 0 {
+					w.Open("mn").Write(numStr).Close()
+				} else {
+					fac := numStr[:pos]
+					if fac != "1" {
+						w.Open("mn").Write(fac).Close()
+						w.Open("mo").WriteHTML("&middot;").Close()
+					}
+					w.Open("msup")
+					w.Open("mn").Write("10").Close()
+					w.Open("mn").Write(numStr[pos+1:]).Close()
+					w.Close()
+				}
 			}
 			switch n {
 			case 0:
@@ -159,6 +173,49 @@ func (p Polynomial) ToMathML(w *xmlWriter.XMLWriter) {
 		}
 	}
 	w.Close()
+}
+
+func (p Polynomial) ToLaTeX(w *bytes.Buffer) {
+	for i := range p {
+		n := len(p) - i - 1
+		c := p[n]
+		if math.Abs(c) > eps {
+			neg := false
+			if c < 0 {
+				neg = true
+			}
+			c = math.Abs(c)
+			if neg || i > 0 {
+				if neg {
+					w.WriteRune('-')
+				} else {
+					w.WriteRune('+')
+				}
+			}
+			if c != 1 || n == 0 {
+				numStr := fmt.Sprintf("%g", c)
+				if pos := strings.IndexRune(numStr, 'e'); pos < 0 {
+					w.WriteString(numStr)
+				} else {
+					fac := numStr[:pos]
+					if fac != "1" {
+						w.WriteString(fac)
+						w.WriteString("\\cdot ")
+					}
+					w.WriteString("10^{")
+					w.WriteString(numStr[pos+1:])
+					w.WriteString("}")
+				}
+			}
+			switch n {
+			case 0:
+			case 1:
+				w.WriteRune('s')
+			default:
+				w.WriteString(fmt.Sprintf("s^{%d}", n))
+			}
+		}
+	}
 }
 
 func (p Polynomial) Derivative() Polynomial {

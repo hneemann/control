@@ -1,6 +1,7 @@
 package polynomial
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/hneemann/control/graph"
 	"github.com/hneemann/parser2/funcGen"
@@ -507,4 +508,30 @@ func Benchmark_DataSet(b *testing.B) {
 		ss += sum
 	}
 	fmt.Println(ss)
+}
+
+func TestLinear_ToLaTeX(t *testing.T) {
+	tests := []struct {
+		name string
+		lin  *Linear
+		want string
+	}{
+		{
+			name: "Simple",
+			lin:  &Linear{Numerator: Polynomial{1, 2}, Denominator: Polynomial{1, 2, 3}},
+			want: "\\frac{2s+1}{3s^{2}+2s+1}",
+		},
+		{
+			name: "Exp",
+			lin:  &Linear{Numerator: Polynomial{1e-5, 2}, Denominator: Polynomial{1, 2e-5, 3}},
+			want: "\\frac{2s+10^{-05}}{3s^{2}+2\\cdot 10^{-05}s+1}",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var b bytes.Buffer
+			tt.lin.ToLaTeX(&b)
+			assert.Equal(t, tt.want, b.String())
+		})
+	}
 }
