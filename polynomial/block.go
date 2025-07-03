@@ -243,15 +243,21 @@ func BlockLinear(lin *Linear) BlockFactory {
 			n := len(lin.Denominator) - 1
 			x := make(Vector, n)
 			xDot := make(Vector, n)
-			return func(_, dt float64) (float64, error) {
-				y := c.Mul(x) + d**in
+			if n > 0 {
+				return func(_, dt float64) (float64, error) {
+					y := c.Mul(x) + d**in
 
-				a.Mul(xDot, x)
-				xDot[n-1] += *in
-				x.Add(dt, xDot)
+					a.Mul(xDot, x)
+					xDot[n-1] += *in
+					x.Add(dt, xDot)
 
-				return y, nil
-			}, nil
+					return y, nil
+				}, nil
+			} else {
+				return func(_, dt float64) (float64, error) {
+					return d * *in, nil
+				}, nil
+			}
 		},
 		inputs: 1,
 		name:   fmt.Sprintf("Linear %v", lin),
