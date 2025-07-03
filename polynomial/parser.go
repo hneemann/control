@@ -324,14 +324,19 @@ func bodePlotContentMethods() value.MethodMap {
 			}
 			return plot, nil
 		}).Pure(false).SetMethodDescription("str", "Sets a string to show in the legend."),
-		"line": value.MethodAtType(1, func(plot BodePlotContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+		"line": value.MethodAtType(2, func(plot BodePlotContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if style, ok := stack.Get(1).(grParser.StyleValue); ok {
 				plot.Value.Style = style.Value
+				if title, ok := stack.GetOptional(2, value.String("")).(value.String); ok {
+					if title != "" {
+						plot.Value.Title = string(title)
+					}
+				}
+				return plot, nil
 			} else {
 				return nil, fmt.Errorf("line requires a style")
 			}
-			return plot, nil
-		}).Pure(false).SetMethodDescription("color", "Sets the line style."),
+		}).Pure(false).SetMethodDescription("color", "title", "Sets the line style and title.").VarArgsMethod(1, 2),
 	}
 }
 
