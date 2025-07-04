@@ -977,7 +977,9 @@ func (b bodePhase) PreferredBounds(xGiven, _ graph.Bounds) (x, y graph.Bounds, e
 
 func (b bodePhase) DrawTo(plot *graph.Plot, canvas graph.Canvas) error {
 	b.bodeContent.generate(plot.XBounds.Min, plot.XBounds.Max)
-	canvas.DrawPath(graph.NewPointsPath(false, b.bodeContent.phase...), b.bodeContent.Style)
+	r := canvas.Rect()
+	path := graph.NewPointsPath(false, b.bodeContent.phase...)
+	canvas.DrawPath(r.IntersectPath(path), b.bodeContent.Style)
 	return nil
 }
 
@@ -1000,7 +1002,9 @@ func (b bodeAmplitude) PreferredBounds(xGiven, _ graph.Bounds) (x, y graph.Bound
 
 func (b bodeAmplitude) DrawTo(plot *graph.Plot, canvas graph.Canvas) error {
 	b.bodeContent.generate(plot.XBounds.Min, plot.XBounds.Max)
-	canvas.DrawPath(graph.NewPointsPath(false, b.bodeContent.amplitude...), b.bodeContent.Style)
+	r := canvas.Rect()
+	path := graph.NewPointsPath(false, b.bodeContent.amplitude...)
+	canvas.DrawPath(r.IntersectPath(path), b.bodeContent.Style)
 	return nil
 }
 
