@@ -166,7 +166,19 @@ func (s *SVG) DrawText(a Point, text string, orientation Orientation, style *Sty
 	}
 }
 
+// parseSupSub parses subscript and superscript in the text.
+// It recognizes the following patterns:
+// - G_{0} -> G<tspan style="font-size:70%;baseline-shift:sub">0</tspan>
+// - G^{0} -> G<tspan style="font-size:70%;baseline-shift:super">0</tspan>
+// If the text contains LaTeX math mode (indicated by '$'), it will not parse
+// the text and write it as is.
 func parseSupSub(w *xmlWriter.XMLWriter, text string) {
+	if strings.IndexRune(text, '$') >= 0 {
+		// LaTeX math mode, do not parse
+		w.Write(text)
+		return
+	}
+
 	const (
 		normal = iota
 		superscriptFirst
