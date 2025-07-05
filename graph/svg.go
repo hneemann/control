@@ -161,8 +161,59 @@ func (s *SVG) DrawText(a Point, text string, orientation Orientation, style *Sty
 			Attr("x", fmt.Sprintf("%0.2f", a.X)).
 			Attr("y", fmt.Sprintf("%0.2f", s.rect.Max.Y-a.Y)).
 			Attr("style", styleString(style)+st)
-		s.w.Write(text)
+		parseSupSub(s.w, text)
 		s.w.Close()
+	}
+}
+
+func parseSupSub(w *xmlWriter.XMLWriter, text string) {
+	const (
+		normal = iota
+		superscriptFirst
+		superscript
+		subscriptFirst
+		subscript
+	)
+	mode := normal
+	arg := ""
+	for i, r := range text {
+		switch mode {
+		case normal:
+			if r == '_' && i+1 < len(text) && text[i+1] == '{' {
+				mode = subscriptFirst
+			} else if r == '^' && i+1 < len(text) && text[i+1] == '{' {
+				mode = superscriptFirst
+			} else {
+				w.Write(string(r))
+			}
+		case subscriptFirst:
+			mode = subscript
+		case subscript:
+			if r == '}' {
+				mode = normal
+				w.WriteHTML("<tspan style=\"font-size:70%;baseline-shift:sub\">")
+				w.Write(arg)
+				w.WriteHTML("</tspan>")
+				arg = ""
+			} else {
+				arg += string(r)
+			}
+		case superscriptFirst:
+			mode = superscript
+		case superscript:
+			if r == '}' {
+				mode = normal
+				w.WriteHTML("<tspan style=\"font-size:70%;baseline-shift:super\">")
+				w.Write(arg)
+				w.WriteHTML("</tspan>")
+				arg = ""
+			} else {
+				arg += string(r)
+			}
+		}
+	}
+	if (mode == subscript || mode == superscript) && len(arg) > 0 {
+		w.Write(arg)
 	}
 }
 
