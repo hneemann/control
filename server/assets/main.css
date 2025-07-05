@@ -27,7 +27,7 @@
     }
     #result {
         max-height: calc( 100vh - 1em );
-        overflow-y:scroll;
+        overflow:scroll;
     }
     div.window {
         height: calc( 100vh - 1em );
@@ -45,7 +45,7 @@
     }
     #result {
         max-height: 50vh;
-        overflow-y:scroll;
+        overflow:scroll;
     }
     div.main {
         height: 100%;
