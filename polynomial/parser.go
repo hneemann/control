@@ -229,6 +229,12 @@ func (p Polynomial) GetType() value.Type {
 
 func polyMethods() value.MethodMap {
 	return value.MethodMap{
+		"degree": value.MethodAtType(0, func(pol Polynomial, st funcGen.Stack[value.Value]) (value.Value, error) {
+			if len(pol) == 0 {
+				return value.Int(0), errors.New("degree of empty polynomial is undefined")
+			}
+			return value.Int(len(pol) - 1), nil
+		}).SetMethodDescription("Calculates the derivative."),
 		"derivative": value.MethodAtType(0, func(pol Polynomial, st funcGen.Stack[value.Value]) (value.Value, error) {
 			return pol.Derivative(), nil
 		}).SetMethodDescription("Calculates the derivative."),
@@ -1357,6 +1363,7 @@ func writeUnicodeTo(out *strings.Builder, command string) {
 }
 
 var unicodeMap = map[string]rune{
+	"sp":      '\u00a0',
 	"hs":      '\u2009',
 	"alpha":   '\u237a',
 	"beta":    '\u03B2',
