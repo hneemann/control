@@ -1110,7 +1110,7 @@ func (v dataSet) toPointList(i0, i1 int) *value.List {
 	})
 }
 
-func (l *Linear) Simulate(tMax float64, u func(float64) (float64, error)) (*value.List, error) {
+func (l *Linear) Simulate(tMax, dt float64, u func(float64) (float64, error)) (*value.List, error) {
 	if tMax <= 0 {
 		return nil, fmt.Errorf("tMax must be greater than 0")
 	}
@@ -1122,10 +1122,16 @@ func (l *Linear) Simulate(tMax float64, u func(float64) (float64, error)) (*valu
 		return nil, err
 	}
 
+	if dt <= 0 {
+		dt = 1e-5
+	}
+
 	const pointsExported = 1000
-	const pointsInternal = 100000
-	const skip = pointsInternal / pointsExported
-	dt := tMax / pointsInternal
+	skip := int(tMax/dt) / pointsExported
+	if skip < 1 {
+		return nil, fmt.Errorf("step width (dt=%v) is too small for a meaningful simulation", dt)
+	}
+
 	t := 0.0
 	n := len(lin.Denominator) - 1
 	x := make(Vector, n)
