@@ -49,6 +49,8 @@ var (
 	PlotContentType value.Type
 	StyleType       value.Type
 	ImageType       value.Type
+	DataContentType value.Type
+	DataType        value.Type
 )
 
 type ToImageInterface interface {
@@ -507,6 +509,68 @@ func (p StyleValue) GetType() value.Type {
 	return StyleType
 }
 
+type DataContentValue struct {
+	Holder[graph.DataContent]
+}
+
+func (d DataContentValue) GetType() value.Type {
+	return DataContentType
+}
+
+type DataValue struct {
+	Holder[*graph.Data]
+}
+
+func (d DataValue) GetType() value.Type {
+	return DataType
+}
+
+func createDataMethods() value.MethodMap {
+	return value.MethodMap{
+		"timeUnit": value.MethodAtType(1, func(dataValue DataValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			if unit, ok := stack.Get(1).(value.String); ok {
+				data := dataValue.Value
+				data.TimeUnit = string(unit)
+				return DataValue{Holder[*graph.Data]{data}}, nil
+			}
+			return nil, fmt.Errorf("time requires two strings as arguments")
+		}).Pure(false).SetMethodDescription("unit", "Sets the time name and unit."),
+		"date": value.MethodAtType(0, func(dataValue DataValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			data := dataValue.Value
+			data.TimeIsDate = true
+			return DataValue{Holder[*graph.Data]{data}}, nil
+		}).Pure(false).SetMethodDescription("Creates a string."),
+		"dat": value.MethodAtType(1, func(dataValue DataValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			if name, ok := stack.Get(1).(value.String); ok {
+				b, err := dataValue.Value.DatFile()
+				if err != nil {
+					return nil, fmt.Errorf("export: %w", err)
+				}
+				return export.File{
+					Name:     string(name),
+					MimeType: "text/text",
+					Data:     b,
+				}, nil
+			}
+			return nil, fmt.Errorf("file requires a string as argument")
+		}).Pure(false).SetMethodDescription("name", "Creates a gnuplot-dat file."),
+		"csv": value.MethodAtType(1, func(dataValue DataValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			if name, ok := stack.Get(1).(value.String); ok {
+				b, err := dataValue.Value.CsvFile()
+				if err != nil {
+					return nil, fmt.Errorf("export: %w", err)
+				}
+				return export.File{
+					Name:     string(name),
+					MimeType: "text/csv",
+					Data:     b,
+				}, nil
+			}
+			return nil, fmt.Errorf("file requires a string as argument")
+		}).Pure(false).SetMethodDescription("name", "Creates a csv file."),
+	}
+}
+
 func listMethods() value.MethodMap {
 	return value.MethodMap{
 		"graph": value.MethodAtType(2, func(list *value.List, st funcGen.Stack[value.Value]) (value.Value, error) {
@@ -522,12 +586,43 @@ func listMethods() value.MethodMap {
 					}
 				}
 			default:
-				return nil, fmt.Errorf("points requires either none or two arguments")
+				return nil, fmt.Errorf("graph requires either none or two arguments")
 			}
-			return nil, fmt.Errorf("points requires a function as first and second argument")
+			return nil, fmt.Errorf("graph requires a function as first and second argument")
 		}).SetMethodDescription("func(item) x", "func(item) y", "Creates a scatter plot content. "+
 			"The two functions are called with the list elements and must return the x respectively y values. "+
 			"If the functions are omitted, the list elements themselves must be lists of the form [x,y].").VarArgsMethod(0, 2),
+		"data": value.MethodAtType(4, func(list *value.List, st funcGen.Stack[value.Value]) (value.Value, error) {
+			if name, ok := st.Get(1).(value.String); ok {
+				if unit, ok := st.Get(2).(value.String); ok {
+					switch st.Size() {
+					case 3:
+						content := graph.DataContent{
+							Points: listToPoints(list),
+							Name:   string(name),
+							Unit:   string(unit),
+						}
+						return DataContentValue{Holder[graph.DataContent]{content}}, nil
+					case 5:
+						if xc, ok := st.Get(3).ToClosure(); ok && xc.Args == 1 {
+							if yc, ok := st.Get(4).ToClosure(); ok && yc.Args == 1 {
+								content := graph.DataContent{
+									Points: listFuncToPoints(list, xc, yc),
+									Name:   string(name),
+									Unit:   string(unit),
+								}
+								return DataContentValue{Holder[graph.DataContent]{content}}, nil
+							}
+						}
+					default:
+						return nil, fmt.Errorf("data requires either two or four arguments")
+					}
+				}
+			}
+			return nil, fmt.Errorf("data requires two strings and two functions as arguments")
+		}).SetMethodDescription("name", "unit", "func(item) x", "func(item) y", "Creates a data set. "+
+			"The two functions are called with the list elements and must return the x respectively y values. "+
+			"If the functions are omitted, the list elements themselves must be lists of the form [x,y].").VarArgsMethod(2, 4),
 	}
 }
 
@@ -570,11 +665,14 @@ func Setup(fg *value.FunctionGenerator) {
 	PlotContentType = fg.RegisterType("plotContent")
 	StyleType = fg.RegisterType("style")
 	ImageType = fg.RegisterType("image")
+	DataContentType = fg.RegisterType("dataContent")
+	DataType = fg.RegisterType("data")
 
 	fg.RegisterMethods(PlotType, createPlotMethods())
 	fg.RegisterMethods(PlotContentType, createPlotContentMethods())
 	fg.RegisterMethods(StyleType, createStyleMethods())
 	fg.RegisterMethods(ImageType, createImageMethods())
+	fg.RegisterMethods(DataType, createDataMethods())
 	fg.RegisterMethods(value.ListTypeId, listMethods())
 	fg.RegisterMethods(value.ClosureTypeId, closureMethods())
 	export.AddZipHelpers(fg)
@@ -837,6 +935,25 @@ func Setup(fg *value.FunctionGenerator) {
 		Args:   2,
 		IsPure: true,
 	}.SetDescription("image1", "image2", "Combines two images by a vertical splitting."))
+	fg.AddStaticFunction("dataSet", funcGen.Function[value.Value]{
+		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
+			var content []graph.DataContent
+			for i := 0; i < st.Size(); i++ {
+				if dc, ok := st.Get(i).(DataContentValue); ok {
+					content = append(content, dc.Value)
+				} else {
+					return nil, fmt.Errorf("toDat requires DataContent as arguments")
+				}
+			}
+			dc := &graph.Data{
+				TimeUnit:    "s",
+				DataContent: content,
+			}
+			return DataValue{Holder: Holder[*graph.Data]{Value: dc}}, nil
+		},
+		Args:   -1,
+		IsPure: true,
+	}.SetDescription("data...", "Creates a dat file."))
 }
 
 func GetStyle(st funcGen.Stack[value.Value], index int, defStyle *graph.Style) (StyleValue, error) {
