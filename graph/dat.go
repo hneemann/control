@@ -3,6 +3,8 @@ package graph
 import (
 	"bytes"
 	"fmt"
+	"math"
+	"time"
 )
 
 type DataContent struct {
@@ -69,17 +71,35 @@ func (d dat) skipValue(b *bytes.Buffer) {
 	b.WriteString("\t-")
 }
 
-type csv struct{}
+type csv struct {
+	isDate bool
+}
 
 func (c csv) writeHeader(b *bytes.Buffer, data *Data) {
-	b.WriteString("\"time[" + data.TimeUnit + "]\"")
+	if data.TimeIsDate {
+		b.WriteString("\"date\",\"time\"")
+	} else {
+		b.WriteString("\"time[" + data.TimeUnit + "]\"")
+	}
 	for _, content := range data.DataContent {
 		b.WriteString(",\"" + content.Name + "[" + content.Unit + "]\"")
 	}
 }
 
+const (
+	csvDateFormat = "2006-01-02"
+	csvTimeFormat = "15:04:05"
+)
+
 func (c csv) writeTime(b *bytes.Buffer, t float64) {
-	b.WriteString(fmt.Sprintf("\n\"%g\"", t))
+	if c.isDate {
+		sec := int64(math.Trunc(t))
+		nsec := int64((t - float64(sec)) * 1e9)
+		b.WriteString(fmt.Sprintf("\n\"%s\"", time.Unix(sec, nsec).Format(csvDateFormat)))
+		b.WriteString(fmt.Sprintf(",\"%s\"", time.Unix(sec, nsec).Format(csvTimeFormat)))
+	} else {
+		b.WriteString(fmt.Sprintf("\n\"%g\"", t))
+	}
 }
 
 func (c csv) writeValue(b *bytes.Buffer, f float64) {
@@ -95,7 +115,7 @@ func (d *Data) DatFile() ([]byte, error) {
 }
 
 func (d *Data) CsvFile() ([]byte, error) {
-	return d.writeFile(csv{})
+	return d.writeFile(csv{d.TimeIsDate})
 }
 
 func (d *Data) writeFile(f format) ([]byte, error) {
