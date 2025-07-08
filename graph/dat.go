@@ -16,6 +16,8 @@ type DataContent struct {
 type Data struct {
 	TimeIsDate  bool
 	TimeUnit    string
+	TimeFormat  string
+	DateFormat  string
 	DataContent []DataContent
 }
 
@@ -72,10 +74,12 @@ func (d dat) skipValue(b *bytes.Buffer) {
 }
 
 type csv struct {
-	isDate bool
+	isDate     bool
+	dateFormat string
+	timeFormat string
 }
 
-func (c csv) writeHeader(b *bytes.Buffer, data *Data) {
+func (c *csv) writeHeader(b *bytes.Buffer, data *Data) {
 	if data.TimeIsDate {
 		b.WriteString("\"date\",\"time\"")
 	} else {
@@ -86,28 +90,23 @@ func (c csv) writeHeader(b *bytes.Buffer, data *Data) {
 	}
 }
 
-const (
-	csvDateFormat = "2006-01-02"
-	csvTimeFormat = "15:04:05"
-)
-
-func (c csv) writeTime(b *bytes.Buffer, t float64) {
+func (c *csv) writeTime(b *bytes.Buffer, t float64) {
 	if c.isDate {
 		sec := int64(math.Trunc(t))
 		nsec := int64((t - float64(sec)) * 1e9)
 		unix := time.Unix(sec, nsec)
-		b.WriteString(fmt.Sprintf("\n\"%s\"", unix.Format(csvDateFormat)))
-		b.WriteString(fmt.Sprintf(",\"%s\"", unix.Format(csvTimeFormat)))
+		b.WriteString(fmt.Sprintf("\n\"%s\"", unix.Format(c.dateFormat)))
+		b.WriteString(fmt.Sprintf(",\"%s\"", unix.Format(c.timeFormat)))
 	} else {
 		b.WriteString(fmt.Sprintf("\n\"%g\"", t))
 	}
 }
 
-func (c csv) writeValue(b *bytes.Buffer, f float64) {
+func (c *csv) writeValue(b *bytes.Buffer, f float64) {
 	b.WriteString(fmt.Sprintf(",\"%g\"", f))
 }
 
-func (c csv) skipValue(b *bytes.Buffer) {
+func (c *csv) skipValue(b *bytes.Buffer) {
 	b.WriteString(",\"\"")
 }
 
@@ -115,8 +114,21 @@ func (d *Data) DatFile() ([]byte, error) {
 	return d.writeFile(dat{})
 }
 
+const (
+	csvDateFormat = "2006-01-02"
+	csvTimeFormat = "15:04:05"
+)
+
 func (d *Data) CsvFile() ([]byte, error) {
-	return d.writeFile(csv{d.TimeIsDate})
+	df := d.DateFormat
+	if df == "" {
+		df = csvDateFormat
+	}
+	tf := d.TimeFormat
+	if tf == "" {
+		tf = csvTimeFormat
+	}
+	return d.writeFile(&csv{isDate: d.TimeIsDate, dateFormat: df, timeFormat: tf})
 }
 
 func (d *Data) writeFile(f format) ([]byte, error) {

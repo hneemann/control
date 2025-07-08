@@ -533,8 +533,19 @@ func createDataMethods() value.MethodMap {
 				data.TimeUnit = string(unit)
 				return DataValue{Holder[*graph.Data]{data}}, nil
 			}
-			return nil, fmt.Errorf("time requires two strings as arguments")
+			return nil, fmt.Errorf("timeUnit requires a string as argument")
 		}).Pure(false).SetMethodDescription("unit", "Sets the time name and unit."),
+		"format": value.MethodAtType(2, func(dataValue DataValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			if df, ok := stack.Get(1).(value.String); ok {
+				if tf, ok := stack.Get(2).(value.String); ok {
+					data := dataValue.Value
+					data.TimeFormat = string(tf)
+					data.DateFormat = string(df)
+					return DataValue{Holder[*graph.Data]{data}}, nil
+				}
+			}
+			return nil, fmt.Errorf("format requires two strings as arguments")
+		}).Pure(false).SetMethodDescription("date-format", "time-format", "Sets the date and time csv-format."),
 		"date": value.MethodAtType(0, func(dataValue DataValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			data := dataValue.Value
 			data.TimeIsDate = true
