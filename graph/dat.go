@@ -95,8 +95,9 @@ func (c csv) writeTime(b *bytes.Buffer, t float64) {
 	if c.isDate {
 		sec := int64(math.Trunc(t))
 		nsec := int64((t - float64(sec)) * 1e9)
-		b.WriteString(fmt.Sprintf("\n\"%s\"", time.Unix(sec, nsec).Format(csvDateFormat)))
-		b.WriteString(fmt.Sprintf(",\"%s\"", time.Unix(sec, nsec).Format(csvTimeFormat)))
+		unix := time.Unix(sec, nsec)
+		b.WriteString(fmt.Sprintf("\n\"%s\"", unix.Format(csvDateFormat)))
+		b.WriteString(fmt.Sprintf(",\"%s\"", unix.Format(csvTimeFormat)))
 	} else {
 		b.WriteString(fmt.Sprintf("\n\"%g\"", t))
 	}
