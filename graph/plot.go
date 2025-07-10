@@ -409,6 +409,9 @@ func (f Function) steps() int {
 }
 
 func (f Function) String() string {
+	if f.Title != "" {
+		return fmt.Sprintf("Function: %s", f.Title)
+	}
 	return "Function"
 }
 
@@ -476,6 +479,9 @@ func (s Scatter) SetTitle(title string) PlotContent {
 }
 
 func (s Scatter) String() string {
+	if s.Title != "" {
+		return fmt.Sprintf("Scatter: %s", s.Title)
+	}
 	return "Scatter"
 }
 
@@ -519,6 +525,13 @@ type Hint struct {
 	Text  string
 	Style *Style
 	Pos   Point
+}
+
+func (h Hint) String() string {
+	if h.Text != "" {
+		return fmt.Sprintf("Hint: %s at %s", h.Text, h.Pos)
+	}
+	return fmt.Sprintf("Hint at %s", h.Pos)
 }
 
 func (h Hint) PreferredBounds(_, _ Bounds) (Bounds, Bounds, error) {
@@ -578,6 +591,13 @@ type Arrow struct {
 	Style    *Style
 	Label    string
 	Mode     int
+}
+
+func (a Arrow) String() string {
+	if a.Label != "" {
+		return fmt.Sprintf("Arrow from %s to %s: %s", a.From, a.To, a.Label)
+	}
+	return fmt.Sprintf("Arrow from %s to %s", a.From, a.To)
 }
 
 func (a Arrow) PreferredBounds(_, _ Bounds) (Bounds, Bounds, error) {
@@ -956,6 +976,10 @@ type YConst struct {
 	Style *Style
 }
 
+func (yc YConst) String() string {
+	return fmt.Sprintf("yConst: %0.2f", yc.Y)
+}
+
 func (yc YConst) PreferredBounds(_, _ Bounds) (x, y Bounds, err error) {
 	return Bounds{}, NewBounds(yc.Y, yc.Y), nil
 }
@@ -977,6 +1001,10 @@ func (yc YConst) Legend() Legend {
 type XConst struct {
 	X     float64
 	Style *Style
+}
+
+func (xc XConst) String() string {
+	return fmt.Sprintf("xConst: %0.2f", xc.X)
 }
 
 func (xc XConst) PreferredBounds(_, _ Bounds) (Bounds, Bounds, error) {
