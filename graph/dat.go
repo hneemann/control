@@ -21,6 +21,10 @@ type Data struct {
 	DataContent []DataContent
 }
 
+func (d *Data) String() string {
+	return "DataSet"
+}
+
 type pointErr struct {
 	p   Point
 	err error
@@ -36,7 +40,7 @@ type dataSync struct {
 func (d *dataSync) update() error {
 	d.pe, d.isData = <-d.c
 	if d.pe.err != nil {
-		return fmt.Errorf("error reading data for '%s': %w", d.name, d.pe.err)
+		return fmt.Errorf("error retrieving data for '%s': %w", d.name, d.pe.err)
 	}
 	return nil
 }
