@@ -72,8 +72,8 @@ let gw=g0.loop();
 string(gw)
 `, res: value.String("30*(s²+s+0.5)/(4s⁴+18s³+62.4s²+54.6s+21.2)")}, // externally checked
 
-		{name: "evans", exp: "let g=(s+1)/(s^2+4*s+5); string(plot(g.evans(10)))", res: value.String("Plot: Plot Preferences, Polar Grid, Asymptotes, Evans Curves, Scatter, Scatter")},
-		{name: "nyquist", exp: "let g=(s+1)/(s^2+4*s+5); string(plot(g.nyquist()))", res: value.String("Plot: Plot Preferences, coordinate cross, Scatter, Parameter curve")},
+		{name: "evans", exp: "let g=(s+1)/(s^2+4*s+5); string(plot(g.evans(10)))", res: value.String("Plot: Plot Preferences, Polar Grid, Asymptotes, Evans Curves, Scatter: Poles, Scatter: Zeros")},
+		{name: "nyquist", exp: "let g=(s+1)/(s^2+4*s+5); string(plot(g.nyquist()))", res: value.String("Plot: Plot Preferences, coordinate cross, Scatter: ω=0, Parameter curve")},
 
 		{name: "gMargin", exp: "let g=(s+0.2)/((s^2+2*s+10)*(s+4)*(s^2+0.2*s+0.1));10^(g.gMargin().gMargin/20)", res: value.Float(74.45626527211962)},
 		{name: "pMargin", exp: "let g=74.45626527211962*(s+0.2)/((s^2+2*s+10)*(s+4)*(s^2+0.2*s+0.1));g.pMargin().pMargin/100", res: value.Float(0)},
