@@ -158,12 +158,16 @@ func (a *AddAttribute) Walk(walker Walker) {
 }
 
 type Fraction struct {
-	Top    Ast
-	Bottom Ast
+	Top          Ast
+	Bottom       Ast
+	DisplayStyle bool
 }
 
 func (f *Fraction) ToMathMl(w *xmlWriter.XMLWriter, attr map[string]string) {
 	openWithAttr(w, "mfrac", attr)
+	if f.DisplayStyle {
+		w.Attr("displaystyle", "true")
+	}
 	f.Top.ToMathMl(w, nil)
 	f.Bottom.ToMathMl(w, nil)
 	w.Close()
@@ -460,7 +464,11 @@ func (p *parser) ParseCommand(value string) Ast {
 	case "frac":
 		top := p.ParseInBrace()
 		bottom := p.ParseInBrace()
-		return &Fraction{top, bottom}
+		return &Fraction{Top: top, Bottom: bottom}
+	case "dfrac":
+		top := p.ParseInBrace()
+		bottom := p.ParseInBrace()
+		return &Fraction{Top: top, Bottom: bottom, DisplayStyle: true}
 	case "pm":
 		return SimpleOperator("&PlusMinus;")
 	case "left":
