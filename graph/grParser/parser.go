@@ -637,6 +637,10 @@ func listMethods() value.MethodMap {
 	}
 }
 
+type ToPoint interface {
+	ToPoint() graph.Point
+}
+
 func closureMethods() value.MethodMap {
 	return value.MethodMap{
 		"graph": value.MethodAtType(1, func(cl value.Closure, st funcGen.Stack[value.Value]) (value.Value, error) {
@@ -666,6 +670,70 @@ func closureMethods() value.MethodMap {
 			gf := graph.Function{Function: f, Steps: steps}
 			return PlotContentValue{Holder[graph.PlotContent]{gf}}, nil
 		}).SetMethodDescription("steps", "Creates a graph of the function to be used in the plot command.").VarArgsMethod(0, 1),
+
+		"pGraph": value.MethodAtType(4, func(cl value.Closure, st funcGen.Stack[value.Value]) (value.Value, error) {
+			if tMin, ok := st.Get(1).ToFloat(); ok {
+				if tMax, ok := st.Get(2).ToFloat(); ok {
+					steps := 0
+					if s, ok := st.GetOptional(3, value.Int(0)).ToFloat(); ok {
+						steps = int(s)
+					} else {
+						return nil, fmt.Errorf("pGraph requires a number as third argument")
+					}
+					isLog := false
+					if log, ok := st.GetOptional(4, value.Bool(false)).ToBool(); ok {
+						isLog = log
+					} else {
+						return nil, fmt.Errorf("pGraph requires a bool as fourth argument")
+					}
+
+					if cl.Args != 1 {
+						return nil, fmt.Errorf("pGraph requires a function with one argument")
+					}
+					stack := funcGen.NewEmptyStack[value.Value]()
+					f := func(x float64) (graph.Point, error) {
+						stack.Push(value.Float(x))
+						listVal, err := cl.Func(stack.CreateFrame(1), nil)
+						if err != nil {
+							return graph.Point{}, err
+						}
+						if list, ok := listVal.ToList(); ok {
+							l, err := list.ToSlice(stack)
+							if err != nil {
+								return graph.Point{}, err
+							}
+							xVal := l[0]
+							if xFl, ok := xVal.ToFloat(); ok {
+								yVal := l[1]
+								if yFl, ok := yVal.ToFloat(); ok {
+									return graph.Point{X: xFl, Y: yFl}, nil
+								}
+							}
+						} else {
+							if c, ok := listVal.(ToPoint); ok {
+								return c.ToPoint(), nil
+							}
+						}
+						return graph.Point{}, fmt.Errorf("the function given to pGraph must return a list containing two floats")
+					}
+
+					var gf *graph.ParameterFunc
+					var err error
+					if isLog {
+						gf, err = graph.NewLogParameterFunc(tMin, tMax, steps)
+					} else {
+						gf, err = graph.NewLinearParameterFunc(tMin, tMax, steps)
+					}
+					if err != nil {
+						return nil, fmt.Errorf("pGraph: %w", err)
+					}
+					gf.Func = f
+					gf.Style = graph.Black
+					return PlotContentValue{Holder[graph.PlotContent]{gf}}, nil
+				}
+			}
+			return nil, fmt.Errorf("pGraph requires two floats as first arguments")
+		}).SetMethodDescription("tMin", "tMax", "steps", "log", "Creates a parametric graph of the function to be used in the plot command.").VarArgsMethod(2, 4),
 	}
 }
 

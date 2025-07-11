@@ -435,7 +435,10 @@ func (f Function) PreferredBounds(xGiven, _ Bounds) (Bounds, Bounds, error) {
 
 func (f Function) DrawTo(plot *Plot, canvas Canvas) error {
 	r := canvas.Rect()
-	p := NewLinearParameterFunc(r.Min.X, r.Max.X, f.steps())
+	p, err := NewLinearParameterFunc(r.Min.X, r.Max.X, f.steps())
+	if err != nil {
+		return fmt.Errorf("error creating linear parameter function: %w", err)
+	}
 	p.Func = func(x float64) (Point, error) {
 		y, err := f.Function(x)
 		return Point{x, y}, err
@@ -730,6 +733,12 @@ type Cross struct {
 	Style *Style
 }
 
+func (c Cross) SetLine(style *Style) PlotContent {
+	return Cross{
+		Style: style,
+	}
+}
+
 func (c Cross) String() string {
 	return "coordinate cross"
 }
@@ -773,9 +782,12 @@ func (p *ParameterFunc) SetLine(style *Style) PlotContent {
 	return p
 }
 
-func NewLinearParameterFunc(tMin, tMax float64, steps int) *ParameterFunc {
+func NewLinearParameterFunc(tMin, tMax float64, steps int) (*ParameterFunc, error) {
 	if steps <= 0 {
 		steps = functionSteps
+	}
+	if tMax <= tMin {
+		return nil, fmt.Errorf("invalid parameters for lin parameter function: tMin=%f, tMax=%f", tMin, tMax)
 	}
 	delta := (tMax - tMin) / float64(steps)
 	return &ParameterFunc{
@@ -784,12 +796,15 @@ func NewLinearParameterFunc(tMin, tMax float64, steps int) *ParameterFunc {
 		NextT: func(t float64) float64 {
 			return t + delta
 		},
-	}
+	}, nil
 }
 
-func NewLogParameterFunc(tMin, tMax float64, steps int) *ParameterFunc {
+func NewLogParameterFunc(tMin, tMax float64, steps int) (*ParameterFunc, error) {
 	if steps <= 0 {
 		steps = functionSteps
+	}
+	if tMin <= 0 || tMax <= tMin {
+		return nil, fmt.Errorf("invalid parameters for log parameter function: tMin=%f, tMax=%f", tMin, tMax)
 	}
 	f := math.Pow(tMax/tMin, 1/float64(steps))
 	return &ParameterFunc{
@@ -798,7 +813,7 @@ func NewLogParameterFunc(tMin, tMax float64, steps int) *ParameterFunc {
 		NextT: func(t float64) float64 {
 			return t * f
 		},
-	}
+	}, nil
 }
 
 func (p *ParameterFunc) String() string {
@@ -976,6 +991,13 @@ type YConst struct {
 	Style *Style
 }
 
+func (yc YConst) SetLine(style *Style) PlotContent {
+	return YConst{
+		Y:     yc.Y,
+		Style: style,
+	}
+}
+
 func (yc YConst) String() string {
 	return fmt.Sprintf("yConst: %0.2f", yc.Y)
 }
@@ -1001,6 +1023,13 @@ func (yc YConst) Legend() Legend {
 type XConst struct {
 	X     float64
 	Style *Style
+}
+
+func (xc XConst) SetLine(style *Style) PlotContent {
+	return XConst{
+		X:     xc.X,
+		Style: style,
+	}
 }
 
 func (xc XConst) String() string {

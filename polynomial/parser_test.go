@@ -6,6 +6,7 @@ import (
 	"github.com/hneemann/parser2/value"
 	"github.com/hneemann/parser2/value/export"
 	"github.com/stretchr/testify/assert"
+	"math"
 	"strings"
 	"testing"
 )
@@ -128,6 +129,10 @@ func TestComplex(t *testing.T) {
 		{name: "exp1", exp: "cmplx(1,2)^cmplx(3,4)", res: Complex(complex(0.1290095940, 0.03392409290))},
 		{name: "exp2", exp: "cmplx(1,2)^2", res: Complex(complex(-3, 4))},
 		{name: "exp3", exp: "2^cmplx(1,2)", res: Complex(complex(0.3669139494, 1.966055480))},
+		{name: "expf", exp: "exp(1)", res: value.Float(math.E)},
+		{name: "expf2", exp: "exp(1.0)", res: value.Float(math.E)},
+		{name: "expf3", exp: "exp(_i*pi)", res: Complex(complex(-1, 0))},
+		{name: "expf4", exp: "exp(_i*pi/2)", res: Complex(complex(0, 1))},
 	}
 	for _, test := range tests {
 		test := test

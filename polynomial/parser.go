@@ -78,6 +78,13 @@ func (c Complex) GetType() value.Type {
 	return ComplexValueType
 }
 
+func (c Complex) ToPoint() graph.Point {
+	return graph.Point{
+		X: real(c),
+		Y: imag(c),
+	}
+}
+
 func cmplxMethods() value.MethodMap {
 	return value.MethodMap{
 		"real": value.MethodAtType(0, func(c Complex, st funcGen.Stack[value.Value]) (value.Value, error) {
@@ -406,7 +413,10 @@ func linMethods() value.MethodMap {
 			if !ok {
 				return nil, fmt.Errorf("nyquistPos requires a float as first argument")
 			}
-			plotContent := lin.NyquistPos(sMax)
+			plotContent, err := lin.NyquistPos(sMax)
+			if err != nil {
+				return nil, err
+			}
 			contentValue := grParser.NewPlotContentValue(plotContent)
 			return contentValue, nil
 		}).SetMethodDescription("wMax", "Creates a nyquist plot content with positive ω. "+
@@ -416,7 +426,10 @@ func linMethods() value.MethodMap {
 			if !ok {
 				return nil, fmt.Errorf("nyquistPos requires a float as first argument")
 			}
-			plotContent := lin.NyquistNeg(sMax)
+			plotContent, err := lin.NyquistNeg(sMax)
+			if err != nil {
+				return nil, err
+			}
 			contentValue := grParser.NewPlotContentValue(plotContent)
 			return contentValue, nil
 		}).SetMethodDescription("wMax", "Creates a nyquist plot content with negative ω. "+
@@ -427,14 +440,14 @@ func linMethods() value.MethodMap {
 				"w0":      value.Float(w0),
 				"pMargin": value.Float(margin),
 			}), err
-		}).SetMethodDescription("Returns the crossover frequency (ω₀ with |G(jω₀)|=1) and the phase margin."),
+		}).SetMethodDescription("Returns the crossover frequency ω₀ with |G(jω₀)|=1 and the phase margin."),
 		"gMargin": value.MethodAtType(0, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
 			w180, margin, err := lin.GMargin()
 			return value.NewMap(value.RealMap{
 				"w180":    value.Float(w180),
 				"gMargin": value.Float(margin),
 			}), err
-		}).SetMethodDescription("Returns the stability frequency (ωₛ with G(jωₛ)=j0-1) and the gain margin given in dB."),
+		}).SetMethodDescription("Returns the frequency ωₛ with G(jωₛ)=-1 and the gain margin given in dB."),
 		"simStep": value.MethodAtType(2, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
 			if tMax, ok := st.Get(1).ToFloat(); ok {
 				dt := 0.0
@@ -697,6 +710,22 @@ var Parser = value.New().
 	Modify(grParser.Setup).
 	AddConstant("_i", Complex(complex(0, 1))).
 	AddConstant("s", Polynomial{0, 1}).
+	AddStaticFunction("exp", funcGen.Function[value.Value]{
+		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
+			val := stack.Get(0)
+			if c, ok := val.(Complex); ok {
+				return Complex(cmplx.Exp(complex128(c))), nil
+			} else if f, ok := val.ToFloat(); ok {
+				return value.Float(math.Exp(f)), nil
+			} else if i, ok := val.ToInt(); ok {
+				return value.Float(math.Exp(float64(i))), nil
+			} else {
+				return nil, fmt.Errorf("exp requires a complex, float or int value")
+			}
+		},
+		Args:   1,
+		IsPure: true,
+	}.SetDescription("x", "The exp function.")).
 	AddStaticFunction("cmplx", funcGen.Function[value.Value]{
 		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
 			if re, ok := stack.Get(0).ToFloat(); ok {

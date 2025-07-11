@@ -1012,26 +1012,32 @@ func (b bodeAmplitude) Legend() graph.Legend {
 	return graph.Legend{ShapeLineStyle: graph.ShapeLineStyle{LineStyle: b.bodeContent.Style}, Name: b.bodeContent.Title}
 }
 
-func (l *Linear) NyquistPos(sMax float64) *graph.ParameterFunc {
-	pfPos := graph.NewLogParameterFunc(0.001, sMax, 0)
+func (l *Linear) NyquistPos(sMax float64) (*graph.ParameterFunc, error) {
+	pfPos, err := graph.NewLogParameterFunc(0.001, sMax, 0)
+	if err != nil {
+		return nil, fmt.Errorf("error creating Nyquist positive frequency parameter function: %w", err)
+	}
 	pfPos.Func = func(w float64) (graph.Point, error) {
 		c := l.EvalCplx(complex(0, w))
 		return graph.Point{X: real(c), Y: imag(c)}, nil
 	}
 	pfPos.Style = posStyle
 	pfPos.Title = "ω>0"
-	return pfPos
+	return pfPos, nil
 }
 
-func (l *Linear) NyquistNeg(sMax float64) *graph.ParameterFunc {
-	pfNeg := graph.NewLogParameterFunc(0.001, sMax, 0)
+func (l *Linear) NyquistNeg(sMax float64) (*graph.ParameterFunc, error) {
+	pfNeg, err := graph.NewLogParameterFunc(0.001, sMax, 0)
+	if err != nil {
+		return nil, fmt.Errorf("error creating Nyquist negative frequency parameter function: %w", err)
+	}
 	pfNeg.Func = func(w float64) (graph.Point, error) {
 		c := l.EvalCplx(complex(0, -w))
 		return graph.Point{X: real(c), Y: imag(c)}, nil
 	}
 	pfNeg.Style = negStyle
 	pfNeg.Title = "ω<0"
-	return pfNeg
+	return pfNeg, nil
 }
 
 var (
@@ -1047,14 +1053,22 @@ func (l *Linear) Nyquist(sMax float64, alsoNeg bool) ([]graph.PlotContent, error
 	cp = append(cp, NewImReLabels())
 	cp = append(cp, graph.Cross{Style: graph.Gray})
 	if alsoNeg {
-		cp = append(cp, l.NyquistNeg(sMax))
+		neg, err := l.NyquistNeg(sMax)
+		if err != nil {
+			return nil, err
+		}
+		cp = append(cp, neg)
 		cp = append(cp, graph.Scatter{Points: graph.PointsFromPoint(graph.Point{X: -1, Y: 0}), ShapeLineStyle: graph.ShapeLineStyle{Shape: graph.NewCrossMarker(4), ShapeStyle: graph.Red}})
 	}
 	zeroMarker := graph.NewCircleMarker(4)
 	if isZero {
 		cp = append(cp, graph.Scatter{Points: graph.PointsFromPoint(graph.Point{X: real(cZero), Y: imag(cZero)}), ShapeLineStyle: graph.ShapeLineStyle{Shape: zeroMarker, ShapeStyle: graph.Black}, Title: "ω=0"})
 	}
-	cp = append(cp, l.NyquistPos(sMax))
+	pos, err := l.NyquistPos(sMax)
+	if err != nil {
+		return nil, err
+	}
+	cp = append(cp, pos)
 
 	return cp, nil
 }
