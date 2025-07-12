@@ -10,6 +10,7 @@ import (
 	"github.com/hneemann/parser2/value"
 	"github.com/hneemann/parser2/value/export"
 	"github.com/hneemann/parser2/value/export/xmlWriter"
+	"strings"
 )
 
 type Holder[T any] struct {
@@ -550,34 +551,42 @@ func createDataMethods() value.MethodMap {
 			data := dataValue.Value
 			data.TimeIsDate = true
 			return DataValue{Holder[*graph.Data]{data}}, nil
-		}).Pure(false).SetMethodDescription("Creates a string."),
+		}).Pure(false).SetMethodDescription("If called the time/x axis is treated as a date axis."),
 		"dat": value.MethodAtType(1, func(dataValue DataValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
-			if name, ok := stack.Get(1).(value.String); ok {
+			if nameVal, ok := stack.Get(1).(value.String); ok {
 				b, err := dataValue.Value.DatFile()
 				if err != nil {
-					return nil, fmt.Errorf("export: %w", err)
+					return nil, fmt.Errorf("dat: %w", err)
+				}
+				name := string(nameVal)
+				if !strings.ContainsRune(name, '.') {
+					name += ".dat"
 				}
 				return export.File{
-					Name:     string(name),
+					Name:     name,
 					MimeType: "text/text",
 					Data:     b,
 				}, nil
 			}
-			return nil, fmt.Errorf("file requires a string as argument")
+			return nil, fmt.Errorf("dat requires a string as argument")
 		}).Pure(false).SetMethodDescription("name", "Creates a gnuplot-dat file."),
 		"csv": value.MethodAtType(1, func(dataValue DataValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
-			if name, ok := stack.Get(1).(value.String); ok {
+			if nameVal, ok := stack.Get(1).(value.String); ok {
 				b, err := dataValue.Value.CsvFile()
 				if err != nil {
-					return nil, fmt.Errorf("export: %w", err)
+					return nil, fmt.Errorf("csv: %w", err)
+				}
+				name := string(nameVal)
+				if !strings.ContainsRune(name, '.') {
+					name += ".csv"
 				}
 				return export.File{
-					Name:     string(name),
+					Name:     name,
 					MimeType: "text/csv",
 					Data:     b,
 				}, nil
 			}
-			return nil, fmt.Errorf("file requires a string as argument")
+			return nil, fmt.Errorf("csv requires a string as argument")
 		}).Pure(false).SetMethodDescription("name", "Creates a csv file."),
 	}
 }
