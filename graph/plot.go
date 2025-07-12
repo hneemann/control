@@ -117,7 +117,7 @@ func (p *Plot) DrawTo(canvas Canvas) error {
 		mergeX := !xBounds.valid
 		mergeY := !yBounds.valid
 		for _, plotContent := range p.Content {
-			x, y, err := plotContent.PreferredBounds(p.XBounds, p.YBounds)
+			x, y, err := plotContent.Bounds()
 			if err != nil {
 				return err
 			}
@@ -127,6 +127,21 @@ func (p *Plot) DrawTo(canvas Canvas) error {
 			if mergeY {
 				yBounds.MergeBounds(y)
 			}
+		}
+		var xPrefBounds, yPrefBounds Bounds
+		for _, plotContent := range p.Content {
+			x, y, err := plotContent.DependantBounds(xBounds, yBounds)
+			if err != nil {
+				return err
+			}
+			xPrefBounds.MergeBounds(x)
+			yPrefBounds.MergeBounds(y)
+		}
+		if mergeX {
+			xBounds.MergeBounds(xPrefBounds)
+		}
+		if mergeY {
+			yBounds.MergeBounds(yPrefBounds)
 		}
 	}
 
@@ -309,7 +324,7 @@ func NewBounds(min, max float64) Bounds {
 	if min > max {
 		min, max = max, min
 	}
-	return Bounds{true, min, max}
+	return Bounds{valid: true, Min: min, Max: max}
 }
 
 func (b *Bounds) Valid() bool {
@@ -356,13 +371,22 @@ func (b *Bounds) Width() float64 {
 	return b.Max - b.Min
 }
 
+// PlotContent is the interface that all plot contents must implement.
+// If the plot is created at first, all Bounds methods are called and the
+// returned bounds are merged. After that, the DependantBounds method
+// is called with the merged bounds.
 type PlotContent interface {
-	// PreferredBounds returns the preferred bounds for the content.
-	// The first bounds is the x-axis, the second is the y-axis.
-	// The given bounds are valid if they are set by the user.
-	// They are necessary only if the bounds of this instance depend
-	// on the bounds given by the user.
-	PreferredBounds(xGiven, yGiven Bounds) (x, y Bounds, err error)
+	// Bounds returns the fixed bounds of the content.
+	// There may be non. For example, if the content is a function
+	// that has by definition no bounds because it is defined for all x
+	// and the corresponding y=f(x) depends on the x bounds.
+	// A set of given data points on the other hand has fixed bounds.
+	Bounds() (x, y Bounds, err error)
+	// DependantBounds returns the preferred bounds for the content
+	// that depend on the bounds given by all other plot contents or the user.
+	// A function y=f(x), for example, has certain y bounds if the x bounds
+	// are given.
+	DependantBounds(xGiven, yGiven Bounds) (x, y Bounds, err error)
 	// DrawTo draws the content to the given Canvas.
 	// The *Plot is passed to allow the content to access the plot's properties.
 	DrawTo(*Plot, Canvas) error
@@ -382,6 +406,7 @@ type HasTitle interface {
 	SetTitle(title string) PlotContent
 }
 
+// Function represents a mathematical function that can be plotted.
 type Function struct {
 	Function func(x float64) (float64, error)
 	Style    *Style
@@ -415,7 +440,11 @@ func (f Function) String() string {
 	return "Function"
 }
 
-func (f Function) PreferredBounds(xGiven, _ Bounds) (Bounds, Bounds, error) {
+func (f Function) Bounds() (Bounds, Bounds, error) {
+	return Bounds{}, Bounds{}, nil
+}
+
+func (f Function) DependantBounds(xGiven, _ Bounds) (Bounds, Bounds, error) {
 	if xGiven.valid {
 		yBounds := Bounds{}
 		width := xGiven.Width()
@@ -459,6 +488,8 @@ func (f Function) Legend() Legend {
 	}
 }
 
+// Scatter represents a scatter plot with points represented by a Shape
+// and can have a line style for connecting the points.
 type Scatter struct {
 	ShapeLineStyle
 	Points Points
@@ -488,7 +519,7 @@ func (s Scatter) String() string {
 	return "Scatter"
 }
 
-func (s Scatter) PreferredBounds(_, _ Bounds) (Bounds, Bounds, error) {
+func (s Scatter) Bounds() (Bounds, Bounds, error) {
 	var x, y Bounds
 	for p, err := range s.Points {
 		if err != nil {
@@ -498,6 +529,10 @@ func (s Scatter) PreferredBounds(_, _ Bounds) (Bounds, Bounds, error) {
 		y.Merge(p.Y)
 	}
 	return x, y, nil
+}
+
+func (s Scatter) DependantBounds(_, _ Bounds) (Bounds, Bounds, error) {
+	return Bounds{}, Bounds{}, nil
 }
 
 func (s Scatter) DrawTo(_ *Plot, canvas Canvas) error {
@@ -524,6 +559,7 @@ func (s Scatter) Legend() Legend {
 	}
 }
 
+// Hint is a simple marker that can be used to indicate a point of interest
 type Hint struct {
 	Text  string
 	Style *Style
@@ -537,12 +573,12 @@ func (h Hint) String() string {
 	return fmt.Sprintf("Hint at %s", h.Pos)
 }
 
-func (h Hint) PreferredBounds(_, _ Bounds) (Bounds, Bounds, error) {
-	var x Bounds
-	x.Merge(h.Pos.X)
-	var y Bounds
-	y.Merge(h.Pos.Y)
-	return x, y, nil
+func (h Hint) Bounds() (Bounds, Bounds, error) {
+	return NewBounds(h.Pos.X, h.Pos.X), NewBounds(h.Pos.Y, h.Pos.Y), nil
+}
+
+func (h Hint) DependantBounds(_, _ Bounds) (Bounds, Bounds, error) {
+	return Bounds{}, Bounds{}, nil
 }
 
 func (h Hint) DrawTo(plot *Plot, canvas Canvas) error {
@@ -589,6 +625,9 @@ func (h HintDir) DrawTo(plot *Plot, canvas Canvas) error {
 	return nil
 }
 
+// Arrow represents a directed line segment with an optional label.
+// The Mode field controls the arrow style: The first bit indicates an
+// arrowhead at the end, the second bit indicates an arrowhead at the start.
 type Arrow struct {
 	From, To Point
 	Style    *Style
@@ -603,13 +642,17 @@ func (a Arrow) String() string {
 	return fmt.Sprintf("Arrow from %s to %s", a.From, a.To)
 }
 
-func (a Arrow) PreferredBounds(_, _ Bounds) (Bounds, Bounds, error) {
+func (a Arrow) Bounds() (Bounds, Bounds, error) {
 	var x, y Bounds
 	x.Merge(a.From.X)
 	x.Merge(a.To.X)
 	y.Merge(a.From.Y)
 	y.Merge(a.To.Y)
 	return x, y, nil
+}
+
+func (a Arrow) DependantBounds(_, _ Bounds) (Bounds, Bounds, error) {
+	return Bounds{}, Bounds{}, nil
 }
 
 func (a Arrow) DrawTo(plot *Plot, _ Canvas) error {
@@ -743,7 +786,11 @@ func (c Cross) String() string {
 	return "coordinate cross"
 }
 
-func (c Cross) PreferredBounds(_, _ Bounds) (Bounds, Bounds, error) {
+func (c Cross) Bounds() (Bounds, Bounds, error) {
+	return Bounds{}, Bounds{}, nil
+}
+
+func (c Cross) DependantBounds(_, _ Bounds) (Bounds, Bounds, error) {
 	return Bounds{}, Bounds{}, nil
 }
 
@@ -820,7 +867,7 @@ func (p *ParameterFunc) String() string {
 	return "Parameter curve"
 }
 
-func (p *ParameterFunc) PreferredBounds(_, _ Bounds) (Bounds, Bounds, error) {
+func (p *ParameterFunc) Bounds() (Bounds, Bounds, error) {
 	xb, yb := Bounds{}, Bounds{}
 	t := p.InitialT
 	for i := 0; i <= p.Points; i++ {
@@ -833,6 +880,10 @@ func (p *ParameterFunc) PreferredBounds(_, _ Bounds) (Bounds, Bounds, error) {
 		t = p.NextT(t)
 	}
 	return xb, yb, nil
+}
+
+func (p *ParameterFunc) DependantBounds(_, _ Bounds) (Bounds, Bounds, error) {
+	return Bounds{}, Bounds{}, nil
 }
 
 func (p *ParameterFunc) DrawTo(plot *Plot, canvas Canvas) error {
@@ -960,13 +1011,17 @@ type ImageInset struct {
 	Image    Image
 }
 
-func (s ImageInset) PreferredBounds(_, _ Bounds) (Bounds, Bounds, error) {
+func (s ImageInset) Bounds() (Bounds, Bounds, error) {
 	var x, y Bounds
 	x.Merge(s.Location.Min.X)
 	x.Merge(s.Location.Max.X)
 	y.Merge(s.Location.Min.Y)
 	y.Merge(s.Location.Max.Y)
 	return x, y, nil
+}
+
+func (s ImageInset) DependantBounds(_, _ Bounds) (Bounds, Bounds, error) {
+	return Bounds{}, Bounds{}, nil
 }
 
 func (s ImageInset) DrawTo(p *Plot, _ Canvas) error {
@@ -1002,8 +1057,12 @@ func (yc YConst) String() string {
 	return fmt.Sprintf("yConst: %0.2f", yc.Y)
 }
 
-func (yc YConst) PreferredBounds(_, _ Bounds) (x, y Bounds, err error) {
+func (yc YConst) Bounds() (x, y Bounds, err error) {
 	return Bounds{}, NewBounds(yc.Y, yc.Y), nil
+}
+
+func (yc YConst) DependantBounds(_, _ Bounds) (x, y Bounds, err error) {
+	return Bounds{}, Bounds{}, nil
 }
 
 func (yc YConst) DrawTo(_ *Plot, canvas Canvas) error {
@@ -1036,8 +1095,12 @@ func (xc XConst) String() string {
 	return fmt.Sprintf("xConst: %0.2f", xc.X)
 }
 
-func (xc XConst) PreferredBounds(_, _ Bounds) (Bounds, Bounds, error) {
+func (xc XConst) Bounds() (Bounds, Bounds, error) {
 	return NewBounds(xc.X, xc.X), Bounds{}, nil
+}
+
+func (xc XConst) DependantBounds(_, _ Bounds) (Bounds, Bounds, error) {
+	return Bounds{}, Bounds{}, nil
 }
 
 func (xc XConst) DrawTo(_ *Plot, canvas Canvas) error {
@@ -1060,8 +1123,12 @@ type Text struct {
 	Style *Style
 }
 
-func (t Text) PreferredBounds(_, _ Bounds) (x, y Bounds, err error) {
+func (t Text) Bounds() (x, y Bounds, err error) {
 	return NewBounds(t.Pos.X, t.Pos.X), NewBounds(t.Pos.Y, t.Pos.Y), nil
+}
+
+func (t Text) DependantBounds(_, _ Bounds) (x, y Bounds, err error) {
+	return Bounds{}, Bounds{}, nil
 }
 
 func (t Text) DrawTo(_ *Plot, canvas Canvas) error {

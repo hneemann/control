@@ -409,7 +409,11 @@ func (p Polar) String() string {
 	return "Polar Grid"
 }
 
-func (p Polar) PreferredBounds(_, _ graph.Bounds) (x, y graph.Bounds, e error) {
+func (p Polar) Bounds() (x, y graph.Bounds, e error) {
+	return graph.Bounds{}, graph.Bounds{}, nil
+}
+
+func (p Polar) DependantBounds(_, _ graph.Bounds) (x, y graph.Bounds, e error) {
 	return graph.Bounds{}, graph.Bounds{}, nil
 }
 
@@ -511,7 +515,11 @@ func (a Asymptotes) String() string {
 	return "Asymptotes"
 }
 
-func (a Asymptotes) PreferredBounds(_, _ graph.Bounds) (graph.Bounds, graph.Bounds, error) {
+func (a Asymptotes) Bounds() (graph.Bounds, graph.Bounds, error) {
+	return graph.Bounds{}, graph.Bounds{}, nil
+}
+
+func (a Asymptotes) DependantBounds(_, _ graph.Bounds) (graph.Bounds, graph.Bounds, error) {
 	return graph.Bounds{}, graph.Bounds{}, nil
 }
 
@@ -539,11 +547,20 @@ func (a Asymptotes) Legend() graph.Legend {
 	return graph.Legend{Name: "Asymptotes", ShapeLineStyle: graph.ShapeLineStyle{LineStyle: asymptotesStyle}}
 }
 
+// PlotPreferences allows modifying a graph.Plot after it has been created.
+// It can be used to set labels, styles, or other properties of the plot.
+// It can't modify the bounds of the plot, as the axes are already drawn when
+// the Modify function is called.
 type PlotPreferences struct {
+	// Modify is a function that modifies the plot.
 	Modify func(*graph.Plot)
 }
 
-func (p PlotPreferences) PreferredBounds(_, _ graph.Bounds) (x, y graph.Bounds, err error) {
+func (p PlotPreferences) Bounds() (x, y graph.Bounds, err error) {
+	return graph.Bounds{}, graph.Bounds{}, nil
+}
+
+func (p PlotPreferences) DependantBounds(_, _ graph.Bounds) (x, y graph.Bounds, err error) {
 	return graph.Bounds{}, graph.Bounds{}, nil
 }
 
@@ -808,7 +825,7 @@ func (ec *evansCurves) generate(tr graph.Transform) error {
 	return nil
 }
 
-func (ec *evansCurves) PreferredBounds(_, _ graph.Bounds) (x, y graph.Bounds, err error) {
+func (ec *evansCurves) Bounds() (x, y graph.Bounds, err error) {
 	for _, ep := range ec.evPoints {
 		for _, p := range ep.points {
 			x.Merge(p.X)
@@ -816,6 +833,10 @@ func (ec *evansCurves) PreferredBounds(_, _ graph.Bounds) (x, y graph.Bounds, er
 		}
 	}
 	return x, y, nil
+}
+
+func (ec *evansCurves) DependantBounds(_, _ graph.Bounds) (x, y graph.Bounds, err error) {
+	return graph.Bounds{}, graph.Bounds{}, nil
 }
 
 func (ec *evansCurves) DrawTo(plot *graph.Plot, canvas graph.Canvas) error {
@@ -966,7 +987,11 @@ type bodePhase struct {
 	bodeContent *BodePlotContent
 }
 
-func (b bodePhase) PreferredBounds(xGiven, _ graph.Bounds) (x, y graph.Bounds, err error) {
+func (b bodePhase) Bounds() (x, y graph.Bounds, err error) {
+	return graph.Bounds{}, graph.Bounds{}, nil
+}
+
+func (b bodePhase) DependantBounds(xGiven, _ graph.Bounds) (x, y graph.Bounds, err error) {
 	b.bodeContent.generate(xGiven.Min, xGiven.Max)
 	var bounds graph.Bounds
 	for _, p := range b.bodeContent.phase {
@@ -991,7 +1016,11 @@ type bodeAmplitude struct {
 	bodeContent *BodePlotContent
 }
 
-func (b bodeAmplitude) PreferredBounds(xGiven, _ graph.Bounds) (x, y graph.Bounds, err error) {
+func (b bodeAmplitude) Bounds() (x, y graph.Bounds, err error) {
+	return graph.Bounds{}, graph.Bounds{}, nil
+}
+
+func (b bodeAmplitude) DependantBounds(xGiven, _ graph.Bounds) (x, y graph.Bounds, err error) {
 	b.bodeContent.generate(xGiven.Min, xGiven.Max)
 	var bounds graph.Bounds
 	for _, p := range b.bodeContent.amplitude {
