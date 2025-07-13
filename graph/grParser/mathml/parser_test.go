@@ -48,6 +48,8 @@ func TestParse(t *testing.T) {
 		{"R=10\\u{m\\Omega}", "<mrow><mi>R</mi><mo>=</mo><mn>10</mn><mrow><mn>m</mn><mn>&Omega;</mn></mrow></mrow>"},
 		{"LR(s+1)", "<mrow><mi>L</mi><mi>R</mi><mrow><mo>(</mo><mrow><mi>s</mi><mo>+</mo><mn>1</mn></mrow><mo>)</mo></mrow></mrow>"},
 		{"sin(s+1)", "<mrow><mi>sin</mi><mrow><mo>(</mo><mrow><mi>s</mi><mo>+</mo><mn>1</mn></mrow><mo>)</mo></mrow></mrow>"},
+		{"\\left|G(s)\\right|", "<mrow><mo>|</mo><mrow><mi>G</mi><mrow><mo>(</mo><mi>s</mi><mo>)</mo></mrow></mrow><mo>|</mo></mrow>"},
+		{"\\left|G(j\\omega)\\right|\\cdot u( t + \\angle G(j\\omega) )", "<mrow><mrow><mo>|</mo><mrow><mi>G</mi><mrow><mo>(</mo><mrow><mi>j</mi><mi>&omega;</mi></mrow><mo>)</mo></mrow></mrow><mo>|</mo></mrow><mo>&middot;</mo><mi>u</mi><mrow><mo>(</mo><mrow><mi>t</mi><mo>+</mo><mo>&angmsd;</mo><mi>G</mi><mrow><mo>(</mo><mrow><mi>j</mi><mi>&omega;</mi></mrow><mo>)</mo></mrow></mrow><mo>)</mo></mrow></mrow>"},
 	}
 
 	for _, test := range tests {

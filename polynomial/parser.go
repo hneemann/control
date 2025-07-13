@@ -1406,6 +1406,7 @@ func writeUnicodeTo(out *strings.Builder, command string) {
 var unicodeMap = map[string]rune{
 	"sp":      '\u00a0',
 	"hs":      '\u2009',
+	"angle":   '\u2221',
 	"alpha":   '\u237a',
 	"beta":    '\u03B2',
 	"gamma":   '\u03B3',

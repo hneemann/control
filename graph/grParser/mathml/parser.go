@@ -456,6 +456,7 @@ var mathFunctions = map[string]struct{}{
 	"arcsin": {},
 	"arccos": {},
 	"lim":    {},
+	"arg":    {},
 	"log":    {},
 }
 
@@ -521,6 +522,8 @@ func (p *parser) ParseCommand(value string) Ast {
 		return SimpleOperator("&leftarrow;")
 	case "Leftarrow":
 		return SimpleOperator("&Leftarrow;")
+	case "angle":
+		return SimpleOperator("&angmsd;")
 	default:
 		if _, ok := mathFunctions[value]; ok {
 			return SimpleIdent(value)
