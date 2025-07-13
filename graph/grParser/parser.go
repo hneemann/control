@@ -1080,6 +1080,10 @@ func listToPoints(list *value.List) graph.Points {
 				} else {
 					return fmt.Errorf("list elements needs to contain two floats")
 				}
+			} else if p, ok := v.(ToPoint); ok {
+				if !yield(p.ToPoint(), nil) {
+					return iterator.SBC
+				}
 			} else {
 				return fmt.Errorf("list elements must themselves be lists containing two floats such as [x,y]")
 			}
