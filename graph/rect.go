@@ -213,17 +213,30 @@ func (i interPath) Iter(yield func(rune, Point) bool) {
 				}
 			}
 		} else {
-			if !lastInside && inside {
+			if lastInside && inside {
+				if !yield('L', point) {
+					return
+				}
+			} else if !lastInside && inside {
 				if !yield('M', i.r.Cut(point, lastPoint)) {
+					return
+				}
+				if !yield('L', point) {
 					return
 				}
 			} else if lastInside && !inside {
 				if !yield('L', i.r.Cut(lastPoint, point)) {
 					return
 				}
-			} else if inside {
-				if !yield('L', point) {
-					return
+			} else {
+				p0, p1, mode := i.r.Intersect(lastPoint, point)
+				if mode == BothOutsidePartVisible {
+					if !yield('M', p0) {
+						return
+					}
+					if !yield('L', p1) {
+						return
+					}
 				}
 			}
 		}
