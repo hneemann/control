@@ -949,10 +949,8 @@ func (p *pFuncPath) Iter(yield func(rune, Point) bool) {
 			p.e = err
 			return
 		}
-		if p.r.Contains(p1) || p.r.Contains(p0) {
-			if !p.refine(t0, p0, d0, t1, p1, d1, yield, 10) {
-				return
-			}
+		if !p.refine(t0, p0, d0, t1, p1, d1, yield, 10) {
+			return
 		}
 		if !yield('L', p1) {
 			return
@@ -984,23 +982,32 @@ func angleBetween(d0, d1 Point) float64 {
 
 func (p *pFuncPath) refine(w0 float64, p0, d0 Point, w1 float64, p1, d1 Point, yield func(rune, Point) bool, depth int) bool {
 	dw := w1 - w0
-	if (p.plot.Dist(p0, p1) > p.maxDist ||
+	dist := p.plot.Dist(p0, p1)
+	if dist > p.maxDist ||
 		p.plot.Dist(p1, p0.Add(d0.Mul(dw))) > p.maxDist/50 ||
-		angleBetween(d0, d1) > 10*math.Pi/180) && depth > 0 {
-		w := (w0 + w1) / 2
-		point, delta, err := p.f(w, dw)
-		if err != nil {
-			p.e = err
-			return false
-		}
-		if !p.refine(w0, p0, d0, w, point, delta, yield, depth-1) {
-			return false
-		}
-		if !yield('L', point) {
-			return false
-		}
-		if !p.refine(w, point, delta, w1, p1, d1, yield, depth-1) {
-			return false
+		angleBetween(d0, d1) > 10*math.Pi/180 {
+		if depth >= 0 {
+			w := (w0 + w1) / 2
+			point, delta, err := p.f(w, dw)
+			if err != nil {
+				p.e = err
+				return false
+			}
+			if !p.refine(w0, p0, d0, w, point, delta, yield, depth-1) {
+				return false
+			}
+			if !yield('L', point) {
+				return false
+			}
+			if !p.refine(w, point, delta, w1, p1, d1, yield, depth-1) {
+				return false
+			}
+		} else {
+			if dist > p.r.Height()*10000 {
+				if !yield('M', p1) {
+					return false
+				}
+			}
 		}
 	}
 	return true
