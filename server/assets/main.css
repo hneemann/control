@@ -61,9 +61,6 @@
 #result {
     margin: 0.3em;
 }
-#result td {
-    vertical-align: top;
-}
 
 svg.svg {
     width: 100%;
