@@ -82,9 +82,9 @@ var (
 
 func createImageMethods() value.MethodMap {
 	return value.MethodMap{
-		"file": value.MethodAtType(1, func(im ImageValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+		"svg": value.MethodAtType(1, func(im ImageValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if str, ok := stack.Get(1).(value.String); ok {
-				return ImageToFile(im.Value, &im.context, string(str))
+				return ImageToSvg(im.Value, &im.context, string(str))
 			} else {
 				return nil, fmt.Errorf("file requires a string")
 			}
@@ -275,9 +275,9 @@ func createPlotMethods() value.MethodMap {
 				return nil, fmt.Errorf("frame requires a style")
 			}
 		}).SetMethodDescription("color", "Sets the frame color."),
-		"file": value.MethodAtType(1, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+		"svg": value.MethodAtType(1, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if str, ok := stack.Get(1).(value.String); ok {
-				return ImageToFile(plot, &plot.context, string(str))
+				return ImageToSvg(plot, &plot.context, string(str))
 			} else {
 				return nil, fmt.Errorf("download requires a string")
 			}
@@ -1132,7 +1132,7 @@ func listFuncToPoints(list *value.List, xc funcGen.Function[value.Value], yc fun
 	}
 }
 
-func ImageToFile(plot graph.Image, context *graph.Context, name string) (value.Value, error) {
+func ImageToSvg(plot graph.Image, context *graph.Context, name string) (value.Value, error) {
 	var buf bytes.Buffer
 	buf.WriteString("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n")
 	w := xmlWriter.NewWithBuffer(&buf).PrettyPrint()

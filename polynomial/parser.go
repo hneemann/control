@@ -559,9 +559,9 @@ func bodeMethods() value.MethodMap {
 			}
 			return nil, fmt.Errorf("outputSize requires two float values")
 		}).SetMethodDescription("width", "height", "Sets the svg-output size."),
-		"file": value.MethodAtType(1, func(plot BodePlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+		"svg": value.MethodAtType(1, func(plot BodePlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if name, ok := stack.Get(1).(value.String); ok {
-				return grParser.ImageToFile(plot, &plot.context, string(name))
+				return grParser.ImageToSvg(plot, &plot.context, string(name))
 			}
 			return nil, fmt.Errorf("download requires a string value")
 		}).SetMethodDescription("filename", "Enables a file download."),
