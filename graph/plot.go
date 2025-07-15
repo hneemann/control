@@ -965,7 +965,7 @@ func (p *pFuncPath) IsClosed() bool {
 	return false
 }
 
-func angleBetween(d0, d1 Point) float64 {
+func cosAngleBetween(d0, d1 Point) float64 {
 	d0n := d0.Norm()
 	d1n := d1.Norm()
 	if d0n.X == 0 && d0n.Y == 0 || d1n.X == 0 && d1n.Y == 0 {
@@ -977,7 +977,7 @@ func angleBetween(d0, d1 Point) float64 {
 	} else if cos > 1 {
 		cos = 1
 	}
-	return math.Acos(cos)
+	return cos
 }
 
 func (p *pFuncPath) refine(w0 float64, p0, d0 Point, w1 float64, p1, d1 Point, yield func(rune, Point) bool, depth int, lastDist float64) bool {
@@ -985,7 +985,7 @@ func (p *pFuncPath) refine(w0 float64, p0, d0 Point, w1 float64, p1, d1 Point, y
 	dist := p.plot.Dist(p0, p1)
 	if dist > p.maxDist ||
 		p.plot.Dist(p1, p0.Add(d0.Mul(dw))) > p.maxDist/50 ||
-		angleBetween(d0, d1) > 10*math.Pi/180 {
+		cosAngleBetween(d0, d1) < 0.98 { // approximate 10 degrees
 		if depth > 0 {
 			w := (w0 + w1) / 2
 			point, delta, err := p.f(w, dw)
