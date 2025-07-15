@@ -33,7 +33,7 @@ func (w Holder[T]) ToFloat() (float64, bool) {
 	return 0, false
 }
 
-func (w Holder[T]) ToString(st funcGen.Stack[value.Value]) (string, error) {
+func (w Holder[T]) ToString(_ funcGen.Stack[value.Value]) (string, error) {
 	return fmt.Sprint(w.Value), nil
 }
 
@@ -334,20 +334,20 @@ func createPlotMethods() value.MethodMap {
 			return nil, fmt.Errorf("leftBorder requires an int value")
 		}).SetMethodDescription("left", "right", "Sets the width of the left and right border measured in characters."),
 		"xBounds": value.MethodAtType(2, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
-			if vmin, ok := stack.Get(1).ToFloat(); ok {
-				if vmax, ok := stack.Get(2).ToFloat(); ok {
+			if vMin, ok := stack.Get(1).ToFloat(); ok {
+				if vMax, ok := stack.Get(2).ToFloat(); ok {
 					plot = plot.Copy()
-					plot.Value.XBounds = graph.NewBounds(vmin, vmax)
+					plot.Value.XBounds = graph.NewBounds(vMin, vMax)
 					return plot, nil
 				}
 			}
 			return nil, fmt.Errorf("xBounds requires two float values")
 		}).SetMethodDescription("xMin", "xMax", "Sets the x-bounds."),
 		"yBounds": value.MethodAtType(2, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
-			if vmin, ok := stack.Get(1).ToFloat(); ok {
-				if vmax, ok := stack.Get(2).ToFloat(); ok {
+			if vMin, ok := stack.Get(1).ToFloat(); ok {
+				if vMax, ok := stack.Get(2).ToFloat(); ok {
 					plot = plot.Copy()
-					plot.Value.YBounds = graph.NewBounds(vmin, vmax)
+					plot.Value.YBounds = graph.NewBounds(vMin, vMax)
 					return plot, nil
 				}
 			}
@@ -357,7 +357,7 @@ func createPlotMethods() value.MethodMap {
 			if x, ok := stack.Get(1).ToFloat(); ok {
 				if y, ok := stack.Get(2).ToFloat(); ok {
 					plot = plot.Copy()
-					plot.Value.SetLegendPosition(graph.Point{x, y})
+					plot.Value.SetLegendPosition(graph.Point{X: x, Y: y})
 					return plot, nil
 				}
 			}
@@ -390,7 +390,7 @@ func createPlotMethods() value.MethodMap {
 							return nil, fmt.Errorf("factor needs to be greater than 0")
 						}
 						plot = plot.Copy()
-						plot.Value.BoundsModifier = graph.Zoom(graph.Point{x, y}, f)
+						plot.Value.BoundsModifier = graph.Zoom(graph.Point{X: x, Y: y}, f)
 						return plot, nil
 					}
 				}
@@ -398,11 +398,11 @@ func createPlotMethods() value.MethodMap {
 			return nil, fmt.Errorf("zoom requires three float values")
 		}).SetMethodDescription("x", "y", "factor", "Zoom at the given point by the given factor."),
 		"inset": value.MethodAtType(4, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
-			if xmin, ok := stack.Get(1).ToFloat(); ok {
-				if xmax, ok := stack.Get(2).ToFloat(); ok {
-					if ymin, ok := stack.Get(3).ToFloat(); ok {
-						if ymax, ok := stack.Get(4).ToFloat(); ok {
-							r := graph.NewRect(xmin, xmax, ymin, ymax)
+			if xMin, ok := stack.Get(1).ToFloat(); ok {
+				if xMax, ok := stack.Get(2).ToFloat(); ok {
+					if yMin, ok := stack.Get(3).ToFloat(); ok {
+						if yMax, ok := stack.Get(4).ToFloat(); ok {
+							r := graph.NewRect(xMin, xMax, yMin, yMax)
 							plot.Value.FillBackground = true
 							return NewPlotContentValue(graph.ImageInset{
 								Location: r,
@@ -852,7 +852,7 @@ func Setup(fg *value.FunctionGenerator) {
 				if err != nil {
 					return nil, fmt.Errorf("yConst: %w", err)
 				}
-				c := graph.YConst{float64(y), styleVal.Value}
+				c := graph.YConst{Y: y, Style: styleVal.Value}
 				return PlotContentValue{Holder[graph.PlotContent]{c}}, nil
 			}
 			return nil, fmt.Errorf("yConst requires a float")
@@ -867,7 +867,7 @@ func Setup(fg *value.FunctionGenerator) {
 				if err != nil {
 					return nil, fmt.Errorf("xConst: %w", err)
 				}
-				c := graph.XConst{float64(x), styleVal.Value}
+				c := graph.XConst{X: x, Style: styleVal.Value}
 				return PlotContentValue{Holder[graph.PlotContent]{c}}, nil
 			}
 			return nil, fmt.Errorf("yConst requires a float")
@@ -882,7 +882,7 @@ func Setup(fg *value.FunctionGenerator) {
 					if text, ok := st.Get(2).(value.String); ok {
 						hint := graph.Hint{
 							Text: string(text),
-							Pos:  graph.Point{x, y},
+							Pos:  graph.Point{X: x, Y: y},
 						}
 						styleVal, err := GetStyle(st, 3, graph.Black)
 						if err != nil {
@@ -908,9 +908,9 @@ func Setup(fg *value.FunctionGenerator) {
 								hint := graph.HintDir{
 									Hint: graph.Hint{
 										Text: string(text),
-										Pos:  graph.Point{x1, y1},
+										Pos:  graph.Point{X: x1, Y: y1},
 									},
-									PosDir: graph.Point{x2, y2},
+									PosDir: graph.Point{X: x2, Y: y2},
 								}
 								styleVal, err := GetStyle(st, 5, graph.Black)
 								if err != nil {
@@ -935,7 +935,7 @@ func Setup(fg *value.FunctionGenerator) {
 					if text, ok := st.Get(2).(value.String); ok {
 						t := graph.Text{
 							Text: string(text),
-							Pos:  graph.Point{x, y},
+							Pos:  graph.Point{X: x, Y: y},
 						}
 						styleVal, err := GetStyle(st, 3, graph.Black)
 						if err != nil {
@@ -959,8 +959,8 @@ func Setup(fg *value.FunctionGenerator) {
 						if y2, ok := st.Get(3).ToFloat(); ok {
 							if text, ok := st.Get(4).(value.String); ok {
 								arrow := graph.Arrow{
-									From:  graph.Point{x1, y1},
-									To:    graph.Point{x2, y2},
+									From:  graph.Point{X: x1, Y: y1},
+									To:    graph.Point{X: x2, Y: y2},
 									Label: string(text),
 								}
 								styleVal, err := GetStyle(st, 5, graph.Black)
@@ -970,7 +970,7 @@ func Setup(fg *value.FunctionGenerator) {
 
 								arrow.Style = styleVal.Value
 								if mode, ok := st.GetOptional(6, value.Int(3)).ToInt(); ok {
-									arrow.Mode = int(mode)
+									arrow.Mode = mode
 								} else {
 									return nil, fmt.Errorf("arrow requires an int as fifth argument")
 								}
@@ -1071,7 +1071,7 @@ func listToPoints(list *value.List) graph.Points {
 				}
 				if x, ok := slice[0].ToFloat(); ok {
 					if y, ok := slice[1].ToFloat(); ok {
-						if !yield(graph.Point{x, y}, nil) {
+						if !yield(graph.Point{X: x, Y: y}, nil) {
 							return iterator.SBC
 						}
 					} else {
@@ -1121,7 +1121,7 @@ func listFuncToPoints(list *value.List, xc funcGen.Function[value.Value], yc fun
 				return fmt.Errorf("y-function needs to return a float")
 			}
 
-			if !yield(graph.Point{x, y}, nil) {
+			if !yield(graph.Point{X: x, Y: y}, nil) {
 				return iterator.SBC
 			}
 			return nil

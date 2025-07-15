@@ -140,7 +140,7 @@ type AddAttribute struct {
 	attr  map[string]string
 }
 
-func (a *AddAttribute) ToMathMl(w *xmlWriter.XMLWriter, attr map[string]string) {
+func (a *AddAttribute) ToMathMl(w *xmlWriter.XMLWriter, _ map[string]string) {
 	a.inner.ToMathMl(w, a.attr)
 }
 

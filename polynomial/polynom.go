@@ -111,7 +111,7 @@ func (p Polynomial) intString(parser bool) string {
 	return result
 }
 
-func (p Polynomial) ToHtml(st funcGen.Stack[value.Value], w *xmlWriter.XMLWriter) error {
+func (p Polynomial) ToHtml(_ funcGen.Stack[value.Value], w *xmlWriter.XMLWriter) error {
 	w.Open("math").
 		Attr("xmlns", "http://www.w3.org/1998/Math/MathML")
 

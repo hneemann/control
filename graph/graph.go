@@ -110,22 +110,22 @@ func (c Color) Opacity() string {
 
 func (c Color) Darker() Color {
 	return Color{ //ToDo : use a better algorithm: RGB->HSV->Darken->RGB
-		R: dmax(int(c.R) * 2 / 3),
-		G: dmax(int(c.G) * 2 / 3),
-		B: dmax(int(c.B) * 2 / 3),
+		R: dMax(int(c.R) * 2 / 3),
+		G: dMax(int(c.G) * 2 / 3),
+		B: dMax(int(c.B) * 2 / 3),
 		A: c.A,
 	}
 }
 func (c Color) Brighter() Color {
 	return Color{ //ToDo : use a better algorithm: RGB->HSV->Brighten->RGB
-		R: dmax(int(c.R) * 3 / 2),
-		G: dmax(int(c.G) * 3 / 2),
-		B: dmax(int(c.B) * 3 / 2),
+		R: dMax(int(c.R) * 3 / 2),
+		G: dMax(int(c.G) * 3 / 2),
+		B: dMax(int(c.B) * 3 / 2),
 		A: c.A,
 	}
 }
 
-func dmax(u int) uint8 {
+func dMax(u int) uint8 {
 	if u > 255 {
 		return 255
 	} else {
@@ -478,7 +478,7 @@ func (t TransformCanvas) Context() *Context {
 }
 
 func (t TransformCanvas) String() string {
-	return fmt.Sprintf("Transform: %v", t.transform)
+	return "Transform"
 }
 
 type ResizeCanvas struct {

@@ -73,7 +73,7 @@ func (l *linTickCreator) ticks(minParent, maxParent float64, ctw CheckTextWidth)
 	format := fmt.Sprintf("%%.%df", l.getNks())
 
 	tick := math.Ceil(l.min/l.delta) * l.delta
-	ticks := []Tick{}
+	var ticks []Tick
 	for tick <= l.max {
 		if math.Abs(tick) < 1e-10 {
 			tick = 0
@@ -301,7 +301,7 @@ func CreateDateAxis(formatDate, formatMin string) Axis {
 		}
 
 		t = time.UnixMilli(int64(eMax) * 1000)
-		ticks := []Tick{}
+		var ticks []Tick
 		textTime := float64(textTickTime.UnixMilli()) / 1000
 		for smallTickTime.Before(t) {
 			tick := Tick{Position: float64(smallTickTime.UnixMilli()) / 1000}

@@ -507,7 +507,7 @@ func createBodeMethod[T value.Value](convert func(T) *Linear) funcGen.Function[v
 	return value.MethodAtType(2, func(lin T, st funcGen.Stack[value.Value]) (value.Value, error) {
 		if style, err := grParser.GetStyle(st, 1, graph.Black); err == nil {
 			if title, ok := st.GetOptional(2, value.String("")).(value.String); ok {
-				return BodePlotContentValue{Holder: grParser.Holder[BodePlotContent]{convert(lin).CreateBode(style.Value, string(title))}}, nil
+				return BodePlotContentValue{Holder: grParser.Holder[BodePlotContent]{Value: convert(lin).CreateBode(style.Value, string(title))}}, nil
 			}
 		}
 		return nil, fmt.Errorf("bode requires a color and a string")
@@ -794,7 +794,7 @@ var Parser = value.New().
 						return nil, fmt.Errorf("bodePlot requires BodePlotContent values as arguments")
 					}
 				}
-				return BodePlotValue{grParser.Holder[*BodePlot]{b}, graph.DefaultContext}, nil
+				return BodePlotValue{Holder: grParser.Holder[*BodePlot]{Value: b}, context: graph.DefaultContext}, nil
 			} else {
 
 				p := grParser.NewPlotValue(&graph.Plot{})
@@ -828,7 +828,7 @@ var Parser = value.New().
 	AddStaticFunction("blockDelay", funcGen.Function[value.Value]{
 		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
 			if delay, ok := stack.Get(0).ToFloat(); ok {
-				return BlockFactoryValue{grParser.Holder[BlockFactory]{Delay(delay)}}, nil
+				return BlockFactoryValue{Holder: grParser.Holder[BlockFactory]{Value: Delay(delay)}}, nil
 			}
 			return nil, fmt.Errorf("blockDelay requires a float values")
 		},
@@ -839,7 +839,7 @@ var Parser = value.New().
 		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
 			if aMin, ok := stack.Get(0).ToFloat(); ok {
 				if aMax, ok := stack.Get(1).ToFloat(); ok {
-					return BlockFactoryValue{grParser.Holder[BlockFactory]{Limit(math.Min(aMin, aMax), math.Max(aMin, aMax))}}, nil
+					return BlockFactoryValue{Holder: grParser.Holder[BlockFactory]{Value: Limit(math.Min(aMin, aMax), math.Max(aMin, aMax))}}, nil
 				}
 			}
 			return nil, fmt.Errorf("blockLimiter requires 2 float values")
@@ -850,7 +850,7 @@ var Parser = value.New().
 	AddStaticFunction("blockGain", funcGen.Function[value.Value]{
 		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
 			if g, ok := stack.Get(0).ToFloat(); ok {
-				return BlockFactoryValue{grParser.Holder[BlockFactory]{Gain(g)}}, nil
+				return BlockFactoryValue{Holder: grParser.Holder[BlockFactory]{Value: Gain(g)}}, nil
 			}
 			return nil, fmt.Errorf("blockGainr requires a float value")
 		},
@@ -866,7 +866,7 @@ var Parser = value.New().
 						if err != nil {
 							return nil, err
 						}
-						return BlockFactoryValue{grParser.Holder[BlockFactory]{pid}}, nil
+						return BlockFactoryValue{Holder: grParser.Holder[BlockFactory]{Value: pid}}, nil
 					}
 				}
 			}

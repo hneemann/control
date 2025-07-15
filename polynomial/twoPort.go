@@ -68,7 +68,7 @@ func (tp *TwoPort) Size() int {
 	return 5
 }
 
-func (tp *TwoPort) ToHtml(st funcGen.Stack[value.Value], w *xmlWriter.XMLWriter) error {
+func (tp *TwoPort) ToHtml(_ funcGen.Stack[value.Value], w *xmlWriter.XMLWriter) error {
 	w.Open("math").
 		Attr("xmlns", "http://www.w3.org/1998/Math/MathML")
 
@@ -125,7 +125,7 @@ func (tp *TwoPort) ToFloat() (float64, bool) {
 	return 0, false
 }
 
-func (tp *TwoPort) ToString(st funcGen.Stack[value.Value]) (string, error) {
+func (tp *TwoPort) ToString(_ funcGen.Stack[value.Value]) (string, error) {
 	var buf bytes.Buffer
 	buf.WriteString(tp.typ.String())
 	buf.WriteString("=(")

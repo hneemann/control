@@ -48,15 +48,16 @@ func TestBounds_MergeBounds(t *testing.T) {
 }
 
 func Test_angleBetween(t *testing.T) {
-	expected := 10 * math.Pi / 180
+	alpha := 10 * math.Pi / 180
+	expected := math.Cos(alpha)
 	for i := range 400 {
 		a0 := float64(i) * math.Pi / 180
-		a1 := a0 + expected
+		a1 := a0 + alpha
 
 		d0 := Point{X: math.Cos(a0), Y: math.Sin(a0)}
 		d1 := Point{X: math.Cos(a1), Y: math.Sin(a1)}
 
-		angle := angleBetween(d0, d1)
+		angle := cosAngleBetween(d0, d1)
 		assert.InDelta(t, expected, angle, 1e-7, "angleBetween(%v, %v)", d0, d1)
 
 	}
