@@ -563,8 +563,8 @@ func bodeMethods() value.MethodMap {
 			if name, ok := stack.Get(1).(value.String); ok {
 				return grParser.ImageToSvg(plot, &plot.context, string(name))
 			}
-			return nil, fmt.Errorf("download requires a string value")
-		}).SetMethodDescription("filename", "Enables a file download."),
+			return nil, fmt.Errorf("svg requires a string value")
+		}).SetMethodDescription("filename", "Creates a svg-file to download."),
 		"wBounds": value.MethodAtType(2, func(bode BodePlotValue, st funcGen.Stack[value.Value]) (value.Value, error) {
 			if aMin, ok := st.Get(1).ToFloat(); ok {
 				if aMax, ok := st.Get(2).ToFloat(); ok {
@@ -592,6 +592,14 @@ func bodeMethods() value.MethodMap {
 			}
 			return nil, errors.New("pBounds requires two float values")
 		}).SetMethodDescription("min", "max", "Sets the phase bounds.").Pure(false),
+		"aLin": value.MethodAtType(0, func(bode BodePlotValue, st funcGen.Stack[value.Value]) (value.Value, error) {
+			bode.Value.amplitude.YAxis = graph.LinearAxis
+			return bode, nil
+		}).SetMethodDescription("Sets the y-axis of the amplitude plot to linear.").Pure(false),
+		"aLog": value.MethodAtType(0, func(bode BodePlotValue, st funcGen.Stack[value.Value]) (value.Value, error) {
+			bode.Value.amplitude.YAxis = graph.LogAxis
+			return bode, nil
+		}).SetMethodDescription("Sets the y-axis of the amplitude plot to logarithmic.").Pure(false),
 		"grid": value.MethodAtType(1, func(plot BodePlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if style, err := grParser.GetStyle(stack, 1, grParser.GridStyle); err == nil {
 				plot.Value.amplitude.Grid = style.Value

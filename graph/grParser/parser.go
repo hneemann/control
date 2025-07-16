@@ -86,9 +86,9 @@ func createImageMethods() value.MethodMap {
 			if str, ok := stack.Get(1).(value.String); ok {
 				return ImageToSvg(im.Value, &im.context, string(str))
 			} else {
-				return nil, fmt.Errorf("file requires a string")
+				return nil, fmt.Errorf("svg requires a string")
 			}
-		}).SetMethodDescription("name", "Enables a file download."),
+		}).SetMethodDescription("name", "Creates a svg-file to download."),
 		"textSize": value.MethodAtType(1, func(im ImageValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if si, ok := stack.Get(1).ToFloat(); ok {
 				im.context.TextSize = si
@@ -279,9 +279,9 @@ func createPlotMethods() value.MethodMap {
 			if str, ok := stack.Get(1).(value.String); ok {
 				return ImageToSvg(plot, &plot.context, string(str))
 			} else {
-				return nil, fmt.Errorf("download requires a string")
+				return nil, fmt.Errorf("svg requires a string")
 			}
-		}).SetMethodDescription("name", "Enables a file download."),
+		}).SetMethodDescription("name", "Creates a svg-file to download."),
 		"xLog": value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			plot = plot.Copy()
 			plot.Value.XAxis = graph.LogAxis
