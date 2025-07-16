@@ -45,7 +45,7 @@ func (s *SVG) DrawPath(path Path, style *Style) {
 	for m, p := range path.Iter {
 		buf.WriteRune(m)
 		buf.WriteRune(' ')
-		buf.WriteString(fmt.Sprintf("%.2f,%.2f ", p.X, s.rect.Max.Y-p.Y))
+		buf.WriteString(fmt.Sprintf("%.3f,%.3f ", p.X, s.rect.Max.Y-p.Y))
 	}
 	if buf.Len() > 0 {
 		if path.IsClosed() {

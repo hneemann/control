@@ -983,9 +983,9 @@ func cosAngleBetween(d0, d1 Point) float64 {
 func (p *pFuncPath) refine(w0 float64, p0, d0 Point, w1 float64, p1, d1 Point, yield func(rune, Point) bool, depth int, lastDist float64) bool {
 	dw := w1 - w0
 	dist := p.plot.Dist(p0, p1)
-	if dist > p.maxDist ||
-		p.plot.Dist(p1, p0.Add(d0.Mul(dw))) > p.maxDist/50 ||
-		cosAngleBetween(d0, d1) < 0.98 { // approximate 10 degrees
+	if dist > p.maxDist || // distance of two points is too large
+		p.plot.Dist(p1, p0.Add(d0.Mul(dw))) > p.maxDist/50 || // distance to the tangent is too large
+		cosAngleBetween(d0, d1) < 0.98 { // angle is larger than approx 10 degrees
 		if depth > 0 {
 			w := (w0 + w1) / 2
 			point, delta, err := p.f(w, dw)
@@ -1004,7 +1004,7 @@ func (p *pFuncPath) refine(w0 float64, p0, d0 Point, w1 float64, p1, d1 Point, y
 			}
 		} else {
 			// detecting poles
-			if dist > lastDist*1.001 {
+			if dist > lastDist*1.001 && dist > p.maxDist {
 				// if a pole is detected, do not draw a line
 				if !yield('M', p1) {
 					return false
