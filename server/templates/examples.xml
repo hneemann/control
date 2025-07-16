@@ -48,7 +48,7 @@ plot(
 func h(w)
   let c1 = g( _i*w );
   let c2 = g( _i*w*0.99 );
-  hintDir(c1.real(),c1.imag(),c2.real(),c2.imag(),"ω="+w);
+  hintDir(c1.real(),c1.imag(),c2.real(),c2.imag(),"#omega="+w);
 
 plot(
   g.nyquist(),

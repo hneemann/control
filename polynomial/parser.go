@@ -1368,7 +1368,7 @@ func toUniCode(str string) string {
 				inCommand = true
 			}
 		default:
-			if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') {
+			if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == '^' {
 				if inCommand {
 					command.WriteRune(r)
 				} else {
@@ -1441,6 +1441,16 @@ var unicodeMap = map[string]rune{
 	"Phi":     '\u03A6',
 	"Psi":     '\u03A8',
 	"Omega":   '\u03A9',
+	"^0":      '⁰',
+	"^1":      '¹',
+	"^2":      '²',
+	"^3":      '³',
+	"^4":      '⁴',
+	"^5":      '⁵',
+	"^6":      '⁶',
+	"^7":      '⁷',
+	"^8":      '⁸',
+	"^9":      '⁹',
 	"0":       '₀',
 	"1":       '₁',
 	"2":       '₂',
