@@ -33,7 +33,7 @@
         <button id="example" style="margin-left:auto" onclick="showPopUpById('examples');" title="Beispiele"><img class="icon" src="/assets/help.svg"/></button>
     </div>
     <div style="display:flex;">
-      <textarea class="source" rows="2" autocorrect="off" id="source" placeholder="Enter script" onkeyup="updateRow()" onclick="updateRow()"></textarea>
+      <textarea class="source" rows="2" autocorrect="off" id="source" placeholder="Enter script" onkeyup="updateRow()" onclick="updateRow()">{{.Code}}</textarea>
     </div>
     <div class="footer">
         <span style="display:inline-block;width:3em;text-align:center;" id="row">1</span>
@@ -46,6 +46,7 @@
     <a class="menu-item" onclick="loadExample('{{.Name}}')" title="{{.Desc}}">{{.Name}}</a>
     {{end}}
     <a class="menu-item" onclick="hidePopUp()" href="help.html" target="_blank">Help</a>
+    <a class="menu-item" onclick="sourceLink()">Source-Link</a>
     <a class="menu-item" onclick="showPopUpById('info')">Info</a>
 </nav>
 

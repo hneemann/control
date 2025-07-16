@@ -114,6 +114,21 @@ function loadExample(name) {
     });
 }
 
+function bytesToBase64(bytes) {
+    const binString = Array.from(bytes, (byte) =>
+        String.fromCodePoint(byte),
+    ).join("");
+    return btoa(binString).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+}
+
+function sourceLink() {
+    hidePopUp();
+    let source = document.getElementById('source').value;
+    let b64=bytesToBase64(new TextEncoder().encode(source))
+    window.open("/?c=" + b64, "_blank");
+}
+
+
 function save() {
     if (loadedName === "") {
         showSaveAs();

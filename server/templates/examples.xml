@@ -52,7 +52,7 @@ func h(w)
 
 plot(
   g.nyquist(),
-  [0.1, 0.25, 0.5, 1, 2, 5].map( w->h(w) )
+  [0.1, 0.25, 0.5, 1, 2, 5].map(h)
 )</example>
     <example name="Nyquist-Kriterium" desc="Anwendung des Nyquist-Kriteriums"
              name-en="Nyquist stability criterion">let g = 6*(s+1)/((s-1)*(s-3));

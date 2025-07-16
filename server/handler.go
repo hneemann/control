@@ -2,6 +2,7 @@ package server
 
 import (
 	"embed"
+	"encoding/base64"
 	"encoding/xml"
 	"github.com/hneemann/control/graph/grParser/mathml"
 	"github.com/hneemann/control/polynomial"
@@ -75,16 +76,28 @@ func GetBuildInfo() string {
 }
 
 func CreateMain(examples []Example) http.HandlerFunc {
-
 	info := GetBuildInfo()
-
 	return func(writer http.ResponseWriter, request *http.Request) {
+		query := request.URL.Query()
+		b64Source := query.Get("c")
+		code := ""
+		if b64Source != "" {
+			b, err := base64.URLEncoding.WithPadding(-1).DecodeString(b64Source)
+			if err != nil {
+				log.Println("error decoding code:", err)
+			} else {
+				code = string(b)
+			}
+		}
+
 		data := struct {
 			Examples []Example
 			InfoText string
+			Code     string
 		}{
 			Examples: examples,
 			InfoText: info,
+			Code:     code,
 		}
 		err := mainViewTemp.Execute(writer, data)
 		if err != nil {
