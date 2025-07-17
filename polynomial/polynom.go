@@ -268,6 +268,8 @@ func (p Polynomial) AddFloat(f float64) Polynomial {
 	return mp
 }
 
+// Normalize returns a normalized polynomial, which is the same polynomial
+// divided by its leading coefficient. This makes the leading coefficient 1,
 func (p Polynomial) Normalize() Polynomial {
 	poly := p.Canonical()
 	mp := make(Polynomial, len(poly))
@@ -310,6 +312,8 @@ func (p Polynomial) Pow(n int) Polynomial {
 	return result
 }
 
+// Canonical returns a canonical form of the polynomial, which
+// is the same polynomial without trailing zeros.
 func (p Polynomial) Canonical() Polynomial {
 	for i := len(p) - 1; i >= 0; i-- {
 		if math.Abs(p[i]) > eps {
@@ -331,10 +335,12 @@ func (p Polynomial) Equals(b Polynomial) bool {
 	return true
 }
 
+// IsOne checks if the polynomial is equal to 1.
 func (p Polynomial) IsOne() bool {
 	return len(p) == 1 && math.Abs(p[0]-1) < eps
 }
 
+// IsSum checks if the polynomial is a sum of at least two terms.
 func (p Polynomial) IsSum() bool {
 	n := 0
 	for i := range p {
@@ -357,6 +363,9 @@ func NewRoots(roots ...complex128) Roots {
 	return Roots{roots: roots, factor: 1}
 }
 
+// Roots calculates the roots of the polynomial p. It returns a Roots struct
+// containing the roots and the leading coefficient of the polynomial.
+// If there are complex roots, only the root with the positive imaginary part is returned.
 func (p Polynomial) Roots() (Roots, error) {
 	if len(p) == 0 {
 		return Roots{}, errors.New("no coefficients given")
@@ -603,6 +612,7 @@ func (r Roots) ToPoints() []graph.Point {
 	return points
 }
 
+// OnlyReal returns only the real roots of the polynomial.
 func (r Roots) OnlyReal() []float64 {
 	var f []float64
 	for _, r := range r.roots {
