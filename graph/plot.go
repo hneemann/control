@@ -584,20 +584,22 @@ func (h Hint) DependantBounds(_, _ Bounds) (Bounds, Bounds, error) {
 func (h Hint) DrawTo(plot *Plot, canvas Canvas) error {
 	r := canvas.Rect()
 	if r.Contains(h.Pos) {
-		tPos := h.Pos
+		r := plot.canvas.Rect()
+		hPos := plot.trans(h.Pos)
+		tPos := hPos
 		dx := r.Width() / 30
-		if r.IsInLeftHalf(h.Pos) {
+		if r.IsInLeftHalf(hPos) {
 			tPos = tPos.Add(Point{dx, 0})
 		} else {
 			tPos = tPos.Add(Point{-dx, 0})
 		}
 		dy := r.Height() / 30
-		if r.IsInTopHalf(h.Pos) {
+		if r.IsInTopHalf(hPos) {
 			tPos = tPos.Add(Point{0, -dy})
 		} else {
 			tPos = tPos.Add(Point{0, dy})
 		}
-		drawArrow(plot, plot.trans(tPos), plot.trans(h.Pos), h.Style, 1, h.Text)
+		drawArrow(plot, tPos, hPos, h.Style, 1, h.Text)
 	}
 	return nil
 }
