@@ -3,6 +3,7 @@ package graph
 import (
 	"fmt"
 	"math"
+	"strings"
 	"time"
 )
 
@@ -167,13 +168,70 @@ func createLogTicks(logMin, parentMin, parentMax float64, tr func(v float64) flo
 			}
 			if tv >= parentMin {
 				if i == 1 {
-					t.Label = fmt.Sprintf("%g", f)
+					t.Label = FormatFloat(f)
 				}
 				ticks = append(ticks, t)
 			}
 		}
 		m++
 	}
+}
+
+func FormatFloat(v float64) string {
+	s := fmt.Sprintf("%g", v)
+	if !strings.ContainsRune(s, 'e') {
+		return s
+	}
+
+	va := math.Abs(v)
+	log := int(math.Floor(math.Log10(va)))
+	val := fmt.Sprintf("%.4g", va/exp10(log))
+	s = getExpStr(log)
+	if val != "1" {
+		s = val + "⋅" + s
+	}
+	if v < 0 {
+		s = "-" + s
+	}
+	return s
+}
+
+func getExpStr(log int) string {
+	l := log
+	if log < 0 {
+		l = -log
+	}
+	s := ""
+	for l > 0 {
+		dig := l % 10
+		l /= 10
+		switch dig {
+		case 0:
+			s = "⁰" + s
+		case 1:
+			s = "¹" + s
+		case 2:
+			s = "²" + s
+		case 3:
+			s = "³" + s
+		case 4:
+			s = "⁴" + s
+		case 5:
+			s = "⁵" + s
+		case 6:
+			s = "⁶" + s
+		case 7:
+			s = "⁷" + s
+		case 8:
+			s = "⁸" + s
+		case 9:
+			s = "⁹" + s
+		}
+	}
+	if log < 0 {
+		s = "⁻" + s
+	}
+	return "10" + s
 }
 
 // CreateFixedStepAxis creates an axis with a fixed step size.
