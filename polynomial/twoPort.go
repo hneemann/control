@@ -1,7 +1,6 @@
 package polynomial
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"github.com/hneemann/parser2/funcGen"
@@ -28,6 +27,8 @@ type TwoPort struct {
 	m11, m12, m21, m22 complex128
 	typ                TpType
 }
+
+var _ export.ToHtmlInterface = &TwoPort{}
 
 func (tp *TwoPort) Get(key string) (value.Value, bool) {
 	switch key {
@@ -83,12 +84,12 @@ func (tp *TwoPort) ToHtml(_ funcGen.Stack[value.Value], w *xmlWriter.XMLWriter) 
 
 	w.Open("mtable").
 		Open("mtr").
-		Open("mtd").Write(cmplxStr(tp.m11)).Close().
-		Open("mtd").Write(cmplxStr(tp.m12)).Close().
+		Open("mtd").Write(Complex(tp.m11).Format(6)).Close().
+		Open("mtd").Write(Complex(tp.m12).Format(6)).Close().
 		Close().
 		Open("mtr").
-		Open("mtd").Write(cmplxStr(tp.m21)).Close().
-		Open("mtd").Write(cmplxStr(tp.m22)).Close().
+		Open("mtd").Write(Complex(tp.m21).Format(6)).Close().
+		Open("mtd").Write(Complex(tp.m22).Format(6)).Close().
 		Close().
 		Close()
 
@@ -99,15 +100,6 @@ func (tp *TwoPort) ToHtml(_ funcGen.Stack[value.Value], w *xmlWriter.XMLWriter) 
 	w.Close()
 	return nil
 }
-
-func cmplxStr(c complex128) string {
-	if imag(c) == 0 {
-		return fmt.Sprintf("%.6g", real(c))
-	}
-	return fmt.Sprintf("%.6g", c)
-}
-
-var _ export.ToHtmlInterface = &TwoPort{}
 
 func (tp *TwoPort) ToList() (*value.List, bool) {
 	return nil, false
@@ -125,19 +117,16 @@ func (tp *TwoPort) ToFloat() (float64, bool) {
 	return 0, false
 }
 
+func (tp *TwoPort) String() string {
+	return tp.typ.String() + "=(" +
+		Complex(tp.m11).String() + ", " +
+		Complex(tp.m12).String() + "; " +
+		Complex(tp.m21).String() + ", " +
+		Complex(tp.m22).String() + ")"
+}
+
 func (tp *TwoPort) ToString(_ funcGen.Stack[value.Value]) (string, error) {
-	var buf bytes.Buffer
-	buf.WriteString(tp.typ.String())
-	buf.WriteString("=(")
-	buf.WriteString(cmplxStr(tp.m11))
-	buf.WriteString(",")
-	buf.WriteString(cmplxStr(tp.m12))
-	buf.WriteString(";")
-	buf.WriteString(cmplxStr(tp.m21))
-	buf.WriteString(",")
-	buf.WriteString(cmplxStr(tp.m22))
-	buf.WriteString(")")
-	return buf.String(), nil
+	return tp.String(), nil
 }
 
 func (tp *TwoPort) ToBool() (bool, bool) {

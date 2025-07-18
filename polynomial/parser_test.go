@@ -21,7 +21,7 @@ func TestLinear(t *testing.T) {
 		{name: "poly2", exp: "let p=poly(1,2,3); string(p.derivative())", res: value.String("6s+2")},
 		{name: "poly3", exp: "let p=poly(1,2,3); p(1)", res: value.Float(6)},
 		{name: "poly4", exp: "let p1=poly(1,2,3);let p2=poly(1,3); string(p1*p2)", res: value.String("9s³+9s²+5s+1")},
-		{name: "poly5", exp: "let p=poly(1,0,1); string(p.roots())", res: value.String("[(-0+1i)]")},
+		{name: "poly5", exp: "let p=poly(1,0,1); string(p.roots())", res: value.String("[-0+1i]")},
 		{name: "poly6", exp: "let p=poly(-1,0,1); string(p.roots())", res: value.String("[1, -1]")},
 		{name: "poly7", exp: "let p=poly(4,2)/2; string(p)", res: value.String("s+2")},
 
@@ -269,6 +269,33 @@ func Test_toUniCode(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got := toUniCode(tt.name)
 			assert.Equalf(t, tt.want, got, "toUniCode(%v)", tt.name)
+		})
+	}
+}
+
+func TestComplex_Format(t *testing.T) {
+	tests := []struct {
+		name string
+		c    Complex
+		want string
+	}{
+		{name: "real", c: Complex(complex(1, 0)), want: "1"},
+		{name: "realNeg", c: Complex(complex(-1, 0)), want: "-1"},
+		{name: "imag", c: Complex(complex(0, 1)), want: "i"},
+		{name: "imag", c: Complex(complex(0, -1)), want: "-i"},
+		{name: "imag", c: Complex(complex(0, 2)), want: "2⋅i"},
+		{name: "imagNeg", c: Complex(complex(0, -2)), want: "-2⋅i"},
+		{name: "both1", c: Complex(complex(2, 2)), want: "2+2⋅i"},
+		{name: "both2", c: Complex(complex(2, -2)), want: "2-2⋅i"},
+		{name: "both3", c: Complex(complex(-2, 2)), want: "-2+2⋅i"},
+		{name: "both4", c: Complex(complex(-2, -2)), want: "-2-2⋅i"},
+		{name: "both5", c: Complex(complex(-2, 1)), want: "-2+i"},
+		{name: "both6", c: Complex(complex(-2, -1)), want: "-2-i"},
+		{name: "small", c: Complex(complex(1e-6, 1e-6)), want: "10⁻⁶+10⁻⁶⋅i"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equalf(t, tt.want, tt.c.Format(6), "Format(6)")
 		})
 	}
 }

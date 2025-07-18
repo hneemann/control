@@ -37,6 +37,7 @@ func TestPolynom_String(t *testing.T) {
 		{"SimpleN2", Polynomial{-1, -2, 3}, "3s²-2s-1"},
 		{"SimpleN3", Polynomial{-1, -2, -3}, "-3s²-2s-1"},
 		{"one", Polynomial{-1, -2, 1}, "s²-2s-1"},
+		{"oneN", Polynomial{-1, -2, -1}, "-s²-2s-1"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

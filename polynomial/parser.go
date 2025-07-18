@@ -14,6 +14,7 @@ import (
 	"github.com/hneemann/parser2/value/export/xmlWriter"
 	"math"
 	"math/cmplx"
+	"strconv"
 	"strings"
 )
 
@@ -37,6 +38,13 @@ func (f BlockFactoryValue) GetType() value.Type {
 
 type Complex complex128
 
+var _ export.ToHtmlInterface = Complex(0)
+
+func (c Complex) ToHtml(_ funcGen.Stack[value.Value], w *xmlWriter.XMLWriter) error {
+	w.Write(c.Format(6))
+	return nil
+}
+
 func (c Complex) ToList() (*value.List, bool) {
 	return nil, false
 }
@@ -56,11 +64,44 @@ func (c Complex) ToFloat() (float64, bool) {
 	return 0, false
 }
 
-func (c Complex) ToString(_ funcGen.Stack[value.Value]) (string, error) {
+func (c Complex) String() string {
+	re := strconv.FormatFloat(float64(real(c)), 'g', -1, 64)
 	if imag(c) == 0 {
-		return fmt.Sprintf("%v", real(c)), nil
+		return re
 	}
-	return fmt.Sprintf("%v", c), nil
+	im := strconv.FormatFloat(float64(imag(c)), 'g', -1, 64)
+	if imag(c) < 0 {
+		return re + im + "i"
+	} else {
+		return re + "+" + im + "i"
+	}
+}
+
+func (c Complex) ToString(_ funcGen.Stack[value.Value]) (string, error) {
+	return c.String(), nil
+}
+
+func (c Complex) Format(prec int) string {
+	if imag(c) == 0 {
+		return value.Float(real(c)).Format(prec)
+	}
+	im := value.Float(math.Abs(imag(c))).Format(prec)
+	if im == "1" {
+		im = "i"
+	} else {
+		im += "⋅i"
+	}
+	if real(c) == 0 {
+		if imag(c) < 0 {
+			return "-" + im
+		}
+		return im
+	} else {
+		if imag(c) < 0 {
+			return value.Float(real(c)).Format(prec) + "-" + im
+		}
+		return value.Float(real(c)).Format(prec) + "+" + im
+	}
 }
 
 func (c Complex) ToBool() (bool, bool) {
@@ -99,6 +140,9 @@ func cmplxMethods() value.MethodMap {
 		"phase": value.MethodAtType(0, func(c Complex, st funcGen.Stack[value.Value]) (value.Value, error) {
 			return value.Float(cmplx.Phase(complex128(c))), nil
 		}).SetMethodDescription("Returns the phase."),
+		"string": value.MethodAtType(0, func(c Complex, st funcGen.Stack[value.Value]) (value.Value, error) {
+			return value.String(c.String()), nil
+		}).SetMethodDescription("Returns a string representation of the complex number."),
 	}
 }
 
@@ -186,6 +230,9 @@ func twoPortMethods() value.MethodMap {
 		"getC": value.MethodAtType(0, func(tp *TwoPort, st funcGen.Stack[value.Value]) (value.Value, error) {
 			return tp.GetC()
 		}).SetMethodDescription("Returns the C-parameters."),
+		"string": value.MethodAtType(0, func(tp *TwoPort, st funcGen.Stack[value.Value]) (value.Value, error) {
+			return value.String(tp.String()), nil
+		}).SetMethodDescription("Returns a string representation of the two-port."),
 	}
 }
 

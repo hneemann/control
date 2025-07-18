@@ -82,28 +82,11 @@ func (p Polynomial) intString(parser bool) string {
 					result += fmt.Sprintf("s^%d", n)
 				}
 			} else {
-				switch n {
-				case 0:
-				case 1:
+				if n != 0 {
 					result += "s"
-				case 2:
-					result += "s²"
-				case 3:
-					result += "s³"
-				case 4:
-					result += "s⁴"
-				case 5:
-					result += "s⁵"
-				case 6:
-					result += "s⁶"
-				case 7:
-					result += "s⁷"
-				case 8:
-					result += "s⁸"
-				case 9:
-					result += "s⁹"
-				default:
-					result += fmt.Sprintf("s^%d", n)
+					if n != 1 {
+						result += value.ExpStr(n)
+					}
 				}
 			}
 		}
