@@ -17,62 +17,49 @@ func TestLinear(t *testing.T) {
 		exp  string
 		res  any
 	}{
-		{name: "poly1", exp: "let p=poly(1,2,3); string(p)", res: value.String("3s²+2s+1")},
-		{name: "poly2", exp: "let p=poly(1,2,3); string(p.derivative())", res: value.String("6s+2")},
+		{name: "poly1", exp: "let p=poly(1,2,3); string(p)", res: value.String("3*s^2+2*s+1")},
+		{name: "poly2", exp: "let p=poly(1,2,3); string(p.derivative())", res: value.String("6*s+2")},
 		{name: "poly3", exp: "let p=poly(1,2,3); p(1)", res: value.Float(6)},
-		{name: "poly4", exp: "let p1=poly(1,2,3);let p2=poly(1,3); string(p1*p2)", res: value.String("9s³+9s²+5s+1")},
+		{name: "poly4", exp: "let p1=poly(1,2,3);let p2=poly(1,3); string(p1*p2)", res: value.String("9*s^3+9*s^2+5*s+1")},
 		{name: "poly5", exp: "let p=poly(1,0,1); string(p.roots())", res: value.String("[-0+1i]")},
 		{name: "poly6", exp: "let p=poly(-1,0,1); string(p.roots())", res: value.String("[1, -1]")},
 		{name: "poly7", exp: "let p=poly(4,2)/2; string(p)", res: value.String("s+2")},
 
-		{name: "polyExp1", exp: "let p=poly(1,1)^2; string(p)", res: value.String("s²+2s+1")},
-		{name: "polyExp2", exp: "let p=poly(1,1)^(-2); string(p)", res: value.String("1/(s²+2s+1)")},
+		{name: "polyExp1", exp: "let p=poly(1,1)^2; string(p)", res: value.String("s^2+2*s+1")},
+		{name: "polyExp2", exp: "let p=poly(1,1)^(-2); string(p)", res: value.String("1/(s^2+2*s+1)")},
 
 		{name: "polySub1", exp: "let p=poly(4,2)-poly(1,1); string(p)", res: value.String("s+3")},
-		{name: "polySub2", exp: "let p=poly(4,2)-1; string(p)", res: value.String("2s+3")},
-		{name: "polySub3", exp: "let p=1-poly(4,2); string(p)", res: value.String("-2s-3")},
+		{name: "polySub2", exp: "let p=poly(4,2)-1; string(p)", res: value.String("2*s+3")},
+		{name: "polySub3", exp: "let p=1-poly(4,2); string(p)", res: value.String("-2*s-3")},
 
 		{name: "linDiv1", exp: "let l=(poly(4,2)/poly(1,1))/2; string(l)", res: value.String("(s+2)/(s+1)")},
-		{name: "linDiv2", exp: "let l=2/(poly(4,2)/poly(1,1)); string(l)", res: value.String("(2s+2)/(2s+4)")},
+		{name: "linDiv2", exp: "let l=2/(poly(4,2)/poly(1,1)); string(l)", res: value.String("(2*s+2)/(2*s+4)")},
 
-		{name: "linDiv3", exp: "let l=(poly(4,2)/poly(1,1))/poly(2,1); string(l)", res: value.String("(2s+4)/(s²+3s+2)")},
-		{name: "linDiv4", exp: "let l=poly(2,1)/(poly(4,2)/poly(1,1)); string(l)", res: value.String("(s²+3s+2)/(2s+4)")},
+		{name: "linDiv3", exp: "let l=(poly(4,2)/poly(1,1))/poly(2,1); string(l)", res: value.String("(2*s+4)/(s^2+3*s+2)")},
+		{name: "linDiv4", exp: "let l=poly(2,1)/(poly(4,2)/poly(1,1)); string(l)", res: value.String("(s^2+3*s+2)/(2*s+4)")},
 
-		{name: "linDiv5", exp: "let l=(poly(4,2)/poly(1,1))/(poly(1,2)/poly(2,1)); string(l)", res: value.String("(2s²+8s+8)/(2s²+3s+1)")},
+		{name: "linDiv5", exp: "let l=(poly(4,2)/poly(1,1))/(poly(1,2)/poly(2,1)); string(l)", res: value.String("(2*s^2+8*s+8)/(2*s^2+3*s+1)")},
 
-		{name: "linPoly", exp: "let n=poly(1,2); let d=poly(1,2,3);string((n/d))", res: value.String("(2s+1)/(3s²+2s+1)")},
-		{name: "linPoly2", exp: "let l=(poly(1,2)/poly(1,3)); let d=l*poly(1,4);string(d)", res: value.String("(8s²+6s+1)/(3s+1)")},
-		{name: "linPoly3", exp: "let n=poly(2,3,1); let d=poly(24,26,9,1);string((n/d).reduce())", res: value.String("(s+1)/((s+3)*(s+4))")},
+		{name: "linPoly", exp: "let n=poly(1,2); let d=poly(1,2,3);string((n/d))", res: value.String("(2*s+1)/(3*s^2+2*s+1)")},
+		{name: "linPoly2", exp: "let l=(poly(1,2)/poly(1,3)); let d=l*poly(1,4);string(d)", res: value.String("(8*s^2+6*s+1)/(3*s+1)")},
 
-		{name: "linAdd1", exp: "string((poly(2,2)/poly(2,1))+(poly(1,1)/poly(3,1)))", res: value.String("(3s²+11s+8)/(s²+5s+6)")},
+		{name: "linAdd1", exp: "string((poly(2,2)/poly(2,1))+(poly(1,1)/poly(3,1)))", res: value.String("(3*s^2+11*s+8)/(s^2+5*s+6)")},
 
-		{name: "linSub1", exp: "string((poly(2,2)/poly(2,1))-(poly(1,1)/poly(3,1)))", res: value.String("(s²+5s+4)/(s²+5s+6)")},
-		{name: "linSub2", exp: "string((poly(2,2)/poly(2,1))-poly(1,1))", res: value.String("(-s²-s)/(s+2)")},
-		{name: "linSub3", exp: "string(poly(1,1)-(poly(2,2)/poly(2,1)))", res: value.String("(s²+s)/(s+2)")},
+		{name: "linSub1", exp: "string((poly(2,2)/poly(2,1))-(poly(1,1)/poly(3,1)))", res: value.String("(s^2+5*s+4)/(s^2+5*s+6)")},
+		{name: "linSub2", exp: "string((poly(2,2)/poly(2,1))-poly(1,1))", res: value.String("(-s^2-s)/(s+2)")},
+		{name: "linSub3", exp: "string(poly(1,1)-(poly(2,2)/poly(2,1)))", res: value.String("(s^2+s)/(s+2)")},
 
 		{name: "linSub4", exp: "string(1-(poly(2,2)/poly(2,1)))", res: value.String("-s/(s+2)")},
 		{name: "linSub5", exp: "string((poly(2,2)/poly(2,1))-1)", res: value.String("s/(s+2)")},
 
-		{name: "linExp", exp: "string((poly(2,2)/poly(2,1))^2)", res: value.String("(4s²+8s+4)/(s²+4s+4)")},
-		{name: "linExp2", exp: "string((poly(2,2)/poly(2,1))^(-2))", res: value.String("(s²+4s+4)/(4s²+8s+4)")},
+		{name: "linExp", exp: "string((poly(2,2)/poly(2,1))^2)", res: value.String("(4*s^2+8*s+4)/(s^2+4*s+4)")},
+		{name: "linExp2", exp: "string((poly(2,2)/poly(2,1))^(-2))", res: value.String("(s^2+4*s+4)/(4*s^2+8*s+4)")},
 
-		{name: "simple", exp: "string(12*(1+1/(1.5*s)+2*s))", res: value.String("(36s²+18s+12)/(1.5s)")},
-		{name: "simple2", exp: "string(12*(1+1/(1.5*s)+2*s))", res: value.String("(36s²+18s+12)/(1.5s)")},
-		{name: "pid", exp: "let kp=12;let ti=1.5;let td=2;let p=pid(kp,ti,td); string(p)", res: value.String("(36s²+18s+12)/(1.5s)")},
+		{name: "simple", exp: "string(12*(1+1/(1.5*s)+2*s))", res: value.String("(36*s^2+18*s+12)/(1.5*s)")},
+		{name: "simple2", exp: "string(12*(1+1/(1.5*s)+2*s))", res: value.String("(36*s^2+18*s+12)/(1.5*s)")},
+		{name: "pid", exp: "let kp=12;let ti=1.5;let td=2;let p=pid(kp,ti,td); string(p)", res: value.String("(36*s^2+18*s+12)/(1.5*s)")},
 
-		{name: "loop", exp: "let g=(s+1)/(s^2+4*s+5); string(g.loop())", res: value.String("(s+1)/(s²+5s+6)")},
-
-		{name: "int", exp: `
-let kp=10;
-let ti=2;
-let td=1;
-let k=pid(kp,ti,td);
-let g=(1.5*s)/((2*s+1)*(s+1)*(s^2+3*s+3.1));
-let g0=k*g;
-let gw=g0.loop();
-string(gw)
-`, res: value.String("30*(s²+s+0.5)/(4s⁴+18s³+62.4s²+54.6s+21.2)")}, // externally checked
-
+		{name: "loop", exp: "let g=(s+1)/(s^2+4*s+5); string(g.loop())", res: value.String("(s+1)/(s^2+5*s+6)")},
 		{name: "evans", exp: "let g=(s+1)/(s^2+4*s+5); string(plot(g.evans(10)))", res: value.String("Plot: Plot Preferences, Polar Grid, Asymptotes, Evans Curves, Scatter: Poles, Scatter: Zeros")},
 		{name: "nyquist", exp: "let g=(s+1)/(s^2+4*s+5); string(plot(g.nyquist()))", res: value.String("Plot: Plot Preferences, coordinate cross, Scatter: ω=0, Parameter curve")},
 
@@ -80,7 +67,7 @@ string(gw)
 		{name: "pMargin", exp: "let g=74.45626527211962*(s+0.2)/((s^2+2*s+10)*(s+4)*(s^2+0.2*s+0.1));g.pMargin().pMargin/100", res: value.Float(0)},
 		{name: "pMargin", exp: "let g=70*(s+0.2)/((s^2+2*s+10)*(s+4)*(s^2+0.2*s+0.1));g.pMargin().pMargin", res: value.Float(11.868562012450866)},
 
-		{name: "bode-lin", exp: "let g=(s+0.2)/((s+1)*(s+2));string(g.bode())", res: value.String("BodePlotContent((s+0.2)/(s²+3s+2))")},
+		{name: "bode-lin", exp: "let g=(s+0.2)/((s+1)*(s+2));string(g.bode())", res: value.String("BodePlotContent((s+0.2)/(s^2+3*s+2))")},
 		{name: "bode-poly", exp: "let g=s+0.2;string(g.bode())", res: value.String("BodePlotContent(s+0.2)")},
 		{name: "bode-float", exp: "let g=0.2;string(g.bode())", res: value.String("BodePlotContent(0.2)")},
 		{name: "bode-int", exp: "let g=2;string(g.bode())", res: value.String("BodePlotContent(2)")},
@@ -104,6 +91,50 @@ string(gw)
 				default:
 					assert.Equal(t, test.res, res, test.exp)
 				}
+			}
+		})
+	}
+}
+
+func TestLinearRounding(t *testing.T) {
+	tests := []struct {
+		name string
+		exp  string
+		want *Linear
+	}{
+		{
+			name: "linPoly3",
+			exp:  "let n=poly(2,3,1); let d=poly(24,26,9,1);(n/d).reduce()",
+			// (s+1)/((s+3)*(s+4)) = (s+1)/(12*s^2+7*s+1)
+			want: &Linear{Numerator: Polynomial{1, 1}, Denominator: Polynomial{12, 7, 1}},
+		},
+
+		{name: "int", exp: `
+let kp=10;
+let ti=2;
+let td=1;
+let k=pid(kp,ti,td);
+let g=(1.5*s)/((2*s+1)*(s+1)*(s^2+3*s+3.1));
+let g0=k*g;
+let gw=g0.loop();
+gw
+`,
+			//30*(s^2+s+0.5)/(4*s^4+18*s^3+62.4*s^2+54.6*s+21.2)") externally checked
+			want: &Linear{Numerator: Polynomial{15, 30, 30}, Denominator: Polynomial{21.2, 54.6, 62.4, 18, 4}},
+		},
+	}
+	for _, test := range tests {
+		test := test
+		t.Run(test.name, func(t *testing.T) {
+			fu, err := Parser.Generate(test.exp)
+			assert.NoError(t, err, test.exp)
+			if fu != nil {
+				res, err := fu(funcGen.NewEmptyStack[value.Value]())
+				assert.NoError(t, err, test.exp)
+				linear, ok := res.(*Linear)
+				assert.True(t, ok)
+				assert.True(t, test.want.Numerator.Equals(linear.Numerator))
+				assert.True(t, test.want.Denominator.Equals(linear.Denominator))
 			}
 		})
 	}

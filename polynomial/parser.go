@@ -417,8 +417,8 @@ func linMethods() value.MethodMap {
 		"reduce": value.MethodAtType(0, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
 			return lin.Reduce()
 		}).SetMethodDescription("Reduces the linear system."),
-		"stringPoly": value.MethodAtType(0, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
-			return value.String(lin.StringPoly(false)), nil
+		"string": value.MethodAtType(0, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
+			return value.String(lin.String()), nil
 		}).SetMethodDescription("Creates a string representation of the linear system."),
 		"bode": createBodeMethod(func(lin *Linear) *Linear { return lin }),
 		"evans": value.MethodAtType(1, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {

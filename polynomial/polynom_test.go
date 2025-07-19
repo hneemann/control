@@ -2,6 +2,7 @@ package polynomial
 
 import (
 	"fmt"
+	"github.com/hneemann/parser2/value/export/xmlWriter"
 	"math/cmplx"
 	"testing"
 )
@@ -32,12 +33,13 @@ func TestPolynom_String(t *testing.T) {
 		p    Polynomial
 		want string
 	}{
-		{"Simple", Polynomial{1, 2, 3}, "3s²+2s+1"},
-		{"SimpleN", Polynomial{1, -2, 3}, "3s²-2s+1"},
-		{"SimpleN2", Polynomial{-1, -2, 3}, "3s²-2s-1"},
-		{"SimpleN3", Polynomial{-1, -2, -3}, "-3s²-2s-1"},
-		{"one", Polynomial{-1, -2, 1}, "s²-2s-1"},
-		{"oneN", Polynomial{-1, -2, -1}, "-s²-2s-1"},
+		{"Simple", Polynomial{1, 2, 3}, "3*s^2+2*s+1"},
+		{"SimpleN", Polynomial{1, -2, 3}, "3*s^2-2*s+1"},
+		{"SimpleN2", Polynomial{-1, -2, 3}, "3*s^2-2*s-1"},
+		{"SimpleN3", Polynomial{-1, -2, -3}, "-3*s^2-2*s-1"},
+		{"small", Polynomial{-1, -2e-6, -3}, "-3*s^2-2e-06*s-1"},
+		{"one", Polynomial{-1, -2, 1}, "s^2-2*s-1"},
+		{"oneN", Polynomial{-1, -2, -1}, "-s^2-2*s-1"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -234,6 +236,30 @@ func TestRoots_reduce(t *testing.T) {
 			assert.EqualValues(t, tt.nZeros, gotZ, "bad zeros")
 			assert.EqualValues(t, tt.nPoles, gotP, "bad poles")
 			assert.EqualValues(t, tt.succees, ok, "bad success")
+		})
+	}
+}
+
+func TestPolynomial_ToMathML(t *testing.T) {
+	tests := []struct {
+		name string
+		p    Polynomial
+		want string
+	}{
+		{"Simple", Polynomial{1, 1}, "<mrow><mi>s</mi><mo>+</mo><mn>1</mn></mrow>"},
+		{"Simple2", Polynomial{1, 2}, "<mrow><mn>2</mn><mi>s</mi><mo>+</mo><mn>1</mn></mrow>"},
+		{"Square", Polynomial{1, 1, 1}, "<mrow><msup><mi>s</mi><mn>2</mn></msup><mo>+</mo><mi>s</mi><mo>+</mo><mn>1</mn></mrow>"},
+		{"Square2", Polynomial{1, 1, 2}, "<mrow><mn>2</mn><msup><mi>s</mi><mn>2</mn></msup><mo>+</mo><mi>s</mi><mo>+</mo><mn>1</mn></mrow>"},
+		{"Small", Polynomial{1e-7, 1e-7}, "<mrow><msup><mn>10</mn><mn>-7</mn></msup><mi>s</mi><mo>+</mo><msup><mn>10</mn><mn>-7</mn></msup></mrow>"},
+		{"Small2", Polynomial{2e-7, 2e-7}, "<mrow><mn>2</mn><mo>&middot;</mo><msup><mn>10</mn><mn>-7</mn></msup><mi>s</mi><mo>+</mo><mn>2</mn><mo>&middot;</mo><msup><mn>10</mn><mn>-7</mn></msup></mrow>"},
+		{"Neg", Polynomial{-1, -1}, "<mrow><mo>-</mo><mi>s</mi><mo>-</mo><mn>1</mn></mrow>"},
+		{"Neg", Polynomial{-2, -2}, "<mrow><mo>-</mo><mn>2</mn><mi>s</mi><mo>-</mo><mn>2</mn></mrow>"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			w := xmlWriter.New()
+			tt.p.ToMathML(w)
+			assert.Equal(t, tt.want, w.String(), "ToMathML()")
 		})
 	}
 }

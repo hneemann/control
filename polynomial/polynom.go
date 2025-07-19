@@ -11,6 +11,7 @@ import (
 	"github.com/hneemann/parser2/value/export/xmlWriter"
 	"math"
 	"math/cmplx"
+	"strconv"
 	"strings"
 )
 
@@ -45,14 +46,6 @@ func (p Polynomial) EvalCplx(s complex128) complex128 {
 }
 
 func (p Polynomial) String() string {
-	return p.intString(false)
-}
-
-func (p Polynomial) StringToParse() string {
-	return p.intString(true)
-}
-
-func (p Polynomial) intString(parser bool) string {
 	result := ""
 	for i := range p {
 		n := len(p) - i - 1
@@ -71,23 +64,17 @@ func (p Polynomial) intString(parser bool) string {
 				}
 			}
 			if c != 1 || n == 0 {
-				result += fmt.Sprintf("%.6g", c)
-			}
-			if parser {
-				switch n {
-				case 0:
-				case 1:
-					result += "s"
-				default:
-					result += fmt.Sprintf("s^%d", n)
-				}
-			} else {
+				result += strconv.FormatFloat(c, 'g', -1, 64)
 				if n != 0 {
-					result += "s"
-					if n != 1 {
-						result += value.ExpStr(n)
-					}
+					result += "*"
 				}
+			}
+			switch n {
+			case 0:
+			case 1:
+				result += "s"
+			default:
+				result += fmt.Sprintf("s^%d", n)
 			}
 		}
 	}
@@ -127,19 +114,21 @@ func (p Polynomial) ToMathML(w *xmlWriter.XMLWriter) {
 					w.Open("mo").Write("+").Close()
 				}
 			}
-			if c != 1 || n == 0 {
-				numStr := fmt.Sprintf("%g", c)
+			numStr := strconv.FormatFloat(c, 'g', 6, 64)
+			if numStr != "1" || n == 0 {
 				if pos := strings.IndexRune(numStr, 'e'); pos < 0 {
 					w.Open("mn").Write(numStr).Close()
 				} else {
-					fac := numStr[:pos]
-					if fac != "1" {
-						w.Open("mn").Write(fac).Close()
+					va := math.Abs(c)
+					log := int(math.Floor(math.Log10(va)))
+					val := strconv.FormatFloat(c/value.Exp10(log), 'g', 6, 64)
+					if val != "1" {
+						w.Open("mn").Write(val).Close()
 						w.Open("mo").WriteHTML("&middot;").Close()
 					}
 					w.Open("msup")
 					w.Open("mn").Write("10").Close()
-					w.Open("mn").Write(numStr[pos+1:]).Close()
+					w.Open("mn").Write(strconv.Itoa(log)).Close()
 					w.Close()
 				}
 			}
@@ -500,17 +489,9 @@ func (r Roots) Complex(a, b, c float64) (Roots, error) {
 }
 
 func (r Roots) String() string {
-	return r.intString(false)
-}
-
-func (r Roots) StringToParse() string {
-	return r.intString(true)
-}
-
-func (r Roots) intString(parse bool) string {
 	var b strings.Builder
 	if math.Abs(1-r.factor) > eps {
-		b.WriteString(fmt.Sprintf("%.6g", r.factor))
+		b.WriteString(strconv.FormatFloat(r.factor, 'g', -1, 64))
 	}
 	for _, root := range r.roots {
 		if b.Len() > 0 {
@@ -521,7 +502,7 @@ func (r Roots) intString(parse bool) string {
 		} else {
 			p := FromRoot(root)
 			b.WriteString("(")
-			b.WriteString(p.intString(parse))
+			b.WriteString(p.String())
 			b.WriteString(")")
 		}
 	}

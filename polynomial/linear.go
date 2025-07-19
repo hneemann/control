@@ -39,28 +39,15 @@ func (l *Linear) Equals(b *Linear) bool {
 	return l.Numerator.Equals(b.Numerator) && l.Denominator.Equals(b.Denominator)
 }
 
-func (l *Linear) StringPoly(parse bool) string {
-	s := "(" + l.Numerator.intString(parse) + ")/(" + l.Denominator.intString(parse) + ")"
-	return s
-}
-
 func (l *Linear) String() string {
-	return l.intString(false)
-}
-
-func (l *Linear) StringToParse() string {
-	return l.intString(true)
-}
-
-func (l *Linear) intString(parse bool) string {
 	var n string
 	if l.zerosCalculated() {
-		n = l.zeros.intString(parse)
+		n = l.zeros.String()
 		if l.Denominator.IsOne() {
 			return n
 		}
 	} else {
-		is := l.Numerator.intString(parse)
+		is := l.Numerator.String()
 		if l.Denominator.IsOne() {
 			return is
 		}
@@ -72,9 +59,9 @@ func (l *Linear) intString(parse bool) string {
 	}
 	var d string
 	if l.polesCalculated() {
-		d = l.poles.intString(parse)
+		d = l.poles.String()
 	} else {
-		d = l.Denominator.intString(parse)
+		d = l.Denominator.String()
 	}
 	return fmt.Sprintf("%s/(%s)", n, d)
 }

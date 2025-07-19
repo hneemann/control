@@ -150,7 +150,6 @@ func TestLinear_Loop(t *testing.T) {
 		Numerator:   Polynomial{4, 2},
 		Denominator: Polynomial{4, 4, 2},
 	}
-	fmt.Println(g0.StringToParse())
 
 	expected := &Linear{
 		Numerator:   Polynomial{2, 1},
