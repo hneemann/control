@@ -41,7 +41,7 @@ type Complex complex128
 var _ export.ToHtmlInterface = Complex(0)
 
 func (c Complex) ToHtml(_ funcGen.Stack[value.Value], w *xmlWriter.XMLWriter) error {
-	w.Write(c.Format(6))
+	w.Write(FormatComplex(complex128(c), 6))
 	return nil
 }
 
@@ -79,29 +79,6 @@ func (c Complex) String() string {
 
 func (c Complex) ToString(_ funcGen.Stack[value.Value]) (string, error) {
 	return c.String(), nil
-}
-
-func (c Complex) Format(prec int) string {
-	if imag(c) == 0 {
-		return value.Float(real(c)).Format(prec)
-	}
-	im := value.Float(math.Abs(imag(c))).Format(prec)
-	if im == "1" {
-		im = "i"
-	} else {
-		im += "⋅i"
-	}
-	if real(c) == 0 {
-		if imag(c) < 0 {
-			return "-" + im
-		}
-		return im
-	} else {
-		if imag(c) < 0 {
-			return value.Float(real(c)).Format(prec) + "-" + im
-		}
-		return value.Float(real(c)).Format(prec) + "+" + im
-	}
 }
 
 func (c Complex) ToBool() (bool, bool) {
@@ -312,6 +289,9 @@ func polyMethods() value.MethodMap {
 			pol.ToLaTeX(&b)
 			return value.String(b.String()), nil
 		}).SetMethodDescription("Returns a LaTeX representation of the polynomial."),
+		"string": value.MethodAtType(0, func(pol Polynomial, st funcGen.Stack[value.Value]) (value.Value, error) {
+			return value.String(pol.String()), nil
+		}).SetMethodDescription("Returns a string representation of the polynomial."),
 	}
 }
 

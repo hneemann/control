@@ -121,7 +121,7 @@ func (p Polynomial) ToMathML(w *xmlWriter.XMLWriter) {
 				} else {
 					va := math.Abs(c)
 					log := int(math.Floor(math.Log10(va)))
-					val := strconv.FormatFloat(c/value.Exp10(log), 'g', 6, 64)
+					val := strconv.FormatFloat(c/export.Exp10(log), 'g', 6, 64)
 					if val != "1" {
 						w.Open("mn").Write(val).Close()
 						w.Open("mo").WriteHTML("&middot;").Close()

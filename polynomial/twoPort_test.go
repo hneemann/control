@@ -142,3 +142,31 @@ func TestTwoPort_Travo(t *testing.T) {
 
 	assert.InDelta(t, 8.3, outputVoltage, 1e-2)
 }
+
+func TestFormatComplex(t *testing.T) {
+	tests := []struct {
+		name string
+		c    complex128
+		want string
+	}{
+		{name: "real", c: complex(1, 0), want: "1"},
+		{name: "realNeg", c: complex(-1, 0), want: "-1"},
+		{name: "imag", c: complex(0, 1), want: "i"},
+		{name: "imag", c: complex(0, -1), want: "-i"},
+		{name: "imag", c: complex(0, 2), want: "2⋅i"},
+		{name: "imagNeg", c: complex(0, -2), want: "-2⋅i"},
+		{name: "both1", c: complex(2, 2), want: "2+2⋅i"},
+		{name: "both2", c: complex(2, -2), want: "2-2⋅i"},
+		{name: "both3", c: complex(-2, 2), want: "-2+2⋅i"},
+		{name: "both4", c: complex(-2, -2), want: "-2-2⋅i"},
+		{name: "both5", c: complex(-2, 1), want: "-2+i"},
+		{name: "both6", c: complex(-2, -1), want: "-2-i"},
+		{name: "small", c: complex(1e-6, 1e-6), want: "10⁻⁶+10⁻⁶⋅i"},
+		{name: "small2", c: complex(2e-6, 2e-6), want: "2⋅10⁻⁶+2⋅10⁻⁶⋅i"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equalf(t, tt.want, FormatComplex(tt.c, 6), "Format(6)")
+		})
+	}
+}

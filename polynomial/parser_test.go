@@ -303,30 +303,3 @@ func Test_toUniCode(t *testing.T) {
 		})
 	}
 }
-
-func TestComplex_Format(t *testing.T) {
-	tests := []struct {
-		name string
-		c    Complex
-		want string
-	}{
-		{name: "real", c: Complex(complex(1, 0)), want: "1"},
-		{name: "realNeg", c: Complex(complex(-1, 0)), want: "-1"},
-		{name: "imag", c: Complex(complex(0, 1)), want: "i"},
-		{name: "imag", c: Complex(complex(0, -1)), want: "-i"},
-		{name: "imag", c: Complex(complex(0, 2)), want: "2⋅i"},
-		{name: "imagNeg", c: Complex(complex(0, -2)), want: "-2⋅i"},
-		{name: "both1", c: Complex(complex(2, 2)), want: "2+2⋅i"},
-		{name: "both2", c: Complex(complex(2, -2)), want: "2-2⋅i"},
-		{name: "both3", c: Complex(complex(-2, 2)), want: "-2+2⋅i"},
-		{name: "both4", c: Complex(complex(-2, -2)), want: "-2-2⋅i"},
-		{name: "both5", c: Complex(complex(-2, 1)), want: "-2+i"},
-		{name: "both6", c: Complex(complex(-2, -1)), want: "-2-i"},
-		{name: "small", c: Complex(complex(1e-6, 1e-6)), want: "10⁻⁶+10⁻⁶⋅i"},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			assert.Equalf(t, tt.want, tt.c.Format(6), "Format(6)")
-		})
-	}
-}

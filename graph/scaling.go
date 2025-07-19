@@ -2,7 +2,7 @@ package graph
 
 import (
 	"fmt"
-	"github.com/hneemann/parser2/value"
+	"github.com/hneemann/parser2/value/export"
 	"math"
 	"time"
 )
@@ -168,7 +168,7 @@ func createLogTicks(logMin, parentMin, parentMax float64, tr func(v float64) flo
 			}
 			if tv >= parentMin {
 				if i == 1 {
-					t.Label = value.Float(f).Format(6)
+					t.Label = export.FormatFloat(f, 6)
 				}
 				ticks = append(ticks, t)
 			}

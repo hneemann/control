@@ -7,6 +7,7 @@ import (
 	"github.com/hneemann/parser2/value"
 	"github.com/hneemann/parser2/value/export"
 	"github.com/hneemann/parser2/value/export/xmlWriter"
+	"math"
 )
 
 type TpType rune
@@ -84,12 +85,12 @@ func (tp *TwoPort) ToHtml(_ funcGen.Stack[value.Value], w *xmlWriter.XMLWriter) 
 
 	w.Open("mtable").
 		Open("mtr").
-		Open("mtd").Write(Complex(tp.m11).Format(6)).Close().
-		Open("mtd").Write(Complex(tp.m12).Format(6)).Close().
+		Open("mtd").Write(FormatComplex(tp.m11, 6)).Close().
+		Open("mtd").Write(FormatComplex(tp.m12, 6)).Close().
 		Close().
 		Open("mtr").
-		Open("mtd").Write(Complex(tp.m21).Format(6)).Close().
-		Open("mtd").Write(Complex(tp.m22).Format(6)).Close().
+		Open("mtd").Write(FormatComplex(tp.m21, 6)).Close().
+		Open("mtd").Write(FormatComplex(tp.m22, 6)).Close().
 		Close().
 		Close()
 
@@ -99,6 +100,36 @@ func (tp *TwoPort) ToHtml(_ funcGen.Stack[value.Value], w *xmlWriter.XMLWriter) 
 	w.Close()
 	w.Close()
 	return nil
+}
+
+// FormatComplex formats a complex number as a string with the given precision.
+// It uses export.FormatFloat to format the real and imaginary parts.
+// Like export.FormatFloat, it creates a Unicode representation of the number.
+func FormatComplex(c complex128, prec int) string {
+	if imag(c) == 0 {
+		return export.FormatFloat(real(c), prec)
+	}
+	im := export.FormatFloat(math.Abs(imag(c)), prec)
+	if im == "0" {
+		return export.FormatFloat(real(c), prec)
+	}
+	if im == "1" {
+		im = "i"
+	} else {
+		im += "⋅i"
+	}
+	re := export.FormatFloat(real(c), prec)
+	if re == "0" {
+		if imag(c) < 0 {
+			return "-" + im
+		}
+		return im
+	} else {
+		if imag(c) < 0 {
+			return re + "-" + im
+		}
+		return re + "+" + im
+	}
 }
 
 func (tp *TwoPort) ToList() (*value.List, bool) {
