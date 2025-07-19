@@ -168,7 +168,7 @@ func createLogTicks(logMin, parentMin, parentMax float64, tr func(v float64) flo
 			}
 			if tv >= parentMin {
 				if i == 1 {
-					t.Label = export.FormatFloat(f, 6)
+					t.Label = export.NewFormattedFloat(f, 6).Unicode()
 				}
 				ticks = append(ticks, t)
 			}

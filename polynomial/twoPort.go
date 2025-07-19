@@ -85,12 +85,20 @@ func (tp *TwoPort) ToHtml(_ funcGen.Stack[value.Value], w *xmlWriter.XMLWriter) 
 
 	w.Open("mtable").
 		Open("mtr").
-		Open("mtd").Write(FormatComplex(tp.m11, 6)).Close().
-		Open("mtd").Write(FormatComplex(tp.m12, 6)).Close().
+		Open("mtd")
+	Complex2MathMl(tp.m11, 6, w)
+	w.Close().
+		Open("mtd")
+	Complex2MathMl(tp.m12, 6, w)
+	w.Close().
 		Close().
 		Open("mtr").
-		Open("mtd").Write(FormatComplex(tp.m21, 6)).Close().
-		Open("mtd").Write(FormatComplex(tp.m22, 6)).Close().
+		Open("mtd")
+	Complex2MathMl(tp.m21, 6, w)
+	w.Close().
+		Open("mtd")
+	Complex2MathMl(tp.m22, 6, w)
+	w.Close().
 		Close().
 		Close()
 
@@ -107,18 +115,18 @@ func (tp *TwoPort) ToHtml(_ funcGen.Stack[value.Value], w *xmlWriter.XMLWriter) 
 // Like export.FormatFloat, it creates a Unicode representation of the number.
 func FormatComplex(c complex128, prec int) string {
 	if imag(c) == 0 {
-		return export.FormatFloat(real(c), prec)
+		return export.NewFormattedFloat(real(c), prec).Unicode()
 	}
-	im := export.FormatFloat(math.Abs(imag(c)), prec)
+	im := export.NewFormattedFloat(math.Abs(imag(c)), prec).Unicode()
 	if im == "0" {
-		return export.FormatFloat(real(c), prec)
+		return export.NewFormattedFloat(real(c), prec).Unicode()
 	}
 	if im == "1" {
 		im = "i"
 	} else {
 		im += "⋅i"
 	}
-	re := export.FormatFloat(real(c), prec)
+	re := export.NewFormattedFloat(real(c), prec).Unicode()
 	if re == "0" {
 		if imag(c) < 0 {
 			return "-" + im
@@ -130,6 +138,47 @@ func FormatComplex(c complex128, prec int) string {
 		}
 		return re + "+" + im
 	}
+}
+
+func Complex2MathMl(c complex128, prec int, w *xmlWriter.XMLWriter) {
+	if imag(c) == 0 {
+		export.NewFormattedFloat(real(c), prec).MathMl(w)
+		return
+	}
+	im := export.NewFormattedFloat(math.Abs(imag(c)), prec)
+	if im.IsZero() {
+		export.NewFormattedFloat(real(c), prec).MathMl(w)
+		return
+	}
+	// there is an imaginary part
+	re := export.NewFormattedFloat(real(c), prec)
+	if re.IsZero() {
+		if im.IsOne() {
+			if imag(c) < 0 {
+				w.Open("mo").Write("-").Close()
+			}
+			w.Open("mi").Write("i").Close()
+			return
+		}
+		if imag(c) < 0 {
+			im.Mantissa = "-" + im.Mantissa
+		}
+		im.MathMl(w)
+	} else {
+		re.MathMl(w)
+		if imag(c) < 0 {
+			w.Open("mo").Write("-").Close()
+		} else {
+			w.Open("mo").Write("+").Close()
+		}
+		if im.IsOne() {
+			w.Open("mi").Write("i").Close()
+			return
+		}
+		im.MathMl(w)
+	}
+	w.Open("mo").WriteHTML("&middot;").Close()
+	w.Open("mi").WriteHTML("i").Close()
 }
 
 func (tp *TwoPort) ToList() (*value.List, bool) {

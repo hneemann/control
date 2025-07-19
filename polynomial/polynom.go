@@ -101,36 +101,17 @@ func (p Polynomial) ToMathML(w *xmlWriter.XMLWriter) {
 	for i := range p {
 		n := len(p) - i - 1
 		c := p[n]
-		if math.Abs(c) > eps {
-			neg := false
-			if c < 0 {
-				neg = true
-			}
-			c = math.Abs(c)
-			if neg || i > 0 {
-				if neg {
+		factorAbs := export.NewFormattedFloat(math.Abs(c), 6)
+		if !factorAbs.IsZero() {
+			if c < 0 || i > 0 {
+				if c < 0 {
 					w.Open("mo").Write("-").Close()
 				} else {
 					w.Open("mo").Write("+").Close()
 				}
 			}
-			numStr := strconv.FormatFloat(c, 'g', 6, 64)
-			if numStr != "1" || n == 0 {
-				if pos := strings.IndexRune(numStr, 'e'); pos < 0 {
-					w.Open("mn").Write(numStr).Close()
-				} else {
-					va := math.Abs(c)
-					log := int(math.Floor(math.Log10(va)))
-					val := strconv.FormatFloat(c/export.Exp10(log), 'g', 6, 64)
-					if val != "1" {
-						w.Open("mn").Write(val).Close()
-						w.Open("mo").WriteHTML("&middot;").Close()
-					}
-					w.Open("msup")
-					w.Open("mn").Write("10").Close()
-					w.Open("mn").Write(strconv.Itoa(log)).Close()
-					w.Close()
-				}
+			if !factorAbs.IsOne() || n == 0 {
+				factorAbs.MathMl(w)
 			}
 			switch n {
 			case 0:

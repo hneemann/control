@@ -1,6 +1,7 @@
 package polynomial
 
 import (
+	"github.com/hneemann/parser2/value/export/xmlWriter"
 	"github.com/stretchr/testify/assert"
 	"math"
 	"math/cmplx"
@@ -167,6 +168,32 @@ func TestFormatComplex(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			assert.Equalf(t, tt.want, FormatComplex(tt.c, 6), "Format(6)")
+		})
+	}
+}
+
+func TestComplex2MathMl(t *testing.T) {
+	tests := []struct {
+		name string
+		c    complex128
+		want string
+	}{
+		{name: "real", c: complex(1, 0), want: "<mn>1</mn>"},
+		{name: "cplx1", c: complex(0, 1), want: "<mi>i</mi>"},
+		{name: "cplx2", c: complex(0, 2), want: "<mn>2</mn><mo>&middot;</mo><mi>i</mi>"},
+		{name: "both1", c: complex(1, 1), want: "<mn>1</mn><mo>+</mo><mi>i</mi>"},
+		{name: "both2", c: complex(2, 2), want: "<mn>2</mn><mo>+</mo><mn>2</mn><mo>&middot;</mo><mi>i</mi>"},
+		{name: "small1", c: complex(1e-7, 1e-7), want: "<msup><mn>10</mn><mn>-7</mn></msup><mo>+</mo><msup><mn>10</mn><mn>-7</mn></msup><mo>&middot;</mo><mi>i</mi>"},
+		{name: "small2", c: complex(2e-7, 2e-7), want: "<mn>2</mn><mo>&middot;</mo><msup><mn>10</mn><mn>-7</mn></msup><mo>+</mo><mn>2</mn><mo>&middot;</mo><msup><mn>10</mn><mn>-7</mn></msup><mo>&middot;</mo><mi>i</mi>"},
+		{name: "bothNeg", c: complex(-1, -1), want: "<mn>-1</mn><mo>-</mo><mi>i</mi>"},
+		{name: "cplxNeg1", c: complex(0, -1), want: "<mo>-</mo><mi>i</mi>"},
+		{name: "cplxNeg2", c: complex(0, -2), want: "<mn>-2</mn><mo>&middot;</mo><mi>i</mi>"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			w := xmlWriter.New()
+			Complex2MathMl(tt.c, 6, w)
+			assert.Equalf(t, tt.want, w.String(), "Complex2MathMl(%v)", tt.c)
 		})
 	}
 }
