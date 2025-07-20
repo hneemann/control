@@ -81,6 +81,36 @@ func (p Polynomial) String() string {
 	return result
 }
 
+func (p Polynomial) ToUnicode() string {
+	b := bytes.Buffer{}
+	for i := range p {
+		n := len(p) - i - 1
+		c := p[n]
+		factorAbs := export.NewFormattedFloat(math.Abs(c), 6)
+		if !factorAbs.IsZero() {
+			if c < 0 || i > 0 {
+				if c < 0 {
+					b.WriteRune('-')
+				} else {
+					b.WriteRune('+')
+				}
+			}
+			if !factorAbs.IsOne() || n == 0 {
+				b.WriteString(factorAbs.Unicode())
+			}
+			switch n {
+			case 0:
+			case 1:
+				b.WriteRune('s')
+			default:
+				b.WriteRune('s')
+				b.WriteString(export.ExpStr(n))
+			}
+		}
+	}
+	return b.String()
+}
+
 func (p Polynomial) ToHtml(_ funcGen.Stack[value.Value], w *xmlWriter.XMLWriter) error {
 	w.Open("math").
 		Attr("xmlns", "http://www.w3.org/1998/Math/MathML")

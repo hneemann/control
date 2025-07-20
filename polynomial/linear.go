@@ -93,6 +93,21 @@ func (l *Linear) ToLaTeX(w *bytes.Buffer) {
 	w.WriteString("}")
 }
 
+func (l *Linear) ToUnicode() string {
+	var w bytes.Buffer
+	if l.Numerator.Degree() > 0 {
+		w.WriteString("(")
+		w.WriteString(l.Numerator.ToUnicode())
+		w.WriteString(")")
+	} else {
+		w.WriteString(l.Numerator.ToUnicode())
+	}
+	w.WriteString("/(")
+	w.WriteString(l.Denominator.ToUnicode())
+	w.WriteString(")")
+	return w.String()
+}
+
 func (l *Linear) zerosCalculated() bool {
 	return l.zeros.Valid()
 }
@@ -620,7 +635,7 @@ func (l *Linear) CreateEvans(kMin, kMax float64) ([]graph.PlotContent, error) {
 	}
 
 	for _, k := range splitGains {
-		if k < kMax {
+		if k > kMin && k < kMax {
 			points, err := l.getPoles(k, poleCount)
 			if err != nil {
 				return nil, err

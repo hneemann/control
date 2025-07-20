@@ -283,9 +283,11 @@ func polyMethods() value.MethodMap {
 			}
 			var val []value.Value
 			for _, v := range r.roots {
-				val = append(val, Complex(v))
-				if imag(v) != 0 {
+				if imag(v) == 0 {
+					val = append(val, value.Float(real(v)))
+				} else {
 					val = append(val, Complex(complex(real(v), -imag(v))))
+					val = append(val, Complex(v))
 				}
 			}
 			return value.NewList(val...), nil
@@ -299,6 +301,9 @@ func polyMethods() value.MethodMap {
 		"string": value.MethodAtType(0, func(pol Polynomial, st funcGen.Stack[value.Value]) (value.Value, error) {
 			return value.String(pol.String()), nil
 		}).SetMethodDescription("Returns a string representation of the polynomial."),
+		"toUnicode": value.MethodAtType(0, func(pol Polynomial, st funcGen.Stack[value.Value]) (value.Value, error) {
+			return value.String(pol.ToUnicode()), nil
+		}).SetMethodDescription("Returns a unicode string representation of the polynomial."),
 	}
 }
 
@@ -545,6 +550,9 @@ func linMethods() value.MethodMap {
 			lin.ToLaTeX(&b)
 			return value.String(b.String()), nil
 		}).SetMethodDescription("Returns a LaTeX representation of the linear system."),
+		"toUnicode": value.MethodAtType(0, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
+			return value.String(lin.ToUnicode()), nil
+		}).SetMethodDescription("Returns a unicode string representation of the linear system."),
 	}
 }
 
@@ -782,15 +790,26 @@ var Parser = value.New().
 	AddStaticFunction("cmplx", funcGen.Function[value.Value]{
 		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
 			if re, ok := stack.Get(0).ToFloat(); ok {
-				if im, ok := stack.Get(1).ToFloat(); ok {
-					return Complex(complex(re, im)), nil
+				if stack.Size() == 2 {
+					if im, ok := stack.Get(1).ToFloat(); ok {
+						return Complex(complex(re, im)), nil
+					}
+				} else {
+					return Complex(complex(re, 0)), nil
 				}
+			}
+			if c, ok := stack.Get(0).(Complex); ok {
+				if stack.Size() == 2 {
+					return nil, errors.New("cmplx requires only one complex argument")
+				}
+				return c, nil
 			}
 			return nil, errors.New("cmplx requires two float arguments")
 		},
 		Args:   2,
 		IsPure: true,
-	}.SetDescription("re", "im", "Creates a complex value.")).
+	}.SetDescription("re", "im", "Creates a complex value. "+
+		"If only one argument is given, this can be a real or a complex number.").VarArgs(1, 2)).
 	AddStaticFunction("poly", funcGen.Function[value.Value]{
 		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
 			var p Polynomial
