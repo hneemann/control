@@ -204,7 +204,7 @@ func Test_Evans1(t *testing.T) {
 	d := NewRoots(complex(-2, 0), complex(-1, 0))
 	g0 := FromRoots(n, d)
 
-	pl := &graph.Plot{Content: Must(g0.CreateEvans(15))}
+	pl := &graph.Plot{Content: Must(g0.CreateEvans(0.01, 15))}
 	pl.XBounds = graph.NewBounds(-4, 0.1)
 	if pl != nil {
 		err := exportPlot(pl, "wok1.svg")
@@ -217,7 +217,7 @@ func Test_Evans2(t *testing.T) {
 	d := NewRoots(complex(1, 0), complex(2, 0))
 	g0 := FromRoots(n, d)
 
-	pl := &graph.Plot{Content: Must(g0.CreateEvans(25))}
+	pl := &graph.Plot{Content: Must(g0.CreateEvans(0.01, 25))}
 	fmt.Println(pl)
 	if pl != nil {
 		pl.XBounds = graph.NewBounds(-1, 3)
@@ -238,7 +238,7 @@ func Test_Evans3(t *testing.T) {
 
 	g0 := g.Mul(pid)
 
-	pl := &graph.Plot{Content: Must(g0.CreateEvans(100))}
+	pl := &graph.Plot{Content: Must(g0.CreateEvans(0.01, 100))}
 	if pl != nil {
 		pl.XBounds = graph.NewBounds(-6, 3)
 		pl.YBounds = graph.NewBounds(-4, 4)
@@ -258,7 +258,7 @@ func Test_Evans4(t *testing.T) {
 
 	g0 := g.Mul(pid)
 
-	pl := &graph.Plot{Content: Must(g0.CreateEvans(10))}
+	pl := &graph.Plot{Content: Must(g0.CreateEvans(0.01, 10))}
 	if pl != nil {
 		pl.XBounds = graph.NewBounds(-2, 0.5)
 		pl.YBounds = graph.NewBounds(-3, 3)
@@ -273,7 +273,7 @@ func Test_Evans5(t *testing.T) {
 	d := Must(Must(Must(NewRoots().Real(2, 1)).Real(1, 1)).Complex(1, 3, 3.1))
 	g0 := FromRoots(n, d)
 
-	pl := &graph.Plot{Content: Must(g0.CreateEvans(10))}
+	pl := &graph.Plot{Content: Must(g0.CreateEvans(0.01, 10))}
 	if pl != nil {
 		pl.XBounds = graph.NewBounds(-2, 0.5)
 		pl.YBounds = graph.NewBounds(-2, 2)
@@ -288,7 +288,7 @@ func Test_Evans6(t *testing.T) {
 	d := NewRoots(complex(0, 0), complex(1, 0), complex(-2, 0))
 	g0 := FromRoots(n, d)
 
-	pl := &graph.Plot{Content: Must(g0.CreateEvans(50))}
+	pl := &graph.Plot{Content: Must(g0.CreateEvans(0.01, 50))}
 	if pl != nil {
 		err := exportPlot(pl, "wok6.svg")
 		assert.NoError(t, err)
@@ -300,7 +300,7 @@ func Test_Evans7(t *testing.T) {
 	d := NewRoots(complex(-1, 1))
 	g0 := FromRoots(n, d)
 
-	pl := &graph.Plot{Content: Must(g0.CreateEvans(5))}
+	pl := &graph.Plot{Content: Must(g0.CreateEvans(0.01, 5))}
 	pl.XBounds = graph.NewBounds(-2, 0.2)
 	if pl != nil {
 		err := exportPlot(pl, "wok7.svg")
@@ -319,7 +319,7 @@ func exportPlot(pl graph.Image, name string) error {
 
 	//f, _ := os.Create(filepath.Join(testFolder, name))
 	//defer f.Close()
-	//_, err := f.Write(w.Bytes())
+	//_, err = f.Write(w.Bytes())
 	return err
 }
 
@@ -358,7 +358,7 @@ func Test_Bode1(t *testing.T) {
 	pl := NewBode(0.01, 100)
 	pl.Add(g.CreateBode(graph.Green, "G"))
 	pl.Add(k.CreateBode(graph.Blue, "K"))
-	pl.Add(k.Mul(g).CreateBode(graph.Black, "G#0"))
+	pl.Add(k.Mul(g).CreateBode(graph.Black, "G0"))
 
 	err = exportPlot(pl, "bode1.svg")
 	assert.NoError(t, err)
@@ -454,7 +454,7 @@ func TestLinear_GetStateSpace_PT2(t *testing.T) {
 	}
 }
 
-func TestLinear_GetStateSpace_PHase(t *testing.T) {
+func TestLinear_GetStateSpace_Phase(t *testing.T) {
 	type fields struct {
 	}
 	tests := []struct {
@@ -523,7 +523,7 @@ func TestLinear_ToLaTeX(t *testing.T) {
 		{
 			name: "Exp",
 			lin:  &Linear{Numerator: Polynomial{1e-5, 2}, Denominator: Polynomial{1, 2e-5, 3}},
-			want: "\\frac{2s+10^{-05}}{3s^{2}+2\\cdot 10^{-05}s+1}",
+			want: "\\frac{2s+10^{-5}}{3s^{2}+2\\cdot 10^{-5}s+1}",
 		},
 	}
 	for _, tt := range tests {
