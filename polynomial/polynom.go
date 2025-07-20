@@ -572,14 +572,3 @@ func (r Roots) ToPoints() []graph.Point {
 	}
 	return points
 }
-
-// OnlyReal returns only the real roots of the polynomial.
-func (r Roots) OnlyReal() []float64 {
-	var f []float64
-	for _, r := range r.roots {
-		if math.Abs(imag(r)) < eps {
-			f = append(f, real(r))
-		}
-	}
-	return f
-}
