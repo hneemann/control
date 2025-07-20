@@ -249,23 +249,25 @@ func (p Polynomial) Normalize() Polynomial {
 	return mp
 }
 
-func (p Polynomial) Div(q Polynomial) (Polynomial, Polynomial, error) {
-	if q.Degree() < 0 {
+func (p Polynomial) Div(n Polynomial) (Polynomial, Polynomial, error) {
+	if n.Degree() < 0 {
 		return Polynomial{}, Polynomial{}, errors.New("division by zero")
 	}
-	if p.Degree() < q.Degree() {
+	if p.Degree() < n.Degree() {
 		return Polynomial{}, p, nil
 	}
-	result := make(Polynomial, p.Degree()-q.Degree()+1)
-	remainder := make(Polynomial, len(p))
-	copy(remainder, p)
-	for i := 0; i < len(result); i++ {
-		result[i] = remainder[i] / q[0]
-		for j := 0; j < len(q); j++ {
-			remainder[i+j] -= result[i] * q[j]
+	result := make(Polynomial, p.Degree()-n.Degree()+1)
+	zähler := make(Polynomial, len(p))
+	copy(zähler, p)
+	GradZ := p.Degree()
+	GradN := n.Degree()
+	for i := GradZ - GradN; i >= 0; i-- {
+		result[i] = zähler[i+GradN] / n[GradN]
+		for j := GradN; j >= 0; j-- {
+			zähler[i+j] -= n[j] * result[i]
 		}
 	}
-	return result, remainder.Canonical(), nil
+	return result, zähler.Canonical(), nil
 }
 
 func (p Polynomial) Pow(n int) Polynomial {

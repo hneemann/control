@@ -263,3 +263,41 @@ func TestPolynomial_ToMathML(t *testing.T) {
 		})
 	}
 }
+
+// Wolfram-Alpha
+// solve(s^5+10*s^4+35*s^3+50.005*s^2+24.0125*s+0.01117)
+// s ≈ -4.00171
+// s ≈ -2.99689
+// s ≈ -2.00155
+// s ≈ -0.999388
+// s ≈ -0.000465626
+func TestPolynomial_WolframAlpha(t *testing.T) {
+	p := Polynomial{0.01117, 24.0125, 50.005, 35, 10, 1}
+	roots, err := p.Roots()
+	assert.NoError(t, err)
+	assert.Len(t, roots.roots, 5)
+	for _, r := range roots.roots {
+		fmt.Println("root:", r)
+	}
+}
+
+func TestPolynomial_Div(t *testing.T) {
+	tests := []struct {
+		name string
+		p, q Polynomial
+		d    Polynomial
+		r    Polynomial
+	}{
+		{name: "s1", p: Polynomial{-1, 0, 1, 2, -1, 4}, q: Polynomial{1, 0, 1}, d: Polynomial{2, -2, -1, 4}, r: Polynomial{-3, 2}},
+		{name: "s2", p: Polynomial{3, 3, 0, -4, 0, -2, 6}, q: Polynomial{-3, 2, 0, 2}, d: Polynomial{3.5, -3, -1, 3}, r: Polynomial{13.5, -13, 3}},
+		{name: "s3", p: Polynomial{150, 5, -12, 1}, q: Polynomial{-5, 1}, d: Polynomial{-30, -7, 1}, r: Polynomial{}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			d, r, err := tt.p.Div(tt.q)
+			assert.NoError(t, err)
+			assert.EqualValues(t, tt.d, d, "dividend")
+			assert.EqualValues(t, tt.r, r, "remainder")
+		})
+	}
+}
