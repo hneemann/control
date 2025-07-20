@@ -111,6 +111,9 @@ func cmplxMethods() value.MethodMap {
 		"imag": value.MethodAtType(0, func(c Complex, st funcGen.Stack[value.Value]) (value.Value, error) {
 			return value.Float(imag(c)), nil
 		}).SetMethodDescription("Returns the imaginary component."),
+		"conj": value.MethodAtType(0, func(c Complex, st funcGen.Stack[value.Value]) (value.Value, error) {
+			return Complex(complex(real(c), -imag(c))), nil
+		}).SetMethodDescription("Returns the complex conjugate."),
 		"abs": value.MethodAtType(0, func(c Complex, st funcGen.Stack[value.Value]) (value.Value, error) {
 			return value.Float(cmplx.Abs(complex128(c))), nil
 		}).SetMethodDescription("Returns the amplitude."),
@@ -264,14 +267,15 @@ func polyMethods() value.MethodMap {
 			if len(pol) == 0 {
 				return value.Int(0), errors.New("degree of empty polynomial is undefined")
 			}
-			return value.Int(len(pol) - 1), nil
-		}).SetMethodDescription("Calculates the derivative."),
+			return value.Int(pol.Degree()), nil
+		}).SetMethodDescription("Returns the degree of the polynomial."),
 		"derivative": value.MethodAtType(0, func(pol Polynomial, st funcGen.Stack[value.Value]) (value.Value, error) {
 			return pol.Derivative(), nil
 		}).SetMethodDescription("Calculates the derivative."),
 		"normalize": value.MethodAtType(0, func(pol Polynomial, st funcGen.Stack[value.Value]) (value.Value, error) {
 			return pol.Normalize(), nil
-		}).SetMethodDescription("Calculates the normalized polynomial."),
+		}).SetMethodDescription("normalize returns a normalized polynomial, which is the polynomial " +
+			"divided by its leading coefficient. This makes the leading coefficient 1"),
 		"roots": value.MethodAtType(0, func(pol Polynomial, st funcGen.Stack[value.Value]) (value.Value, error) {
 			r, err := pol.Roots()
 			if err != nil {
@@ -280,9 +284,12 @@ func polyMethods() value.MethodMap {
 			var val []value.Value
 			for _, v := range r.roots {
 				val = append(val, Complex(v))
+				if imag(v) != 0 {
+					val = append(val, Complex(complex(real(v), -imag(v))))
+				}
 			}
 			return value.NewList(val...), nil
-		}).SetMethodDescription("Returns the roots. If a pair of complex conjugates is found, only the complex number with positive imaginary part is returned."),
+		}).SetMethodDescription("Returns the roots of the polynomial."),
 		"bode": createBodeMethod(func(poly Polynomial) *Linear { return &Linear{Numerator: poly, Denominator: Polynomial{1}} }),
 		"toLaTeX": value.MethodAtType(0, func(pol Polynomial, st funcGen.Stack[value.Value]) (value.Value, error) {
 			var b bytes.Buffer
@@ -401,13 +408,23 @@ func linMethods() value.MethodMap {
 			return value.String(lin.String()), nil
 		}).SetMethodDescription("Creates a string representation of the linear system."),
 		"bode": createBodeMethod(func(lin *Linear) *Linear { return lin }),
-		"evans": value.MethodAtType(1, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
+		"evans": value.MethodAtType(2, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
 			if k, ok := st.Get(1).ToFloat(); ok {
+				var kMin, kMax float64
+				if st.Size() > 2 {
+					kMin = k
+					if kMax, ok = st.GetOptional(2, value.Float(1)).ToFloat(); !ok {
+						return nil, fmt.Errorf("evans requires a float as second argument")
+					}
+				} else {
+					kMin = 0.01
+					kMax = k
+				}
 				red, err := lin.Reduce()
 				if err != nil {
 					return nil, err
 				}
-				contentList, err := red.CreateEvans(k)
+				contentList, err := red.CreateEvans(kMin, kMax)
 				if err != nil {
 					return nil, err
 				}
@@ -416,7 +433,8 @@ func linMethods() value.MethodMap {
 				}, contentList), nil
 			}
 			return nil, fmt.Errorf("evans requires a float")
-		}).SetMethodDescription("k_max", "Creates an evans plot."),
+		}).SetMethodDescription("k_min", "k_max", "Creates an evans plot. If only one argument is used, "+
+			"this argument is k_max and kMin is set to 0.01 in this case.").VarArgsMethod(1, 2),
 		"nyquist": value.MethodAtType(2, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
 			neg, ok := st.GetOptional(1, value.Bool(false)).ToBool()
 			if !ok {
@@ -467,14 +485,14 @@ func linMethods() value.MethodMap {
 				"w0":      value.Float(w0),
 				"pMargin": value.Float(margin),
 			}), err
-		}).SetMethodDescription("Returns the crossover frequency ω₀ with |G(jω₀)|=1 and the phase margin."),
+		}).SetMethodDescription("Returns the crossover frequency ω₀ with |G(jω₀)|=1 and the phase margin given in degrees."),
 		"gMargin": value.MethodAtType(0, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
 			w180, margin, err := lin.GMargin()
 			return value.NewMap(value.RealMap{
 				"w180":    value.Float(w180),
 				"gMargin": value.Float(margin),
 			}), err
-		}).SetMethodDescription("Returns the frequency ωₛ with G(jωₛ)=-1 and the gain margin given in dB."),
+		}).SetMethodDescription("Returns the frequency ωₘ and the gain margin kₘ with kₘG(jωₘ)=-1. The gain margin kₘ is given in dB."),
 		"simStep": value.MethodAtType(2, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
 			if tMax, ok := st.Get(1).ToFloat(); ok {
 				dt := 0.0

@@ -123,6 +123,10 @@ func (l *Linear) Poles() (Roots, error) {
 	return l.poles, nil
 }
 
+func (l *Linear) IsCausal() bool {
+	return l.Numerator.Degree() <= l.Denominator.Degree()
+}
+
 func FromRoots(zeros, poles Roots) *Linear {
 	nZeros, nPoles, _ := zeros.reduce(poles)
 	return &Linear{
@@ -575,7 +579,7 @@ func NewImReLabels() PlotPreferences {
 	}}
 }
 
-func (l *Linear) CreateEvans(kMax float64) ([]graph.PlotContent, error) {
+func (l *Linear) CreateEvans(kMin, kMax float64) ([]graph.PlotContent, error) {
 	p, err := l.Poles()
 	if err != nil {
 		return nil, err
@@ -586,13 +590,23 @@ func (l *Linear) CreateEvans(kMax float64) ([]graph.PlotContent, error) {
 	}
 
 	var evPoints evansPoints
-	evPoints = append(evPoints, evansPoint{points: p.ToPoints(), gain: 0})
+	var poleCount int
+	if l.IsCausal() {
+		evPoints = append(evPoints, evansPoint{points: p.ToPoints(), gain: 0})
+		poleCount = p.Count()
+	} else {
+		poleCount = z.Count()
+	}
 
-	poleCount := p.Count()
+	if kMax <= 0 {
+		return nil, fmt.Errorf("kMax (%g) must be greater than 0", kMax)
+	} else if kMin >= kMax {
+		return nil, fmt.Errorf("kMin (%g) must be less than kMax (%g)", kMin, kMax)
+	}
 
-	const scalePoints = 20
-	for i := 1; i <= scalePoints; i++ {
-		k := kMax * float64(i) / float64(scalePoints)
+	const scalePoints = 40
+	for i := 0; i <= scalePoints; i++ {
+		k := kMin + (kMax-kMin)*float64(i)/float64(scalePoints)
 		points, err := l.getPoles(k, poleCount)
 		if err != nil {
 			return nil, err
@@ -1163,7 +1177,7 @@ func (l *Linear) Simulate(tMax, dt float64, u func(float64) (float64, error)) (*
 	}
 
 	t := 0.0
-	n := len(lin.Denominator) - 1
+	n := lin.Denominator.Degree()
 	x := make(Vector, n)
 	xDot := make(Vector, n)
 
@@ -1195,12 +1209,11 @@ func (l *Linear) Simulate(tMax, dt float64, u func(float64) (float64, error)) (*
 }
 
 func (l *Linear) GetStateSpaceRepresentation() (Matrix, Vector, float64, error) {
-	n := len(l.Denominator) - 1
-
-	if len(l.Numerator) > n+1 {
+	if !l.IsCausal() {
 		return nil, nil, 0, fmt.Errorf("not a propper transfer function, numerator has higher order than denominator")
 	}
 
+	n := l.Denominator.Degree()
 	norm := l.Denominator[n]
 	a := NewMatrix(n, n)
 	for i := 1; i < n; i++ {

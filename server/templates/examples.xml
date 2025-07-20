@@ -14,11 +14,11 @@ plot(
 )</example>
     <example name="Daten-Plot 2"
              name-en="Data-Plot 2" >let data = [
-  {x:0, a: 0, b:4 },
-  {x:1, a: 1, b:5 },
-  {x:2, a: 4, b:6 },
-  {x:3, a: 9, b:7 },
-  {x:4, a:16, b:8 },
+  { x:0, a: 0, b:4 },
+  { x:1, a: 1, b:5 },
+  { x:2, a: 4, b:6 },
+  { x:3, a: 9, b:7 },
+  { x:4, a:16, b:8 },
 ];
 
 plot(
