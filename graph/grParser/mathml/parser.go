@@ -496,7 +496,7 @@ func (p *parser) ParseCommand(value string) Ast {
 	case "overset":
 		over := p.ParseInBrace()
 		return &UnderOver{base: p.ParseInBrace(), over: over}
-	case "ds":
+	case "displaystyle":
 		inner := p.ParseInBrace()
 		return addAttribute("displaystyle", "true", inner)
 	case "underset":
