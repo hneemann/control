@@ -120,7 +120,7 @@ func (p Polynomial) ToMathML(w *xmlWriter.XMLWriter) {
 			default:
 				w.Open("msup")
 				w.Open("mi").Write("s").Close()
-				w.Open("mn").Write(fmt.Sprintf("%d", n)).Close()
+				w.Open("mn").Write(strconv.Itoa(n)).Close()
 				w.Close()
 			}
 		}
@@ -132,33 +132,17 @@ func (p Polynomial) ToLaTeX(w *bytes.Buffer) {
 	for i := range p {
 		n := len(p) - i - 1
 		c := p[n]
-		if math.Abs(c) > eps {
-			neg := false
-			if c < 0 {
-				neg = true
-			}
-			c = math.Abs(c)
-			if neg || i > 0 {
-				if neg {
+		factorAbs := export.NewFormattedFloat(math.Abs(c), 6)
+		if !factorAbs.IsZero() {
+			if c < 0 || i > 0 {
+				if c < 0 {
 					w.WriteRune('-')
 				} else {
 					w.WriteRune('+')
 				}
 			}
-			if c != 1 || n == 0 {
-				numStr := fmt.Sprintf("%g", c)
-				if pos := strings.IndexRune(numStr, 'e'); pos < 0 {
-					w.WriteString(numStr)
-				} else {
-					fac := numStr[:pos]
-					if fac != "1" {
-						w.WriteString(fac)
-						w.WriteString("\\cdot ")
-					}
-					w.WriteString("10^{")
-					w.WriteString(numStr[pos+1:])
-					w.WriteString("}")
-				}
+			if !factorAbs.IsOne() || n == 0 {
+				w.WriteString(factorAbs.LaTeX())
 			}
 			switch n {
 			case 0:
@@ -222,7 +206,7 @@ func (p Polynomial) AddFloat(f float64) Polynomial {
 }
 
 // Normalize returns a normalized polynomial, which is the same polynomial
-// divided by its leading coefficient. This makes the leading coefficient 1,
+// divided by its leading coefficient. This makes the leading coefficient 1.
 func (p Polynomial) Normalize() Polynomial {
 	poly := p.Canonical()
 	mp := make(Polynomial, len(poly))
