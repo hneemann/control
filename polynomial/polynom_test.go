@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/hneemann/parser2/value/export/xmlWriter"
 	"math/cmplx"
+	"sort"
 	"testing"
 )
 import "github.com/stretchr/testify/assert"
@@ -276,9 +277,14 @@ func TestPolynomial_WolframAlpha(t *testing.T) {
 	roots, err := p.Roots()
 	assert.NoError(t, err)
 	assert.Len(t, roots.roots, 5)
-	for _, r := range roots.roots {
-		fmt.Println("root:", r)
-	}
+	sort.Slice(roots.roots, func(i, j int) bool {
+		return real(roots.roots[i]) < real(roots.roots[j])
+	})
+	assert.InDelta(t, -4.00171, real(roots.roots[0]), 1e-5)
+	assert.InDelta(t, -2.99689, real(roots.roots[1]), 1e-5)
+	assert.InDelta(t, -2.00155, real(roots.roots[2]), 1e-5)
+	assert.InDelta(t, -0.999388, real(roots.roots[3]), 1e-5)
+	assert.InDelta(t, -0.000465626, real(roots.roots[4]), 1e-5)
 }
 
 func TestPolynomial_Div(t *testing.T) {
