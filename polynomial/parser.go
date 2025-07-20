@@ -723,12 +723,24 @@ func bodeMethods() value.MethodMap {
 func floatMethods() value.MethodMap {
 	return value.MethodMap{
 		"bode": createBodeMethod(func(f value.Float) *Linear { return NewConst(float64(f)) }),
+		"imag": value.MethodAtType(0, func(f value.Float, st funcGen.Stack[value.Value]) (value.Value, error) {
+			return value.Float(0), nil
+		}).SetMethodDescription("Returns always zero. Exists just for convenience."),
+		"real": value.MethodAtType(0, func(f value.Float, st funcGen.Stack[value.Value]) (value.Value, error) {
+			return f, nil
+		}).SetMethodDescription("Returns the float unchanged. Exists just for convenience."),
 	}
 }
 
 func intMethods() value.MethodMap {
 	return value.MethodMap{
 		"bode": createBodeMethod(func(i value.Int) *Linear { return NewConst(float64(i)) }),
+		"imag": value.MethodAtType(0, func(i value.Int, st funcGen.Stack[value.Value]) (value.Value, error) {
+			return value.Int(0), nil
+		}).SetMethodDescription("Returns always zero. Exists just for convenience."),
+		"real": value.MethodAtType(0, func(i value.Int, st funcGen.Stack[value.Value]) (value.Value, error) {
+			return i, nil
+		}).SetMethodDescription("Returns the int unchanged. Exists just for convenience."),
 	}
 }
 
