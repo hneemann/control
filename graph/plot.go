@@ -1019,13 +1019,13 @@ func (p *pFuncPath) refine(w0 float64, p0, d0 Point, w1 float64, p1, d1 Point, y
 	return true
 }
 
-type ImageInset struct {
+type PlotInset struct {
 	Location    Rect
-	Image       *Plot
+	Plot        *Plot
 	VisualGuide *Style
 }
 
-func (s ImageInset) Bounds() (Bounds, Bounds, error) {
+func (s PlotInset) Bounds() (Bounds, Bounds, error) {
 	var x, y Bounds
 	x.Merge(s.Location.Min.X)
 	x.Merge(s.Location.Max.X)
@@ -1034,11 +1034,11 @@ func (s ImageInset) Bounds() (Bounds, Bounds, error) {
 	return x, y, nil
 }
 
-func (s ImageInset) DependantBounds(_, _ Bounds) (Bounds, Bounds, error) {
+func (s PlotInset) DependantBounds(_, _ Bounds) (Bounds, Bounds, error) {
 	return Bounds{}, Bounds{}, nil
 }
 
-func (s ImageInset) DrawTo(p *Plot, _ Canvas) error {
+func (s PlotInset) DrawTo(p *Plot, _ Canvas) error {
 	minPos := p.trans(s.Location.Min).Add(Point{1, 1})
 	maxPos := p.trans(s.Location.Max).Sub(Point{1, 1})
 	inner := ResizeCanvas{
@@ -1048,13 +1048,13 @@ func (s ImageInset) DrawTo(p *Plot, _ Canvas) error {
 			Max: maxPos,
 		},
 	}
-	err := s.Image.DrawTo(inner)
+	err := s.Plot.DrawTo(inner)
 	if err != nil {
 		return fmt.Errorf("error drawing image inset: %w", err)
 	}
 
 	if s.VisualGuide != nil {
-		ir := s.Image.inner.Rect()
+		ir := s.Plot.inner.Rect()
 
 		sMin := p.trans(ir.Min)
 		sMax := p.trans(ir.Max)
@@ -1065,8 +1065,8 @@ func (s ImageInset) DrawTo(p *Plot, _ Canvas) error {
 			Add(sMax).
 			Add(Point{X: sMin.X, Y: sMax.Y}), s.VisualGuide)
 
-		lMin := s.Image.trans(ir.Min)
-		lMax := s.Image.trans(ir.Max)
+		lMin := s.Plot.trans(ir.Min)
+		lMax := s.Plot.trans(ir.Max)
 		s12 := Point{X: sMin.X, Y: sMax.Y}
 		l12 := Point{X: lMin.X, Y: lMax.Y}
 		s21 := Point{X: sMax.X, Y: sMin.Y}
@@ -1088,7 +1088,7 @@ func (s ImageInset) DrawTo(p *Plot, _ Canvas) error {
 	return nil
 }
 
-func (s ImageInset) Legend() Legend {
+func (s PlotInset) Legend() Legend {
 	return Legend{}
 }
 

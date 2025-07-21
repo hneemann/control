@@ -418,9 +418,9 @@ func createPlotMethods() value.MethodMap {
 								visualGuide = vsv.Value
 							}
 
-							return NewPlotContentValue(graph.ImageInset{
+							return NewPlotContentValue(graph.PlotInset{
 								Location:    r,
-								Image:       plot.Value,
+								Plot:        plot.Value,
 								VisualGuide: visualGuide,
 							}), nil
 						}
