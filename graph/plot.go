@@ -71,6 +71,7 @@ type Plot struct {
 	YLabelExtend   bool
 	Content        []PlotContent
 	FillBackground bool
+	HideAxis       bool
 	BoundsModifier BoundsModifier
 	xTicks         []Tick
 	yTicks         []Tick
@@ -103,11 +104,6 @@ func (p *Plot) DrawTo(canvas Canvas) error {
 	rb := p.RightBorder
 	if rb <= 0 {
 		rb = 1
-	}
-
-	innerRect := Rect{
-		Min: Point{rect.Min.X + textSize*lb*0.75, rect.Min.Y + textSize*2},
-		Max: Point{rect.Max.X - textSize*rb*0.75, rect.Max.Y - textSize/2},
 	}
 
 	xBounds := p.XBounds
@@ -167,6 +163,14 @@ func (p *Plot) DrawTo(canvas Canvas) error {
 		yAxis = LinearAxis
 	}
 
+	innerRect := rect
+	if !p.HideAxis {
+		innerRect = Rect{
+			Min: Point{rect.Min.X + textSize*lb*0.75, rect.Min.Y + textSize*2},
+			Max: Point{rect.Max.X - textSize*rb*0.75, rect.Max.Y - textSize/2},
+		}
+	}
+
 	yExp := 0.02
 	xTrans, xTicks, xBounds, xUnit := xAxis(innerRect.Min.X, innerRect.Max.X, xBounds,
 		func(width float64, digits int) bool {
@@ -209,28 +213,31 @@ func (p *Plot) DrawTo(canvas Canvas) error {
 	}
 	thickLine := thinLine.SetStrokeWidth(thinLine.StrokeWidth * 2)
 
-	for _, tick := range xTicks {
-		xp := xTrans(tick.Position)
-		if tick.Label == "" {
-			canvas.DrawPath(NewPointsPath(false, Point{xp, innerRect.Min.Y - small}, Point{xp, innerRect.Min.Y}), thinLine)
-		} else {
-			canvas.DrawText(Point{xp, innerRect.Min.Y - large - small}, tick.Label, Top|HCenter, textStyle, textSize)
-			canvas.DrawPath(NewPointsPath(false, Point{xp, innerRect.Min.Y - large}, Point{xp, innerRect.Min.Y}), thickLine)
+	if !p.HideAxis {
+
+		for _, tick := range xTicks {
+			xp := xTrans(tick.Position)
+			if tick.Label == "" {
+				canvas.DrawPath(NewPointsPath(false, Point{xp, innerRect.Min.Y - small}, Point{xp, innerRect.Min.Y}), thinLine)
+			} else {
+				canvas.DrawText(Point{xp, innerRect.Min.Y - large - small}, tick.Label, Top|HCenter, textStyle, textSize)
+				canvas.DrawPath(NewPointsPath(false, Point{xp, innerRect.Min.Y - large}, Point{xp, innerRect.Min.Y}), thickLine)
+			}
+			if p.Grid != nil {
+				canvas.DrawPath(NewPointsPath(false, Point{xp, innerRect.Min.Y}, Point{xp, innerRect.Max.Y}), p.Grid)
+			}
 		}
-		if p.Grid != nil {
-			canvas.DrawPath(NewPointsPath(false, Point{xp, innerRect.Min.Y}, Point{xp, innerRect.Max.Y}), p.Grid)
-		}
-	}
-	for _, tick := range yTicks {
-		yp := yTrans(tick.Position)
-		if tick.Label == "" {
-			canvas.DrawPath(NewPointsPath(false, Point{innerRect.Min.X - small, yp}, Point{innerRect.Min.X, yp}), thinLine)
-		} else {
-			canvas.DrawText(Point{innerRect.Min.X - large, yp}, tick.Label, Right|VCenter, textStyle, textSize)
-			canvas.DrawPath(NewPointsPath(false, Point{innerRect.Min.X - large, yp}, Point{innerRect.Min.X, yp}), thickLine)
-		}
-		if p.Grid != nil {
-			canvas.DrawPath(NewPointsPath(false, Point{innerRect.Min.X, yp}, Point{innerRect.Max.X, yp}), p.Grid)
+		for _, tick := range yTicks {
+			yp := yTrans(tick.Position)
+			if tick.Label == "" {
+				canvas.DrawPath(NewPointsPath(false, Point{innerRect.Min.X - small, yp}, Point{innerRect.Min.X, yp}), thinLine)
+			} else {
+				canvas.DrawText(Point{innerRect.Min.X - large, yp}, tick.Label, Right|VCenter, textStyle, textSize)
+				canvas.DrawPath(NewPointsPath(false, Point{innerRect.Min.X - large, yp}, Point{innerRect.Min.X, yp}), thickLine)
+			}
+			if p.Grid != nil {
+				canvas.DrawPath(NewPointsPath(false, Point{innerRect.Min.X, yp}, Point{innerRect.Max.X, yp}), p.Grid)
+			}
 		}
 	}
 
