@@ -41,7 +41,7 @@ type Legend struct {
 type BoundsModifier func(xBounds, yBounds Bounds, p *Plot, canvas Canvas) (Bounds, Bounds)
 
 func Zoom(p Point, f float64) BoundsModifier {
-	return func(xBounds, yBounds Bounds, _ *Plot, canvas Canvas) (Bounds, Bounds) {
+	return func(xBounds, yBounds Bounds, _ *Plot, _ Canvas) (Bounds, Bounds) {
 		if xBounds.valid {
 			d := xBounds.Width() / (2 * f)
 			xBounds.Min = p.X - d
@@ -143,15 +143,15 @@ func (p *Plot) DrawTo(canvas Canvas) error {
 		}
 	}
 
-	if p.BoundsModifier != nil {
-		xBounds, yBounds = p.BoundsModifier(xBounds, yBounds, p, canvas)
-	}
-
 	if !xBounds.valid {
 		xBounds = NewBounds(-1, 1)
 	}
 	if !yBounds.valid {
 		yBounds = NewBounds(-1, 1)
+	}
+
+	if p.BoundsModifier != nil {
+		xBounds, yBounds = p.BoundsModifier(xBounds, yBounds, p, canvas)
 	}
 
 	xAxis := p.XAxis
