@@ -428,7 +428,8 @@ func createPlotMethods() value.MethodMap {
 				}
 			}
 			return nil, fmt.Errorf("inset requires floats as arguments")
-		}).SetMethodDescription("xMin", "xMax", "yMin", "yMax", "visualGuide", "Converts the plot into an inset that can be added to another plot.").VarArgsMethod(4, 5),
+		}).SetMethodDescription("xMin", "xMax", "yMin", "yMax", "visualGuideColor", "Converts the plot into an inset that can be added to another plot. "+
+			"If a Visual Guide Color is given, it is assumed that the inset is a part of the large plot, and a visual guide is drawn.").VarArgsMethod(4, 5),
 	}
 }
 
