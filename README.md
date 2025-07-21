@@ -17,8 +17,8 @@ If the application is operated with a backend, there are the functions
 
 # Usage #
 
-The help icon offers some examples and shows how to use it. Error messages
-offer a description of the error and a hint how to fix it.
+Go to this [page](https://hneemann.github.io/control/), click the help 
+icon <img src="/server/assets/help.svg" width="20"> and choose one of the examples
 
 # Implementation #
 
