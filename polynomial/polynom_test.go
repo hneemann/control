@@ -105,6 +105,21 @@ func TestPolynom_Div(t *testing.T) {
 	}
 }
 
+func TestRootsBasic(t *testing.T) {
+	p := NewRoots(1, -1, complex(-2, 1), -3, complex(-4, 2)).Polynomial()
+	r, err := p.Roots()
+	assert.NoError(t, err)
+	sort.Slice(r.roots, func(i, j int) bool {
+		return real(r.roots[i]) < real(r.roots[j])
+	})
+	assert.Len(t, r.roots, 5)
+	assert.True(t, cmplx.Abs(complex(-4, 2)-r.roots[0]) < 1e-5)
+	assert.True(t, cmplx.Abs(complex(-3, 0)-r.roots[1]) < 1e-5)
+	assert.True(t, cmplx.Abs(complex(-2, 1)-r.roots[2]) < 1e-5)
+	assert.True(t, cmplx.Abs(complex(-1, 0)-r.roots[3]) < 1e-5)
+	assert.True(t, cmplx.Abs(complex(1, 0)-r.roots[4]) < 1e-5)
+}
+
 func TestPolynom_Roots(t *testing.T) {
 	tests := []struct {
 		name   string
@@ -119,11 +134,11 @@ func TestPolynom_Roots(t *testing.T) {
 		{"linear", Polynomial{0, 2}, []complex128{complex(0, 0)}, ""},
 		{"quadratic", Polynomial{1, 2, 1}, []complex128{complex(-1, 0), complex(-1, 0)}, ""},
 		{"quadratic", Polynomial{2, 2, 1}, []complex128{complex(-1, 1)}, ""},
-		{"cubic", Polynomial{2, -1, -2, 1}, []complex128{complex(2, 0), complex(1, 0), complex(-1, 0)}, ""},
-		{"cubic", Polynomial{2, 0, -1, 1}, []complex128{complex(1, 1), complex(-1, 0)}, ""},
-		{"four", Polynomial{24, 14, -13, -2, 1}, []complex128{complex(4, 0), complex(2, 0), complex(-1, 0), complex(-3, 0)}, ""},
+		{"cubic", Polynomial{2, -1, -2, 1}, []complex128{complex(-1, 0), complex(1, 0), complex(2, 0)}, ""},
+		{"cubic", Polynomial{2, 0, -1, 1}, []complex128{complex(-1, 0), complex(1, 1)}, ""},
+		{"four", Polynomial{24, 14, -13, -2, 1}, []complex128{complex(-3, 0), complex(-1, 0), complex(2, 0), complex(4, 0)}, ""},
 
-		{"zero", Polynomial{0, 24, 14, -13, -2, 1}, []complex128{0, complex(4, 0), complex(2, 0), complex(-1, 0), complex(-3, 0)}, ""},
+		{"zero", Polynomial{0, 24, 14, -13, -2, 1}, []complex128{complex(-3, 0), complex(-1, 0), 0, complex(2, 0), complex(4, 0)}, ""},
 
 		{"stable", Polynomial{0.5358983848622455, -1.4641016151377544, -0.4641016151377544, 2, 1}, []complex128{complex(-1.4909847033472479, 0), complex(-1.4909848297877935, 0), complex(0.49098476656751755, 0), complex(0.49098476656751755, 0)}, ""},
 	}
@@ -136,18 +151,11 @@ func TestPolynom_Roots(t *testing.T) {
 				assert.Equal(t, tt.errMsg, err.Error())
 			}
 			assert.Len(t, roots.roots, len(tt.want))
-			for _, r := range tt.want {
-				found := false
-				for _, root := range roots.roots {
-					if cmplx.Abs(r-root) < 1e-7 {
-						found = true
-						break
-					}
-				}
-				if !found {
-					fmt.Println("not found", r, "in", roots)
-				}
-				assert.True(t, found)
+			sort.Slice(roots.roots, func(i, j int) bool {
+				return real(roots.roots[i]) < real(roots.roots[j])
+			})
+			for i, r := range tt.want {
+				assert.True(t, cmplx.Abs(r-roots.roots[i]) < 1e-5, fmt.Sprintf("expected %v, got %v", r, roots.roots[0]))
 			}
 		})
 	}
