@@ -14,6 +14,7 @@ import (
 	"github.com/hneemann/parser2/value/export/xmlWriter"
 	"math"
 	"math/cmplx"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -282,6 +283,9 @@ func polyMethods() value.MethodMap {
 				return nil, err
 			}
 			var val []value.Value
+			sort.Slice(r.roots, func(i, j int) bool {
+				return real(r.roots[i]) < real(r.roots[j])
+			})
 			for _, v := range r.roots {
 				if imag(v) == 0 {
 					val = append(val, value.Float(real(v)))
@@ -836,7 +840,24 @@ var Parser = value.New().
 		},
 		Args:   -1,
 		IsPure: true,
-	}.SetDescription("float...", "Declares a polynomial.")).
+	}.SetDescription("float...", "Declares a polynomial by its coefficients.")).
+	AddStaticFunction("polyFromRoots", funcGen.Function[value.Value]{
+		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
+			var r []complex128
+			for i := 0; i < stack.Size(); i++ {
+				if c, ok := stack.Get(i).ToFloat(); ok {
+					r = append(r, complex(c, 0))
+				} else if c, ok := stack.Get(i).(Complex); ok {
+					r = append(r, complex128(c))
+				} else {
+					return nil, errors.New("polyFromRoots requires float or complex arguments")
+				}
+			}
+			return NewRoots(r...).Polynomial(), nil
+		},
+		Args:   -1,
+		IsPure: true,
+	}.SetDescription("complex...", "Creates a polynomial by its roots.")).
 	AddStaticFunction("linear", funcGen.Function[value.Value]{
 		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
 			if lin, ok := getLinear(stack, 0); ok {
