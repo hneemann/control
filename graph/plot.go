@@ -987,9 +987,9 @@ func cosAngleBetween(d0, d1 Point) float64 {
 func (p *pFuncPath) refine(w0 float64, p0, d0 Point, w1 float64, p1, d1 Point, yield func(rune, Point) bool, depth int, lastDist float64) bool {
 	dw := w1 - w0
 	dist := p.plot.Dist(p0, p1)
-	if dist > p.maxDist || // distance of two points is too large
-		p.plot.Dist(p1, p0.Add(d0.Mul(dw))) > p.maxDist/50 || // distance to the tangent is too large
-		cosAngleBetween(d0, d1) < 0.98 { // angle is larger than approx 10 degrees
+	if dist > p.maxDist || // the distance of two points is too large
+		p.plot.Dist(p1, p0.Add(d0.Mul(dw))) > p.maxDist/50 || // the distance to the tangent is too large
+		cosAngleBetween(d0, d1) < 0.98 { // the angle is larger than approx 10 degrees
 		if depth > 0 {
 			w := (w0 + w1) / 2
 			point, delta, err := p.f(w, dw)
@@ -1019,13 +1019,13 @@ func (p *pFuncPath) refine(w0 float64, p0, d0 Point, w1 float64, p1, d1 Point, y
 	return true
 }
 
-type PlotInset struct {
+type ImageInset struct {
 	Location    Rect
-	Plot        *Plot
+	Image       Image
 	VisualGuide *Style
 }
 
-func (s PlotInset) Bounds() (Bounds, Bounds, error) {
+func (s ImageInset) Bounds() (Bounds, Bounds, error) {
 	var x, y Bounds
 	x.Merge(s.Location.Min.X)
 	x.Merge(s.Location.Max.X)
@@ -1034,11 +1034,11 @@ func (s PlotInset) Bounds() (Bounds, Bounds, error) {
 	return x, y, nil
 }
 
-func (s PlotInset) DependantBounds(_, _ Bounds) (Bounds, Bounds, error) {
+func (s ImageInset) DependantBounds(_, _ Bounds) (Bounds, Bounds, error) {
 	return Bounds{}, Bounds{}, nil
 }
 
-func (s PlotInset) DrawTo(p *Plot, _ Canvas) error {
+func (s ImageInset) DrawTo(p *Plot, _ Canvas) error {
 	minPos := p.trans(s.Location.Min).Add(Point{1, 1})
 	maxPos := p.trans(s.Location.Max).Sub(Point{1, 1})
 	inner := ResizeCanvas{
@@ -1048,47 +1048,49 @@ func (s PlotInset) DrawTo(p *Plot, _ Canvas) error {
 			Max: maxPos,
 		},
 	}
-	err := s.Plot.DrawTo(inner)
+	err := s.Image.DrawTo(inner)
 	if err != nil {
 		return fmt.Errorf("error drawing image inset: %w", err)
 	}
 
 	if s.VisualGuide != nil {
-		ir := s.Plot.inner.Rect()
+		if outerPlot, ok := s.Image.(*Plot); ok {
+			ir := outerPlot.inner.Rect()
 
-		sMin := p.trans(ir.Min)
-		sMax := p.trans(ir.Max)
+			sMin := p.trans(ir.Min)
+			sMax := p.trans(ir.Max)
 
-		p.canvas.DrawPath(SlicePath{Closed: true}.
-			Add(sMin).
-			Add(Point{X: sMax.X, Y: sMin.Y}).
-			Add(sMax).
-			Add(Point{X: sMin.X, Y: sMax.Y}), s.VisualGuide)
+			p.canvas.DrawPath(SlicePath{Closed: true}.
+				Add(sMin).
+				Add(Point{X: sMax.X, Y: sMin.Y}).
+				Add(sMax).
+				Add(Point{X: sMin.X, Y: sMax.Y}), s.VisualGuide)
 
-		lMin := s.Plot.trans(ir.Min)
-		lMax := s.Plot.trans(ir.Max)
-		s12 := Point{X: sMin.X, Y: sMax.Y}
-		l12 := Point{X: lMin.X, Y: lMax.Y}
-		s21 := Point{X: sMax.X, Y: sMin.Y}
-		l21 := Point{X: lMax.X, Y: lMin.Y}
+			lMin := outerPlot.trans(ir.Min)
+			lMax := outerPlot.trans(ir.Max)
+			s12 := Point{X: sMin.X, Y: sMax.Y}
+			l12 := Point{X: lMin.X, Y: lMax.Y}
+			s21 := Point{X: sMax.X, Y: sMin.Y}
+			l21 := Point{X: lMax.X, Y: lMin.Y}
 
-		if (lMin.X < sMin.X && lMin.Y > sMin.Y) || (lMin.X > sMin.X && lMin.Y < sMin.Y) {
-			p.canvas.DrawPath(NewPath(false).Add(sMin).Add(lMin), s.VisualGuide)
-		}
-		if (l12.X > s12.X && l12.Y > s12.Y) || (l12.X < s12.X && l12.Y < s12.Y) {
-			p.canvas.DrawPath(NewPath(false).Add(s12).Add(l12), s.VisualGuide)
-		}
-		if (lMax.X < sMax.X && lMax.Y > sMax.Y) || (lMax.X > sMax.X && lMax.Y < sMax.Y) {
-			p.canvas.DrawPath(NewPath(false).Add(sMax).Add(lMax), s.VisualGuide)
-		}
-		if (l21.X > s21.X && l21.Y > s21.Y) || (l21.X < s21.X && l21.Y < s21.Y) {
-			p.canvas.DrawPath(NewPath(false).Add(s21).Add(l21), s.VisualGuide)
+			if (lMin.X < sMin.X && lMin.Y > sMin.Y) || (lMin.X > sMin.X && lMin.Y < sMin.Y) {
+				p.canvas.DrawPath(NewPath(false).Add(sMin).Add(lMin), s.VisualGuide)
+			}
+			if (l12.X > s12.X && l12.Y > s12.Y) || (l12.X < s12.X && l12.Y < s12.Y) {
+				p.canvas.DrawPath(NewPath(false).Add(s12).Add(l12), s.VisualGuide)
+			}
+			if (lMax.X < sMax.X && lMax.Y > sMax.Y) || (lMax.X > sMax.X && lMax.Y < sMax.Y) {
+				p.canvas.DrawPath(NewPath(false).Add(sMax).Add(lMax), s.VisualGuide)
+			}
+			if (l21.X > s21.X && l21.Y > s21.Y) || (l21.X < s21.X && l21.Y < s21.Y) {
+				p.canvas.DrawPath(NewPath(false).Add(s21).Add(l21), s.VisualGuide)
+			}
 		}
 	}
 	return nil
 }
 
-func (s PlotInset) Legend() Legend {
+func (s ImageInset) Legend() Legend {
 	return Legend{}
 }
 
