@@ -74,10 +74,12 @@ type Plot struct {
 	BoundsModifier BoundsModifier
 	xTicks         []Tick
 	yTicks         []Tick
+	HideLegend     bool
 	legendPosGiven bool
 	legendPos      Point
 	trans          Transform
 	canvas         Canvas
+	inner          Canvas
 }
 
 func (p *Plot) DrawTo(canvas Canvas) error {
@@ -187,7 +189,7 @@ func (p *Plot) DrawTo(canvas Canvas) error {
 		return Point{xTrans(p.X), yTrans(p.Y)}
 	}
 
-	inner := TransformCanvas{
+	p.inner = TransformCanvas{
 		transform: p.trans,
 		parent:    canvas,
 		size: Rect{
@@ -234,12 +236,12 @@ func (p *Plot) DrawTo(canvas Canvas) error {
 
 	var legends []Legend
 	for _, plotContent := range p.Content {
-		err := plotContent.DrawTo(p, inner)
+		err := plotContent.DrawTo(p, p.inner)
 		if err != nil {
 			return err
 		}
 		l := plotContent.Legend()
-		if l.Name != "" {
+		if l.Name != "" && !p.HideLegend {
 			legends = append(legends, l)
 		}
 	}
@@ -1018,8 +1020,9 @@ func (p *pFuncPath) refine(w0 float64, p0, d0 Point, w1 float64, p1, d1 Point, y
 }
 
 type ImageInset struct {
-	Location Rect
-	Image    Image
+	Location    Rect
+	Image       *Plot
+	VisualGuide *Style
 }
 
 func (s ImageInset) Bounds() (Bounds, Bounds, error) {
@@ -1045,7 +1048,44 @@ func (s ImageInset) DrawTo(p *Plot, _ Canvas) error {
 			Max: maxPos,
 		},
 	}
-	return s.Image.DrawTo(inner)
+	err := s.Image.DrawTo(inner)
+	if err != nil {
+		return fmt.Errorf("error drawing image inset: %w", err)
+	}
+
+	if s.VisualGuide != nil {
+		ir := s.Image.inner.Rect()
+
+		sMin := p.trans(ir.Min)
+		sMax := p.trans(ir.Max)
+
+		p.canvas.DrawPath(SlicePath{Closed: true}.
+			Add(sMin).
+			Add(Point{X: sMax.X, Y: sMin.Y}).
+			Add(sMax).
+			Add(Point{X: sMin.X, Y: sMax.Y}), s.VisualGuide)
+
+		lMin := s.Image.trans(ir.Min)
+		lMax := s.Image.trans(ir.Max)
+		s12 := Point{X: sMin.X, Y: sMax.Y}
+		l12 := Point{X: lMin.X, Y: lMax.Y}
+		s21 := Point{X: sMax.X, Y: sMin.Y}
+		l21 := Point{X: lMax.X, Y: lMin.Y}
+
+		if (lMin.X < sMin.X && lMin.Y > sMin.Y) || (lMin.X > sMin.X && lMin.Y < sMin.Y) {
+			p.canvas.DrawPath(NewPath(false).Add(sMin).Add(lMin), s.VisualGuide)
+		}
+		if (l12.X > s12.X && l12.Y > s12.Y) || (l12.X < s12.X && l12.Y < s12.Y) {
+			p.canvas.DrawPath(NewPath(false).Add(s12).Add(l12), s.VisualGuide)
+		}
+		if (lMax.X < sMax.X && lMax.Y > sMax.Y) || (lMax.X > sMax.X && lMax.Y < sMax.Y) {
+			p.canvas.DrawPath(NewPath(false).Add(sMax).Add(lMax), s.VisualGuide)
+		}
+		if (l21.X > s21.X && l21.Y > s21.Y) || (l21.X < s21.X && l21.Y < s21.Y) {
+			p.canvas.DrawPath(NewPath(false).Add(s21).Add(l21), s.VisualGuide)
+		}
+	}
+	return nil
 }
 
 func (s ImageInset) Legend() Legend {

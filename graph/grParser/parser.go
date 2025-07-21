@@ -363,6 +363,10 @@ func createPlotMethods() value.MethodMap {
 			}
 			return nil, fmt.Errorf("legendPos requires two float values")
 		}).SetMethodDescription("x", "y", "Sets the position of the legend."),
+		"noLegend": value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			plot.Value.HideLegend = true
+			return plot, nil
+		}).SetMethodDescription("Hides the legend."),
 		"textSize": value.MethodAtType(1, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if si, ok := stack.Get(1).ToFloat(); ok {
 				plot = plot.Copy()
@@ -397,23 +401,34 @@ func createPlotMethods() value.MethodMap {
 			}
 			return nil, fmt.Errorf("zoom requires three float values")
 		}).SetMethodDescription("x", "y", "factor", "Zoom at the given point by the given factor."),
-		"inset": value.MethodAtType(4, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+		"inset": value.MethodAtType(5, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if xMin, ok := stack.Get(1).ToFloat(); ok {
 				if xMax, ok := stack.Get(2).ToFloat(); ok {
 					if yMin, ok := stack.Get(3).ToFloat(); ok {
 						if yMax, ok := stack.Get(4).ToFloat(); ok {
 							r := graph.NewRect(xMin, xMax, yMin, yMax)
 							plot.Value.FillBackground = true
+
+							var visualGuide *graph.Style
+							if stack.Size() > 5 {
+								vsv, err := GetStyle(stack, 5, graph.Black)
+								if err != nil {
+									return nil, fmt.Errorf("inset requires a color as fifth argument: %w", err)
+								}
+								visualGuide = vsv.Value
+							}
+
 							return NewPlotContentValue(graph.ImageInset{
-								Location: r,
-								Image:    plot.Value,
+								Location:    r,
+								Image:       plot.Value,
+								VisualGuide: visualGuide,
 							}), nil
 						}
 					}
 				}
 			}
 			return nil, fmt.Errorf("inset requires floats as arguments")
-		}).SetMethodDescription("xMin", "xMax", "yMin", "yMax", "Converts the plot into an inset that can be added to another plot."),
+		}).SetMethodDescription("xMin", "xMax", "yMin", "yMax", "visualGuide", "Converts the plot into an inset that can be added to another plot.").VarArgsMethod(4, 5),
 	}
 }
 
