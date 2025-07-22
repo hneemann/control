@@ -1061,8 +1061,8 @@ func (s ImageInset) DrawTo(p *Plot, _ Canvas) error {
 	}
 
 	if s.VisualGuide != nil {
-		if outerPlot, ok := s.Image.(*Plot); ok {
-			ir := outerPlot.inner.Rect()
+		if insetPlot, ok := s.Image.(*Plot); ok {
+			ir := insetPlot.inner.Rect()
 
 			sMin := p.trans(ir.Min)
 			sMax := p.trans(ir.Max)
@@ -1073,8 +1073,8 @@ func (s ImageInset) DrawTo(p *Plot, _ Canvas) error {
 				Add(sMax).
 				Add(Point{X: sMin.X, Y: sMax.Y}), s.VisualGuide)
 
-			lMin := outerPlot.trans(ir.Min)
-			lMax := outerPlot.trans(ir.Max)
+			lMin := insetPlot.trans(ir.Min)
+			lMax := insetPlot.trans(ir.Max)
 			s12 := Point{X: sMin.X, Y: sMax.Y}
 			l12 := Point{X: lMin.X, Y: lMax.Y}
 			s21 := Point{X: sMax.X, Y: sMin.Y}

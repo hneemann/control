@@ -263,11 +263,10 @@ plot(
   plot(
     g.evans(50).accept(pc->string(pc)="Evans Curves"),
     r.map(r->cmplx(r)).graph().mark(0,red.stroke(2))
-  ).xBounds(-4.5,0.2)
-   .yBounds(-2,2)
-   .zoom(cr.real(),cr.imag(),30)
+  ).xBounds(cr.real()-0.1, cr.real()+0.1)
+   .yBounds(cr.imag()-0.1, cr.imag()+0.1)
    .noAxis()
-   .inset(-4.2,-2.6,0.5,1.8,black)
+   .inset(-4.2,-2.6,0.4,1.8,black)
 ).xBounds(-4.5,0.2)
  .yBounds(-2,2)
 `, file: "z.html"},
