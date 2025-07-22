@@ -607,7 +607,9 @@ func (l *Linear) CreateEvans(kMin, kMax float64) ([]graph.PlotContent, error) {
 	var evPoints evansPoints
 	var poleCount int
 	if l.IsCausal() {
-		evPoints = append(evPoints, evansPoint{points: p.ToPoints(), gain: 0})
+		if kMin == 0 {
+			evPoints = append(evPoints, evansPoint{points: p.ToPoints(), gain: 0})
+		}
 		poleCount = p.Count()
 	} else {
 		poleCount = z.Count()
@@ -620,7 +622,11 @@ func (l *Linear) CreateEvans(kMin, kMax float64) ([]graph.PlotContent, error) {
 	}
 
 	const scalePoints = 40
-	for i := 0; i <= scalePoints; i++ {
+	iStart := 0
+	if kMin == 0 {
+		iStart = 1 // skip the first point, as it is already added
+	}
+	for i := iStart; i <= scalePoints; i++ {
 		k := kMin + (kMax-kMin)*float64(i)/float64(scalePoints)
 		points, err := l.getPoles(k, poleCount)
 		if err != nil {

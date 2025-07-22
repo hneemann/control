@@ -426,7 +426,7 @@ func linMethods() value.MethodMap {
 						return nil, fmt.Errorf("evans requires a float as second argument")
 					}
 				} else {
-					kMin = 0.01
+					kMin = 0
 					kMax = k
 				}
 				red, err := lin.Reduce()
