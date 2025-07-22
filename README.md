@@ -48,3 +48,77 @@ The simulation of linear systems is for now done by using the Euler method, with
 fixed number of steps which is good enough for most simple cases, but not 
 sufficient for simulating more complex systems.
 
+# Examples #
+
+## Bode Plot ##
+
+The script for the Bode plot looks like this. The `.ampModify` and 
+`.phaseModify` methods are used to add additional lines to the amplitude and
+phase plots. The `xConst` and `yConst` functions are used to add vertical
+and horizontal lines to the plots. 
+
+```
+let g = 70/((s+1)*(s+2)*(s+2.5));
+let kp=0.16;
+let Ti=2.0;
+let k = pid(kp,Ti);
+let g0=k*g;
+let pm=g0.pMargin();
+let lineColor=red.dash(5,5);
+
+plot(
+  g.bode(green, "G"),
+  k.bode(blue,  sprintf("K, k#p=%.2f, T#i=%.1f",kp,Ti)),
+  g0.bode(black, sprintf("G#0, #Phi#r=%.1f°, #omega#s=%.2f rad/s",
+                         pm.pMargin, pm.w0) )
+).ampModify(
+    a->a.add(xConst(pm.w0,lineColor))
+ )
+ .phaseModify(
+      a->a.add(xConst(pm.w0,lineColor))
+          .add(yConst(-180+50,lineColor))
+          .add(yConst(-180+70,lineColor))
+          .add( plot(
+                  yConst(1), 
+                  g0.loop().simStep(10).graph().line(black)
+                ).yBounds(0,1.5)
+                 .borders(0.1,0.1)
+                 .labels("t [s]", "h(t)")
+                 .inset(6,100,-200,-15) )
+ )
+```
+The result looks like this
+
+![Bode plot](/bode.svg)
+
+## Evans Plot ##
+
+Ths script shows how to create an Evans plot. The inset shows, that the curves 
+don't touch at the "merging point".
+
+```
+let g = (s^2+2.5*s+2.234)/((s+1)*(s+2)*(s)*(s+3)*(s+4));
+
+let p = g.numerator()*g.denominator().derivative()-
+        g.denominator()*g.numerator().derivative();
+let r = p.roots();
+let cr = r.accept(r->r.imag()>1).single();
+
+plot(
+  g.evans(150),
+  r.map(r->cmplx(r)).graph()
+                    .mark(0,red.stroke(2))
+                    .title("Merge Points"),
+  plot(
+    g.evans(50).accept(pc->string(pc)="Evans Curves"),
+    r.map(r->cmplx(r)).graph().mark(0,red.stroke(2))
+  ).xBounds(-4.5,0.2)
+   .yBounds(-2,2)
+   .zoom(cr.real(),cr.imag(),30)
+   .noAxis()
+   .inset(-4.2,-2.6,0.5,1.8,black)
+).xBounds(-4.5,0.2)
+ .yBounds(-2,2)
+ ```
+
+![Evans plot](/evans.svg)
