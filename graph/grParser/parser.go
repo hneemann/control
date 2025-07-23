@@ -1050,7 +1050,7 @@ func Setup(fg *value.FunctionGenerator) {
 				if dc, ok := st.Get(i).(DataContentValue); ok {
 					content = append(content, dc.Value)
 				} else {
-					return nil, fmt.Errorf("toDat requires DataContent as arguments")
+					return nil, fmt.Errorf("dataSet requires DataContent as arguments")
 				}
 			}
 			dc := &graph.Data{
