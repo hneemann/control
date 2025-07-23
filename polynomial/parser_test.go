@@ -116,7 +116,7 @@ let td=1;
 let k=pid(kp,ti,td);
 let g=(1.5*s)/((2*s+1)*(s+1)*(s^2+3*s+3.1));
 let g0=k*g;
-let gw=g0.loop();
+let gw=g0.reduce().loop();
 gw
 `,
 			//30*(s^2+s+0.5)/(4*s^4+18*s^3+62.4*s^2+54.6*s+21.2)") externally checked

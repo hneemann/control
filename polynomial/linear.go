@@ -272,16 +272,12 @@ func NewConst(c float64) *Linear {
 	}
 }
 
-func (l *Linear) Loop() (*Linear, error) {
-	l, err := l.Reduce()
-	if err != nil {
-		return nil, err
-	}
+func (l *Linear) Loop() *Linear {
 	return &Linear{
 		Numerator:   l.Numerator,
 		zeros:       l.zeros,
 		Denominator: l.Numerator.Add(l.Denominator),
-	}, nil
+	}
 }
 
 func (l *Linear) Reduce() (*Linear, error) {
@@ -596,18 +592,24 @@ func NewImReLabels() PlotPreferences {
 }
 
 func (l *Linear) CreateEvans(kMin, kMax float64) ([]graph.PlotContent, error) {
-	p, err := l.Poles()
+
+	lin, err := l.Reduce()
 	if err != nil {
 		return nil, err
 	}
-	z, err := l.Zeros()
+
+	p, err := lin.Poles()
+	if err != nil {
+		return nil, err
+	}
+	z, err := lin.Zeros()
 	if err != nil {
 		return nil, err
 	}
 
 	ecs := evansCurves{
 		polyProvider: func(k float64) (Polynomial, error) {
-			return l.Numerator.MulFloat(k).Add(l.Denominator), nil
+			return lin.Numerator.MulFloat(k).Add(lin.Denominator), nil
 		},
 	}
 
@@ -626,7 +628,7 @@ func (l *Linear) CreateEvans(kMin, kMax float64) ([]graph.PlotContent, error) {
 		}
 	}
 
-	splitGains, err := l.EvansSplitGains()
+	splitGains, err := lin.EvansSplitGains()
 	if err != nil {
 		return nil, err
 	}
@@ -644,7 +646,7 @@ func (l *Linear) CreateEvans(kMin, kMax float64) ([]graph.PlotContent, error) {
 	curveList = append(curveList, NewImReLabels())
 	curveList = append(curveList, Polar{})
 
-	as, order, err := l.EvansAsymptotesIntersect()
+	as, order, err := lin.EvansAsymptotesIntersect()
 	if err != nil {
 		return nil, err
 	}

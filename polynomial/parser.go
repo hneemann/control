@@ -399,9 +399,8 @@ func bodePlotContentMethods() value.MethodMap {
 func linMethods() value.MethodMap {
 	return value.MethodMap{
 		"loop": value.MethodAtType(0, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
-			return lin.Loop()
-		}).SetMethodDescription("Closes the loop. Calculates the closed loop transfer function G/(G+1)=N/(N+D). " +
-			"Before closing the loop the transfer function is reduced."),
+			return lin.Loop(), nil
+		}).SetMethodDescription("Closes the loop. Calculates the closed loop transfer function G/(G+1)=N/(N+D)."),
 		"derivative": value.MethodAtType(0, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
 			return lin.Derivative(), nil
 		}).SetMethodDescription("Calculates the derivative of the transfer function."),

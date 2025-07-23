@@ -147,8 +147,8 @@ func TestFromRoots(t *testing.T) {
 
 func TestLinear_Loop(t *testing.T) {
 	g0 := &Linear{
-		Numerator:   Polynomial{4, 2},
-		Denominator: Polynomial{4, 4, 2},
+		Numerator:   Polynomial{2, 1},
+		Denominator: Polynomial{2, 2, 1},
 	}
 
 	expected := &Linear{
@@ -157,7 +157,7 @@ func TestLinear_Loop(t *testing.T) {
 	}
 
 	testFunc(t, g0, func(a *Linear) *Linear {
-		return Must(a.Loop())
+		return a.Loop()
 	}, expected)
 }
 
@@ -186,8 +186,10 @@ func Test_Integration(t *testing.T) {
 	assert.NoError(t, err)
 
 	g0 := g.Mul(k)
-	gw, err := g0.Loop()
+	gw, err := g0.Reduce()
 	assert.NoError(t, err)
+
+	gw = gw.Loop()
 
 	p, err := gw.Poles()
 	assert.NoError(t, err)
