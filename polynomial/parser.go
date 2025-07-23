@@ -400,7 +400,8 @@ func linMethods() value.MethodMap {
 	return value.MethodMap{
 		"loop": value.MethodAtType(0, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
 			return lin.Loop()
-		}).SetMethodDescription("Closes the loop. Calculates the closed loop transfer function G/(G+1)."),
+		}).SetMethodDescription("Closes the loop. Calculates the closed loop transfer function G/(G+1)=N/(N+D). " +
+			"Before closing the loop the transfer function is reduced."),
 		"derivative": value.MethodAtType(0, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
 			return lin.Derivative(), nil
 		}).SetMethodDescription("Calculates the derivative of the transfer function."),
@@ -868,6 +869,50 @@ var Parser = value.New().
 		Args:   1,
 		IsPure: true,
 	}.SetDescription("arg", "Creates a linear system. Can be used to cast a float, int or polynomial to a linear system.")).
+	AddStaticFunction("polar", funcGen.Function[value.Value]{
+		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
+			return grParser.NewPlotContentValue(Polar{}), nil
+		},
+		Args:   0,
+		IsPure: true,
+	}.SetDescription("Returns a polar grid to be added to a plot.")).
+	AddStaticFunction("rootLocus", funcGen.Function[value.Value]{
+		Func: func(st funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
+			if cppClosure, ok := st.Get(0).ToClosure(); ok {
+				if kMin, ok := st.Get(1).ToFloat(); ok {
+					if kMax, ok := st.Get(2).ToFloat(); ok {
+						stack := funcGen.NewEmptyStack[value.Value]()
+						cpp := func(k float64) (Polynomial, error) {
+							poly, err := cppClosure.Eval(stack, value.Float(k))
+							if err != nil {
+								return Polynomial{}, fmt.Errorf("error creating polynomial: %w", err)
+							}
+							if p, ok := poly.(Polynomial); ok {
+								return p, nil
+							}
+							if l, ok := poly.(*Linear); ok {
+								return l.Denominator, nil
+							}
+							return Polynomial{}, fmt.Errorf("the function needs to return a polynomial or a linear system")
+						}
+
+						contentList, err := RootLocus(cpp, kMin, kMax)
+						if err != nil {
+							return nil, fmt.Errorf("rootLocus failed: %w", err)
+						}
+						return value.NewListConvert(func(i graph.PlotContent) value.Value {
+							return grParser.NewPlotContentValue(i)
+						}, contentList), nil
+					}
+				}
+			}
+			return nil, fmt.Errorf("rootLocus requires a function and two floats")
+		},
+		Args:   3,
+		IsPure: true,
+	}.SetDescription("func(k) value", "k_min", "k_max", "Creates a root locus plot content. "+
+		"If the function returns a polynomial for the given k, the roots of that polynomial are calculated. "+
+		"If a linear system is returned, the poles are calculated.")).
 	AddStaticFunction("pid", funcGen.Function[value.Value]{
 		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
 			if kp, ok := stack.Get(0).ToFloat(); ok {

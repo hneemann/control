@@ -353,8 +353,9 @@ func PID(kp, ti, td, tp float64) (*Linear, error) {
 }
 
 type evansPoint struct {
-	points []graph.Point
-	gain   float64
+	points     []graph.Point
+	gain       float64
+	numComplex int
 }
 
 type (
@@ -604,15 +605,10 @@ func (l *Linear) CreateEvans(kMin, kMax float64) ([]graph.PlotContent, error) {
 		return nil, err
 	}
 
-	var evPoints evansPoints
-	var poleCount int
-	if l.IsCausal() {
-		if kMin == 0 {
-			evPoints = append(evPoints, evansPoint{points: p.ToPoints(), gain: 0})
-		}
-		poleCount = p.Count()
-	} else {
-		poleCount = z.Count()
+	ecs := evansCurves{
+		polyProvider: func(k float64) (Polynomial, error) {
+			return l.Numerator.MulFloat(k).Add(l.Denominator), nil
+		},
 	}
 
 	if kMax <= 0 {
@@ -622,17 +618,12 @@ func (l *Linear) CreateEvans(kMin, kMax float64) ([]graph.PlotContent, error) {
 	}
 
 	const scalePoints = 40
-	iStart := 0
-	if kMin == 0 {
-		iStart = 1 // skip the first point, as it is already added
-	}
-	for i := iStart; i <= scalePoints; i++ {
+	for i := 0; i <= scalePoints; i++ {
 		k := kMin + (kMax-kMin)*float64(i)/float64(scalePoints)
-		points, err := l.getPoles(k, poleCount)
+		err := ecs.addPolesFor(k)
 		if err != nil {
 			return nil, err
 		}
-		evPoints = append(evPoints, evansPoint{points: points, gain: k})
 	}
 
 	splitGains, err := l.EvansSplitGains()
@@ -642,20 +633,11 @@ func (l *Linear) CreateEvans(kMin, kMax float64) ([]graph.PlotContent, error) {
 
 	for _, k := range splitGains {
 		if k > kMin && k < kMax {
-			points, err := l.getPoles(k, poleCount)
+			err := ecs.addPolesFor(k)
 			if err != nil {
 				return nil, err
 			}
-			evPoints = append(evPoints, evansPoint{points: points, gain: k})
 		}
-	}
-
-	sort.Sort(evPoints)
-
-	ecs := evansCurves{
-		l:         l,
-		evPoints:  evPoints,
-		poleCount: poleCount,
 	}
 
 	curveList := make([]graph.PlotContent, 0, 5)
@@ -673,7 +655,7 @@ func (l *Linear) CreateEvans(kMin, kMax float64) ([]graph.PlotContent, error) {
 	curveList = append(curveList, &ecs)
 
 	markerStyle := graph.Black.SetStrokeWidth(2)
-	if poleCount > 0 {
+	if p.Count() > 0 {
 		polesMarker := graph.NewCrossMarker(4)
 		curveList = append(curveList,
 			graph.Scatter{
@@ -701,26 +683,6 @@ func (l *Linear) CreateEvans(kMin, kMax float64) ([]graph.PlotContent, error) {
 	}
 
 	return curveList, nil
-
-}
-
-func (l *Linear) getPoles(k float64, poleCount int) ([]graph.Point, error) {
-	gw, err := l.MulFloat(k).Loop()
-	if err != nil {
-		return nil, err
-	}
-	poles, err := gw.Poles()
-	if err != nil {
-		return nil, err
-	}
-
-	points := poles.ToPoints()
-
-	if len(points) != poleCount {
-		return nil, fmt.Errorf("unexpected pole count %d for k=%g", len(points), k)
-	}
-
-	return points, nil
 }
 
 func (l *Linear) EvansAsymptotesIntersect() (float64, int, error) {
@@ -787,25 +749,66 @@ func (l *Linear) EvansSplitGains() ([]float64, error) {
 	return kList, nil
 }
 
+type PolynomialProvider func(k float64) (Polynomial, error)
+
 type evansCurves struct {
-	l           *Linear
-	evPoints    evansPoints
-	poleCount   int
-	isGenerated bool
+	polyProvider        PolynomialProvider
+	evPoints            evansPoints
+	poleCount           int
+	isGenerated         bool
+	useComplexNumRefine bool
 }
 
 func (ec *evansCurves) String() string {
 	return "Evans Curves"
 }
 
+func (ec *evansCurves) addPolesFor(k float64) error {
+	points, numComp, err := ec.getPoles(k)
+	if err != nil {
+		return err
+	}
+	evPoint := evansPoint{points: points, gain: k, numComplex: numComp}
+	ec.evPoints = append(ec.evPoints, evPoint)
+	return nil
+}
+
+func (ec *evansCurves) getPoles(k float64) ([]graph.Point, int, error) {
+	poly, err := ec.polyProvider(k)
+	if err != nil {
+		return nil, 0, err
+	}
+	poles, err := poly.Roots()
+	if err != nil {
+		return nil, 0, err
+	}
+
+	points := poles.ToPoints()
+
+	if ec.poleCount == 0 {
+		ec.poleCount = len(points)
+	} else {
+		if len(points) != ec.poleCount {
+			return nil, 0, fmt.Errorf("unexpected pole count %d instead of %d for k=%g (%v); maybe the Linear System is not causal", len(points), ec.poleCount, k, poly)
+		}
+	}
+
+	nc := 0
+	if ec.useComplexNumRefine {
+		nc = poles.NumComplex()
+	}
+
+	return points, nc, nil
+}
+
 func (ec *evansCurves) refine(p1 evansPoint, p2 evansPoint, m metric, maxDist float64, depth int) error {
-	if depth > 0 && p1.dist(p2, m) > maxDist {
+	if depth > 0 && (p1.dist(p2, m) > maxDist || p1.numComplex != p2.numComplex) {
 		nk := (p1.gain + p2.gain) / 2
-		points, err := ec.l.getPoles(nk, ec.poleCount)
+		points, numComplex, err := ec.getPoles(nk)
 		if err != nil {
 			return fmt.Errorf("error in evans refine: %w", err)
 		}
-		evPoint := evansPoint{points: points, gain: nk}
+		evPoint := evansPoint{points: points, gain: nk, numComplex: numComplex}
 		ec.evPoints = append(ec.evPoints, evPoint)
 
 		err = ec.refine(p1, evPoint, m, maxDist, depth-1)
@@ -826,6 +829,8 @@ func (ec *evansCurves) generate(tr graph.Transform) error {
 	}
 	ec.isGenerated = true
 
+	sort.Sort(ec.evPoints)
+
 	const maxDist = 4
 	var m metric = func(p1, p2 graph.Point) float64 {
 		return tr(p1).DistTo(tr(p2))
@@ -833,7 +838,7 @@ func (ec *evansCurves) generate(tr graph.Transform) error {
 
 	le := len(ec.evPoints)
 	for i := 1; i < le; i++ {
-		err := ec.refine(ec.evPoints[i-1], ec.evPoints[i], m, maxDist, 10)
+		err := ec.refine(ec.evPoints[i-1], ec.evPoints[i], m, maxDist, 15)
 		if err != nil {
 			return err
 		}
@@ -877,6 +882,32 @@ func (ec *evansCurves) DrawTo(plot *graph.Plot, canvas graph.Canvas) error {
 
 func (ec *evansCurves) Legend() graph.Legend {
 	return graph.Legend{}
+}
+
+func RootLocus(cpp PolynomialProvider, kMin, kMax float64) ([]graph.PlotContent, error) {
+	ecs := evansCurves{
+		polyProvider:        cpp,
+		useComplexNumRefine: true,
+	}
+
+	const scalePoints = 40
+	for i := 0; i <= scalePoints; i++ {
+		k := kMin + (kMax-kMin)*float64(i)/float64(scalePoints)
+		err := ecs.addPolesFor(k)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	start := graph.Scatter{
+		Points: graph.PointsFromSlice(ecs.evPoints[0].points),
+		ShapeLineStyle: graph.ShapeLineStyle{
+			Shape:      graph.NewCircleMarker(4),
+			ShapeStyle: graph.Black.SetStrokeWidth(2),
+		},
+		Title: "Start",
+	}
+	return []graph.PlotContent{&ecs, start}, nil
 }
 
 type BodePlotContent struct {

@@ -513,6 +513,16 @@ func (r Roots) Mul(b Roots) Roots {
 	}
 }
 
+func (r Roots) NumComplex() int {
+	n := 0
+	for _, root := range r.roots {
+		if math.Abs(imag(root)) > eps {
+			n++
+		}
+	}
+	return n
+}
+
 func (r Roots) Equals(b Roots) bool {
 	if math.Abs(r.factor-b.factor) > eps {
 		return false
