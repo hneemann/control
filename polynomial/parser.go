@@ -442,8 +442,8 @@ func linMethods() value.MethodMap {
 				}, contentList), nil
 			}
 			return nil, fmt.Errorf("evans requires a float")
-		}).SetMethodDescription("k_min", "k_max", "Creates an evans plot. If only one argument is used, "+
-			"this argument is k_max and kMin is set to 0.01 in this case.").VarArgsMethod(1, 2),
+		}).SetMethodDescription("k_min", "k_max", "Creates an evans plot content. If only one argument is given, "+
+			"this argument is used as k_max and kMin is set to 0.").VarArgsMethod(1, 2),
 		"nyquist": value.MethodAtType(2, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
 			neg, ok := st.GetOptional(1, value.Bool(false)).ToBool()
 			if !ok {
