@@ -899,15 +899,23 @@ func RootLocus(cpp PolynomialProvider, kMin, kMax float64) ([]graph.PlotContent,
 		}
 	}
 
-	start := graph.Scatter{
+	minMarker := graph.Scatter{
 		Points: graph.PointsFromSlice(ecs.evPoints[0].points),
+		ShapeLineStyle: graph.ShapeLineStyle{
+			Shape:      graph.NewSquareMarker(4),
+			ShapeStyle: graph.Black.SetStrokeWidth(2),
+		},
+		Title: "initial",
+	}
+	maxMarker := graph.Scatter{
+		Points: graph.PointsFromSlice(ecs.evPoints[len(ecs.evPoints)-1].points),
 		ShapeLineStyle: graph.ShapeLineStyle{
 			Shape:      graph.NewCircleMarker(4),
 			ShapeStyle: graph.Black.SetStrokeWidth(2),
 		},
-		Title: "Start",
+		Title: "final",
 	}
-	return []graph.PlotContent{&ecs, start}, nil
+	return []graph.PlotContent{&ecs, minMarker, maxMarker}, nil
 }
 
 type BodePlotContent struct {
