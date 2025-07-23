@@ -429,11 +429,7 @@ func linMethods() value.MethodMap {
 					kMin = 0
 					kMax = k
 				}
-				red, err := lin.Reduce()
-				if err != nil {
-					return nil, err
-				}
-				contentList, err := red.CreateEvans(kMin, kMax)
+				contentList, err := lin.CreateEvans(kMin, kMax)
 				if err != nil {
 					return nil, err
 				}
