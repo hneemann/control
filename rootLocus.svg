@@ -151,12 +151,12 @@
 	<path d="M 534.151,493.315 L 534.151,485.315 L 542.151,485.315 L 542.151,493.315 Z" style="stroke:#000000;stroke-opacity:1.00;stroke-width:1;stroke-linejoin:round;fill:none"/>
 	<path d="M 534.151,92.185 L 534.151,84.185 L 542.151,84.185 L 542.151,92.185 Z" style="stroke:#000000;stroke-opacity:1.00;stroke-width:1;stroke-linejoin:round;fill:none"/>
 	<path d="M 649.909,292.750 L 649.909,284.750 L 657.909,284.750 L 657.909,292.750 Z" style="stroke:#000000;stroke-opacity:1.00;stroke-width:1;stroke-linejoin:round;fill:none"/>
-	<text x="325.93" y="35.86" style="stroke:none;fill:#000000;fill-opacity:1.00;fill-rule:evenodd;font-size:15.0px">root locus plot varying Tᵢ</text>
+	<text x="325.93" y="35.86" style="stroke:none;fill:#000000;fill-opacity:1.00;fill-rule:evenodd;font-size:15.0px">Root Locus Plot varying Tᵢ</text>
 	<path d="M 56.250,570.000 L 788.750,570.000 L 788.750,7.500 L 56.250,7.500 Z" style="stroke:#000000;stroke-opacity:1.00;stroke-width:2;stroke-linejoin:round;fill:none"/>
-	<text x="248.38" y="477.33" style="stroke:none;fill:#000000;fill-opacity:1.00;fill-rule:evenodd;font-size:15.0px">Tᵢ=10 s</text>
+	<text x="248.38" y="477.33" style="stroke:none;fill:#000000;fill-opacity:1.00;fill-rule:evenodd;font-size:15.0px">Tᵢ=10 s</text>
 	<path d="M 221.879,476.330 L 221.879,468.330 L 229.879,468.330 L 229.879,476.330 Z" style="stroke:#000000;stroke-opacity:1.00;stroke-width:1;stroke-linejoin:round;fill:none"/>
-	<text x="248.38" y="499.83" style="stroke:none;fill:#000000;fill-opacity:1.00;fill-rule:evenodd;font-size:15.0px">Tᵢ=0.1 s</text>
+	<text x="248.38" y="499.83" style="stroke:none;fill:#000000;fill-opacity:1.00;fill-rule:evenodd;font-size:15.0px">Tᵢ=0.1 s</text>
 	<ellipse cx="225.88" cy="494.83" rx="4.00" ry="4.00" style="stroke:#000000;stroke-opacity:1.00;stroke-width:1;stroke-linejoin:round;fill:none"/>
-	<text x="248.38" y="522.33" style="stroke:none;fill:#000000;fill-opacity:1.00;fill-rule:evenodd;font-size:15.0px">Tᵢ=1.5 s</text>
+	<text x="248.38" y="522.33" style="stroke:none;fill:#000000;fill-opacity:1.00;fill-rule:evenodd;font-size:15.0px">Tᵢ=1.5 s</text>
 	<path d="M 221.879,521.330 L 229.879,513.330 M 221.879,513.330 L 229.879,521.330 " style="stroke:#000000;stroke-opacity:1.00;stroke-width:1;stroke-linejoin:round;fill:none"/>
 </svg>
