@@ -218,7 +218,7 @@ plot(
 		// If modified, also modify the README.md
 		{name: "bodeExample", exp: `
 let g  = 70/((s+1)*(s+2)*(s+2.5));
-let kp = 0.16;
+let kp = 0.11;
 let Ti = 2.0;
 let k  = pid(kp,Ti);
 let g0 = k*g;
