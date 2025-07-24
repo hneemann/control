@@ -58,26 +58,26 @@ phase plots. The `xConst` and `yConst` functions are used to add vertical
 and horizontal lines to the plots. 
 
 ```
-let g = 70/((s+1)*(s+2)*(s+2.5));
-let kp=0.16;
-let Ti=2.0;
-let k = pid(kp,Ti);
-let g0=k*g;
-let pm=g0.pMargin();
+let g  = 70/((s+1)*(s+2)*(s+2.5));
+let kp = 0.16;
+let Ti = 2.0;
+let k  = pid(kp,Ti);
+let g0 = k*g;
+let pm = g0.pMargin();
 let lineColor=red.dash(5,5);
 
 plot(
   g.bode(green, "G"),
-  k.bode(blue,  sprintf("K, k#p=%.2f, T#i=%.1f",kp,Ti)),
+  k.bode(blue, sprintf("K, k#p=%.2f, T#i=%.1f",kp,Ti)),
   g0.bode(black, sprintf("G#0, #Phi#r=%.1f°, #omega#s=%.2f rad/s",
                          pm.pMargin, pm.w0) )
 ).ampModify(
-    a->a.add(xConst(pm.w0,lineColor))
+    a->a.add(xConst(pm.w0, lineColor))
  )
  .phaseModify(
-      a->a.add(xConst(pm.w0,lineColor))
-          .add(yConst(-180+50,lineColor))
-          .add(yConst(-180+70,lineColor))
+      a->a.add(xConst(pm.w0, lineColor))
+          .add(yConst(-180+50, lineColor))
+          .add(yConst(-180+70, lineColor))
  )
 ```
 The result looks like this
@@ -99,11 +99,11 @@ let r = p.roots();
 
 plot(
   r.map(r->cmplx(r)).graph()
-                    .mark(0,red.stroke(2))
+                    .mark(0, red.stroke(2))
                     .title("Merge Points"),
   g.evans(150),
-).xBounds(-4.5,0.2)
- .yBounds(-2,2)
+).xBounds(-4.5, 0.2)
+ .yBounds(-2, 2)
  ```
 
 ![Evans plot](/evans.svg)
@@ -118,7 +118,7 @@ The result is a list of three plot contents, and the first one is used for the p
 let G = 70/((s+1)*(s+2)*(s+2.5));
 
 func getLinear(Ti)
-  (pid(0.1,Ti)*G).loop();
+  (pid(0.1, Ti)*G).loop();
 
 func addPoints(Ti,m)
   getLinear(Ti).denominator().roots()
@@ -128,13 +128,13 @@ func addPoints(Ti,m)
 let k=1.5;
 
 plot(
-  text(-2.2, 1.9, "root locus plot varying T#i"),
-  addPoints(10,2),
-  addPoints(0.1,1),
-  addPoints(k,0),
-  rootLocus(getLinear,10,0.1)[0],
+  text(-2.2, 1.9, "Root Locus Plot varying T#i"),
+  addPoints(10, 2),
+  addPoints(0.1, 1),
+  addPoints(k, 0),
+  rootLocus(getLinear, 0.1, 10)[0],
   polar(),
-).legendPos(-2.7,-1.4)
+).legendPos(-2.7, -1.4)
 ```
 
 ![Root Locus](/rootLocus.svg)
