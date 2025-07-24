@@ -86,7 +86,7 @@ The result looks like this
 
 ## Evans Plot ##
 
-This script shows how to create an Evans plot. The evans method creates a list of 
+This script shows how to create an Evans plot. The `evans` method creates a list of 
 multiple plot contents, containing the root locus itself, the zeros, the poles and 
 also the polar grid and the asymptotes. 
 
@@ -109,7 +109,8 @@ plot(
 ## Root Locus ##
 
 This example shows, how to plot a root locus. In this case the parameter Tᵢ of a 
-PID controller is varied. The `rootLocus` function is used to create the root locus.
+PID controller is varied. The `rootLocus` function is used to create the root 
+locus in between the given bounds.
 
 ```
 let G = 70/((s+1)*(s+2)*(s+2.5));
