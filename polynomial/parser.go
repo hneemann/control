@@ -278,23 +278,7 @@ func polyMethods() value.MethodMap {
 		}).SetMethodDescription("normalize returns a normalized polynomial, which is the polynomial " +
 			"divided by its leading coefficient. This makes the leading coefficient 1"),
 		"roots": value.MethodAtType(0, func(pol Polynomial, st funcGen.Stack[value.Value]) (value.Value, error) {
-			r, err := pol.Roots()
-			if err != nil {
-				return nil, err
-			}
-			var val []value.Value
-			sort.Slice(r.roots, func(i, j int) bool {
-				return real(r.roots[i]) < real(r.roots[j])
-			})
-			for _, v := range r.roots {
-				if imag(v) == 0 {
-					val = append(val, value.Float(real(v)))
-				} else {
-					val = append(val, Complex(complex(real(v), -imag(v))))
-					val = append(val, Complex(v))
-				}
-			}
-			return value.NewList(val...), nil
+			return rootsAsValueList(pol)
 		}).SetMethodDescription("Returns the roots of the polynomial."),
 		"bode": createBodeMethod(func(poly Polynomial) *Linear { return &Linear{Numerator: poly, Denominator: Polynomial{1}} }),
 		"toLaTeX": value.MethodAtType(0, func(pol Polynomial, st funcGen.Stack[value.Value]) (value.Value, error) {
@@ -309,6 +293,26 @@ func polyMethods() value.MethodMap {
 			return value.String(pol.ToUnicode()), nil
 		}).SetMethodDescription("Returns a unicode string representation of the polynomial."),
 	}
+}
+
+func rootsAsValueList(pol Polynomial) (value.Value, error) {
+	r, err := pol.Roots()
+	if err != nil {
+		return nil, err
+	}
+	var val []value.Value
+	sort.Slice(r.roots, func(i, j int) bool {
+		return real(r.roots[i]) < real(r.roots[j])
+	})
+	for _, v := range r.roots {
+		if imag(v) == 0 {
+			val = append(val, value.Float(real(v)))
+		} else {
+			val = append(val, Complex(complex(real(v), -imag(v))))
+			val = append(val, Complex(v))
+		}
+	}
+	return value.NewList(val...), nil
 }
 
 func (l *Linear) ToList() (*value.List, bool) {
@@ -407,9 +411,15 @@ func linMethods() value.MethodMap {
 		"numerator": value.MethodAtType(0, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
 			return lin.Numerator, nil
 		}).SetMethodDescription("Returns the numerator of the transfer function."),
+		"zeros": value.MethodAtType(0, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
+			return rootsAsValueList(lin.Numerator)
+		}).SetMethodDescription("Returns the zeros of the transfer function."),
 		"denominator": value.MethodAtType(0, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
 			return lin.Denominator, nil
 		}).SetMethodDescription("Returns the denominator of the transfer function."),
+		"poles": value.MethodAtType(0, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
+			return rootsAsValueList(lin.Denominator)
+		}).SetMethodDescription("Returns the poles of the transfer function."),
 		"reduce": value.MethodAtType(0, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
 			return lin.Reduce()
 		}).SetMethodDescription("Reduces the linear system."),

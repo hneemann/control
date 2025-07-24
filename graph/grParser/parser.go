@@ -662,7 +662,8 @@ func listMethods() value.MethodMap {
 			return nil, fmt.Errorf("data requires two strings and two functions as arguments")
 		}).SetMethodDescription("name", "unit", "func(item) x", "func(item) y", "Creates a data set. "+
 			"The two functions are called with the list elements and must return the x respectively y values. "+
-			"If the functions are omitted, the list elements themselves must be lists of the form [x,y].").VarArgsMethod(2, 4),
+			"If the functions are omitted, the list elements themselves must be lists of the form [x,y]. "+
+			"The result is intended to be added to a dataSet function call.").VarArgsMethod(2, 4),
 	}
 }
 
@@ -1061,7 +1062,8 @@ func Setup(fg *value.FunctionGenerator) {
 		},
 		Args:   -1,
 		IsPure: true,
-	}.SetDescription("data...", "Creates a dat file."))
+	}.SetDescription("data...", "Creates a dataSet which can be used to create dat or csv files. "+
+		"A list can be used to create the content by calling the data-Method."))
 }
 
 func GetStyle(st funcGen.Stack[value.Value], index int, defStyle *graph.Style) (StyleValue, error) {

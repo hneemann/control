@@ -75,9 +75,9 @@ plot(
     a->a.add(xConst(pm.w0, lineColor))
  )
  .phaseModify(
-      a->a.add(xConst(pm.w0, lineColor))
-          .add(yConst(-180+50, lineColor))
-          .add(yConst(-180+70, lineColor))
+    p->p.add(xConst(pm.w0, lineColor))
+        .add(yConst(-180+50, lineColor))
+        .add(yConst(-180+70, lineColor))
  )
 ```
 The result looks like this
@@ -93,14 +93,12 @@ also the polar grid and the asymptotes.
 ```
 let g = (s^2+2.5*s+2.225)/((s+1)*(s+2)*(s)*(s+3)*(s+4));
 
-let p = g.numerator()*g.denominator().derivative()-
-        g.denominator()*g.numerator().derivative();
-let r = p.roots();
+let mp = g.derivative().zeros();
 
 plot(
-  r.map(r->cmplx(r)).graph()
-                    .mark(0, red.stroke(2))
-                    .title("Merge Points"),
+  mp.map(r->cmplx(r)).graph()
+                     .mark(0, red.stroke(2))
+                     .title("Merge Points"),
   g.evans(150),
 ).xBounds(-4.5, 0.2)
  .yBounds(-2, 2)
@@ -112,7 +110,6 @@ plot(
 
 This example shows, how to plot a root locus. In this case the parameter Tᵢ of a 
 PID controller is varied. The `rootLocus` function is used to create the root locus.
-The result is a list of three plot contents, and the first one is used for the plot.
 
 ```
 let G = 70/((s+1)*(s+2)*(s+2.5));
