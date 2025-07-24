@@ -147,16 +147,10 @@
 	<path d="M 121.610,506.572 L 121.610,498.572 L 129.610,498.572 L 129.610,506.572 Z" style="stroke:#000000;stroke-opacity:1.00;stroke-width:2;stroke-linejoin:round;fill:none"/>
 	<path d="M 770.663,22.317 L 770.663,14.317 L 778.663,14.317 L 778.663,22.317 Z" style="stroke:#000000;stroke-opacity:1.00;stroke-width:2;stroke-linejoin:round;fill:none"/>
 	<path d="M 770.663,563.183 L 770.663,555.183 L 778.663,555.183 L 778.663,563.183 Z" style="stroke:#000000;stroke-opacity:1.00;stroke-width:2;stroke-linejoin:round;fill:none"/>
-	<path d="M 89.344,292.750 L 97.344,284.750 M 89.344,284.750 L 97.344,292.750 " style="stroke:#000000;stroke-opacity:1.00;stroke-width:1;stroke-linejoin:round;fill:none"/>
-	<path d="M 522.562,292.750 L 530.562,284.750 M 522.562,284.750 L 530.562,292.750 " style="stroke:#000000;stroke-opacity:1.00;stroke-width:1;stroke-linejoin:round;fill:none"/>
-	<path d="M 586.321,465.744 L 594.321,457.744 M 586.321,457.744 L 594.321,465.744 " style="stroke:#000000;stroke-opacity:1.00;stroke-width:1;stroke-linejoin:round;fill:none"/>
-	<path d="M 586.321,119.756 L 594.321,111.756 M 586.321,111.756 L 594.321,119.756 " style="stroke:#000000;stroke-opacity:1.00;stroke-width:1;stroke-linejoin:round;fill:none"/>
 	<text x="325.93" y="35.86" style="stroke:none;fill:#000000;fill-opacity:1.00;fill-rule:evenodd;font-size:15.0px">Root Locus Plot varying Tᵢ</text>
 	<path d="M 56.250,570.000 L 788.750,570.000 L 788.750,7.500 L 56.250,7.500 Z" style="stroke:#000000;stroke-opacity:1.00;stroke-width:2;stroke-linejoin:round;fill:none"/>
-	<text x="248.38" y="477.33" style="stroke:none;fill:#000000;fill-opacity:1.00;fill-rule:evenodd;font-size:15.0px">Tᵢ = 1.1</text>
-	<path d="M 221.879,476.330 L 229.879,468.330 M 221.879,468.330 L 229.879,476.330 " style="stroke:#000000;stroke-opacity:1.00;stroke-width:1;stroke-linejoin:round;fill:none"/>
-	<text x="248.38" y="499.83" style="stroke:none;fill:#000000;fill-opacity:1.00;fill-rule:evenodd;font-size:15.0px">Tᵢ = 0.1</text>
-	<path d="M 221.879,498.830 L 221.879,490.830 L 229.879,490.830 L 229.879,498.830 Z" style="stroke:#000000;stroke-opacity:1.00;stroke-width:2;stroke-linejoin:round;fill:none"/>
-	<text x="248.38" y="522.33" style="stroke:none;fill:#000000;fill-opacity:1.00;fill-rule:evenodd;font-size:15.0px">Tᵢ = 10</text>
-	<ellipse cx="225.88" cy="517.33" rx="4.00" ry="4.00" style="stroke:#000000;stroke-opacity:1.00;stroke-width:2;stroke-linejoin:round;fill:none"/>
+	<text x="248.38" y="477.33" style="stroke:none;fill:#000000;fill-opacity:1.00;fill-rule:evenodd;font-size:15.0px">Tᵢ = 0.1</text>
+	<path d="M 221.879,476.330 L 221.879,468.330 L 229.879,468.330 L 229.879,476.330 Z" style="stroke:#000000;stroke-opacity:1.00;stroke-width:2;stroke-linejoin:round;fill:none"/>
+	<text x="248.38" y="499.83" style="stroke:none;fill:#000000;fill-opacity:1.00;fill-rule:evenodd;font-size:15.0px">Tᵢ = 10</text>
+	<ellipse cx="225.88" cy="494.83" rx="4.00" ry="4.00" style="stroke:#000000;stroke-opacity:1.00;stroke-width:2;stroke-linejoin:round;fill:none"/>
 </svg>

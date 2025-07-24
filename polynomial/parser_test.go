@@ -243,14 +243,12 @@ plot(
 		{name: "evansExample", exp: `
 let g = (s^2+2.5*s+2.225)/((s+1)*(s+2)*(s)*(s+3)*(s+4));
 
-let p = g.numerator()*g.denominator().derivative()-
-        g.denominator()*g.numerator().derivative();
-let r = p.roots();
+let mp = g.derivative().zeros();
 
 plot(
-  r.map(r->cmplx(r)).graph()
-                    .mark(0, red.stroke(2))
-                    .title("Merge Points"),
+  mp.graph(r->r.real(), r->r.imag())
+    .mark(2, red.stroke(2))
+    .title("Merge Points"),
   g.evans(150),
 ).xBounds(-4.5, 0.2)
  .yBounds(-2, 2)
@@ -262,17 +260,8 @@ let G = 70/((s+1)*(s+2)*(s+2.5));
 func getLinear(Ti)
   (pid(0.1,Ti)*G).loop();
 
-func addPoints(Ti)
-  getLinear(Ti).denominator().roots()
-       .graph(r->r.real(),r->r.imag())
-       .mark(0)
-       .title("T#i  = "+Ti);
-
-let Ti = 1.1;
-
 plot(
   text(-2.2, 1.9, "Root Locus Plot varying T#i"),
-  addPoints(Ti),
   rootLocus(getLinear, 0.1, 10, "T#i"),
 ).legendPos(-2.7,-1.4)
 `, file: "z.html"},

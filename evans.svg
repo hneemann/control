@@ -106,17 +106,17 @@
 	<path d="M 440.979,292.750 L 448.979,284.750 M 440.979,284.750 L 448.979,292.750 " style="stroke:#000000;stroke-opacity:1.00;stroke-width:2;stroke-linejoin:round;fill:none"/>
 	<path d="M 590.835,292.750 L 598.835,284.750 M 590.835,284.750 L 598.835,292.750 " style="stroke:#000000;stroke-opacity:1.00;stroke-width:2;stroke-linejoin:round;fill:none"/>
 	<path d="M 740.692,292.750 L 748.692,284.750 M 740.692,284.750 L 748.692,292.750 " style="stroke:#000000;stroke-opacity:1.00;stroke-width:2;stroke-linejoin:round;fill:none"/>
-	<path d="M 206.257,292.750 L 214.257,284.750 M 206.257,284.750 L 214.257,292.750 " style="stroke:#ff0000;stroke-opacity:1.00;stroke-width:2;stroke-linejoin:round;fill:none"/>
-	<path d="M 378.207,292.750 L 386.207,284.750 M 378.207,284.750 L 386.207,292.750 " style="stroke:#ff0000;stroke-opacity:1.00;stroke-width:2;stroke-linejoin:round;fill:none"/>
-	<path d="M 529.713,292.750 L 537.713,284.750 M 529.713,284.750 L 537.713,292.750 " style="stroke:#ff0000;stroke-opacity:1.00;stroke-width:2;stroke-linejoin:round;fill:none"/>
-	<path d="M 581.734,478.829 L 589.734,470.829 M 581.734,470.829 L 589.734,478.829 " style="stroke:#ff0000;stroke-opacity:1.00;stroke-width:2;stroke-linejoin:round;fill:none"/>
-	<path d="M 581.734,106.671 L 589.734,98.671 M 581.734,98.671 L 589.734,106.671 " style="stroke:#ff0000;stroke-opacity:1.00;stroke-width:2;stroke-linejoin:round;fill:none"/>
-	<path d="M 667.941,292.750 L 675.941,284.750 M 667.941,284.750 L 675.941,292.750 " style="stroke:#ff0000;stroke-opacity:1.00;stroke-width:2;stroke-linejoin:round;fill:none"/>
+	<path d="M 206.257,292.750 L 206.257,284.750 L 214.257,284.750 L 214.257,292.750 Z" style="stroke:#ff0000;stroke-opacity:1.00;stroke-width:2;stroke-linejoin:round;fill:none"/>
+	<path d="M 378.207,292.750 L 378.207,284.750 L 386.207,284.750 L 386.207,292.750 Z" style="stroke:#ff0000;stroke-opacity:1.00;stroke-width:2;stroke-linejoin:round;fill:none"/>
+	<path d="M 529.713,292.750 L 529.713,284.750 L 537.713,284.750 L 537.713,292.750 Z" style="stroke:#ff0000;stroke-opacity:1.00;stroke-width:2;stroke-linejoin:round;fill:none"/>
+	<path d="M 581.734,478.829 L 581.734,470.829 L 589.734,470.829 L 589.734,478.829 Z" style="stroke:#ff0000;stroke-opacity:1.00;stroke-width:2;stroke-linejoin:round;fill:none"/>
+	<path d="M 581.734,106.671 L 581.734,98.671 L 589.734,98.671 L 589.734,106.671 Z" style="stroke:#ff0000;stroke-opacity:1.00;stroke-width:2;stroke-linejoin:round;fill:none"/>
+	<path d="M 667.941,292.750 L 667.941,284.750 L 675.941,284.750 L 675.941,292.750 Z" style="stroke:#ff0000;stroke-opacity:1.00;stroke-width:2;stroke-linejoin:round;fill:none"/>
 	<text x="781.25" y="562.50" style="stroke:none;fill:#000000;fill-opacity:1.00;fill-rule:evenodd;font-size:15.0px;text-anchor:end">Re </text>
 	<text x="63.75" y="24.75" style="stroke:none;fill:#000000;fill-opacity:1.00;fill-rule:evenodd;font-size:15.0px">Im </text>
 	<path d="M 56.250,570.000 L 788.750,570.000 L 788.750,7.500 L 56.250,7.500 Z" style="stroke:#000000;stroke-opacity:1.00;stroke-width:2;stroke-linejoin:round;fill:none"/>
 	<text x="105.00" y="492.50" style="stroke:none;fill:#000000;fill-opacity:1.00;fill-rule:evenodd;font-size:15.0px">Merge Points</text>
-	<path d="M 78.500,491.500 L 86.500,483.500 M 78.500,483.500 L 86.500,491.500 " style="stroke:#ff0000;stroke-opacity:1.00;stroke-width:2;stroke-linejoin:round;fill:none"/>
+	<path d="M 78.500,491.500 L 78.500,483.500 L 86.500,483.500 L 86.500,491.500 Z" style="stroke:#ff0000;stroke-opacity:1.00;stroke-width:2;stroke-linejoin:round;fill:none"/>
 	<text x="105.00" y="515.00" style="stroke:none;fill:#000000;fill-opacity:1.00;fill-rule:evenodd;font-size:15.0px">Poles</text>
 	<path d="M 78.500,514.000 L 86.500,506.000 M 78.500,506.000 L 86.500,514.000 " style="stroke:#000000;stroke-opacity:1.00;stroke-width:2;stroke-linejoin:round;fill:none"/>
 	<text x="105.00" y="537.50" style="stroke:none;fill:#000000;fill-opacity:1.00;fill-rule:evenodd;font-size:15.0px">Zeros</text>
