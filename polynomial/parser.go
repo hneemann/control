@@ -890,8 +890,14 @@ var Parser = value.New().
 							}
 							return Polynomial{}, fmt.Errorf("the function needs to return a polynomial or a linear system")
 						}
+						var parName string
+						if parNameVal, ok := st.GetOptional(3, value.String("par")).(value.String); ok {
+							parName = string(parNameVal)
+						} else {
+							return nil, fmt.Errorf("rootLocus requires a string as fourth argument")
+						}
 
-						contentList, err := RootLocus(cpp, kMin, kMax)
+						contentList, err := RootLocus(cpp, kMin, kMax, parName)
 						if err != nil {
 							return nil, fmt.Errorf("rootLocus failed: %w", err)
 						}
@@ -903,11 +909,11 @@ var Parser = value.New().
 			}
 			return nil, fmt.Errorf("rootLocus requires a function and two floats")
 		},
-		Args:   3,
+		Args:   4,
 		IsPure: true,
-	}.SetDescription("func(k) value", "k_min", "k_max", "Creates a root locus plot content. "+
+	}.SetDescription("func(k) value", "k_min", "k_max", "parName", "Creates a root locus plot content. "+
 		"If the function returns a polynomial for the given k, the roots of that polynomial are calculated. "+
-		"If a linear system is returned, the poles are calculated.")).
+		"If a linear system is returned, the poles are calculated.").VarArgs(3, 4)).
 	AddStaticFunction("pid", funcGen.Function[value.Value]{
 		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
 			if kp, ok := stack.Get(0).ToFloat(); ok {

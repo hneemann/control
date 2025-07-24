@@ -118,23 +118,21 @@ The result is a list of three plot contents, and the first one is used for the p
 let G = 70/((s+1)*(s+2)*(s+2.5));
 
 func getLinear(Ti)
-  (pid(0.1, Ti)*G).loop();
+  (pid(0.1,Ti)*G).loop();
 
-func addPoints(Ti,m)
+func addPoints(Ti)
   getLinear(Ti).denominator().roots()
-     .graph(r->r.real(),r->r.imag())
-     .mark(m).title("T#i="+Ti+" s");
+       .graph(r->r.real(),r->r.imag())
+       .mark(0)
+       .title("T#i  = "+Ti);
 
-let k=1.5;
+let Ti = 1.1;
 
 plot(
   text(-2.2, 1.9, "Root Locus Plot varying T#i"),
-  addPoints(10, 2),
-  addPoints(0.1, 1),
-  addPoints(k, 0),
-  rootLocus(getLinear, 0.1, 10)[0],
-  polar(),
-).legendPos(-2.7, -1.4)
+  addPoints(Ti),
+  rootLocus(getLinear, 0.1, 10, "T#i"),
+).legendPos(-2.7,-1.4)
 ```
 
 ![Root Locus](/rootLocus.svg)

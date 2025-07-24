@@ -886,7 +886,7 @@ func (ec *evansCurves) Legend() graph.Legend {
 	return graph.Legend{}
 }
 
-func RootLocus(cpp PolynomialProvider, kMin, kMax float64) ([]graph.PlotContent, error) {
+func RootLocus(cpp PolynomialProvider, kMin, kMax float64, parName string) ([]graph.PlotContent, error) {
 	ecs := evansCurves{
 		polyProvider:        cpp,
 		useComplexNumRefine: true,
@@ -907,7 +907,7 @@ func RootLocus(cpp PolynomialProvider, kMin, kMax float64) ([]graph.PlotContent,
 			Shape:      graph.NewSquareMarker(4),
 			ShapeStyle: graph.Black.SetStrokeWidth(2),
 		},
-		Title: "initial",
+		Title: fmt.Sprintf("%s = %g", parName, kMin),
 	}
 	maxMarker := graph.Scatter{
 		Points: graph.PointsFromSlice(ecs.evPoints[len(ecs.evPoints)-1].points),
@@ -915,9 +915,9 @@ func RootLocus(cpp PolynomialProvider, kMin, kMax float64) ([]graph.PlotContent,
 			Shape:      graph.NewCircleMarker(4),
 			ShapeStyle: graph.Black.SetStrokeWidth(2),
 		},
-		Title: "final",
+		Title: fmt.Sprintf("%s = %g", parName, kMax),
 	}
-	return []graph.PlotContent{&ecs, minMarker, maxMarker}, nil
+	return []graph.PlotContent{minMarker, maxMarker, &ecs, Polar{}}, nil
 }
 
 type BodePlotContent struct {
