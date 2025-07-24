@@ -73,7 +73,7 @@ func TestPolynom_Operation(t *testing.T) {
 		{name: "pow", p: Polynomial{2, 1}.Pow(3), want: Polynomial{8, 12, 6, 1}},
 		{name: "can", p: Polynomial{2, 1}.Canonical(), want: Polynomial{2, 1}},
 		{name: "can", p: Polynomial{2, 0}.Canonical(), want: Polynomial{2}},
-		{name: "can", p: Polynomial{0, 0}.Canonical(), want: Polynomial{}},
+		{name: "can", p: Polynomial{0, 0}.Canonical(), want: Polynomial{0}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -90,10 +90,10 @@ func TestPolynom_Div(t *testing.T) {
 		quotient  Polynomial
 		remainder Polynomial
 	}{
-		{name: "const", p: Polynomial{2, 1}, q: Polynomial{2}, quotient: Polynomial{1, 0.5}, remainder: Polynomial{}},
-		{name: "one", p: Polynomial{2, 1}, q: Polynomial{2, 1}, quotient: Polynomial{1}, remainder: Polynomial{}},
-		{name: "s1", p: Polynomial{2, 3, 1}, q: Polynomial{1, 1}, quotient: Polynomial{2, 1}, remainder: Polynomial{}},
-		{name: "s2", p: Polynomial{2, 3, 1}, q: Polynomial{2, 1}, quotient: Polynomial{1, 1}, remainder: Polynomial{}},
+		{name: "const", p: Polynomial{2, 1}, q: Polynomial{2}, quotient: Polynomial{1, 0.5}, remainder: Polynomial{0}},
+		{name: "one", p: Polynomial{2, 1}, q: Polynomial{2, 1}, quotient: Polynomial{1}, remainder: Polynomial{0}},
+		{name: "s1", p: Polynomial{2, 3, 1}, q: Polynomial{1, 1}, quotient: Polynomial{2, 1}, remainder: Polynomial{0}},
+		{name: "s2", p: Polynomial{2, 3, 1}, q: Polynomial{2, 1}, quotient: Polynomial{1, 1}, remainder: Polynomial{0}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -304,7 +304,7 @@ func TestPolynomial_Div(t *testing.T) {
 	}{
 		{name: "s1", p: Polynomial{-1, 0, 1, 2, -1, 4}, q: Polynomial{1, 0, 1}, d: Polynomial{2, -2, -1, 4}, r: Polynomial{-3, 2}},
 		{name: "s2", p: Polynomial{3, 3, 0, -4, 0, -2, 6}, q: Polynomial{-3, 2, 0, 2}, d: Polynomial{3.5, -3, -1, 3}, r: Polynomial{13.5, -13, 3}},
-		{name: "s3", p: Polynomial{150, 5, -12, 1}, q: Polynomial{-5, 1}, d: Polynomial{-30, -7, 1}, r: Polynomial{}},
+		{name: "s3", p: Polynomial{150, 5, -12, 1}, q: Polynomial{-5, 1}, d: Polynomial{-30, -7, 1}, r: Polynomial{0}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

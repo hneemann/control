@@ -46,6 +46,9 @@ func (p Polynomial) EvalCplx(s complex128) complex128 {
 }
 
 func (p Polynomial) String() string {
+	if p.IsZero() {
+		return "0"
+	}
 	result := ""
 	for i := range p {
 		n := len(p) - i - 1
@@ -82,6 +85,9 @@ func (p Polynomial) String() string {
 }
 
 func (p Polynomial) ToUnicode() string {
+	if p.IsZero() {
+		return "0"
+	}
 	b := bytes.Buffer{}
 	for i := range p {
 		n := len(p) - i - 1
@@ -127,6 +133,10 @@ func (p Polynomial) ToHtml(_ funcGen.Stack[value.Value], w *xmlWriter.XMLWriter)
 }
 
 func (p Polynomial) ToMathML(w *xmlWriter.XMLWriter) {
+	if p.IsZero() {
+		w.Open("mn").Write("0").Close()
+		return
+	}
 	w.Open("mrow")
 	for i := range p {
 		n := len(p) - i - 1
@@ -159,6 +169,10 @@ func (p Polynomial) ToMathML(w *xmlWriter.XMLWriter) {
 }
 
 func (p Polynomial) ToLaTeX(w *bytes.Buffer) {
+	if p.IsZero() {
+		w.WriteString("0")
+		return
+	}
 	for i := range p {
 		n := len(p) - i - 1
 		c := p[n]
@@ -282,14 +296,14 @@ func (p Polynomial) Pow(n int) Polynomial {
 }
 
 // Canonical returns a canonical form of the polynomial, which
-// is the same polynomial without trailing zeros.
+// is the same polynomial without leading zeros.
 func (p Polynomial) Canonical() Polynomial {
 	for i := len(p) - 1; i >= 0; i-- {
 		if math.Abs(p[i]) > eps {
 			return p[:i+1]
 		}
 	}
-	return Polynomial{}
+	return Polynomial{0}
 }
 
 func (p Polynomial) Equals(b Polynomial) bool {
@@ -409,6 +423,10 @@ func (p Polynomial) findRootNewton(zEps float64) (complex128, error) {
 	}
 
 	return z, fmt.Errorf("no convergence in %v, s=%v, f(s)=%v", p, z, p.EvalCplx(z))
+}
+
+func (p Polynomial) IsZero() bool {
+	return len(p) == 0 || (len(p) == 1 && math.Abs(p[0]) < eps)
 }
 
 func cleanUp(z complex128) complex128 {
