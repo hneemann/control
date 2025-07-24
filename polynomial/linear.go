@@ -643,18 +643,6 @@ func (l *Linear) CreateEvans(kMin, kMax float64) ([]graph.PlotContent, error) {
 	}
 
 	curveList := make([]graph.PlotContent, 0, 5)
-	curveList = append(curveList, NewImReLabels())
-	curveList = append(curveList, Polar{})
-
-	as, order, err := lin.EvansAsymptotesIntersect()
-	if err != nil {
-		return nil, err
-	}
-	if order > 0 {
-		curveList = append(curveList, Asymptotes{Point: graph.Point{X: as, Y: 0}, Order: order})
-	}
-
-	curveList = append(curveList, &ecs)
 
 	markerStyle := graph.Black.SetStrokeWidth(2)
 	if p.Count() > 0 {
@@ -683,6 +671,18 @@ func (l *Linear) CreateEvans(kMin, kMax float64) ([]graph.PlotContent, error) {
 			},
 		)
 	}
+
+	curveList = append(curveList, &ecs)
+
+	curveList = append(curveList, Polar{})
+	as, order, err := lin.EvansAsymptotesIntersect()
+	if err != nil {
+		return nil, err
+	}
+	if order > 0 {
+		curveList = append(curveList, Asymptotes{Point: graph.Point{X: as, Y: 0}, Order: order})
+	}
+	curveList = append(curveList, NewImReLabels())
 
 	return curveList, nil
 }

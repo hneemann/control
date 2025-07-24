@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"math"
+	"slices"
 )
 
 type ShapeLineStyle struct {
@@ -242,7 +243,7 @@ func (p *Plot) DrawTo(canvas Canvas) error {
 	}
 
 	var legends []Legend
-	for _, plotContent := range p.Content {
+	for _, plotContent := range slices.Backward(p.Content) {
 		err := plotContent.DrawTo(p, p.inner)
 		if err != nil {
 			return err
@@ -271,7 +272,7 @@ func (p *Plot) DrawTo(canvas Canvas) error {
 		} else {
 			lp = Point{innerRect.Min.X + textSize*3, innerRect.Min.Y + textSize*(float64(len(legends))*1.5-0.5)}
 		}
-		for _, leg := range legends {
+		for _, leg := range slices.Backward(legends) {
 			canvas.DrawText(lp, leg.Name, Left|VCenter, textStyle, textSize)
 			sls := leg.EnsureSomethingIsVisible()
 			if sls.IsLine() {
