@@ -264,11 +264,11 @@ func (p Polynomial) Normalize() Polynomial {
 }
 
 func (p Polynomial) Div(q Polynomial) (Polynomial, Polynomial, error) {
-	degP := p.Degree()
-	degQ := q.Degree()
-	if degQ < 0 {
+	if q.IsZero() {
 		return Polynomial{}, Polynomial{}, errors.New("division by zero")
 	}
+	degP := p.Degree()
+	degQ := q.Degree()
 	if degP < degQ {
 		return Polynomial{}, p, nil
 	}
