@@ -78,13 +78,6 @@ plot(
       a->a.add(xConst(pm.w0,lineColor))
           .add(yConst(-180+50,lineColor))
           .add(yConst(-180+70,lineColor))
-          .add( plot(
-                  yConst(1), 
-                  g0.loop().simStep(10).graph().line(black)
-                ).yBounds(0,1.5)
-                 .borders(0.1,0.1)
-                 .labels("t [s]", "h(t)")
-                 .inset(6,100,-200,-15) )
  )
 ```
 The result looks like this
@@ -93,31 +86,55 @@ The result looks like this
 
 ## Evans Plot ##
 
-Ths script shows how to create an Evans plot. The inset shows, that the curves 
-don't touch at the "merging point".
+This script shows how to create an Evans plot. The evans method creates a list of 
+multiple plot contents, containing the root locus itself, the zeros, the poles and 
+also the polar grid and the asymptotes. 
 
 ```
-let g = (s^2+2.5*s+2.234)/((s+1)*(s+2)*(s)*(s+3)*(s+4));
+let g = (s^2+2.5*s+2.225)/((s+1)*(s+2)*(s)*(s+3)*(s+4));
 
 let p = g.numerator()*g.denominator().derivative()-
         g.denominator()*g.numerator().derivative();
 let r = p.roots();
-let cr = r.accept(r->r.imag()>1).single();
 
 plot(
-  g.evans(150),
   r.map(r->cmplx(r)).graph()
                     .mark(0,red.stroke(2))
                     .title("Merge Points"),
-  plot(
-    g.evans(50).accept(pc->string(pc)="Evans Curves"),
-    r.map(r->cmplx(r)).graph().mark(0,red.stroke(2))
-  ).xBounds(cr.real()-0.1, cr.real()+0.1)
-   .yBounds(cr.imag()-0.1, cr.imag()+0.1)
-   .noAxis()
-   .inset(-4.2,-2.6,0.4,1.8,black)
+  g.evans(150),
 ).xBounds(-4.5,0.2)
  .yBounds(-2,2)
  ```
 
 ![Evans plot](/evans.svg)
+
+## Root Locus ##
+
+This example shows, how to plot a root locus. In this case the parameter Tᵢ of a 
+PID controller is varied. The `rootLocus` function is used to create the root locus.
+The result is a list of three plot contents, and the first one is used for the plot.
+
+```
+let G = 70/((s+1)*(s+2)*(s+2.5));
+
+func getLinear(Ti)
+  (pid(0.1,Ti)*G).loop();
+
+func addPoints(Ti,m)
+  getLinear(Ti).denominator().roots()
+     .graph(r->r.real(),r->r.imag())
+     .mark(m).title("T#i="+Ti+" s");
+
+let k=1.5;
+
+plot(
+  text(-2.2, 1.9, "root locus plot varying T#i"),
+  addPoints(10,2),
+  addPoints(0.1,1),
+  addPoints(k,0),
+  rootLocus(getLinear,10,0.1)[0],
+  polar(),
+).legendPos(-2.7,-1.4)
+```
+
+![Root Locus](/rootLocus.svg)
