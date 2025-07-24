@@ -56,9 +56,9 @@ func TestPolynom_Operation(t *testing.T) {
 		want Polynomial
 	}{
 		{name: "driv", p: Polynomial{3, 2, 1}.Derivative(), want: Polynomial{2, 2}},
-		{name: "driv", p: Polynomial{1}.Derivative(), want: Polynomial{}},
-		{name: "driv", p: Polynomial{2}.Derivative(), want: Polynomial{}},
-		{name: "driv", p: Polynomial{}.Derivative(), want: Polynomial{}},
+		{name: "driv", p: Polynomial{1}.Derivative(), want: Polynomial{0}},
+		{name: "driv", p: Polynomial{2}.Derivative(), want: Polynomial{0}},
+		{name: "driv", p: Polynomial{}.Derivative(), want: Polynomial{0}},
 		{name: "mul", p: Polynomial{1, 1}.Mul(Polynomial{2, 2}), want: Polynomial{2, 4, 2}},
 		{name: "mul", p: Polynomial{2}.Mul(Polynomial{2, 2}), want: Polynomial{4, 4}},
 		{name: "mul", p: Polynomial{2, 2}.Mul(Polynomial{2}), want: Polynomial{4, 4}},
