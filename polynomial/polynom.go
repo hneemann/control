@@ -200,8 +200,8 @@ func (p Polynomial) ToLaTeX(w *bytes.Buffer) {
 }
 
 func (p Polynomial) Derivative() Polynomial {
-	if len(p) == 0 {
-		return Polynomial{}
+	if len(p) <= 1 {
+		return Polynomial{0}
 	}
 	result := make(Polynomial, len(p)-1)
 	for i := 1; i < len(p); i++ {
@@ -230,7 +230,7 @@ func (p Polynomial) Mul(q Polynomial) Polynomial {
 			result[i+j] += p[i] * q[j]
 		}
 	}
-	return result
+	return result.Canonical()
 }
 
 func (p Polynomial) MulFloat(f float64) Polynomial {
@@ -239,14 +239,14 @@ func (p Polynomial) MulFloat(f float64) Polynomial {
 	for i := range p {
 		mp[i] *= f
 	}
-	return mp
+	return mp.Canonical()
 }
 
 func (p Polynomial) AddFloat(f float64) Polynomial {
 	mp := make(Polynomial, len(p))
 	copy(mp, p)
 	mp[0] += f
-	return mp
+	return mp.Canonical()
 }
 
 // Normalize returns a normalized polynomial, which is the same polynomial
@@ -316,6 +316,11 @@ func (p Polynomial) Equals(b Polynomial) bool {
 		}
 	}
 	return true
+}
+
+// IsZero checks if the polynomial is equal to 0.
+func (p Polynomial) IsZero() bool {
+	return len(p) == 0 || (len(p) == 1 && math.Abs(p[0]) < eps)
 }
 
 // IsOne checks if the polynomial is equal to 1.
@@ -423,10 +428,6 @@ func (p Polynomial) findRootNewton(zEps float64) (complex128, error) {
 	}
 
 	return z, fmt.Errorf("no convergence in %v, s=%v, f(s)=%v", p, z, p.EvalCplx(z))
-}
-
-func (p Polynomial) IsZero() bool {
-	return len(p) == 0 || (len(p) == 1 && math.Abs(p[0]) < eps)
 }
 
 func cleanUp(z complex128) complex128 {
