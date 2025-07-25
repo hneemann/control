@@ -64,6 +64,7 @@ type Plot struct {
 	YBounds        Bounds
 	LeftBorder     float64
 	RightBorder    float64
+	NoBorder       bool
 	Grid           *Style
 	Frame          *Style
 	Title          string
@@ -165,7 +166,7 @@ func (p *Plot) DrawTo(canvas Canvas) error {
 	}
 
 	innerRect := rect
-	if !p.HideAxis {
+	if !(p.HideAxis || p.NoBorder) {
 		innerRect = Rect{
 			Min: Point{rect.Min.X + textSize*lb*0.75, rect.Min.Y + textSize*2},
 			Max: Point{rect.Max.X - textSize*rb*0.75, rect.Max.Y - textSize/2},

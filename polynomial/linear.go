@@ -1202,7 +1202,7 @@ func (v dataSet) toPoints(i0, i1 int) graph.Points {
 }
 
 func (v dataSet) toPointList(i0, i1 int) *value.List {
-	return value.NewListFromIterable(func(_ funcGen.Stack[value.Value], yield iterator.Consumer[value.Value]) error {
+	return value.NewListFromSizedIterable(func(_ funcGen.Stack[value.Value], yield iterator.Consumer[value.Value]) error {
 		o := 0
 		for range v.rows {
 			x := value.Float(v.elements[o+i0])
@@ -1213,7 +1213,7 @@ func (v dataSet) toPointList(i0, i1 int) *value.List {
 			o += v.cols
 		}
 		return nil
-	})
+	}, v.rows)
 }
 
 func (l *Linear) Simulate(tMax, dt float64, u func(float64) (float64, error)) (*value.List, error) {

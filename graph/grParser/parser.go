@@ -333,6 +333,12 @@ func createPlotMethods() value.MethodMap {
 			}
 			return nil, fmt.Errorf("leftBorder requires an int value")
 		}).SetMethodDescription("left", "right", "Sets the width of the left and right border measured in characters."),
+		"noBorders": value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			plot = plot.Copy()
+			plot.Value.NoBorder = true
+			return plot, nil
+		}).SetMethodDescription("All the border withs are set to zero. This is useful, if insets are used and the space under " +
+			"the axis should not remain free. In this case, the axis is drawn outside the assigned drawing area, whereby the underlying plot is overdrawn."),
 		"xBounds": value.MethodAtType(2, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if vMin, ok := stack.Get(1).ToFloat(); ok {
 				if vMax, ok := stack.Get(2).ToFloat(); ok {
@@ -617,11 +623,17 @@ func listMethods() value.MethodMap {
 			switch st.Size() {
 			case 1:
 				s := graph.Scatter{Points: listToPoints(list)}
+				if size, ok := list.SizeIfKnown(); ok && size > 200 {
+					s.LineStyle = graph.Black
+				}
 				return PlotContentValue{Holder[graph.PlotContent]{s}}, nil
 			case 3:
 				if xc, ok := st.Get(1).ToClosure(); ok && xc.Args == 1 {
 					if yc, ok := st.Get(2).ToClosure(); ok && yc.Args == 1 {
 						s := graph.Scatter{Points: listFuncToPoints(list, xc, yc)}
+						if size, ok := list.SizeIfKnown(); ok && size > 200 {
+							s.LineStyle = graph.Black
+						}
 						return PlotContentValue{Holder[graph.PlotContent]{s}}, nil
 					}
 				}
