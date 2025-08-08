@@ -578,7 +578,7 @@ func createBodeMethod[T value.Value](convert func(T) *Linear) funcGen.Function[v
 	return value.MethodAtType(3, func(lin T, st funcGen.Stack[value.Value]) (value.Value, error) {
 		if style, err := grParser.GetStyle(st, 1, graph.Black); err == nil {
 			if title, ok := st.GetOptional(2, value.String("")).(value.String); ok {
-				if steps, ok := st.GetOptional(3, value.Int(200)).ToInt(); ok {
+				if steps, ok := st.GetOptional(3, value.Int(0)).ToInt(); ok {
 					return BodePlotContentValue{Holder: grParser.Holder[BodePlotContent]{Value: convert(lin).CreateBode(style.Value, string(title), steps)}}, nil
 				}
 			}

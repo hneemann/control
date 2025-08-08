@@ -960,8 +960,10 @@ func (b *BodePlot) SetPhaseBounds(min, max float64) {
 }
 
 func (l *Linear) CreateBode(style *graph.Style, title string, steps int) BodePlotContent {
-	if steps < 200 {
+	if steps == 0 {
 		steps = 200
+	} else if steps < 100 {
+		steps = 100
 	} else if steps > 2000 {
 		steps = 2000
 	}
