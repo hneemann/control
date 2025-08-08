@@ -575,14 +575,16 @@ func linMethods() value.MethodMap {
 }
 
 func createBodeMethod[T value.Value](convert func(T) *Linear) funcGen.Function[value.Value] {
-	return value.MethodAtType(2, func(lin T, st funcGen.Stack[value.Value]) (value.Value, error) {
+	return value.MethodAtType(3, func(lin T, st funcGen.Stack[value.Value]) (value.Value, error) {
 		if style, err := grParser.GetStyle(st, 1, graph.Black); err == nil {
 			if title, ok := st.GetOptional(2, value.String("")).(value.String); ok {
-				return BodePlotContentValue{Holder: grParser.Holder[BodePlotContent]{Value: convert(lin).CreateBode(style.Value, string(title))}}, nil
+				if steps, ok := st.GetOptional(3, value.Int(200)).ToInt(); ok {
+					return BodePlotContentValue{Holder: grParser.Holder[BodePlotContent]{Value: convert(lin).CreateBode(style.Value, string(title), steps)}}, nil
+				}
 			}
 		}
-		return nil, fmt.Errorf("bode requires a color and a string")
-	}).SetMethodDescription("color", "title", "Creates a bode plot content.").VarArgsMethod(0, 2)
+		return nil, fmt.Errorf("bode requires a color, a string and an int as arguments")
+	}).SetMethodDescription("color", "title", "steps", "Creates a bode plot content.").VarArgsMethod(0, 3)
 }
 
 type BodePlotValue struct {

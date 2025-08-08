@@ -925,6 +925,7 @@ type BodePlotContent struct {
 	Latency float64
 	Style   *graph.Style
 	Title   string
+	Steps   int
 
 	wMin, wMax float64
 	amplitude  []graph.Point
@@ -958,11 +959,17 @@ func (b *BodePlot) SetPhaseBounds(min, max float64) {
 	b.phase.YBounds = graph.NewBounds(min, max)
 }
 
-func (l *Linear) CreateBode(style *graph.Style, title string) BodePlotContent {
+func (l *Linear) CreateBode(style *graph.Style, title string, steps int) BodePlotContent {
+	if steps < 200 {
+		steps = 200
+	} else if steps > 2000 {
+		steps = 2000
+	}
 	return BodePlotContent{
 		Linear: l,
 		Style:  style,
 		Title:  title,
+		Steps:  steps,
 	}
 }
 
@@ -1019,13 +1026,13 @@ func (bpc *BodePlotContent) generate(wMin, wMax float64) {
 			lastAngle = -180
 		}
 
-		wMult := math.Pow(wMax/wMin, 0.005)
+		wMult := math.Pow(wMax/wMin, 1/float64(bpc.Steps))
 		var amplitude []graph.Point
 		var phase []graph.Point
 		angleOffset := 0.0
 		w := wMin
 		latFactor := bpc.Latency / math.Pi * 180
-		for i := 0; i <= 200; i++ {
+		for i := 0; i <= bpc.Steps; i++ {
 			c := l.EvalCplx(complex(0, w))
 			amp := cmplx.Abs(c)
 			angle := cmplx.Phase(c) / math.Pi * 180
