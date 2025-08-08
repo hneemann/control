@@ -8,6 +8,8 @@ import (
 	"github.com/hneemann/parser2/value"
 	"github.com/hneemann/parser2/value/export/xmlWriter"
 	"github.com/stretchr/testify/assert"
+	"math"
+	"math/cmplx"
 	"testing"
 )
 
@@ -533,6 +535,60 @@ func TestLinear_ToLaTeX(t *testing.T) {
 			var b bytes.Buffer
 			tt.lin.ToLaTeX(&b)
 			assert.Equal(t, tt.want, b.String())
+		})
+	}
+}
+
+func TestLinear_GMargin(t *testing.T) {
+	tests := []struct {
+		name string
+		lin  *Linear
+		w0   float64
+		k0   float64
+	}{
+		{"simple", &Linear{Numerator: Polynomial{3}, Denominator: Polynomial{1, 2, 3, 1}}, math.Sqrt(2), 4.4369748462276695},
+		{"simple2", &Linear{Numerator: Polynomial{3, 1}, Denominator: Polynomial{1, 2, 3, 2, 1}}, 1.0920542119362597, -8.287068048948981},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got_w0, got_k0, err := tt.lin.GMargin()
+			assert.NoError(t, err)
+			assert.InDelta(t, tt.w0, got_w0, 1e-6, "GMargin()")
+			cplx := tt.lin.EvalCplx(complex(0, got_w0))
+			assert.InDelta(t, 0, imag(cplx), 1e-6, "GMargin()")
+			assert.InDelta(t, tt.k0, got_k0, 1e-6, "GMargin()")
+			kp := math.Pow(10, got_k0/20)
+			assert.InDelta(t, -1, real(cplx)*kp, 1e-6, "GMargin()")
+		})
+	}
+}
+
+func TestLinear_PMargin(t *testing.T) {
+	tests := []struct {
+		name string
+		lin  *Linear
+		w0   float64
+		ph   float64
+	}{
+		{"simple", &Linear{Numerator: Polynomial{3}, Denominator: Polynomial{1, 2, 3, 1}}, 1.1388900479010593, 15.477095},
+		{"simple2", &Linear{Numerator: Polynomial{3, 1}, Denominator: Polynomial{1, 2, 3, 2, 1}}, 1.4515809818110559, -48.843363556324135},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got_w0, got_ph, err := tt.lin.PMargin()
+			assert.NoError(t, err)
+			assert.InDelta(t, tt.w0, got_w0, 1e-6, "PMargin()")
+			cplx := tt.lin.EvalCplx(complex(0, got_w0))
+			r, phi := cmplx.Polar(cplx)
+			assert.InDelta(t, 1, r, 1e-6, "PMargin()")
+			assert.InDelta(t, tt.ph, got_ph, 1e-6, "PMargin()")
+			phi = phi / math.Pi * 180
+			if phi < 0 {
+				phi += 180
+			} else {
+				phi -= 180
+			}
+			assert.InDelta(t, phi, got_ph, 1e-6, "PMargin()")
 		})
 	}
 }
