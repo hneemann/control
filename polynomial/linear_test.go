@@ -553,12 +553,12 @@ func TestLinear_GMargin(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got_w0, got_k0, err := tt.lin.GMargin()
 			assert.NoError(t, err)
-			assert.InDelta(t, tt.w0, got_w0, 1e-6, "GMargin()")
+			assert.InDelta(t, tt.w0, got_w0, 1e-6, "GMargin(), w0")
 			cplx := tt.lin.EvalCplx(complex(0, got_w0))
-			assert.InDelta(t, 0, imag(cplx), 1e-6, "GMargin()")
-			assert.InDelta(t, tt.k0, got_k0, 1e-6, "GMargin()")
+			assert.InDelta(t, 0, imag(cplx), 1e-6, "GMargin(), imag")
+			assert.InDelta(t, tt.k0, got_k0, 1e-6, "GMargin(), k0")
 			kp := math.Pow(10, got_k0/20)
-			assert.InDelta(t, -1, real(cplx)*kp, 1e-6, "GMargin()")
+			assert.InDelta(t, -1, real(cplx)*kp, 1e-6, "GMargin(), -1")
 		})
 	}
 }
@@ -577,18 +577,18 @@ func TestLinear_PMargin(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got_w0, got_ph, err := tt.lin.PMargin()
 			assert.NoError(t, err)
-			assert.InDelta(t, tt.w0, got_w0, 1e-6, "PMargin()")
+			assert.InDelta(t, tt.w0, got_w0, 1e-6, "PMargin(), w0")
 			cplx := tt.lin.EvalCplx(complex(0, got_w0))
 			r, phi := cmplx.Polar(cplx)
-			assert.InDelta(t, 1, r, 1e-6, "PMargin()")
-			assert.InDelta(t, tt.ph, got_ph, 1e-6, "PMargin()")
+			assert.InDelta(t, 1, r, 1e-6, "PMargin(), abs")
+			assert.InDelta(t, tt.ph, got_ph, 1e-6, "PMargin(), phi")
 			phi = phi / math.Pi * 180
 			if phi < 0 {
 				phi += 180
 			} else {
 				phi -= 180
 			}
-			assert.InDelta(t, phi, got_ph, 1e-6, "PMargin()")
+			assert.InDelta(t, phi, got_ph, 1e-6, "PMargin(), phase")
 		})
 	}
 }
