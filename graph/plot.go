@@ -76,8 +76,8 @@ type Plot struct {
 	HideXAxis      bool
 	HideYAxis      bool
 	BoundsModifier BoundsModifier
-	xTicks         []Tick
-	yTicks         []Tick
+	xTicks         Ticks
+	yTicks         Ticks
 	HideLegend     bool
 	legendPosGiven bool
 	legendPos      Point
@@ -285,8 +285,8 @@ func (p *Plot) calculateRect(rect Rect, textSize, stroke float64) Rect {
 		lb = 5
 	}
 	rb := p.RightBorder
-	if rb <= 0 {
-		rb = 1
+	if rb < 0 {
+		rb = 0
 	}
 
 	if p.HideYAxis || p.NoBorder {
@@ -294,7 +294,11 @@ func (p *Plot) calculateRect(rect Rect, textSize, stroke float64) Rect {
 		rMax.X -= stroke / 2
 	} else {
 		rMin.X += textSize * lb * 0.75
-		rMax.X -= textSize * rb * 0.75
+		if rb == 0 {
+			rMax.X -= stroke / 2
+		} else {
+			rMax.X -= textSize * rb * 0.75
+		}
 	}
 
 	if p.HideXAxis || p.NoBorder {
@@ -302,7 +306,7 @@ func (p *Plot) calculateRect(rect Rect, textSize, stroke float64) Rect {
 		rMax.Y -= stroke / 2
 	} else {
 		rMin.Y += textSize * 2
-		rMax.Y -= textSize / 2
+		rMax.Y -= stroke / 2
 	}
 
 	return Rect{Min: rMin, Max: rMax}
