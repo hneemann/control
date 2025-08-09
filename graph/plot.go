@@ -66,6 +66,7 @@ type Plot struct {
 	RightBorder    float64
 	NoBorder       bool
 	NoXExpand      bool
+	NoYExpand      bool
 	Grid           *Style
 	Frame          *Style
 	Title          string
@@ -180,9 +181,12 @@ func (p *Plot) DrawTo(canvas Canvas) error {
 			return width > textSize*(float64(digits+2))*0.5
 		}, xExp)
 
-	yExp := 0.02
-	if p.YLabelExtend && yAutoScale && (p.XLabel != "" || p.YLabel != "") {
-		yExp = 1.8 * textSize / innerRect.Height()
+	yExp := 0.0
+	if !p.NoYExpand {
+		yExp = 0.02
+		if p.YLabelExtend && yAutoScale && (p.XLabel != "" || p.YLabel != "") {
+			yExp = 1.8 * textSize / innerRect.Height()
+		}
 	}
 
 	yTrans, yTicks, yBounds, yUnit := yAxis(innerRect.Min.Y, innerRect.Max.Y, yBounds,
@@ -315,7 +319,11 @@ func (p *Plot) calculateRect(rect Rect, textSize, stroke float64) Rect {
 		rMax.Y -= stroke / 2
 	} else {
 		rMin.Y += textSize * 2
-		rMax.Y -= stroke / 2
+		if p.NoYExpand {
+			rMax.Y -= textSize / 2
+		} else {
+			rMax.Y -= stroke / 2
+		}
 	}
 
 	return Rect{Min: rMin, Max: rMax}

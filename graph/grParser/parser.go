@@ -338,6 +338,11 @@ func createPlotMethods() value.MethodMap {
 			plot.Value.NoXExpand = true
 			return plot, nil
 		}).SetMethodDescription("No expansion of x-Axis."),
+		"noYExpand": value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			plot = plot.Copy()
+			plot.Value.NoYExpand = true
+			return plot, nil
+		}).SetMethodDescription("No expansion of y-Axis."),
 		"noBorders": value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			plot = plot.Copy()
 			plot.Value.NoBorder = true
