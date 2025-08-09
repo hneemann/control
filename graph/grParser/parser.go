@@ -333,6 +333,11 @@ func createPlotMethods() value.MethodMap {
 			}
 			return nil, fmt.Errorf("leftBorder requires an int value")
 		}).SetMethodDescription("left", "right", "Sets the width of the left and right border measured in characters."),
+		"noXExpand": value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			plot = plot.Copy()
+			plot.Value.NoXExpand = true
+			return plot, nil
+		}).SetMethodDescription("No expansion of x-Axis."),
 		"noBorders": value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			plot = plot.Copy()
 			plot.Value.NoBorder = true

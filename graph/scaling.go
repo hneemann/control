@@ -39,9 +39,6 @@ type Axis func(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth, 
 
 func LinearAxis(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth, expand float64) (func(v float64) float64, Ticks, Bounds, string) {
 	delta := bounds.Width() * expand
-	if delta < 1e-10 {
-		delta = 1 + expand
-	}
 	eMin := bounds.Min - delta
 	eMax := bounds.Max + delta
 	l := linTickCreator{min: eMin, max: eMax}

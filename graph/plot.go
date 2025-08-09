@@ -65,6 +65,7 @@ type Plot struct {
 	LeftBorder     float64
 	RightBorder    float64
 	NoBorder       bool
+	NoXExpand      bool
 	Grid           *Style
 	Frame          *Style
 	Title          string
@@ -170,12 +171,16 @@ func (p *Plot) DrawTo(canvas Canvas) error {
 
 	innerRect := p.calculateRect(rect, textSize, thickLine.StrokeWidth)
 
-	yExp := 0.02
+	xExp := 0.02
+	if p.NoXExpand {
+		xExp = 0
+	}
 	xTrans, xTicks, xBounds, xUnit := xAxis(innerRect.Min.X, innerRect.Max.X, xBounds,
 		func(width float64, digits int) bool {
-			return width > textSize*(float64(digits+1))*0.5
-		}, yExp)
+			return width > textSize*(float64(digits+2))*0.5
+		}, xExp)
 
+	yExp := 0.02
 	if p.YLabelExtend && yAutoScale && (p.XLabel != "" || p.YLabel != "") {
 		yExp = 1.8 * textSize / innerRect.Height()
 	}
@@ -281,7 +286,7 @@ func (p *Plot) calculateRect(rect Rect, textSize, stroke float64) Rect {
 	rMax := rect.Max
 
 	lb := p.LeftBorder
-	if lb <= 0 {
+	if lb <= 0 && !p.HideYAxis {
 		lb = 5
 	}
 	rb := p.RightBorder
@@ -289,11 +294,15 @@ func (p *Plot) calculateRect(rect Rect, textSize, stroke float64) Rect {
 		rb = 0
 	}
 
-	if p.HideYAxis || p.NoBorder {
+	if p.NoBorder {
 		rMin.X += stroke / 2
 		rMax.X -= stroke / 2
 	} else {
-		rMin.X += textSize * lb * 0.75
+		if lb == 0 {
+			rMin.X += stroke / 2
+		} else {
+			rMin.X += textSize * lb * 0.75
+		}
 		if rb == 0 {
 			rMax.X -= stroke / 2
 		} else {
