@@ -73,7 +73,8 @@ type Plot struct {
 	YLabelExtend   bool
 	Content        []PlotContent
 	FillBackground bool
-	HideAxis       bool
+	HideXAxis      bool
+	HideYAxis      bool
 	BoundsModifier BoundsModifier
 	xTicks         []Tick
 	yTicks         []Tick
@@ -97,15 +98,6 @@ func (p *Plot) DrawTo(canvas Canvas) error {
 
 	if p.FillBackground {
 		canvas.DrawPath(rect.Poly(), White.SetStrokeWidth(0).SetFill(White))
-	}
-
-	lb := p.LeftBorder
-	if lb <= 0 {
-		lb = 5
-	}
-	rb := p.RightBorder
-	if rb <= 0 {
-		rb = 1
 	}
 
 	xBounds := p.XBounds
@@ -165,13 +157,18 @@ func (p *Plot) DrawTo(canvas Canvas) error {
 		yAxis = LinearAxis
 	}
 
-	innerRect := rect
-	if !(p.HideAxis || p.NoBorder) {
-		innerRect = Rect{
-			Min: Point{rect.Min.X + textSize*lb*0.75, rect.Min.Y + textSize*2},
-			Max: Point{rect.Max.X - textSize*rb*0.75, rect.Max.Y - textSize/2},
-		}
+	large := textSize / 2
+	small := textSize / 4
+
+	var thinLine *Style
+	if p.Frame != nil {
+		thinLine = p.Frame
+	} else {
+		thinLine = Black
 	}
+	thickLine := thinLine.SetStrokeWidth(thinLine.StrokeWidth * 2)
+
+	innerRect := p.calculateRect(rect, textSize, thickLine.StrokeWidth)
 
 	yExp := 0.02
 	xTrans, xTicks, xBounds, xUnit := xAxis(innerRect.Min.X, innerRect.Max.X, xBounds,
@@ -204,19 +201,7 @@ func (p *Plot) DrawTo(canvas Canvas) error {
 		},
 	}
 
-	large := textSize / 2
-	small := textSize / 4
-
-	var thinLine *Style
-	if p.Frame != nil {
-		thinLine = p.Frame
-	} else {
-		thinLine = Black
-	}
-	thickLine := thinLine.SetStrokeWidth(thinLine.StrokeWidth * 2)
-
-	if !p.HideAxis {
-
+	if !p.HideXAxis {
 		for _, tick := range xTicks {
 			xp := xTrans(tick.Position)
 			if tick.Label == "" {
@@ -229,6 +214,8 @@ func (p *Plot) DrawTo(canvas Canvas) error {
 				canvas.DrawPath(NewPointsPath(false, Point{xp, innerRect.Min.Y}, Point{xp, innerRect.Max.Y}), p.Grid)
 			}
 		}
+	}
+	if !p.HideYAxis {
 		for _, tick := range yTicks {
 			yp := yTrans(tick.Position)
 			if tick.Label == "" {
@@ -287,6 +274,38 @@ func (p *Plot) DrawTo(canvas Canvas) error {
 
 	}
 	return nil
+}
+
+func (p *Plot) calculateRect(rect Rect, textSize, stroke float64) Rect {
+	rMin := rect.Min
+	rMax := rect.Max
+
+	lb := p.LeftBorder
+	if lb <= 0 {
+		lb = 5
+	}
+	rb := p.RightBorder
+	if rb <= 0 {
+		rb = 1
+	}
+
+	if p.HideYAxis || p.NoBorder {
+		rMin.X += stroke / 2
+		rMax.X -= stroke / 2
+	} else {
+		rMin.X += textSize * lb * 0.75
+		rMax.X -= textSize * rb * 0.75
+	}
+
+	if p.HideXAxis || p.NoBorder {
+		rMin.Y += stroke / 2
+		rMax.Y -= stroke / 2
+	} else {
+		rMin.Y += textSize * 2
+		rMax.Y -= textSize / 2
+	}
+
+	return Rect{Min: rMin, Max: rMax}
 }
 
 func (p *Plot) GetTransform() Transform {

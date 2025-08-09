@@ -373,10 +373,14 @@ func createPlotMethods() value.MethodMap {
 			plot.Value.HideLegend = true
 			return plot, nil
 		}).SetMethodDescription("Hides the legend."),
-		"noAxis": value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
-			plot.Value.HideAxis = true
+		"noXAxis": value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			plot.Value.HideXAxis = true
 			return plot, nil
-		}).SetMethodDescription("Hides the axis."),
+		}).SetMethodDescription("Hides the x-axis."),
+		"noYAxis": value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			plot.Value.HideYAxis = true
+			return plot, nil
+		}).SetMethodDescription("Hides the y-axis."),
 		"textSize": value.MethodAtType(1, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if si, ok := stack.Get(1).ToFloat(); ok {
 				plot = plot.Copy()
