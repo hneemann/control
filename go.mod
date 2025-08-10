@@ -6,7 +6,7 @@ toolchain go1.24.2
 
 require (
 	github.com/hneemann/iterator v0.0.0-20240630073221-aab15310e28c
-	github.com/hneemann/parser2 v0.0.0-20250725074811-d579fd678b0a
+	github.com/hneemann/parser2 v0.0.0-20250810071023-e58515e38b62
 	github.com/hneemann/session v0.0.0-20250506050838-17caf730c285
 	github.com/stretchr/testify v1.10.0
 )
