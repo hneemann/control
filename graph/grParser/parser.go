@@ -254,7 +254,7 @@ func createPlotMethods() value.MethodMap {
 		}).SetMethodDescription("label", "Sets the y-label."),
 		"protectLabels": value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			plot = plot.Copy()
-			plot.Value.YLabelExtend = true
+			plot.Value.ProtectLabels = true
 			return plot, nil
 		}).SetMethodDescription("Autoscaling protects the labels."),
 		"grid": value.MethodAtType(1, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
@@ -331,18 +331,34 @@ func createPlotMethods() value.MethodMap {
 					return plot, nil
 				}
 			}
-			return nil, fmt.Errorf("leftBorder requires an int value")
+			return nil, fmt.Errorf("borders requires two floats")
 		}).SetMethodDescription("left", "right", "Sets the width of the left and right border measured in characters."),
+		"tickSepX": value.MethodAtType(1, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			if ts, ok := stack.Get(1).ToFloat(); ok {
+				plot = plot.Copy()
+				plot.Value.XTickSep = ts
+				return plot, nil
+			}
+			return nil, fmt.Errorf("tickSepX requires a float value")
+		}).SetMethodDescription("with", "Sets the space between ticks measured in characters."),
+		"tickSepY": value.MethodAtType(1, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			if ts, ok := stack.Get(1).ToFloat(); ok {
+				plot = plot.Copy()
+				plot.Value.YTickSep = ts
+				return plot, nil
+			}
+			return nil, fmt.Errorf("tickSepY requires a float value")
+		}).SetMethodDescription("with", "Sets the space between ticks measured in characters."),
 		"noXExpand": value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			plot = plot.Copy()
 			plot.Value.NoXExpand = true
 			return plot, nil
-		}).SetMethodDescription("No expansion of x-Axis."),
+		}).SetMethodDescription("No expansion of x-Axis. By default, the x-axis is expanded to the left and right to prevent points from being drawn directly on top of the frame."),
 		"noYExpand": value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			plot = plot.Copy()
 			plot.Value.NoYExpand = true
 			return plot, nil
-		}).SetMethodDescription("No expansion of y-Axis."),
+		}).SetMethodDescription("No expansion of y-Axis. By default, the y-axis is expanded to the top and bottom to prevent points from being drawn directly on top of the frame."),
 		"noBorders": value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			plot = plot.Copy()
 			plot.Value.NoBorder = true

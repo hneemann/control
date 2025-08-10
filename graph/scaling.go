@@ -83,10 +83,12 @@ func (l *linTickCreator) ticks(minParent, maxParent float64, ctw CheckTextWidth)
 
 	format := fmt.Sprintf("%%.%df", l.getNks())
 
+	const eps = 1e-10
+
 	tick := math.Ceil(l.min/l.delta) * l.delta
 	var ticks []Tick
-	for tick <= l.max {
-		if math.Abs(tick) < 1e-10 {
+	for tick <= l.max+eps {
+		if math.Abs(tick) < eps {
 			tick = 0
 		}
 		ticks = append(ticks, Tick{tick, fmt.Sprintf(format, tick)})

@@ -72,7 +72,7 @@ type Plot struct {
 	Title          string
 	XLabel         string
 	YLabel         string
-	YLabelExtend   bool
+	ProtectLabels  bool
 	Content        []PlotContent
 	FillBackground bool
 	HideXAxis      bool
@@ -80,6 +80,8 @@ type Plot struct {
 	BoundsModifier BoundsModifier
 	xTicks         Ticks
 	yTicks         Ticks
+	XTickSep       float64
+	YTickSep       float64
 	HideLegend     bool
 	legendPosGiven bool
 	legendPos      Point
@@ -172,26 +174,35 @@ func (p *Plot) DrawTo(canvas Canvas) error {
 
 	innerRect := p.calculateRect(rect, textSize, thickLine.StrokeWidth)
 
+	xTickSep := p.XTickSep
+	if xTickSep <= 0 {
+		xTickSep = 1
+	}
+	yTickSep := p.YTickSep
+	if yTickSep <= 0 {
+		yTickSep = 1
+	}
+
 	xExp := 0.02
 	if p.NoXExpand {
 		xExp = 0
 	}
 	xTrans, xTicks, xBounds, xUnit := xAxis(innerRect.Min.X, innerRect.Max.X, xBounds,
 		func(width float64, digits int) bool {
-			return width > textSize*(float64(digits+2))*0.5
+			return width > textSize*(float64(digits)+1+xTickSep)*0.5
 		}, xExp)
 
 	yExp := 0.0
 	if !p.NoYExpand {
 		yExp = 0.02
-		if p.YLabelExtend && yAutoScale && (p.XLabel != "" || p.YLabel != "") {
+		if p.ProtectLabels && yAutoScale && (p.XLabel != "" || p.YLabel != "") {
 			yExp = 1.8 * textSize / innerRect.Height()
 		}
 	}
 
 	yTrans, yTicks, yBounds, yUnit := yAxis(innerRect.Min.Y, innerRect.Max.Y, yBounds,
 		func(width float64, _ int) bool {
-			return width > textSize*2
+			return width > textSize*(1+yTickSep)
 		}, yExp)
 
 	p.xTicks = xTicks
@@ -290,12 +301,23 @@ func (p *Plot) calculateRect(rect Rect, textSize, stroke float64) Rect {
 	rMax := rect.Max
 
 	lb := p.LeftBorder
-	if lb <= 0 && !p.HideYAxis {
-		lb = 5
+	if lb <= 0 {
+		if p.HideYAxis {
+			if p.NoXExpand {
+				lb = 1
+			} else {
+				lb = 0
+			}
+		} else {
+			lb = 5
+		}
 	}
 	rb := p.RightBorder
 	if rb < 0 {
 		rb = 0
+	}
+	if rb == 0 && p.NoXExpand {
+		rb = 1
 	}
 
 	if p.NoBorder {
@@ -314,15 +336,26 @@ func (p *Plot) calculateRect(rect Rect, textSize, stroke float64) Rect {
 		}
 	}
 
-	if p.HideXAxis || p.NoBorder {
+	// calculate y-borders
+	if p.NoBorder {
 		rMin.Y += stroke / 2
 		rMax.Y -= stroke / 2
 	} else {
-		rMin.Y += textSize * 2
-		if p.NoYExpand {
-			rMax.Y -= textSize / 2
+		if p.HideXAxis {
+			if p.NoYExpand {
+				rMin.Y += textSize / 3 * 2
+				rMax.Y -= textSize / 3 * 2
+			} else {
+				rMin.Y += stroke / 2
+				rMax.Y -= stroke / 2
+			}
 		} else {
-			rMax.Y -= stroke / 2
+			rMin.Y += textSize * 2
+			if p.NoYExpand && !p.HideYAxis {
+				rMax.Y -= textSize / 3 * 2
+			} else {
+				rMax.Y -= stroke / 2
+			}
 		}
 	}
 
