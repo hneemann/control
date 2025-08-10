@@ -359,6 +359,11 @@ func createPlotMethods() value.MethodMap {
 			plot.Value.NoYExpand = true
 			return plot, nil
 		}).SetMethodDescription("No expansion of y-Axis. By default, the y-axis is expanded to the top and bottom to prevent points from being drawn directly on top of the frame."),
+		"cross": value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			plot = plot.Copy()
+			plot.Value.Cross = true
+			return plot, nil
+		}).SetMethodDescription("Draws a coordinate cross instead of a rectangle around the plot."),
 		"noBorders": value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			plot = plot.Copy()
 			plot.Value.NoBorder = true

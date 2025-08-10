@@ -28,13 +28,14 @@ plot(
     <example name="Graph" desc="Funktionsplot"
              name-en="Graph" desc-en="Function plot">plot(
  graph( x->sin(pi*x) )
-)</example>
+).cross()</example>
     <example name="Graph 2" desc="Funktionsplotter"
              name-en="Graph 2" desc-en="Function plot">plot(
  graph( x->sin(x) ).line(black, "sin(x)"),
  graph( x->cos(x) ).line(blue, "cos(x)"),
  graph( x->tan(x) ).line(red, "tan(x)")
-).xBounds(0,2*pi)
+).cross()
+ .xBounds(-pi,pi)
  .yBounds(-2,2)</example>
     <example name="Ortskurve" desc="Darstellung der Ortskurve"
              name-en="Nyquist plot" desc-en="Nyquist plot">let g = 3/((s+1)*(s+2));

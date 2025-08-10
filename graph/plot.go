@@ -67,6 +67,7 @@ type Plot struct {
 	NoBorder       bool
 	NoXExpand      bool
 	NoYExpand      bool
+	Cross          bool
 	Grid           *Style
 	Frame          *Style
 	Title          string
@@ -88,6 +89,8 @@ type Plot struct {
 	trans          Transform
 	canvas         Canvas
 	inner          Canvas
+	textSize       float64
+	cross          bool
 }
 
 func (p *Plot) DrawTo(canvas Canvas) error {
@@ -95,9 +98,12 @@ func (p *Plot) DrawTo(canvas Canvas) error {
 	c := canvas.Context()
 	rect := canvas.Rect()
 	textStyle := Black.Text()
-	textSize := c.TextSize
-	if textSize <= rect.Height()/200 {
-		textSize = rect.Height() / 200
+	p.textSize = c.TextSize
+	if p.textSize <= rect.Height()/200 {
+		p.textSize = rect.Height() / 200
+	}
+	if p.Frame == nil {
+		p.Frame = Black.SetStrokeWidth(2)
 	}
 
 	if p.FillBackground {
@@ -152,6 +158,8 @@ func (p *Plot) DrawTo(canvas Canvas) error {
 		xBounds, yBounds = p.BoundsModifier(xBounds, yBounds, p, canvas)
 	}
 
+	p.cross = p.Cross && xBounds.Min < 0 && xBounds.Max > 0 && yBounds.Min < 0 && yBounds.Max > 0
+
 	xAxis := p.XAxis
 	if xAxis == nil {
 		xAxis = LinearAxis
@@ -161,18 +169,12 @@ func (p *Plot) DrawTo(canvas Canvas) error {
 		yAxis = LinearAxis
 	}
 
-	large := textSize / 2
-	small := textSize / 4
+	large := p.textSize / 2
+	small := p.textSize / 4
 
-	var thinLine *Style
-	if p.Frame != nil {
-		thinLine = p.Frame
-	} else {
-		thinLine = Black
-	}
-	thickLine := thinLine.SetStrokeWidth(thinLine.StrokeWidth * 2)
+	thinLine := p.Frame.SetStrokeWidth(p.Frame.StrokeWidth / 2)
 
-	innerRect := p.calculateRect(rect, textSize, thickLine.StrokeWidth)
+	innerRect := p.calculateInnerRect(rect)
 
 	xTickSep := p.XTickSep
 	if xTickSep <= 0 {
@@ -189,20 +191,20 @@ func (p *Plot) DrawTo(canvas Canvas) error {
 	}
 	xTrans, xTicks, xBounds, xUnit := xAxis(innerRect.Min.X, innerRect.Max.X, xBounds,
 		func(width float64, digits int) bool {
-			return width > textSize*(float64(digits)+1+xTickSep)*0.5
+			return width > p.textSize*(float64(digits)+1+xTickSep)*0.5
 		}, xExp)
 
 	yExp := 0.0
 	if !p.NoYExpand {
 		yExp = 0.02
 		if p.ProtectLabels && yAutoScale && (p.XLabel != "" || p.YLabel != "") {
-			yExp = 1.8 * textSize / innerRect.Height()
+			yExp = 1.8 * p.textSize / innerRect.Height()
 		}
 	}
 
 	yTrans, yTicks, yBounds, yUnit := yAxis(innerRect.Min.Y, innerRect.Max.Y, yBounds,
 		func(width float64, _ int) bool {
-			return width > textSize*(1+yTickSep)
+			return width > p.textSize*(1+yTickSep)
 		}, yExp)
 
 	p.xTicks = xTicks
@@ -222,30 +224,42 @@ func (p *Plot) DrawTo(canvas Canvas) error {
 	}
 
 	if !p.HideXAxis {
+		yp := innerRect.Min.Y
+		if p.cross {
+			yp = yTrans(0)
+		}
 		for _, tick := range xTicks {
-			xp := xTrans(tick.Position)
-			if tick.Label == "" {
-				canvas.DrawPath(NewPointsPath(false, Point{xp, innerRect.Min.Y - small}, Point{xp, innerRect.Min.Y}), thinLine)
-			} else {
-				canvas.DrawText(Point{xp, innerRect.Min.Y - large - small}, tick.Label, Top|HCenter, textStyle, textSize)
-				canvas.DrawPath(NewPointsPath(false, Point{xp, innerRect.Min.Y - large}, Point{xp, innerRect.Min.Y}), thickLine)
-			}
-			if p.Grid != nil {
-				canvas.DrawPath(NewPointsPath(false, Point{xp, innerRect.Min.Y}, Point{xp, innerRect.Max.Y}), p.Grid)
+			if !p.cross || math.Abs(tick.Position) > 1e-8 {
+				xp := xTrans(tick.Position)
+				if tick.Label == "" {
+					canvas.DrawPath(NewPointsPath(false, Point{xp, yp - small}, Point{xp, yp}), thinLine)
+				} else {
+					canvas.DrawText(Point{xp, yp - large - small}, tick.Label, Top|HCenter, textStyle, p.textSize)
+					canvas.DrawPath(NewPointsPath(false, Point{xp, yp - large}, Point{xp, yp}), p.Frame)
+				}
+				if p.Grid != nil {
+					canvas.DrawPath(NewPointsPath(false, Point{xp, innerRect.Min.Y}, Point{xp, innerRect.Max.Y}), p.Grid)
+				}
 			}
 		}
 	}
 	if !p.HideYAxis {
+		xp := innerRect.Min.X
+		if p.cross {
+			xp = xTrans(0)
+		}
 		for _, tick := range yTicks {
-			yp := yTrans(tick.Position)
-			if tick.Label == "" {
-				canvas.DrawPath(NewPointsPath(false, Point{innerRect.Min.X - small, yp}, Point{innerRect.Min.X, yp}), thinLine)
-			} else {
-				canvas.DrawText(Point{innerRect.Min.X - large, yp}, tick.Label, Right|VCenter, textStyle, textSize)
-				canvas.DrawPath(NewPointsPath(false, Point{innerRect.Min.X - large, yp}, Point{innerRect.Min.X, yp}), thickLine)
-			}
-			if p.Grid != nil {
-				canvas.DrawPath(NewPointsPath(false, Point{innerRect.Min.X, yp}, Point{innerRect.Max.X, yp}), p.Grid)
+			if !p.cross || math.Abs(tick.Position) > 1e-8 {
+				yp := yTrans(tick.Position)
+				if tick.Label == "" {
+					canvas.DrawPath(NewPointsPath(false, Point{xp - small, yp}, Point{xp, yp}), thinLine)
+				} else {
+					canvas.DrawText(Point{xp - large, yp}, tick.Label, Right|VCenter, textStyle, p.textSize)
+					canvas.DrawPath(NewPointsPath(false, Point{xp - large, yp}, Point{xp, yp}), p.Frame)
+				}
+				if p.Grid != nil {
+					canvas.DrawPath(NewPointsPath(false, Point{innerRect.Min.X, yp}, Point{innerRect.Max.X, yp}), p.Grid)
+				}
 			}
 		}
 	}
@@ -263,40 +277,59 @@ func (p *Plot) DrawTo(canvas Canvas) error {
 	}
 
 	if p.XLabel != "" || xUnit != "" {
-		canvas.DrawText(Point{innerRect.Max.X - small, innerRect.Min.Y + small}, p.XLabel+" "+xUnit, Bottom|Right, textStyle, textSize)
+		yp := innerRect.Min.Y
+		if p.cross {
+			yp = yTrans(0)
+		}
+		canvas.DrawText(Point{innerRect.Max.X - small, yp + small}, p.XLabel+" "+xUnit, Bottom|Right, textStyle, p.textSize)
 	}
 	if p.YLabel != "" || yUnit != "" {
-		canvas.DrawText(Point{innerRect.Min.X + small, innerRect.Max.Y - small}, p.YLabel+" "+yUnit, Top|Left, textStyle, textSize)
+		xp := innerRect.Min.X
+		if p.cross {
+			xp = xTrans(0)
+		}
+		canvas.DrawText(Point{xp + small, innerRect.Max.Y - small}, p.YLabel+" "+yUnit, Top|Left, textStyle, p.textSize)
 	}
 	if p.Title != "" {
-		canvas.DrawText(Point{innerRect.Max.X - small, innerRect.Max.Y - small}, p.Title, Top|Right, textStyle, textSize)
+		canvas.DrawText(Point{innerRect.Max.X - small, innerRect.Max.Y - small}, p.Title, Top|Right, textStyle, p.textSize)
 	}
-	canvas.DrawPath(innerRect.Poly(), thickLine)
+	if p.cross {
+		xp := xTrans(0)
+		yp := yTrans(0)
+		canvas.DrawPath(NewPointsPath(false, Point{xp, innerRect.Min.Y}, Point{xp, innerRect.Max.Y}), p.Frame)
+		canvas.DrawPath(NewPointsPath(false, Point{innerRect.Min.X, yp}, Point{innerRect.Max.X, yp}), p.Frame)
+	} else {
+		canvas.DrawPath(innerRect.Poly(), p.Frame)
+	}
 
 	if len(legends) > 0 {
 		var lp Point
 		if p.legendPosGiven {
 			lp = Point{xTrans(p.legendPos.X), yTrans(p.legendPos.Y)}
 		} else {
-			lp = Point{innerRect.Min.X + textSize*3, innerRect.Min.Y + textSize*(float64(len(legends))*1.5-0.5)}
+			lp = Point{innerRect.Min.X + p.textSize*3, innerRect.Min.Y + p.textSize*(float64(len(legends))*1.5-0.5)}
 		}
 		for _, leg := range slices.Backward(legends) {
-			canvas.DrawText(lp, leg.Name, Left|VCenter, textStyle, textSize)
+			canvas.DrawText(lp, leg.Name, Left|VCenter, textStyle, p.textSize)
 			sls := leg.EnsureSomethingIsVisible()
 			if sls.IsLine() {
-				canvas.DrawPath(NewPointsPath(false, lp.Add(Point{-2*textSize - small, 0}), lp.Add(Point{-small, 0})), sls.LineStyle)
+				canvas.DrawPath(NewPointsPath(false, lp.Add(Point{-2*p.textSize - small, 0}), lp.Add(Point{-small, 0})), sls.LineStyle)
 			}
 			if sls.IsShape() {
-				canvas.DrawShape(lp.Add(Point{-1*textSize - small, 0}), sls.Shape, sls.ShapeStyle)
+				canvas.DrawShape(lp.Add(Point{-1*p.textSize - small, 0}), sls.Shape, sls.ShapeStyle)
 			}
-			lp = lp.Add(Point{0, -textSize * 1.5})
+			lp = lp.Add(Point{0, -p.textSize * 1.5})
 		}
 
 	}
 	return nil
 }
 
-func (p *Plot) calculateRect(rect Rect, textSize, stroke float64) Rect {
+func (p *Plot) calculateInnerRect(rect Rect) Rect {
+	if p.cross {
+		return rect
+	}
+
 	rMin := rect.Min
 	rMax := rect.Max
 
@@ -320,6 +353,8 @@ func (p *Plot) calculateRect(rect Rect, textSize, stroke float64) Rect {
 		rb = 1
 	}
 
+	stroke := p.Frame.StrokeWidth
+
 	if p.NoBorder {
 		rMin.X += stroke / 2
 		rMax.X -= stroke / 2
@@ -327,12 +362,12 @@ func (p *Plot) calculateRect(rect Rect, textSize, stroke float64) Rect {
 		if lb == 0 {
 			rMin.X += stroke / 2
 		} else {
-			rMin.X += textSize * lb * 0.75
+			rMin.X += p.textSize * lb * 0.75
 		}
 		if rb == 0 {
 			rMax.X -= stroke / 2
 		} else {
-			rMax.X -= textSize * rb * 0.75
+			rMax.X -= p.textSize * rb * 0.75
 		}
 	}
 
@@ -343,16 +378,16 @@ func (p *Plot) calculateRect(rect Rect, textSize, stroke float64) Rect {
 	} else {
 		if p.HideXAxis {
 			if p.NoYExpand {
-				rMin.Y += textSize / 3 * 2
-				rMax.Y -= textSize / 3 * 2
+				rMin.Y += p.textSize / 3 * 2
+				rMax.Y -= p.textSize / 3 * 2
 			} else {
 				rMin.Y += stroke / 2
 				rMax.Y -= stroke / 2
 			}
 		} else {
-			rMin.Y += textSize * 2
+			rMin.Y += p.textSize * 2
 			if p.NoYExpand && !p.HideYAxis {
-				rMax.Y -= textSize / 3 * 2
+				rMax.Y -= p.textSize / 3 * 2
 			} else {
 				rMax.Y -= stroke / 2
 			}
