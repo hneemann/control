@@ -45,7 +45,7 @@ func LinearAxis(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth,
 	ticks := l.ticks(minParent, maxParent, ctw)
 	return func(v float64) float64 {
 		return (v-eMin)/(eMax-eMin)*(maxParent-minParent) + minParent
-	}, ticks, Bounds{bounds.valid, eMin, eMax}, ""
+	}, ticks, Bounds{bounds.isSet, eMin, eMax}, ""
 }
 
 type linTickCreator struct {
@@ -162,7 +162,7 @@ func LogAxis(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth, ex
 		return f*(maxParent-minParent) + minParent
 	}
 	ticks := createLogTicks(logMin, minParent, maxParent, tr)
-	return tr, ticks, Bounds{bounds.valid, math.Pow(10, logMin), math.Pow(10, logMax)}, ""
+	return tr, ticks, Bounds{bounds.isSet, math.Pow(10, logMin), math.Pow(10, logMax)}, ""
 }
 
 func createLogTicks(logMin, parentMin, parentMax float64, tr func(v float64) float64) []Tick {
@@ -251,7 +251,7 @@ func DBAxis(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth, exp
 		return LinearAxis(minParent, maxParent, bounds, ctw, expand)
 	}
 
-	tr, ticks, b, unit := CreateFixedStepAxis(20)(minParent, maxParent, Bounds{bounds.valid, logMin, logMax}, ctw, expand)
+	tr, ticks, b, unit := CreateFixedStepAxis(20)(minParent, maxParent, Bounds{bounds.isSet, logMin, logMax}, ctw, expand)
 	for i := range ticks {
 		ticks[i].Position = math.Pow(10, ticks[i].Position/20)
 	}
@@ -263,7 +263,7 @@ func DBAxis(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth, exp
 	return func(v float64) float64 {
 			return tr(20 * math.Log10(v))
 		}, ticks, Bounds{
-			valid: true,
+			isSet: true,
 			Min:   math.Pow(10, b.Min/20),
 			Max:   math.Pow(10, b.Max/20),
 		}, unit
@@ -331,7 +331,7 @@ func CreateDateAxis(formatDate, formatMin string) Axis {
 			smallTickTime = smallIncr.inc(smallTickTime)
 		}
 
-		return tr, ticks, Bounds{bounds.valid, eMin, eMax}, ""
+		return tr, ticks, Bounds{bounds.isSet, eMin, eMax}, ""
 	}
 }
 
