@@ -147,11 +147,11 @@ func (p *Plot) DrawTo(canvas Canvas) error {
 		}
 	}
 
-	if !xBounds.valid {
-		xBounds = NewBounds(-1, 1)
+	if !xBounds.Valid() {
+		xBounds = xBounds.makeValid()
 	}
-	if !yBounds.valid {
-		yBounds = NewBounds(-1, 1)
+	if !yBounds.Valid() {
+		yBounds = yBounds.makeValid()
 	}
 
 	if p.BoundsModifier != nil {
@@ -447,7 +447,7 @@ func NewBounds(min, max float64) Bounds {
 }
 
 func (b *Bounds) Valid() bool {
-	return b.valid
+	return b.valid && b.Width() > 1e-6
 }
 
 func (b *Bounds) MergeBounds(other Bounds) {
@@ -488,6 +488,10 @@ func (b *Bounds) Merge(p float64) {
 
 func (b *Bounds) Width() float64 {
 	return b.Max - b.Min
+}
+
+func (b *Bounds) makeValid() Bounds {
+	return Bounds{valid: true, Min: b.Min - 1, Max: b.Max + 1}
 }
 
 // PlotContent is the interface that all plot contents must implement.
