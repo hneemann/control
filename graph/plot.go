@@ -43,12 +43,12 @@ type BoundsModifier func(xBounds, yBounds Bounds, p *Plot, canvas Canvas) (Bound
 
 func Zoom(p Point, f float64) BoundsModifier {
 	return func(xBounds, yBounds Bounds, _ *Plot, _ Canvas) (Bounds, Bounds) {
-		if xBounds.valid {
+		if xBounds.isSet {
 			d := xBounds.Width() / (2 * f)
 			xBounds.Min = p.X - d
 			xBounds.Max = p.X + d
 		}
-		if yBounds.valid {
+		if yBounds.isSet {
 			d := yBounds.Width() / (2 * f)
 			yBounds.Min = p.Y - d
 			yBounds.Max = p.Y + d
@@ -110,48 +110,9 @@ func (p *Plot) DrawTo(canvas Canvas) error {
 		canvas.DrawPath(rect.Poly(), White.SetStrokeWidth(0).SetFill(White))
 	}
 
-	xBounds := p.XBounds
-	yBounds := p.YBounds
-
-	yAutoScale := !yBounds.valid
-
-	if !(xBounds.valid && yBounds.valid) {
-		mergeX := !xBounds.valid
-		mergeY := !yBounds.valid
-		for _, plotContent := range p.Content {
-			x, y, err := plotContent.Bounds()
-			if err != nil {
-				return err
-			}
-			if mergeX {
-				xBounds.MergeBounds(x)
-			}
-			if mergeY {
-				yBounds.MergeBounds(y)
-			}
-		}
-		var xPrefBounds, yPrefBounds Bounds
-		for _, plotContent := range p.Content {
-			x, y, err := plotContent.DependantBounds(xBounds, yBounds)
-			if err != nil {
-				return err
-			}
-			xPrefBounds.MergeBounds(x)
-			yPrefBounds.MergeBounds(y)
-		}
-		if mergeX {
-			xBounds.MergeBounds(xPrefBounds)
-		}
-		if mergeY {
-			yBounds.MergeBounds(yPrefBounds)
-		}
-	}
-
-	if !xBounds.Valid() {
-		xBounds = xBounds.makeValid()
-	}
-	if !yBounds.Valid() {
-		yBounds = yBounds.makeValid()
+	xBounds, yBounds, err := p.calcBounds()
+	if err != nil {
+		return err
 	}
 
 	if p.BoundsModifier != nil {
@@ -196,6 +157,7 @@ func (p *Plot) DrawTo(canvas Canvas) error {
 
 	yExp := 0.0
 	if !p.NoYExpand {
+		yAutoScale := !p.YBounds.isSet
 		yExp = 0.02
 		if p.ProtectLabels && yAutoScale && (p.XLabel != "" || p.YLabel != "") {
 			yExp = 1.8 * p.textSize / innerRect.Height()
@@ -325,6 +287,45 @@ func (p *Plot) DrawTo(canvas Canvas) error {
 	return nil
 }
 
+func (p *Plot) calcBounds() (Bounds, Bounds, error) {
+	xBounds := p.XBounds
+	yBounds := p.YBounds
+
+	if !(xBounds.isSet && yBounds.isSet) {
+		mergeX := !xBounds.isSet
+		mergeY := !yBounds.isSet
+		for _, plotContent := range p.Content {
+			x, y, err := plotContent.Bounds()
+			if err != nil {
+				return Bounds{}, Bounds{}, err
+			}
+			if mergeX {
+				xBounds.MergeBounds(x)
+			}
+			if mergeY {
+				yBounds.MergeBounds(y)
+			}
+		}
+		var xPrefBounds, yPrefBounds Bounds
+		for _, plotContent := range p.Content {
+			x, y, err := plotContent.DependantBounds(xBounds, yBounds)
+			if err != nil {
+				return Bounds{}, Bounds{}, err
+			}
+			xPrefBounds.MergeBounds(x)
+			yPrefBounds.MergeBounds(y)
+		}
+		if mergeX {
+			xBounds.MergeBounds(xPrefBounds)
+		}
+		if mergeY {
+			yBounds.MergeBounds(yPrefBounds)
+		}
+	}
+
+	return xBounds.makeValid(), yBounds.makeValid(), nil
+}
+
 func (p *Plot) calculateInnerRect(rect Rect) Rect {
 	if p.cross {
 		return rect
@@ -435,7 +436,7 @@ func (p *Plot) Dist(p1, p2 Point) float64 {
 }
 
 type Bounds struct {
-	valid    bool
+	isSet    bool
 	Min, Max float64
 }
 
@@ -443,18 +444,25 @@ func NewBounds(min, max float64) Bounds {
 	if min > max {
 		min, max = max, min
 	}
-	return Bounds{valid: true, Min: min, Max: max}
+	return Bounds{isSet: true, Min: min, Max: max}
 }
 
-func (b *Bounds) Valid() bool {
-	return b.valid && b.Width() > 1e-6
+func (b Bounds) Width() float64 {
+	return b.Max - b.Min
+}
+
+func (b Bounds) makeValid() Bounds {
+	if b.isSet && b.Width() > 1e-6 {
+		return b
+	}
+	return Bounds{isSet: true, Min: b.Min - 1, Max: b.Max + 1}
 }
 
 func (b *Bounds) MergeBounds(other Bounds) {
-	if other.valid {
+	if other.isSet {
 		// other is available
-		if !b.valid {
-			b.valid = true
+		if !b.isSet {
+			b.isSet = true
 			b.Min = other.Min
 			b.Max = other.Max
 		} else {
@@ -471,8 +479,8 @@ func (b *Bounds) MergeBounds(other Bounds) {
 
 func (b *Bounds) Merge(p float64) {
 	if !math.IsNaN(p) {
-		if !b.valid {
-			b.valid = true
+		if !b.isSet {
+			b.isSet = true
 			b.Min = p
 			b.Max = p
 		} else {
@@ -484,14 +492,6 @@ func (b *Bounds) Merge(p float64) {
 			}
 		}
 	}
-}
-
-func (b *Bounds) Width() float64 {
-	return b.Max - b.Min
-}
-
-func (b *Bounds) makeValid() Bounds {
-	return Bounds{valid: true, Min: b.Min - 1, Max: b.Max + 1}
 }
 
 // PlotContent is the interface that all plot contents must implement.
@@ -568,7 +568,7 @@ func (f Function) Bounds() (Bounds, Bounds, error) {
 }
 
 func (f Function) DependantBounds(xGiven, _ Bounds) (Bounds, Bounds, error) {
-	if xGiven.valid {
+	if xGiven.isSet {
 		yBounds := Bounds{}
 		width := xGiven.Width()
 		steps := f.steps()
