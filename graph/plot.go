@@ -267,7 +267,7 @@ func (p *Plot) DrawTo(canvas Canvas) error {
 	if len(legends) > 0 {
 		var lp Point
 		if p.legendPosGiven {
-			lp = Point{xTrans(p.legendPos.X), yTrans(p.legendPos.Y)}
+			lp = p.trans(p.legendPos)
 		} else {
 			lp = Point{innerRect.Min.X + p.textSize*3, innerRect.Min.Y + p.textSize*(float64(len(legends))*1.5-0.5)}
 		}
@@ -282,7 +282,6 @@ func (p *Plot) DrawTo(canvas Canvas) error {
 			}
 			lp = lp.Add(Point{0, -p.textSize * 1.5})
 		}
-
 	}
 	return nil
 }
