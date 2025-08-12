@@ -12,6 +12,7 @@ import (
 	"github.com/hneemann/parser2/value"
 	"github.com/hneemann/parser2/value/export"
 	"github.com/hneemann/parser2/value/export/xmlWriter"
+	"html/template"
 	"math"
 	"math/cmplx"
 	"sort"
@@ -27,6 +28,7 @@ var (
 	LinearValueType          value.Type
 	BlockFactoryValueType    value.Type
 	TwoPortValueType         value.Type
+	RangeSliderType          value.Type
 )
 
 type BlockFactoryValue struct {
@@ -778,6 +780,111 @@ func getLinear(st funcGen.Stack[value.Value], i int) (*Linear, bool) {
 	return nil, false
 }
 
+type Slider struct {
+	name          string
+	def, min, max float64
+}
+type RangeSlider struct {
+	sliders []Slider
+	values  []int
+}
+
+func NewSlider(def string) *RangeSlider {
+	var values []int
+	s := strings.Split(def, ",")
+	for _, st := range s {
+		v, err := strconv.Atoi(st)
+		if err != nil {
+			break
+		}
+		values = append(values, v)
+	}
+	return &RangeSlider{values: values}
+}
+
+func (r *RangeSlider) ToList() (*value.List, bool) {
+	return nil, false
+}
+
+func (r *RangeSlider) ToMap() (value.Map, bool) {
+	return value.Map{}, false
+}
+
+func (r *RangeSlider) ToInt() (int, bool) {
+	return 0, false
+}
+
+func (r *RangeSlider) ToFloat() (float64, bool) {
+	return 0, false
+}
+
+func (r *RangeSlider) ToString(_ funcGen.Stack[value.Value]) (string, error) {
+	return "Slider", nil
+}
+
+func (r *RangeSlider) ToBool() (bool, bool) {
+	return false, false
+}
+
+func (r *RangeSlider) ToClosure() (funcGen.Function[value.Value], bool) {
+	return funcGen.Function[value.Value]{}, false
+}
+
+func (r *RangeSlider) GetType() value.Type {
+	return RangeSliderType
+}
+
+func (r *RangeSlider) create(name string, def, min, max float64) value.Value {
+	i := len(r.sliders)
+	if min > max {
+		min, max = max, min
+	}
+	if def < min || def > max {
+		def = (min + max) / 2
+	}
+	r.sliders = append(r.sliders, Slider{name: name, def: def, min: min, max: max})
+	if i < len(r.values) {
+		return value.Float(float64(r.values[i])*(max-min)/1000 + min)
+	}
+	return value.Float(def)
+}
+
+func (r *RangeSlider) Wrap(html template.HTML) template.HTML {
+	if len(r.sliders) == 0 {
+		return html
+	}
+	sb := strings.Builder{}
+	sb.WriteString(`<div class="slider-container">`)
+	for i, sl := range r.sliders {
+		var val int
+		if i < len(r.values) {
+			val = r.values[i]
+		} else {
+			val = int((sl.def-sl.min)/(sl.max-sl.min)*1000 + 0.5)
+		}
+		sb.WriteString(fmt.Sprintf(`<div>%s</div><div><input oninput="slider(%d)" type="range" min="0" max="1000" value="%d" id="slider-%d" class="range-slider"/></div>`, sl.name, len(r.sliders), val, i))
+	}
+	sb.WriteString(`</div>`)
+	return template.HTML(sb.String()) + html
+}
+
+func rangeSliderMethods() value.MethodMap {
+	return value.MethodMap{
+		"create": value.MethodAtType(4, func(r *RangeSlider, st funcGen.Stack[value.Value]) (value.Value, error) {
+			if name, ok := st.Get(1).(value.String); ok {
+				if def, ok := st.Get(2).ToFloat(); ok {
+					if min, ok := st.Get(3).ToFloat(); ok {
+						if max, ok := st.Get(4).ToFloat(); ok {
+							return r.create(string(name), def, min, max), nil
+						}
+					}
+				}
+			}
+			return nil, fmt.Errorf("create requires floats as arguments")
+		}).SetMethodDescription("name", "def", "min", "max", "creates a new slider and returns the slider value."),
+	}
+}
+
 var ParserFunctionGenerator *value.FunctionGenerator
 
 var Parser = value.New().
@@ -789,6 +896,7 @@ var Parser = value.New().
 		TwoPortValueType = fg.RegisterType("twoPort")
 		BodeValueType = fg.RegisterType("bodePlot")
 		BodePlotContentValueType = fg.RegisterType("bodePlotContent")
+		RangeSliderType = fg.RegisterType("rangeSlider")
 
 		ParserFunctionGenerator = fg
 	}).
@@ -800,6 +908,7 @@ var Parser = value.New().
 	RegisterMethods(BodePlotContentValueType, bodePlotContentMethods()).
 	RegisterMethods(ComplexValueType, cmplxMethods()).
 	RegisterMethods(TwoPortValueType, twoPortMethods()).
+	RegisterMethods(RangeSliderType, rangeSliderMethods()).
 	Modify(grParser.Setup).
 	AddConstant("_i", Complex(complex(0, 1))).
 	AddConstant("s", Polynomial{0, 1}).

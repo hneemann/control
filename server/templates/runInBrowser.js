@@ -1,3 +1,20 @@
+function slider(n) {
+    let slValues=""
+    for (let i = 0; i < n; i++) {
+        let sl = document.getElementById('slider-' + i);
+        if (slValues !== "") {
+            slValues += ",";
+        }
+        slValues += sl.value;
+    }
+
+    let source = document.getElementById('source');
+    let result = document.getElementById('result');
+
+    result.innerHTML = generateOutput(source.value, slValues);
+    source.focus();
+}
+
 function runSource() {
     let source = document.getElementById('source');
     let result = document.getElementById('result');

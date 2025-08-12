@@ -160,13 +160,6 @@ div.fileDialog {
     z-index: 5;
 }
 
-div.fileEntry {
-    padding: 0.2em 0.2em 0.2em 0.2em;
-}
-div.fileEntry:hover {
-    background-color: #ddd;
-}
-
 div.head {
     display: block;
     text-align: center;
@@ -195,6 +188,13 @@ div.fileList {
     border-width: 1px;
 }
 
+div.fileEntry {
+    padding: 0.2em 0.2em 0.2em 0.2em;
+}
+div.fileEntry:hover {
+    background-color: #ddd;
+}
+
 img.icon {
     position: relative;
     top: 0.1em;
@@ -202,3 +202,10 @@ img.icon {
     height: 1.7em;
 }
 
+input.range-slider {
+    width: 97%;
+}
+div.slider-container {
+    display: grid;
+    grid-template-columns: min-content 1fr;
+}

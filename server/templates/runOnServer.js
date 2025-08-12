@@ -1,3 +1,26 @@
+function slider(n) {
+    let slValues=""
+    for (let i = 0; i < n; i++) {
+        let sl = document.getElementById('slider-' + i);
+        if (slValues !== "") {
+            slValues += ",";
+        }
+        slValues += sl.value;
+    }
+
+    let source = document.getElementById('source');
+    let result = document.getElementById('result');
+
+    let formData = new FormData();
+    formData.append('data', source.value);
+    formData.append('slider', slValues);
+
+    fetchHelperForm("/execute/", formData, a => {
+        result.innerHTML = a;
+        source.focus();
+    });
+}
+
 function runSource() {
     let source = document.getElementById('source');
     let result = document.getElementById('result');

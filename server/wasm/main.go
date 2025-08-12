@@ -17,20 +17,29 @@ func parserWrapper() js.Func {
 
 	jsonFunc := js.FuncOf(func(this js.Value, args []js.Value) any {
 
-		if len(args) != 1 {
-			return "Invalid, only one argument possible"
+		if len(args) < 1 {
+			return "Invalid, at least one argument needed"
+		}
+		if len(args) > 2 {
+			return "Invalid, at most two arguments possible"
 		}
 
 		source := args[0].String()
+		sliderValues := ""
+		if len(args) > 1 {
+			sliderValues = args[1].String()
+		}
 
 		var expHtml template.HTML
-		fu, err := polynomial.Parser.Generate(source)
+		fu, err := polynomial.Parser.Generate(source, "slider")
 		if fu != nil {
 			// call the source
+			slider := polynomial.NewSlider(sliderValues)
 			var res value.Value
-			res, err = fu(funcGen.NewEmptyStack[value.Value]())
+			res, err = fu(funcGen.NewStack[value.Value](slider))
 			if err == nil {
 				expHtml, _, err = export.ToHtml(res, 50, nil, true)
+				expHtml = slider.Wrap(expHtml)
 			}
 		}
 
