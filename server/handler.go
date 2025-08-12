@@ -122,7 +122,7 @@ func CreateExamples(examples []Example) http.HandlerFunc {
 func Execute(writer http.ResponseWriter, request *http.Request) {
 	src := strings.TrimSpace(request.FormValue("data"))
 
-	slider := strings.TrimSpace(request.FormValue("slider"))
+	sliderDef := strings.TrimSpace(request.FormValue("slider"))
 
 	var resHtml template.HTML
 	if src != "" {
@@ -130,11 +130,13 @@ func Execute(writer http.ResponseWriter, request *http.Request) {
 		fu, err := polynomial.Parser.Generate(src, "slider")
 		if err == nil {
 			var res value.Value
-			slider := polynomial.NewSlider(slider)
-			res, err = fu(funcGen.NewStack[value.Value](slider))
+			sliders := polynomial.NewSlider(sliderDef)
+			res, err = fu(funcGen.NewStack[value.Value](sliders))
 			if err == nil {
 				resHtml, _, err = export.ToHtml(res, 50, customHtml, true)
-				resHtml = slider.Wrap(resHtml)
+				if sliderDef == "" && sliders.IsSlider() {
+					resHtml = sliders.Wrap(resHtml)
+				}
 			}
 		}
 		log.Println("calculation on server took", time.Since(start))

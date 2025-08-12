@@ -9,10 +9,9 @@ function slider(n) {
     }
 
     let source = document.getElementById('source');
-    let result = document.getElementById('result');
+    let result = document.getElementById('slider-inner');
 
     result.innerHTML = generateOutput(source.value, slValues);
-    source.focus();
 }
 
 function runSource() {

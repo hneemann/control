@@ -39,7 +39,9 @@ func parserWrapper() js.Func {
 			res, err = fu(funcGen.NewStack[value.Value](slider))
 			if err == nil {
 				expHtml, _, err = export.ToHtml(res, 50, nil, true)
-				expHtml = slider.Wrap(expHtml)
+				if sliderValues == "" && slider.IsSlider() {
+					expHtml = slider.Wrap(expHtml)
+				}
 			}
 		}
 

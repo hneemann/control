@@ -835,6 +835,15 @@ func (r *RangeSlider) GetType() value.Type {
 }
 
 func (r *RangeSlider) create(name string, def, min, max float64) value.Value {
+	for i, sl := range r.sliders {
+		if sl.name == name {
+			if i < len(r.values) {
+				return value.Float(float64(r.values[i])*(sl.max-sl.min)/1000 + sl.min)
+			}
+			return value.Float(sl.def)
+		}
+	}
+
 	i := len(r.sliders)
 	if min > max {
 		min, max = max, min
@@ -864,8 +873,12 @@ func (r *RangeSlider) Wrap(html template.HTML) template.HTML {
 		}
 		sb.WriteString(fmt.Sprintf(`<div>%s</div><div><input oninput="slider(%d)" type="range" min="0" max="1000" value="%d" id="slider-%d" class="range-slider"/></div>`, sl.name, len(r.sliders), val, i))
 	}
-	sb.WriteString(`</div>`)
-	return template.HTML(sb.String()) + html
+	sb.WriteString(`</div><div id="slider-inner">`)
+	return template.HTML(sb.String()) + html + "</div>"
+}
+
+func (r *RangeSlider) IsSlider() bool {
+	return len(r.sliders) > 0
 }
 
 func rangeSliderMethods() value.MethodMap {
@@ -873,6 +886,9 @@ func rangeSliderMethods() value.MethodMap {
 		"create": value.MethodAtType(4, func(r *RangeSlider, st funcGen.Stack[value.Value]) (value.Value, error) {
 			if name, ok := st.Get(1).(value.String); ok {
 				if def, ok := st.Get(2).ToFloat(); ok {
+					if st.Size() < 5 {
+						return r.create(string(name), def, 0, def*2), nil
+					}
 					if min, ok := st.Get(3).ToFloat(); ok {
 						if max, ok := st.Get(4).ToFloat(); ok {
 							return r.create(string(name), def, min, max), nil
@@ -881,7 +897,10 @@ func rangeSliderMethods() value.MethodMap {
 				}
 			}
 			return nil, fmt.Errorf("create requires floats as arguments")
-		}).SetMethodDescription("name", "def", "min", "max", "creates a new slider and returns the slider value."),
+		}).SetMethodDescription("name", "initial", "min", "max", "Creates a new slider and returns the slider value. "+
+			"The name is used to identify the slider. The initial value is the default value of the slider. "+
+			"The min and max values are the bounds of the slider. "+
+			"If min and max are missing, min is set to zero and max is set to two times initial.").VarArgsMethod(2, 4).Pure(false),
 	}
 }
 
@@ -896,7 +915,7 @@ var Parser = value.New().
 		TwoPortValueType = fg.RegisterType("twoPort")
 		BodeValueType = fg.RegisterType("bodePlot")
 		BodePlotContentValueType = fg.RegisterType("bodePlotContent")
-		RangeSliderType = fg.RegisterType("rangeSlider")
+		RangeSliderType = fg.RegisterType("slider")
 
 		ParserFunctionGenerator = fg
 	}).

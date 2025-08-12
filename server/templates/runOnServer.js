@@ -9,7 +9,7 @@ function slider(n) {
     }
 
     let source = document.getElementById('source');
-    let result = document.getElementById('result');
+    let result = document.getElementById('slider-inner');
 
     let formData = new FormData();
     formData.append('data', source.value);
@@ -17,7 +17,6 @@ function slider(n) {
 
     fetchHelperForm("/execute/", formData, a => {
         result.innerHTML = a;
-        source.focus();
     });
 }
 
