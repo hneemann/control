@@ -353,3 +353,31 @@ func Test_toUniCode(t *testing.T) {
 		})
 	}
 }
+
+func TestErrorBandEntrance(t *testing.T) {
+	tests := []struct {
+		name string
+		exp  string
+		res  float64
+	}{
+		{name: "e1", exp: "[[0,0],[1,1],[2,1]].errorBandEntrance(p->p[0],p->p[1],1,0.2)", res: 0.8},
+		{name: "e1", exp: "[[0,2],[1,1],[2,1]].errorBandEntrance(p->p[0],p->p[1],1,0.2)", res: 0.8},
+		{name: "e1", exp: "[[0,1],[1,1],[2,1]].errorBandEntrance(p->p[0],p->p[1],1,0.2)", res: 0},
+		{name: "e1", exp: "[[0,1],[1,1],[2,2]].errorBandEntrance(p->p[0],p->p[1],1,0.2)", res: 2},
+	}
+
+	for _, test := range tests {
+		test := test
+		t.Run(test.name, func(t *testing.T) {
+			fu, err := Parser.Generate(test.exp)
+			assert.NoError(t, err, test.exp)
+			if fu != nil {
+				res, err := fu(funcGen.NewEmptyStack[value.Value]())
+				assert.NoError(t, err, test.exp)
+				fl, ok := res.ToFloat()
+				assert.True(t, ok, test.exp)
+				assert.InDelta(t, test.res, fl, 1e-6, test.exp)
+			}
+		})
+	}
+}
