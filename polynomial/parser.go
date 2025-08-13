@@ -827,7 +827,22 @@ func (r *RangeSlider) ToBool() (bool, bool) {
 }
 
 func (r *RangeSlider) ToClosure() (funcGen.Function[value.Value], bool) {
-	return funcGen.Function[value.Value]{}, false
+	return funcGen.Function[value.Value]{
+		Func: func(st funcGen.Stack[value.Value], _ []value.Value) (value.Value, error) {
+			if name, ok := st.Get(0).(value.String); ok {
+				if def, ok := st.Get(1).ToFloat(); ok {
+					if min, ok := st.Get(2).ToFloat(); ok {
+						if max, ok := st.Get(3).ToFloat(); ok {
+							return r.create(string(name), def, min, max), nil
+						}
+					}
+				}
+			}
+			return nil, fmt.Errorf("closure requires a string and three floats as arguments")
+		},
+		Args:   4,
+		IsPure: false,
+	}, true
 }
 
 func (r *RangeSlider) GetType() value.Type {
@@ -896,7 +911,7 @@ func rangeSliderMethods() value.MethodMap {
 					}
 				}
 			}
-			return nil, fmt.Errorf("create requires floats as arguments")
+			return nil, fmt.Errorf("create requires a string and three floats as arguments")
 		}).SetMethodDescription("name", "initial", "min", "max", "Creates a new slider and returns the slider value. "+
 			"The name is used to identify the slider. The initial value is the default value of the slider. "+
 			"The min and max values are the bounds of the slider. "+

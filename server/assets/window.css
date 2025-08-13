@@ -26,4 +26,11 @@ math {
     font-size: 110%;
 }
 
+input.range-slider {
+    width: 97%;
+}
+div.slider-container {
+    display: grid;
+    grid-template-columns: min-content 1fr;
+}
 
