@@ -50,7 +50,7 @@ func main() {
 
 	copyFiles(*folder,
 		"static/main.js",
-		"server/templates/runInBrowser.js",
+		"server/assets/runInBrowser.js",
 		"server/assets/help.svg",
 		"server/assets/icon.svg",
 		"server/assets/main.css",
