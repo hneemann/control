@@ -16,9 +16,13 @@
     }
 }
 
+body, html {
+    margin: 0;
+    padding: 0;
+}
 
 svg.svg {
-    width: 100%;
+    width: auto;
     height: 100%;
 }
 
@@ -32,5 +36,19 @@ input.range-slider {
 div.slider-container {
     display: grid;
     grid-template-columns: min-content 1fr;
+}
+
+div.div-main {
+    text-align: center;
+}
+
+div#slider-inner {
+    text-align: center;
+}
+
+div:has( div.slider-container ) {
+    height: 100vh;
+    display: grid;
+    grid-template-rows: min-content 1fr;
 }
 

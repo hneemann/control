@@ -49,8 +49,8 @@ function runSourceInWindow() {
         "  <script type=\"text/javascript\" src=\"/assets/main.js\"></script>\n"+
         "</head>\n" +
         "<body>\n"+
-        "<textarea id=\"source\" style=\"display:none;\">" + source.value + "</textarea>\n");
+        "<textarea id=\"source\" style=\"display:none;\">" + source.value + "</textarea><div class=\"div-main\">\n");
     myWindow.document.write(generateOutput(source.value));
-    myWindow.document.write("\n</body>\n</html>");
+    myWindow.document.write("\n</div></body>\n</html>");
     source.focus();
 }
