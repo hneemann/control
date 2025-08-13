@@ -50,10 +50,11 @@ func main() {
 
 	copyFiles(*folder,
 		"static/main.js",
-		"server/assets/runInBrowser.js",
+		"static/runInBrowserStatic.js",
 		"server/assets/help.svg",
 		"server/assets/icon.svg",
 		"server/assets/main.css",
+		"server/assets/window.css",
 		"server/assets/new.svg",
 		"server/assets/refresh.svg",
 		"server/assets/refreshWindow.svg",
