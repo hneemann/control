@@ -413,6 +413,10 @@ func (p *Plot) AddContent(content PlotContent) {
 	p.Content = append(p.Content, content)
 }
 
+func (p *Plot) AddContentAtTop(content PlotContent) {
+	p.Content = append([]PlotContent{content}, p.Content...)
+}
+
 func (p *Plot) SetLegendPosition(pos Point) {
 	p.legendPosGiven = true
 	p.legendPos = pos

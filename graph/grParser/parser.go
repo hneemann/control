@@ -214,6 +214,15 @@ func createPlotMethods() value.MethodMap {
 			}
 			return plot, nil
 		}).SetMethodDescription("plotContent", "Adds a plot content to the plot."),
+		"addAtTop": value.MethodAtType(1, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			if pc, ok := stack.Get(1).(PlotContentValue); ok {
+				plot = plot.Copy()
+				plot.Value.AddContentAtTop(pc.Value)
+			} else {
+				return nil, fmt.Errorf("add requires a plot content")
+			}
+			return plot, nil
+		}).SetMethodDescription("plotContent", "Adds a plot content to the plot at the top."),
 		"title": value.MethodAtType(1, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if str, ok := stack.Get(1).(value.String); ok {
 				plot = plot.Copy()
