@@ -47,7 +47,7 @@ function runSourceInWindow() {
             "  <title>Control</title>\n" +
             "  <link rel=\"icon\" type=\"image/svg\" href=\"/assets/icon.svg\">\n" +
             "  <link rel=\"stylesheet\" type=\"text/css\" href=\"/assets/window.css\"/>\n" +
-            "  <script type=\"text/javascript\" src=\"/js/execute.js\"></script>\n"+
+            "  <script type=\"text/javascript\" src=\"/assets/runOnServer.js\"></script>\n"+
             "  <script type=\"text/javascript\" src=\"/assets/main.js\"></script>\n"+
             "</head>\n" +
             "<body>\n"+

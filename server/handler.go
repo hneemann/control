@@ -227,12 +227,12 @@ func RunMode(onServer bool) http.Handler {
 	var name string
 	if onServer {
 		log.Println("execution on server")
-		name = "templates/runOnServer.js"
+		name = "assets/runOnServer.js"
 	} else {
 		log.Println("execution in browser")
-		name = "templates/runInBrowser.js"
+		name = "assets/runInBrowser.js"
 	}
-	data, err := templateFS.ReadFile(name)
+	data, err := Assets.ReadFile(name)
 	if err != nil {
 		log.Fatal(err)
 	}
