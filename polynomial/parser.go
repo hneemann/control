@@ -795,44 +795,44 @@ func (c closureAccess) getY(st funcGen.Stack[value.Value], i int) (float64, erro
 	return c.getFloat(st, i, c.yc)
 }
 
-type listAccess struct {
+type directAccess struct {
 	items []value.Value
 }
 
-func (l listAccess) getSlice(st funcGen.Stack[value.Value], i int) ([]value.Value, error) {
-	if p, ok := l.items[i].(*value.List); ok {
+func (d directAccess) getSlice(st funcGen.Stack[value.Value], i int) ([]value.Value, error) {
+	if p, ok := d.items[i].(*value.List); ok {
 		s, err := p.ToSlice(st)
 		if err != nil {
 			return nil, err
 		}
 		if len(s) < 2 {
-			return nil, fmt.Errorf("list must contain at least two items to get time")
+			return nil, fmt.Errorf("list must contain at least two items to get time and value")
 		}
 		return s, nil
 	}
-	return nil, fmt.Errorf("listAccess requires a list as items")
+	return nil, fmt.Errorf("direct access requires a list as items")
 }
 
-func (l listAccess) getT(st funcGen.Stack[value.Value], i int) (float64, error) {
-	sl, err := l.getSlice(st, i)
+func (d directAccess) getT(st funcGen.Stack[value.Value], i int) (float64, error) {
+	sl, err := d.getSlice(st, i)
 	if err != nil {
 		return 0, err
 	}
 	if t, ok := sl[0].ToFloat(); ok {
 		return t, nil
 	}
-	return 0, fmt.Errorf("first item of list must be a float to get time")
+	return 0, fmt.Errorf("first item of the list must be a float to get time")
 }
 
-func (l listAccess) getY(st funcGen.Stack[value.Value], i int) (float64, error) {
-	sl, err := l.getSlice(st, i)
+func (d directAccess) getY(st funcGen.Stack[value.Value], i int) (float64, error) {
+	sl, err := d.getSlice(st, i)
 	if err != nil {
 		return 0, err
 	}
 	if y, ok := sl[1].ToFloat(); ok {
 		return y, nil
 	}
-	return 0, fmt.Errorf("first item of list must be a float to get a value")
+	return 0, fmt.Errorf("second item of the list must be a float to get a value")
 }
 
 func listMethods() value.MethodMap {
@@ -842,27 +842,24 @@ func listMethods() value.MethodMap {
 			if err != nil {
 				return nil, err
 			}
+			if val, ok := st.Get(1).ToFloat(); ok {
+				if dist, ok := st.Get(2).ToFloat(); ok {
 
-			var valStackindex int
-			var data dataInterface
-			switch st.Size() {
-			case 3:
-				valStackindex = 1
-				data = listAccess{items: items}
-			case 5:
-				valStackindex = 3
-				if tc, ok := st.Get(1).ToClosure(); ok {
-					if yc, ok := st.Get(2).ToClosure(); ok {
-						data = closureAccess{items: items, tc: tc, yc: yc}
-						break
+					var data dataInterface
+					switch st.Size() {
+					case 3:
+						data = directAccess{items: items}
+					case 5:
+						if tc, ok := st.Get(3).ToClosure(); ok {
+							if yc, ok := st.Get(4).ToClosure(); ok {
+								data = closureAccess{items: items, tc: tc, yc: yc}
+								break
+							}
+						}
+						return nil, fmt.Errorf("errorBandEntrance: last two arguments needs to be functions")
+					default:
+						return nil, fmt.Errorf("errorBandEntrance requires two or four arguments")
 					}
-				}
-				return nil, fmt.Errorf("errorBandEntrance: first two arguments needs to be functions")
-			default:
-				return nil, fmt.Errorf("errorBandEntrance requires two or four arguments")
-			}
-			if val, ok := st.Get(valStackindex).ToFloat(); ok {
-				if dist, ok := st.Get(valStackindex + 1).ToFloat(); ok {
 
 					lastMatchingIndex := -1
 					y1 := 0.0
@@ -908,10 +905,11 @@ func listMethods() value.MethodMap {
 				}
 			}
 			return nil, fmt.Errorf("errorBandEntrance requires two floats as value and distance")
-		}).SetMethodDescription("t_func(item) float", "y_func(item) float", "value", "distance",
-			"Returns the time at which the values enters the error band defined by value and distance. "+
-				"If only two arguments are given, these are value and distance. In this case, the list "+
-				"must contain lists with two numbers each.").VarArgsMethod(2, 4),
+		}).SetMethodDescription("value", "distance", "t_func(entry) float", "y_func(entry) float",
+			"Returns the time at which the values enter and stay in the error band defined by value and distance. "+
+				"The list describes the time progression of a signal by time and value and must be ordered by time. "+
+				"Each list entry describes such a value pair. The functions return time and value respectively. "+
+				"If only two arguments are given, the list must contain lists with two numbers each.").VarArgsMethod(2, 4),
 	}
 }
 
