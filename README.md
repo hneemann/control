@@ -62,23 +62,12 @@ let g  = 70/((s+1)*(s+2)*(s+2.5));
 let kp = 0.11;
 let Ti = 2.0;
 let k  = pid(kp,Ti);
-let g0 = k*g;
-let pm = g0.pMargin();
-let lineColor=red.dash(5,5);
 
 plot(
   g.bode(green, "G"),
-  k.bode(blue, sprintf("K, k#p=%.2f, T#i=%.1f",kp,Ti)),
-  g0.bode(black, sprintf("G#0, #Phi#r=%.1f°, #omega#s=%.2f rad/s",
-                         pm.pMargin, pm.w0) )
-).ampModify(
-    a->a.add(xConst(pm.w0, lineColor))
- )
- .phaseModify(
-    p->p.add(xConst(pm.w0, lineColor))
-        .add(yConst(-180+50, lineColor))
-        .add(yConst(-180+70, lineColor))
- )
+  k.bode(blue, "K"),
+  (k*g).bode(black, "G#0")
+)
 ```
 The result looks like this
 
@@ -93,12 +82,7 @@ also the polar grid and the asymptotes.
 ```
 let g = (s^2+2.5*s+2.225)/((s+1)*(s+2)*(s)*(s+3)*(s+4));
 
-let mp = g.derivative().zeros();
-
 plot(
-  mp.graph(r->r.real(), r->r.imag())
-    .mark(2, red.stroke(2))
-    .title("Merge Points"),
   g.evans(150),
 ).xBounds(-4.5, 0.2)
  .yBounds(-2, 2)
