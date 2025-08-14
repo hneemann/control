@@ -361,9 +361,13 @@ func TestErrorBandEntrance(t *testing.T) {
 		res  float64
 	}{
 		{name: "e1", exp: "[[0,0],[1,1],[2,1]].errorBandEntrance(p->p[0],p->p[1],1,0.2)", res: 0.8},
-		{name: "e1", exp: "[[0,2],[1,1],[2,1]].errorBandEntrance(p->p[0],p->p[1],1,0.2)", res: 0.8},
-		{name: "e1", exp: "[[0,1],[1,1],[2,1]].errorBandEntrance(p->p[0],p->p[1],1,0.2)", res: 0},
-		{name: "e1", exp: "[[0,1],[1,1],[2,2]].errorBandEntrance(p->p[0],p->p[1],1,0.2)", res: 2},
+		{name: "e2", exp: "[[0,2],[1,1],[2,1]].errorBandEntrance(p->p[0],p->p[1],1,0.2)", res: 0.8},
+		{name: "e3", exp: "[[0,1],[1,1],[2,1]].errorBandEntrance(p->p[0],p->p[1],1,0.2)", res: 0},
+		{name: "e4", exp: "[[0,1],[1,1],[2,2]].errorBandEntrance(p->p[0],p->p[1],1,0.2)", res: 2},
+		{name: "s1", exp: "[[0,0],[1,1],[2,1]].errorBandEntrance(1,0.2)", res: 0.8},
+		{name: "s2", exp: "[[0,2],[1,1],[2,1]].errorBandEntrance(1,0.2)", res: 0.8},
+		{name: "s3", exp: "[[0,1],[1,1],[2,1]].errorBandEntrance(1,0.2)", res: 0},
+		{name: "s4", exp: "[[0,1],[1,1],[2,2]].errorBandEntrance(1,0.2)", res: 2},
 	}
 
 	for _, test := range tests {

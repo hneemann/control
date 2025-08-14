@@ -766,71 +766,18 @@ func intMethods() value.MethodMap {
 	}
 }
 
-func listMethods() value.MethodMap {
-	return value.MethodMap{
-		"errorBandEntrance": value.MethodAtType(4, func(list *value.List, st funcGen.Stack[value.Value]) (value.Value, error) {
-			if tc, ok := st.Get(1).(value.Closure); ok {
-				if yc, ok := st.Get(2).(value.Closure); ok {
-					if val, ok := st.Get(3).ToFloat(); ok {
-						if dist, ok := st.Get(4).ToFloat(); ok {
-							items, err := list.ToSlice(st)
-							if err != nil {
-								return nil, err
-							}
-							lastMatchingIndex := -1
-							y1 := 0.0
-							for i := len(items) - 1; i >= 0; i-- {
-								item := items[i]
-								y, err := getFloat(st, item, yc)
-								if err != nil {
-									return nil, err
-								}
-								match := math.Abs(y-val) <= dist
-								if match {
-									lastMatchingIndex = i
-									y1 = y
-								} else {
-									break
-								}
-							}
-							if lastMatchingIndex < 0 {
-								float, err := getFloat(st, items[len(items)-1], tc)
-								return value.Float(float), err
-							} else if lastMatchingIndex == 0 {
-								float, err := getFloat(st, items[0], tc)
-								return value.Float(float), err
-							}
-							t1, err := getFloat(st, items[lastMatchingIndex], tc)
-							if err != nil {
-								return nil, err
-							}
-							y0, err := getFloat(st, items[lastMatchingIndex-1], yc)
-							if err != nil {
-								return nil, err
-							}
-							t0, err := getFloat(st, items[lastMatchingIndex-1], tc)
-							if err != nil {
-								return nil, err
-							}
-							if y0 < val {
-								t := (val-dist-y0)/(y1-y0)*(t1-t0) + t0
-								return value.Float(t), nil
-							} else {
-								t := (y0-val-dist)/(y0-y1)*(t1-t0) + t0
-								return value.Float(t), nil
-							}
-						}
-					}
-				}
-			}
-			return nil, fmt.Errorf("tube requires three functions as arguments")
-		}).SetMethodDescription("t_func(item) float", "y_func(item) float", "value", "dist",
-			"Returns the time at which the values enters the error band defined by value and dist."),
-	}
+type dataInterface interface {
+	getT(st funcGen.Stack[value.Value], i int) (float64, error)
+	getY(st funcGen.Stack[value.Value], i int) (float64, error)
 }
 
-func getFloat(st funcGen.Stack[value.Value], item value.Value, f value.Closure) (float64, error) {
-	val, err := funcGen.Function[value.Value](f).Eval(st, item)
+type closureAccess struct {
+	items  []value.Value
+	tc, yc funcGen.Function[value.Value]
+}
+
+func (c closureAccess) getFloat(st funcGen.Stack[value.Value], i int, f funcGen.Function[value.Value]) (float64, error) {
+	val, err := f.Eval(st, c.items[i])
 	if err != nil {
 		return 0, err
 	}
@@ -838,6 +785,134 @@ func getFloat(st funcGen.Stack[value.Value], item value.Value, f value.Closure) 
 		return fval, nil
 	}
 	return 0, errors.New("function must return a float value")
+}
+
+func (c closureAccess) getT(st funcGen.Stack[value.Value], i int) (float64, error) {
+	return c.getFloat(st, i, c.tc)
+}
+
+func (c closureAccess) getY(st funcGen.Stack[value.Value], i int) (float64, error) {
+	return c.getFloat(st, i, c.yc)
+}
+
+type listAccess struct {
+	items []value.Value
+}
+
+func (l listAccess) getSlice(st funcGen.Stack[value.Value], i int) ([]value.Value, error) {
+	if p, ok := l.items[i].(*value.List); ok {
+		s, err := p.ToSlice(st)
+		if err != nil {
+			return nil, err
+		}
+		if len(s) < 2 {
+			return nil, fmt.Errorf("list must contain at least two items to get time")
+		}
+		return s, nil
+	}
+	return nil, fmt.Errorf("listAccess requires a list as items")
+}
+
+func (l listAccess) getT(st funcGen.Stack[value.Value], i int) (float64, error) {
+	sl, err := l.getSlice(st, i)
+	if err != nil {
+		return 0, err
+	}
+	if t, ok := sl[0].ToFloat(); ok {
+		return t, nil
+	}
+	return 0, fmt.Errorf("first item of list must be a float to get time")
+}
+
+func (l listAccess) getY(st funcGen.Stack[value.Value], i int) (float64, error) {
+	sl, err := l.getSlice(st, i)
+	if err != nil {
+		return 0, err
+	}
+	if y, ok := sl[1].ToFloat(); ok {
+		return y, nil
+	}
+	return 0, fmt.Errorf("first item of list must be a float to get a value")
+}
+
+func listMethods() value.MethodMap {
+	return value.MethodMap{
+		"errorBandEntrance": value.MethodAtType(4, func(list *value.List, st funcGen.Stack[value.Value]) (value.Value, error) {
+			items, err := list.ToSlice(st)
+			if err != nil {
+				return nil, err
+			}
+
+			var valStackindex int
+			var data dataInterface
+			switch st.Size() {
+			case 3:
+				valStackindex = 1
+				data = listAccess{items: items}
+			case 5:
+				valStackindex = 3
+				if tc, ok := st.Get(1).ToClosure(); ok {
+					if yc, ok := st.Get(2).ToClosure(); ok {
+						data = closureAccess{items: items, tc: tc, yc: yc}
+						break
+					}
+				}
+				return nil, fmt.Errorf("errorBandEntrance: first two arguments needs to be functions")
+			default:
+				return nil, fmt.Errorf("errorBandEntrance requires two or four arguments")
+			}
+			if val, ok := st.Get(valStackindex).ToFloat(); ok {
+				if dist, ok := st.Get(valStackindex + 1).ToFloat(); ok {
+
+					lastMatchingIndex := -1
+					y1 := 0.0
+					for i := len(items) - 1; i >= 0; i-- {
+						y, err := data.getY(st, i)
+						if err != nil {
+							return nil, err
+						}
+						match := math.Abs(y-val) <= dist
+						if match {
+							lastMatchingIndex = i
+							y1 = y
+						} else {
+							break
+						}
+					}
+					if lastMatchingIndex < 0 {
+						float, err := data.getT(st, len(items)-1)
+						return value.Float(float), err
+					} else if lastMatchingIndex == 0 {
+						float, err := data.getT(st, 0)
+						return value.Float(float), err
+					}
+					t1, err := data.getT(st, lastMatchingIndex)
+					if err != nil {
+						return nil, err
+					}
+					y0, err := data.getY(st, lastMatchingIndex-1)
+					if err != nil {
+						return nil, err
+					}
+					t0, err := data.getT(st, lastMatchingIndex-1)
+					if err != nil {
+						return nil, err
+					}
+					if y0 < val {
+						t := (val-dist-y0)/(y1-y0)*(t1-t0) + t0
+						return value.Float(t), nil
+					} else {
+						t := (y0-val-dist)/(y0-y1)*(t1-t0) + t0
+						return value.Float(t), nil
+					}
+				}
+			}
+			return nil, fmt.Errorf("errorBandEntrance requires two floats as value and distance")
+		}).SetMethodDescription("t_func(item) float", "y_func(item) float", "value", "distance",
+			"Returns the time at which the values enters the error band defined by value and distance. "+
+				"If only two arguments are given, these are value and distance. In this case, the list "+
+				"must contain lists with two numbers each.").VarArgsMethod(2, 4),
+	}
 }
 
 func getLinear(st funcGen.Stack[value.Value], i int) (*Linear, bool) {
