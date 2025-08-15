@@ -1037,12 +1037,12 @@ func (r *GuiElements) GetType() value.Type {
 }
 
 func (r *GuiElements) newSlider(name string, def, min, max float64) value.Value {
-	for i, sl := range r.elements {
-		if sl.Name() == name {
+	for i, el := range r.elements {
+		if el.Name() == name {
 			if i < len(r.values) {
-				return sl.FromValue(r.values[i])
+				return el.FromValue(r.values[i])
 			}
-			return sl.Def()
+			return el.Def()
 		}
 	}
 
@@ -1062,17 +1062,27 @@ func (r *GuiElements) newSlider(name string, def, min, max float64) value.Value 
 }
 
 func (r *GuiElements) newSelect(items []string) value.Value {
-	for i, sl := range r.elements {
-		if sl.Name() == items[0] {
+	name := items[0]
+	items = items[1:]
+	for i, el := range r.elements {
+		if el.Name() == name {
 			if i < len(r.values) {
-				return sl.FromValue(r.values[i])
+				return el.FromValue(r.values[i])
 			}
-			return sl.Def()
+			return el.Def()
 		}
+	}
+	for i, item := range items {
+		item = strings.TrimSpace(item)
+		item = strings.ReplaceAll(item, ",", ";")
+		if item == "" {
+			item = "-"
+		}
+		items[i] = item
 	}
 
 	i := len(r.elements)
-	sel := Select{name: items[0], items: items[1:]}
+	sel := Select{name: name, items: items}
 	r.elements = append(r.elements, sel)
 	if i < len(r.values) {
 		return sel.FromValue(r.values[i])
