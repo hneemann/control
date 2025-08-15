@@ -959,7 +959,7 @@ func (s Slider) Html(val string, elements, n int) string {
 	if val == "" {
 		val = strconv.Itoa(int((s.def-s.min)/(s.max-s.min)*1000 + 0.5))
 	}
-	html := fmt.Sprintf(`<div>%s:</div><div><input oninput="updateByGui(%d)" type="range" min="0" max="1000" value="%s" id="guiElement-%d" class="range-slider"/></div>`, s.name, elements, val, n)
+	html := fmt.Sprintf(`<div>%s:</div><input oninput="updateByGui(%d)" type="range" min="0" max="1000" value="%s" id="guiElement-%d" class="range-slider"/>`, s.name, elements, val, n)
 	return html
 }
 
@@ -985,13 +985,12 @@ func (s Select) Html(val string, elements, n int) string {
 		val = s.items[0]
 	}
 	sb := strings.Builder{}
-	sb.WriteString(fmt.Sprintf("<div><label for=\"guiElement-%d\">%s:</label></div><div>", n, s.name))
+	sb.WriteString(fmt.Sprintf("<label for=\"guiElement-%d\">%s:</label><div>", n, s.name))
 	sb.WriteString(fmt.Sprintf("<select onchange=\"updateByGui(%d)\" id=\"guiElement-%d\">", elements, n))
 	for _, item := range s.items {
 		sb.WriteString(fmt.Sprintf("<option value=\"%s\">%s</option>", item, item))
 	}
-	sb.WriteString("</select>")
-	sb.WriteString("</div>")
+	sb.WriteString("</select></div>")
 	return sb.String()
 }
 

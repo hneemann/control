@@ -31,7 +31,7 @@ math {
 }
 
 input.range-slider {
-    width: 97%;
+    width: calc( 100% - 0.5em);
 }
 div.gui-container {
     display: grid;

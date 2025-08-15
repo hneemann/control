@@ -44,7 +44,7 @@
         padding: 0;
     }
     #result {
-        max-height: 50vh;
+        max-height: 70vh;
         overflow:scroll;
     }
     div.main {
@@ -203,7 +203,7 @@ img.icon {
 }
 
 input.range-slider {
-    width: 97%;
+    width: calc( 100% - 0.5em);
 }
 div.gui-container {
     display: grid;
