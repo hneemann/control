@@ -33,20 +33,22 @@ math {
 input.range-slider {
     width: 97%;
 }
-div.slider-container {
+div.gui-container {
     display: grid;
     grid-template-columns: min-content 1fr;
+    margin: 0.5em;
+    text-align: left;
 }
 
 div.div-main {
     text-align: center;
 }
 
-div#slider-inner {
+div#gui-inner {
     text-align: center;
 }
 
-div:has( div.slider-container ) {
+div:has( div.gui-container ) {
     height: 100vh;
     display: grid;
     grid-template-rows: min-content 1fr;

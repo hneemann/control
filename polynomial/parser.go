@@ -28,7 +28,7 @@ var (
 	LinearValueType          value.Type
 	BlockFactoryValueType    value.Type
 	TwoPortValueType         value.Type
-	RangeSliderType          value.Type
+	GuiElementsType          value.Type
 )
 
 type BlockFactoryValue struct {
@@ -927,142 +927,216 @@ func getLinear(st funcGen.Stack[value.Value], i int) (*Linear, bool) {
 	return nil, false
 }
 
+type GuiElement interface {
+	Name() string
+	FromValue(val string) value.Value
+	Def() value.Value
+	Html(val string, elements, n int) string
+}
+
 type Slider struct {
 	name          string
 	def, min, max float64
 }
-type RangeSlider struct {
-	sliders []Slider
-	values  []int
+
+func (s Slider) Name() string {
+	return s.name
 }
 
-func NewSlider(def string) *RangeSlider {
-	var values []int
-	s := strings.Split(def, ",")
-	for _, st := range s {
-		v, err := strconv.Atoi(st)
-		if err != nil {
-			break
-		}
-		values = append(values, v)
+func (s Slider) FromValue(val string) value.Value {
+	v, err := strconv.Atoi(val)
+	if err != nil {
+		return value.Float(s.def)
 	}
-	return &RangeSlider{values: values}
+	return value.Float(float64(v)*(s.max-s.min)/1000 + s.min)
 }
 
-func (r *RangeSlider) ToList() (*value.List, bool) {
+func (s Slider) Def() value.Value {
+	return value.Float(s.def)
+}
+
+func (s Slider) Html(val string, elements, n int) string {
+	if val == "" {
+		val = strconv.Itoa(int((s.def-s.min)/(s.max-s.min)*1000 + 0.5))
+	}
+	html := fmt.Sprintf(`<div>%s:</div><div><input oninput="updateByGui(%d)" type="range" min="0" max="1000" value="%s" id="guiElement-%d" class="range-slider"/></div>`, s.name, elements, val, n)
+	return html
+}
+
+type Select struct {
+	name  string
+	items []string
+}
+
+func (s Select) Name() string {
+	return s.name
+}
+
+func (s Select) FromValue(val string) value.Value {
+	return value.String(val)
+}
+
+func (s Select) Def() value.Value {
+	return value.String(s.items[0])
+}
+
+func (s Select) Html(val string, elements, n int) string {
+	if val == "" {
+		val = s.items[0]
+	}
+	sb := strings.Builder{}
+	sb.WriteString(fmt.Sprintf("<div><label for=\"guiElement-%d\">%s:</label></div><div>", n, s.name))
+	sb.WriteString(fmt.Sprintf("<select onchange=\"updateByGui(%d)\" id=\"guiElement-%d\">", elements, n))
+	for _, item := range s.items {
+		sb.WriteString(fmt.Sprintf("<option value=\"%s\">%s</option>", item, item))
+	}
+	sb.WriteString("</select>")
+	sb.WriteString("</div>")
+	return sb.String()
+}
+
+type GuiElements struct {
+	elements []GuiElement
+	values   []string
+}
+
+func NewGuiElements(def string) *GuiElements {
+	values := strings.Split(def, ",")
+	return &GuiElements{values: values}
+}
+
+func (r *GuiElements) ToList() (*value.List, bool) {
 	return nil, false
 }
 
-func (r *RangeSlider) ToMap() (value.Map, bool) {
+func (r *GuiElements) ToMap() (value.Map, bool) {
 	return value.Map{}, false
 }
 
-func (r *RangeSlider) ToInt() (int, bool) {
+func (r *GuiElements) ToInt() (int, bool) {
 	return 0, false
 }
 
-func (r *RangeSlider) ToFloat() (float64, bool) {
+func (r *GuiElements) ToFloat() (float64, bool) {
 	return 0, false
 }
 
-func (r *RangeSlider) ToString(_ funcGen.Stack[value.Value]) (string, error) {
-	return "Slider", nil
+func (r *GuiElements) ToString(_ funcGen.Stack[value.Value]) (string, error) {
+	return "gui", nil
 }
 
-func (r *RangeSlider) ToBool() (bool, bool) {
+func (r *GuiElements) ToBool() (bool, bool) {
 	return false, false
 }
 
-func (r *RangeSlider) ToClosure() (funcGen.Function[value.Value], bool) {
-	return funcGen.Function[value.Value]{
-		Func: func(st funcGen.Stack[value.Value], _ []value.Value) (value.Value, error) {
-			if name, ok := st.Get(0).(value.String); ok {
-				if def, ok := st.Get(1).ToFloat(); ok {
-					if min, ok := st.Get(2).ToFloat(); ok {
-						if max, ok := st.Get(3).ToFloat(); ok {
-							return r.create(string(name), def, min, max), nil
-						}
-					}
-				}
-			}
-			return nil, fmt.Errorf("closure requires a string and three floats as arguments")
-		},
-		Args:   4,
-		IsPure: false,
-	}, true
+func (r *GuiElements) ToClosure() (funcGen.Function[value.Value], bool) {
+	return funcGen.Function[value.Value]{}, false
 }
 
-func (r *RangeSlider) GetType() value.Type {
-	return RangeSliderType
+func (r *GuiElements) GetType() value.Type {
+	return GuiElementsType
 }
 
-func (r *RangeSlider) create(name string, def, min, max float64) value.Value {
-	for i, sl := range r.sliders {
-		if sl.name == name {
+func (r *GuiElements) newSlider(name string, def, min, max float64) value.Value {
+	for i, sl := range r.elements {
+		if sl.Name() == name {
 			if i < len(r.values) {
-				return value.Float(float64(r.values[i])*(sl.max-sl.min)/1000 + sl.min)
+				return sl.FromValue(r.values[i])
 			}
-			return value.Float(sl.def)
+			return sl.Def()
 		}
 	}
 
-	i := len(r.sliders)
+	i := len(r.elements)
 	if min > max {
 		min, max = max, min
 	}
 	if def < min || def > max {
 		def = (min + max) / 2
 	}
-	r.sliders = append(r.sliders, Slider{name: name, def: def, min: min, max: max})
+	slider := Slider{name: name, def: def, min: min, max: max}
+	r.elements = append(r.elements, slider)
 	if i < len(r.values) {
-		return value.Float(float64(r.values[i])*(max-min)/1000 + min)
+		return slider.FromValue(r.values[i])
 	}
-	return value.Float(def)
+	return slider.Def()
 }
 
-func (r *RangeSlider) Wrap(html template.HTML) template.HTML {
-	if len(r.sliders) == 0 {
+func (r *GuiElements) newSelect(items []string) value.Value {
+	for i, sl := range r.elements {
+		if sl.Name() == items[0] {
+			if i < len(r.values) {
+				return sl.FromValue(r.values[i])
+			}
+			return sl.Def()
+		}
+	}
+
+	i := len(r.elements)
+	sel := Select{name: items[0], items: items[1:]}
+	r.elements = append(r.elements, sel)
+	if i < len(r.values) {
+		return sel.FromValue(r.values[i])
+	}
+	return sel.Def()
+}
+
+func (r *GuiElements) Wrap(html template.HTML) template.HTML {
+	if len(r.elements) == 0 {
 		return html
 	}
 	sb := strings.Builder{}
-	sb.WriteString(`<div class="slider-container">`)
-	for i, sl := range r.sliders {
-		var val int
+	sb.WriteString(`<div class="gui-container">`)
+	for i, el := range r.elements {
 		if i < len(r.values) {
-			val = r.values[i]
+			sb.WriteString(el.Html(r.values[i], len(r.elements), i))
 		} else {
-			val = int((sl.def-sl.min)/(sl.max-sl.min)*1000 + 0.5)
+			sb.WriteString(el.Html("", len(r.elements), i))
 		}
-		sb.WriteString(fmt.Sprintf(`<div>%s</div><div><input oninput="slider(%d)" type="range" min="0" max="1000" value="%d" id="slider-%d" class="range-slider"/></div>`, sl.name, len(r.sliders), val, i))
 	}
-	sb.WriteString(`</div><div id="slider-inner">`)
+	sb.WriteString(`</div><div id="gui-inner">`)
 	return template.HTML(sb.String()) + html + "</div>"
 }
 
-func (r *RangeSlider) IsSlider() bool {
-	return len(r.sliders) > 0
+func (r *GuiElements) IsGui() bool {
+	return len(r.elements) > 0
 }
 
-func rangeSliderMethods() value.MethodMap {
+func guiMethods() value.MethodMap {
 	return value.MethodMap{
-		"create": value.MethodAtType(4, func(r *RangeSlider, st funcGen.Stack[value.Value]) (value.Value, error) {
+		"slider": value.MethodAtType(4, func(r *GuiElements, st funcGen.Stack[value.Value]) (value.Value, error) {
 			if name, ok := st.Get(1).(value.String); ok {
 				if def, ok := st.Get(2).ToFloat(); ok {
 					if st.Size() < 5 {
-						return r.create(string(name), def, 0, def*2), nil
+						return r.newSlider(string(name), def, 0, def*2), nil
 					}
 					if min, ok := st.Get(3).ToFloat(); ok {
 						if max, ok := st.Get(4).ToFloat(); ok {
-							return r.create(string(name), def, min, max), nil
+							return r.newSlider(string(name), def, min, max), nil
 						}
 					}
 				}
 			}
-			return nil, fmt.Errorf("create requires a string and three floats as arguments")
+			return nil, fmt.Errorf("slider requires a string and three floats as arguments")
 		}).SetMethodDescription("name", "initial", "min", "max", "Creates a new slider and returns the slider value. "+
 			"The name is used to identify the slider. The initial value is the default value of the slider. "+
 			"The min and max values are the bounds of the slider. "+
 			"If min and max are missing, min is set to zero and max is set to two times initial.").VarArgsMethod(2, 4).Pure(false),
+		"select": value.MethodAtType(-1, func(r *GuiElements, st funcGen.Stack[value.Value]) (value.Value, error) {
+			var items []string
+			for i := 1; i < st.Size(); i++ {
+				if s, ok := st.Get(i).(value.String); ok {
+					items = append(items, string(s))
+				} else {
+					return nil, fmt.Errorf("select requires strings as arguments")
+				}
+			}
+			if len(items) < 3 {
+				return nil, fmt.Errorf("select requires at least two items")
+			}
+			return r.newSelect(items), nil
+		}).SetMethodDescription("entries...", "Creates a new select box. The entries must be strings and the "+
+			"first entry is the default entry. The return value of this method call is the selected entry.").Pure(false),
 	}
 }
 
@@ -1077,7 +1151,7 @@ var Parser = value.New().
 		TwoPortValueType = fg.RegisterType("twoPort")
 		BodeValueType = fg.RegisterType("bodePlot")
 		BodePlotContentValueType = fg.RegisterType("bodePlotContent")
-		RangeSliderType = fg.RegisterType("slider")
+		GuiElementsType = fg.RegisterType("gui")
 
 		ParserFunctionGenerator = fg
 	}).
@@ -1090,7 +1164,7 @@ var Parser = value.New().
 	RegisterMethods(BodePlotContentValueType, bodePlotContentMethods()).
 	RegisterMethods(ComplexValueType, cmplxMethods()).
 	RegisterMethods(TwoPortValueType, twoPortMethods()).
-	RegisterMethods(RangeSliderType, rangeSliderMethods()).
+	RegisterMethods(GuiElementsType, guiMethods()).
 	Modify(grParser.Setup).
 	AddConstant("_i", Complex(complex(0, 1))).
 	AddConstant("s", Polynomial{0, 1}).

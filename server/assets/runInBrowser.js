@@ -1,7 +1,7 @@
-function slider(n) {
+function updateByGui(n) {
     let slValues = ""
     for (let i = 0; i < n; i++) {
-        let sl = document.getElementById('slider-' + i);
+        let sl = document.getElementById('guiElement-' + i);
         if (slValues !== "") {
             slValues += ",";
         }
@@ -9,7 +9,7 @@ function slider(n) {
     }
 
     let source = document.getElementById('source');
-    let result = document.getElementById('slider-inner');
+    let result = document.getElementById('gui-inner');
 
     result.innerHTML = generateOutput(source.value, slValues);
 }

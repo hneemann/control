@@ -122,20 +122,20 @@ func CreateExamples(examples []Example) http.HandlerFunc {
 func Execute(writer http.ResponseWriter, request *http.Request) {
 	src := strings.TrimSpace(request.FormValue("data"))
 
-	sliderDef := strings.TrimSpace(request.FormValue("slider"))
+	guiDef := strings.TrimSpace(request.FormValue("gui"))
 
 	var resHtml template.HTML
 	if src != "" {
 		start := time.Now()
-		fu, err := polynomial.Parser.Generate(src, "slider")
+		fu, err := polynomial.Parser.Generate(src, "gui")
 		if err == nil {
 			var res value.Value
-			sliders := polynomial.NewSlider(sliderDef)
-			res, err = fu(funcGen.NewStack[value.Value](sliders))
+			gui := polynomial.NewGuiElements(guiDef)
+			res, err = fu(funcGen.NewStack[value.Value](gui))
 			if err == nil {
 				resHtml, _, err = export.ToHtml(res, 50, customHtml, true)
-				if sliderDef == "" && sliders.IsSlider() {
-					resHtml = sliders.Wrap(resHtml)
+				if guiDef == "" && gui.IsGui() {
+					resHtml = gui.Wrap(resHtml)
 				}
 			}
 		}

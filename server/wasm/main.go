@@ -25,22 +25,22 @@ func parserWrapper() js.Func {
 		}
 
 		source := args[0].String()
-		sliderValues := ""
+		guiValues := ""
 		if len(args) > 1 {
-			sliderValues = args[1].String()
+			guiValues = args[1].String()
 		}
 
 		var expHtml template.HTML
-		fu, err := polynomial.Parser.Generate(source, "slider")
+		fu, err := polynomial.Parser.Generate(source, "gui")
 		if fu != nil {
 			// call the source
-			slider := polynomial.NewSlider(sliderValues)
+			gui := polynomial.NewGuiElements(guiValues)
 			var res value.Value
-			res, err = fu(funcGen.NewStack[value.Value](slider))
+			res, err = fu(funcGen.NewStack[value.Value](gui))
 			if err == nil {
 				expHtml, _, err = export.ToHtml(res, 50, nil, true)
-				if sliderValues == "" && slider.IsSlider() {
-					expHtml = slider.Wrap(expHtml)
+				if guiValues == "" && gui.IsGui() {
+					expHtml = gui.Wrap(expHtml)
 				}
 			}
 		}

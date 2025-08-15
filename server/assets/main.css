@@ -205,7 +205,8 @@ img.icon {
 input.range-slider {
     width: 97%;
 }
-div.slider-container {
+div.gui-container {
     display: grid;
     grid-template-columns: min-content 1fr;
+    margin-bottom: 0.5em;
 }
