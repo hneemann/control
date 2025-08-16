@@ -10,7 +10,7 @@ import (
 type DataContent struct {
 	Name   string
 	Unit   string
-	Points PointsPath
+	Points Points
 }
 
 type Data struct {
@@ -114,6 +114,11 @@ func (c *csv) skipValue(b *bytes.Buffer) {
 	b.WriteString(",\"\"")
 }
 
+func (d *Data) Add(content DataContent) *Data {
+	d.DataContent = append(d.DataContent, content)
+	return d
+}
+
 func (d *Data) DatFile() ([]byte, error) {
 	return d.writeFile(dat{})
 }
@@ -146,7 +151,7 @@ func (d *Data) writeFile(f format) ([]byte, error) {
 		c := make(chan pointErr)
 		sy[i] = &dataSync{c: c, name: content.Name}
 		go func() {
-			for point, err := range content.Points.Points {
+			for point, err := range content.Points {
 				select {
 				case c <- pointErr{point, err}:
 					if err != nil {

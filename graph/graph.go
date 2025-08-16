@@ -63,8 +63,9 @@ func sqr(x float64) float64 {
 	return x * x
 }
 
+type Points func(func(Point, error) bool)
 type PointsPath struct {
-	Points func(func(Point, error) bool)
+	Points Points
 	Closed bool
 }
 

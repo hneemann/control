@@ -683,7 +683,7 @@ func listMethods() value.MethodMap {
 		"graph": value.MethodAtType(2, func(list *value.List, st funcGen.Stack[value.Value]) (value.Value, error) {
 			switch st.Size() {
 			case 1:
-				s := graph.Scatter{Points: listToPoints(list)}
+				s := graph.Scatter{Points: graph.PointsPath{Points: listToPoints(list)}}
 				if size, ok := list.SizeIfKnown(); ok && size > 200 {
 					s.LineStyle = graph.Black
 				}
@@ -691,7 +691,7 @@ func listMethods() value.MethodMap {
 			case 3:
 				if xc, ok := st.Get(1).ToClosure(); ok && xc.Args == 1 {
 					if yc, ok := st.Get(2).ToClosure(); ok && yc.Args == 1 {
-						s := graph.Scatter{Points: listFuncToPoints(list, xc, yc)}
+						s := graph.Scatter{Points: graph.PointsPath{Points: listFuncToPoints(list, xc, yc)}}
 						if size, ok := list.SizeIfKnown(); ok && size > 200 {
 							s.LineStyle = graph.Black
 						}
@@ -1153,86 +1153,82 @@ func GetStyle(st funcGen.Stack[value.Value], index int, defStyle *graph.Style) (
 	return StyleValue{}, fmt.Errorf("argument %d needs to be a style or a color number", index)
 }
 
-func listToPoints(list *value.List) graph.PointsPath {
-	return graph.PointsPath{
-		Points: func(yield func(graph.Point, error) bool) {
-			st := funcGen.NewEmptyStack[value.Value]()
-			err := list.Iterate(st, func(v value.Value) error {
-				if vec, ok := v.ToList(); ok {
-					slice, err := vec.ToSlice(st)
-					if err != nil {
-						return err
-					}
-					if len(slice) != 2 {
-						return fmt.Errorf("list elements needs to contain two floats")
-					}
-					if x, ok := slice[0].ToFloat(); ok {
-						if y, ok := slice[1].ToFloat(); ok {
-							if !yield(graph.Point{X: x, Y: y}, nil) {
-								return iterator.SBC
-							}
-						} else {
-							return fmt.Errorf("list elements needs to contain two floats")
+func listToPoints(list *value.List) graph.Points {
+	return func(yield func(graph.Point, error) bool) {
+		st := funcGen.NewEmptyStack[value.Value]()
+		err := list.Iterate(st, func(v value.Value) error {
+			if vec, ok := v.ToList(); ok {
+				slice, err := vec.ToSlice(st)
+				if err != nil {
+					return err
+				}
+				if len(slice) != 2 {
+					return fmt.Errorf("list elements needs to contain two floats")
+				}
+				if x, ok := slice[0].ToFloat(); ok {
+					if y, ok := slice[1].ToFloat(); ok {
+						if !yield(graph.Point{X: x, Y: y}, nil) {
+							return iterator.SBC
 						}
 					} else {
 						return fmt.Errorf("list elements needs to contain two floats")
 					}
-				} else if p, ok := v.(ToPoint); ok {
-					if !yield(p.ToPoint(), nil) {
-						return iterator.SBC
-					}
-				} else if p, ok := v.ToFloat(); ok {
-					if !yield(graph.Point{X: p, Y: 0}, nil) {
-						return iterator.SBC
-					}
 				} else {
-					return fmt.Errorf("list elements must themselves be lists containing two floats such as [x,y]")
+					return fmt.Errorf("list elements needs to contain two floats")
 				}
-				return nil
-			})
-			if err != nil && err != iterator.SBC {
-				yield(graph.Point{}, err)
+			} else if p, ok := v.(ToPoint); ok {
+				if !yield(p.ToPoint(), nil) {
+					return iterator.SBC
+				}
+			} else if p, ok := v.ToFloat(); ok {
+				if !yield(graph.Point{X: p, Y: 0}, nil) {
+					return iterator.SBC
+				}
+			} else {
+				return fmt.Errorf("list elements must themselves be lists containing two floats such as [x,y]")
 			}
-		},
+			return nil
+		})
+		if err != nil && err != iterator.SBC {
+			yield(graph.Point{}, err)
+		}
 	}
 }
 
-func listFuncToPoints(list *value.List, xc funcGen.Function[value.Value], yc funcGen.Function[value.Value]) graph.PointsPath {
-	return graph.PointsPath{
-		Points: func(yield func(graph.Point, error) bool) {
-			st := funcGen.NewEmptyStack[value.Value]()
-			err := list.Iterate(st, func(v value.Value) error {
-				var x float64
-				xv, err := xc.Eval(st, v)
-				if err != nil {
-					return err
-				}
-				if xf, ok := xv.ToFloat(); ok {
-					x = xf
-				} else {
-					return fmt.Errorf("x-function needs to return a float")
-				}
-
-				var y float64
-				yv, err := yc.Eval(st, v)
-				if err != nil {
-					return err
-				}
-				if yf, ok := yv.ToFloat(); ok {
-					y = yf
-				} else {
-					return fmt.Errorf("y-function needs to return a float")
-				}
-
-				if !yield(graph.Point{X: x, Y: y}, nil) {
-					return iterator.SBC
-				}
-				return nil
-			})
-			if err != nil && err != iterator.SBC {
-				yield(graph.Point{}, err)
+func listFuncToPoints(list *value.List, xc funcGen.Function[value.Value], yc funcGen.Function[value.Value]) graph.Points {
+	return func(yield func(graph.Point, error) bool) {
+		st := funcGen.NewEmptyStack[value.Value]()
+		err := list.Iterate(st, func(v value.Value) error {
+			var x float64
+			xv, err := xc.Eval(st, v)
+			if err != nil {
+				return err
 			}
-		},
+			if xf, ok := xv.ToFloat(); ok {
+				x = xf
+			} else {
+				return fmt.Errorf("x-function needs to return a float")
+			}
+
+			var y float64
+			yv, err := yc.Eval(st, v)
+			if err != nil {
+				return err
+			}
+			if yf, ok := yv.ToFloat(); ok {
+				y = yf
+			} else {
+				return fmt.Errorf("y-function needs to return a float")
+			}
+
+			if !yield(graph.Point{X: x, Y: y}, nil) {
+				return iterator.SBC
+			}
+			return nil
+		})
+		if err != nil && err != iterator.SBC {
+			yield(graph.Point{}, err)
+		}
 	}
 }
 
