@@ -1000,7 +1000,14 @@ type GuiElements struct {
 }
 
 func NewGuiElements(def string) *GuiElements {
-	values := strings.Split(def, ",")
+	var values []string
+	def = strings.TrimSpace(def)
+	if def != "" {
+		values = strings.Split(def, ",")
+		for i := range values {
+			values[i] = strings.TrimSpace(values[i])
+		}
+	}
 	return &GuiElements{values: values}
 }
 
@@ -1144,7 +1151,7 @@ func guiMethods() value.MethodMap {
 				return nil, fmt.Errorf("select requires at least two items")
 			}
 			return r.newSelect(items), nil
-		}).SetMethodDescription("entries...", "Creates a new select box. The entries must be strings and the "+
+		}).SetMethodDescription("strings...", "Creates a new select box. The entries must be strings and the "+
 			"first entry is the default entry. The return value of this method call is the selected entry.").Pure(false),
 	}
 }
