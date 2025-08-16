@@ -64,12 +64,13 @@ func sqr(x float64) float64 {
 }
 
 type Points func(func(Point, error) bool)
+
 type PointsPath struct {
 	Points Points
 	Closed bool
 }
 
-func PointsFromPoint(p Point) PointsPath {
+func PathFromPoint(p Point) PointsPath {
 	return PointsPath{
 		Points: func(yield func(Point, error) bool) {
 			yield(p, nil)
@@ -77,7 +78,7 @@ func PointsFromPoint(p Point) PointsPath {
 	}
 }
 
-func PointsFromSlice(pointList []Point) PointsPath {
+func PathFromPointSlice(pointList []Point) PointsPath {
 	return PointsPath{
 		Points: func(yield func(Point, error) bool) {
 			for _, point := range pointList {

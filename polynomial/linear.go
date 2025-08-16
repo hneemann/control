@@ -651,7 +651,7 @@ func (l *Linear) CreateEvans(kMin, kMax float64) ([]graph.PlotContent, error) {
 		polesMarker := graph.NewCrossMarker(4)
 		curveList = append(curveList,
 			graph.Scatter{
-				Points: graph.PointsFromSlice(p.ToPoints()),
+				Points: graph.PathFromPointSlice(p.ToPoints()),
 				ShapeLineStyle: graph.ShapeLineStyle{
 					Shape:      polesMarker,
 					ShapeStyle: markerStyle,
@@ -664,7 +664,7 @@ func (l *Linear) CreateEvans(kMin, kMax float64) ([]graph.PlotContent, error) {
 		zeroMarker := graph.NewCircleMarker(4)
 		curveList = append(curveList,
 			graph.Scatter{
-				Points: graph.PointsFromSlice(z.ToPoints()),
+				Points: graph.PathFromPointSlice(z.ToPoints()),
 				ShapeLineStyle: graph.ShapeLineStyle{
 					Shape:      zeroMarker,
 					ShapeStyle: markerStyle,
@@ -904,7 +904,7 @@ func RootLocus(cpp PolynomialProvider, kMin, kMax float64, parName string) ([]gr
 	}
 
 	minMarker := graph.Scatter{
-		Points: graph.PointsFromSlice(ecs.evPoints[0].points),
+		Points: graph.PathFromPointSlice(ecs.evPoints[0].points),
 		ShapeLineStyle: graph.ShapeLineStyle{
 			Shape:      graph.NewSquareMarker(4),
 			ShapeStyle: graph.Black.SetStrokeWidth(2),
@@ -912,7 +912,7 @@ func RootLocus(cpp PolynomialProvider, kMin, kMax float64, parName string) ([]gr
 		Title: fmt.Sprintf("%s = %g", parName, kMin),
 	}
 	maxMarker := graph.Scatter{
-		Points: graph.PointsFromSlice(ecs.evPoints[len(ecs.evPoints)-1].points),
+		Points: graph.PathFromPointSlice(ecs.evPoints[len(ecs.evPoints)-1].points),
 		ShapeLineStyle: graph.ShapeLineStyle{
 			Shape:      graph.NewCircleMarker(4),
 			ShapeStyle: graph.Black.SetStrokeWidth(2),
@@ -1161,11 +1161,11 @@ func (l *Linear) Nyquist(sMax float64, alsoNeg bool) ([]graph.PlotContent, error
 			return nil, err
 		}
 		cp = append(cp, neg)
-		cp = append(cp, graph.Scatter{Points: graph.PointsFromPoint(graph.Point{X: -1, Y: 0}), ShapeLineStyle: graph.ShapeLineStyle{Shape: graph.NewCrossMarker(4), ShapeStyle: graph.Red}})
+		cp = append(cp, graph.Scatter{Points: graph.PathFromPoint(graph.Point{X: -1, Y: 0}), ShapeLineStyle: graph.ShapeLineStyle{Shape: graph.NewCrossMarker(4), ShapeStyle: graph.Red}})
 	}
 	zeroMarker := graph.NewCircleMarker(4)
 	if isZero {
-		cp = append(cp, graph.Scatter{Points: graph.PointsFromPoint(graph.Point{X: real(cZero), Y: imag(cZero)}), ShapeLineStyle: graph.ShapeLineStyle{Shape: zeroMarker, ShapeStyle: graph.Black}, Title: "ω=0"})
+		cp = append(cp, graph.Scatter{Points: graph.PathFromPoint(graph.Point{X: real(cZero), Y: imag(cZero)}), ShapeLineStyle: graph.ShapeLineStyle{Shape: zeroMarker, ShapeStyle: graph.Black}, Title: "ω=0"})
 	}
 	pos, err := l.NyquistPos(sMax)
 	if err != nil {
