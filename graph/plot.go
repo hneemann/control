@@ -107,7 +107,7 @@ func (p *Plot) DrawTo(canvas Canvas) error {
 	}
 
 	if p.FillBackground {
-		canvas.DrawPath(rect.Poly(), White.SetStrokeWidth(0).SetFill(White))
+		canvas.DrawPath(rect.Path(), White.SetStrokeWidth(0).SetFill(White))
 	}
 
 	xBounds, yBounds, err := p.calcBounds()
@@ -258,10 +258,26 @@ func (p *Plot) DrawTo(canvas Canvas) error {
 	if p.cross {
 		xp := xTrans(0)
 		yp := yTrans(0)
-		canvas.DrawPath(NewPointsPath(false, Point{xp, innerRect.Min.Y}, Point{xp, innerRect.Max.Y}), p.Frame)
-		canvas.DrawPath(NewPointsPath(false, Point{innerRect.Min.X, yp}, Point{innerRect.Max.X, yp}), p.Frame)
+		cs := p.Frame.StrokeWidth / 2
+		al := p.textSize * 0.8
+		canvas.DrawPath(NewPointsPath(false,
+			Point{xp, innerRect.Min.Y},
+			Point{xp, innerRect.Max.Y - cs}), p.Frame)
+		canvas.DrawPath(NewPointsPath(false,
+			Point{xp - al/4, innerRect.Max.Y - al},
+			Point{xp, innerRect.Max.Y - cs},
+			Point{xp + al/4, innerRect.Max.Y - al},
+		), p.Frame)
+		canvas.DrawPath(NewPointsPath(false,
+			Point{innerRect.Min.X, yp},
+			Point{innerRect.Max.X - cs, yp}), p.Frame)
+		canvas.DrawPath(NewPointsPath(false,
+			Point{innerRect.Max.X - al, yp + al/4},
+			Point{innerRect.Max.X - cs, yp},
+			Point{innerRect.Max.X - al, yp - al/4},
+		), p.Frame)
 	} else {
-		canvas.DrawPath(innerRect.Poly(), p.Frame)
+		canvas.DrawPath(innerRect.Path(), p.Frame)
 	}
 
 	if len(legends) > 0 {
@@ -532,12 +548,17 @@ type HasTitle interface {
 	SetTitle(title string) PlotContent
 }
 
+type IsCloseable interface {
+	Close() PlotContent
+}
+
 // Function represents a mathematical function that can be plotted.
 type Function struct {
 	Function func(x float64) (float64, error)
 	Style    *Style
 	Title    string
 	Steps    int
+	closed   bool
 }
 
 func (f Function) SetLine(style *Style) PlotContent {
@@ -547,6 +568,11 @@ func (f Function) SetLine(style *Style) PlotContent {
 
 func (f Function) SetTitle(title string) PlotContent {
 	f.Title = title
+	return f
+}
+
+func (f Function) Close() PlotContent {
+	f.closed = true
 	return f
 }
 
@@ -598,6 +624,7 @@ func (f Function) DrawTo(plot *Plot, canvas Canvas) error {
 		y, err := f.Function(x)
 		return Point{x, y}, err
 	}
+	p.closed = f.closed
 	path := pFuncPath{
 		pf:   p,
 		plot: plot,
@@ -618,7 +645,7 @@ func (f Function) Legend() Legend {
 // and can have a line style for connecting the points.
 type Scatter struct {
 	ShapeLineStyle
-	Points Points
+	Points PointsPath
 	Title  string
 }
 
@@ -638,6 +665,11 @@ func (s Scatter) SetTitle(title string) PlotContent {
 	return s
 }
 
+func (s Scatter) Close() PlotContent {
+	s.Points.Closed = true
+	return s
+}
+
 func (s Scatter) String() string {
 	if s.Title != "" {
 		return fmt.Sprintf("Scatter: %s", s.Title)
@@ -647,7 +679,7 @@ func (s Scatter) String() string {
 
 func (s Scatter) Bounds() (Bounds, Bounds, error) {
 	var x, y Bounds
-	for p, err := range s.Points {
+	for p, err := range s.Points.Points {
 		if err != nil {
 			return Bounds{}, Bounds{}, err
 		}
@@ -669,7 +701,7 @@ func (s Scatter) DrawTo(_ *Plot, canvas Canvas) error {
 		canvas.DrawPath(canvas.Rect().IntersectPath(s.Points), sls.LineStyle)
 	}
 	if sls.IsShape() {
-		for p := range s.Points {
+		for p := range s.Points.Points {
 			if rect.Contains(p) {
 				canvas.DrawShape(p, sls.Shape, sls.ShapeStyle)
 			}
@@ -945,6 +977,7 @@ type ParameterFunc struct {
 	NextT    func(float64) float64
 	Style    *Style
 	Title    string
+	closed   bool
 }
 
 func (p *ParameterFunc) SetTitle(title string) PlotContent {
@@ -954,6 +987,11 @@ func (p *ParameterFunc) SetTitle(title string) PlotContent {
 
 func (p *ParameterFunc) SetLine(style *Style) PlotContent {
 	p.Style = style
+	return p
+}
+
+func (p *ParameterFunc) Close() PlotContent {
+	p.closed = true
 	return p
 }
 
@@ -1090,7 +1128,7 @@ func (p *pFuncPath) Iter(yield func(rune, Point) bool) {
 }
 
 func (p *pFuncPath) IsClosed() bool {
-	return false
+	return p.pf.closed
 }
 
 func cosAngleBetween(d0, d1 Point) float64 {

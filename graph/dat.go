@@ -10,7 +10,7 @@ import (
 type DataContent struct {
 	Name   string
 	Unit   string
-	Points Points
+	Points PointsPath
 }
 
 type Data struct {
@@ -146,7 +146,7 @@ func (d *Data) writeFile(f format) ([]byte, error) {
 		c := make(chan pointErr)
 		sy[i] = &dataSync{c: c, name: content.Name}
 		go func() {
-			for point, err := range content.Points {
+			for point, err := range content.Points.Points {
 				select {
 				case c <- pointErr{point, err}:
 					if err != nil {

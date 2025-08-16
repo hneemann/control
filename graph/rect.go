@@ -20,12 +20,10 @@ func NewRect(x0, x1, y0, y1 float64) Rect {
 	}
 }
 
-func (r Rect) Poly() SlicePath {
-	return SlicePath{
-		Elements: []PathElement{
-			{'M', r.Min}, {'L', Point{r.Max.X, r.Min.Y}},
-			{'L', r.Max}, {'L', Point{r.Min.X, r.Max.Y}}},
-		Closed: true,
+func (r Rect) Path() Path {
+	return pointsPath{
+		points: []Point{r.Min, {r.Max.X, r.Min.Y}, r.Max, {r.Min.X, r.Max.Y}},
+		closed: true,
 	}
 }
 

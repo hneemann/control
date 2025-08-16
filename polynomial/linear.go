@@ -396,13 +396,15 @@ func (e evansPoints) Swap(i, j int) {
 	e[i], e[j] = e[j], e[i]
 }
 
-func (e evansPoints) getPoints(i int) graph.Points {
-	return func(yield func(graph.Point, error) bool) {
-		for _, ep := range e {
-			if !yield(ep.points[i], nil) {
-				return
+func (e evansPoints) getPoints(i int) graph.PointsPath {
+	return graph.PointsPath{
+		Points: func(yield func(graph.Point, error) bool) {
+			for _, ep := range e {
+				if !yield(ep.points[i], nil) {
+					return
+				}
 			}
-		}
+		},
 	}
 }
 
@@ -1196,17 +1198,19 @@ func (v dataSet) set(row, col int, val float64) {
 	v.elements[row*v.cols+col] = val
 }
 
-func (v dataSet) toPoints(i0, i1 int) graph.Points {
-	return func(yield func(graph.Point, error) bool) {
-		o := 0
-		for range v.rows {
-			x := v.elements[o+i0]
-			y := v.elements[o+i1]
-			if !yield(graph.Point{X: x, Y: y}, nil) {
-				return
+func (v dataSet) toPoints(i0, i1 int) graph.PointsPath {
+	return graph.PointsPath{
+		Points: func(yield func(graph.Point, error) bool) {
+			o := 0
+			for range v.rows {
+				x := v.elements[o+i0]
+				y := v.elements[o+i1]
+				if !yield(graph.Point{X: x, Y: y}, nil) {
+					return
+				}
+				o += v.cols
 			}
-			o += v.cols
-		}
+		},
 	}
 }
 

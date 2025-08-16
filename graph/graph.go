@@ -3,7 +3,6 @@ package graph
 import (
 	"bytes"
 	"fmt"
-	"iter"
 	"math"
 )
 
@@ -64,27 +63,34 @@ func sqr(x float64) float64 {
 	return x * x
 }
 
-type Points iter.Seq2[Point, error]
+type PointsPath struct {
+	Points func(func(Point, error) bool)
+	Closed bool
+}
 
-func PointsFromPoint(p Point) Points {
-	return func(yield func(Point, error) bool) {
-		yield(p, nil)
+func PointsFromPoint(p Point) PointsPath {
+	return PointsPath{
+		Points: func(yield func(Point, error) bool) {
+			yield(p, nil)
+		},
 	}
 }
 
-func PointsFromSlice(pointList []Point) Points {
-	return func(yield func(Point, error) bool) {
-		for _, point := range pointList {
-			if !yield(point, nil) {
-				return
+func PointsFromSlice(pointList []Point) PointsPath {
+	return PointsPath{
+		Points: func(yield func(Point, error) bool) {
+			for _, point := range pointList {
+				if !yield(point, nil) {
+					return
+				}
 			}
-		}
+		},
 	}
 }
 
-func (p Points) Iter(yield func(rune, Point) bool) {
+func (p PointsPath) Iter(yield func(rune, Point) bool) {
 	r := 'M'
-	for point := range p {
+	for point := range p.Points {
 		if !yield(r, point) {
 			return
 		}
@@ -92,8 +98,8 @@ func (p Points) Iter(yield func(rune, Point) bool) {
 	}
 }
 
-func (p Points) IsClosed() bool {
-	return false
+func (p PointsPath) IsClosed() bool {
+	return p.Closed
 }
 
 type Color struct {
@@ -138,15 +144,16 @@ func NewStyle(r, g, b uint8) *Style {
 }
 
 var (
-	Black   = NewStyle(0, 0, 0)
-	Gray    = NewStyle(190, 190, 190)
-	Red     = NewStyle(255, 0, 0)
-	Green   = NewStyle(0, 255, 0)
-	Blue    = NewStyle(0, 0, 255)
-	Cyan    = NewStyle(0, 255, 255)
-	Magenta = NewStyle(255, 0, 255)
-	Yellow  = NewStyle(255, 255, 0)
-	White   = NewStyle(255, 255, 255)
+	Black     = NewStyle(0, 0, 0)
+	Gray      = NewStyle(190, 190, 190)
+	LightGray = NewStyle(222, 222, 222)
+	Red       = NewStyle(255, 0, 0)
+	Green     = NewStyle(0, 255, 0)
+	Blue      = NewStyle(0, 0, 255)
+	Cyan      = NewStyle(0, 255, 255)
+	Magenta   = NewStyle(255, 0, 255)
+	Yellow    = NewStyle(255, 255, 0)
+	White     = NewStyle(255, 255, 255)
 
 	color = []*Style{
 		NewStyle(230, 25, 75),
@@ -195,6 +202,21 @@ func (s *Style) SetStrokeWidth(sw float64) *Style {
 	} else {
 		style.Stroke = true
 	}
+	return &style
+}
+
+func (s *Style) SetTrans(tr float64) *Style {
+	var style Style
+	style = *s
+	var c uint8
+	if tr <= 0 {
+		c = 0
+	} else if tr >= 1 {
+		c = 255
+	} else {
+		c = uint8(tr * 255)
+	}
+	style.Color.A = c
 	return &style
 }
 
