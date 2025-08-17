@@ -8,7 +8,7 @@ function updateByGui(n) {
         slValues += sl.value;
     }
 
-    let source = document.getElementById('source');
+    let source = document.getElementById('gui-source');
     let result = document.getElementById('gui-inner');
 
     result.innerHTML = generateOutput(source.value, slValues);
@@ -49,7 +49,7 @@ function runSourceInWindow() {
         "  <script type=\"text/javascript\" src=\"main.js\"></script>\n"+
         "</head>\n" +
         "<body>\n"+
-        "<textarea id=\"source\" style=\"display:none;\">" + source.value + "</textarea><div class=\"div-main\">\n");
+        "<div class=\"div-main\">\n");
     myWindow.document.write(generateOutput(source.value));
     myWindow.document.write("\n</div></body>\n</html>");
     source.focus();

@@ -40,7 +40,7 @@ func parserWrapper() js.Func {
 			if err == nil {
 				expHtml, _, err = export.ToHtml(res, 50, nil, true)
 				if guiValues == "" && gui.IsGui() {
-					expHtml = gui.Wrap(expHtml)
+					expHtml = gui.Wrap(expHtml, source)
 				}
 			}
 		}

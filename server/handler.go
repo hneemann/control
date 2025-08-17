@@ -135,7 +135,7 @@ func Execute(writer http.ResponseWriter, request *http.Request) {
 			if err == nil {
 				resHtml, _, err = export.ToHtml(res, 50, customHtml, true)
 				if guiDef == "" && gui.IsGui() {
-					resHtml = gui.Wrap(resHtml)
+					resHtml = gui.Wrap(resHtml, src)
 				}
 			}
 		}

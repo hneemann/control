@@ -959,7 +959,7 @@ func (s Slider) Html(val string, elements, n int) string {
 	if val == "" {
 		val = strconv.Itoa(int((s.def-s.min)/(s.max-s.min)*1000 + 0.5))
 	}
-	html := fmt.Sprintf(`<div>%s:</div><input oninput="updateByGui(%d)" type="range" min="0" max="1000" value="%s" id="guiElement-%d" class="range-slider"/>`, s.name, elements, val, n)
+	html := fmt.Sprintf(`<div>%s:</div><input oninput="updateByGui(%d)" type="range" min="0" max="1000" value="%s" id="guiElement-%d" class="range-slider"/>`, template.HTMLEscapeString(s.name), elements, val, n)
 	return html
 }
 
@@ -985,10 +985,11 @@ func (s Select) Html(val string, elements, n int) string {
 		val = s.items[0]
 	}
 	sb := strings.Builder{}
-	sb.WriteString(fmt.Sprintf("<label for=\"guiElement-%d\">%s:</label><div>", n, s.name))
+	sb.WriteString(fmt.Sprintf("<label for=\"guiElement-%d\">%s:</label><div>", n, template.HTMLEscapeString(s.name)))
 	sb.WriteString(fmt.Sprintf("<select onchange=\"updateByGui(%d)\" id=\"guiElement-%d\">", elements, n))
 	for _, item := range s.items {
-		sb.WriteString(fmt.Sprintf("<option value=\"%s\">%s</option>", item, item))
+		ei := template.HTMLEscapeString(item)
+		sb.WriteString(fmt.Sprintf("<option value=\"%s\">%s</option>", ei, ei))
 	}
 	sb.WriteString("</select></div>")
 	return sb.String()
@@ -1097,7 +1098,7 @@ func (r *GuiElements) newSelect(items []string) value.Value {
 	return sel.Def()
 }
 
-func (r *GuiElements) Wrap(html template.HTML) template.HTML {
+func (r *GuiElements) Wrap(html template.HTML, src string) template.HTML {
 	if len(r.elements) == 0 {
 		return html
 	}
@@ -1111,7 +1112,12 @@ func (r *GuiElements) Wrap(html template.HTML) template.HTML {
 		}
 	}
 	sb.WriteString(`</div><div id="gui-inner">`)
-	return template.HTML(sb.String()) + html + "</div>"
+	sb.WriteString(string(html))
+	sb.WriteString(`</div>`)
+	sb.WriteString(`<textarea id="gui-source" style="display:none">`)
+	sb.WriteString(template.HTMLEscapeString(src))
+	sb.WriteString(`</textarea>`)
+	return template.HTML(sb.String())
 }
 
 func (r *GuiElements) IsGui() bool {
