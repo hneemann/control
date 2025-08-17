@@ -40,12 +40,15 @@ func (s *SVG) Close() error {
 	return nil
 }
 
-func (s *SVG) DrawPath(path Path, style *Style) {
+func (s *SVG) DrawPath(path Path, style *Style) error {
 	var buf bytes.Buffer
-	for m, p := range path.Iter {
-		buf.WriteRune(m)
+	for pe, err := range path.Iter {
+		if err != nil {
+			return fmt.Errorf("error writing path to svg: %w", err)
+		}
+		buf.WriteRune(pe.Mode)
 		buf.WriteRune(' ')
-		buf.WriteString(fmt.Sprintf("%.3f,%.3f ", p.X, s.rect.Max.Y-p.Y))
+		buf.WriteString(fmt.Sprintf("%.3f,%.3f ", pe.Point.X, s.rect.Max.Y-pe.Point.Y))
 	}
 	if buf.Len() > 0 {
 		if path.IsClosed() {
@@ -56,10 +59,11 @@ func (s *SVG) DrawPath(path Path, style *Style) {
 			Attr("style", styleString(style)).
 			Close()
 	}
+	return nil
 }
 
-func (s *SVG) DrawShape(a Point, shape Shape, style *Style) {
-	shape.DrawTo(TransformCanvas{transform: Translate(a), parent: s, size: s.rect}, style)
+func (s *SVG) DrawShape(a Point, shape Shape, style *Style) error {
+	return shape.DrawTo(TransformCanvas{transform: Translate(a), parent: s, size: s.rect}, style)
 }
 
 func styleString(style *Style) string {

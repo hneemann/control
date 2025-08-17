@@ -401,8 +401,6 @@ func Test_Nyquist3(t *testing.T) {
 }
 
 func TestLinear_GetStateSpace_PT1(t *testing.T) {
-	type fields struct {
-	}
 	tests := []struct {
 		name  string
 		kp, T float64
@@ -428,8 +426,6 @@ func TestLinear_GetStateSpace_PT1(t *testing.T) {
 }
 
 func TestLinear_GetStateSpace_PT2(t *testing.T) {
-	type fields struct {
-	}
 	tests := []struct {
 		name     string
 		kp, T, d float64
@@ -459,8 +455,6 @@ func TestLinear_GetStateSpace_PT2(t *testing.T) {
 }
 
 func TestLinear_GetStateSpace_Phase(t *testing.T) {
-	type fields struct {
-	}
 	tests := []struct {
 		name   string
 		T1, T2 float64

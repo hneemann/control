@@ -41,3 +41,50 @@ func TestRect_Intersect(t *testing.T) {
 		})
 	}
 }
+
+func TestRect_IntersectPath(t *testing.T) {
+	r := NewRect(-2, 2, -2, 2)
+	pa := PointsFromSlice(p(0, 3), p(3, 0), p(0, -3), p(-3, 0))
+	checkPath(t, r.IntersectPath(pa), p(1.0, 2.0), p(2.0, 1.0), p(2.0, -1.0), p(1.0, -2.0), p(-1.0, -2.0), p(-2.0, -1.0))
+}
+
+func TestRect_IntersectPath2(t *testing.T) {
+	r := NewRect(-2, 2, -2, 2)
+	pa := PointsFromSlice(
+		p(0, 3),
+		p(1.5, 1.5),
+		p(3, 0),
+		p(1.5, -1.5),
+		p(0, -3),
+		p(-1.5, -1.5),
+		p(-3, 0),
+		p(-1.5, 1.5))
+	checkPath(t, r.IntersectPath(pa),
+		p(1.0, 2.0),
+		p(1.5, 1.5),
+		p(2.0, 1.0),
+		p(2.0, -1.0),
+		p(1.5, -1.5),
+		p(1.0, -2.0),
+		p(-1.0, -2.0),
+		p(-1.5, -1.5),
+		p(-2.0, -1.0),
+		p(-2.0, 1.0),
+		p(-1.5, 1.5),
+	)
+}
+
+func checkPath(t *testing.T, path Path, points ...Point) {
+	i := 0
+	for pe, err := range path.Iter {
+		assert.NoError(t, err)
+		if i >= len(points) {
+			t.Fatalf("More points in path than expected: %d >= %d", i, len(points))
+		}
+		assert.Equal(t, points[i], pe.Point, "Point mismatch at index %d", i)
+		i++
+	}
+	if i < len(points) {
+		t.Fatalf("Less points in path than expected: %d < %d", i, len(points))
+	}
+}

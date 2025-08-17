@@ -194,13 +194,13 @@ func (p *Plot) DrawTo(canvas Canvas) error {
 			if !p.cross || math.Abs(tick.Position) > 1e-8 {
 				xp := xTrans(tick.Position)
 				if tick.Label == "" {
-					canvas.DrawPath(NewPointsPath(false, Point{xp, yp - small}, Point{xp, yp}), thinLine)
+					canvas.DrawPath(PointsFromSlice(Point{xp, yp - small}, Point{xp, yp}), thinLine)
 				} else {
 					canvas.DrawText(Point{xp, yp - large - small}, tick.Label, Top|HCenter, textStyle, p.textSize)
-					canvas.DrawPath(NewPointsPath(false, Point{xp, yp - large}, Point{xp, yp}), p.Frame)
+					canvas.DrawPath(PointsFromSlice(Point{xp, yp - large}, Point{xp, yp}), p.Frame)
 				}
 				if p.Grid != nil {
-					canvas.DrawPath(NewPointsPath(false, Point{xp, innerRect.Min.Y}, Point{xp, innerRect.Max.Y}), p.Grid)
+					canvas.DrawPath(PointsFromSlice(Point{xp, innerRect.Min.Y}, Point{xp, innerRect.Max.Y}), p.Grid)
 				}
 			}
 		}
@@ -214,13 +214,13 @@ func (p *Plot) DrawTo(canvas Canvas) error {
 			if !p.cross || math.Abs(tick.Position) > 1e-8 {
 				yp := yTrans(tick.Position)
 				if tick.Label == "" {
-					canvas.DrawPath(NewPointsPath(false, Point{xp - small, yp}, Point{xp, yp}), thinLine)
+					canvas.DrawPath(PointsFromSlice(Point{xp - small, yp}, Point{xp, yp}), thinLine)
 				} else {
 					canvas.DrawText(Point{xp - large, yp}, tick.Label, Right|VCenter, textStyle, p.textSize)
-					canvas.DrawPath(NewPointsPath(false, Point{xp - large, yp}, Point{xp, yp}), p.Frame)
+					canvas.DrawPath(PointsFromSlice(Point{xp - large, yp}, Point{xp, yp}), p.Frame)
 				}
 				if p.Grid != nil {
-					canvas.DrawPath(NewPointsPath(false, Point{innerRect.Min.X, yp}, Point{innerRect.Max.X, yp}), p.Grid)
+					canvas.DrawPath(PointsFromSlice(Point{innerRect.Min.X, yp}, Point{innerRect.Max.X, yp}), p.Grid)
 				}
 			}
 		}
@@ -260,18 +260,18 @@ func (p *Plot) DrawTo(canvas Canvas) error {
 		yp := yTrans(0)
 		cs := p.Frame.StrokeWidth / 2
 		al := p.textSize * 0.8
-		canvas.DrawPath(NewPointsPath(false,
+		canvas.DrawPath(PointsFromSlice(
 			Point{xp, innerRect.Min.Y},
 			Point{xp, innerRect.Max.Y - cs}), p.Frame)
-		canvas.DrawPath(NewPointsPath(false,
+		canvas.DrawPath(PointsFromSlice(
 			Point{xp - al/4, innerRect.Max.Y - al},
 			Point{xp, innerRect.Max.Y - cs},
 			Point{xp + al/4, innerRect.Max.Y - al},
 		), p.Frame)
-		canvas.DrawPath(NewPointsPath(false,
+		canvas.DrawPath(PointsFromSlice(
 			Point{innerRect.Min.X, yp},
 			Point{innerRect.Max.X - cs, yp}), p.Frame)
-		canvas.DrawPath(NewPointsPath(false,
+		canvas.DrawPath(PointsFromSlice(
 			Point{innerRect.Max.X - al, yp + al/4},
 			Point{innerRect.Max.X - cs, yp},
 			Point{innerRect.Max.X - al, yp - al/4},
@@ -291,7 +291,7 @@ func (p *Plot) DrawTo(canvas Canvas) error {
 			canvas.DrawText(lp, leg.Name, Left|VCenter, textStyle, p.textSize)
 			sls := leg.EnsureSomethingIsVisible()
 			if sls.IsLine() {
-				canvas.DrawPath(NewPointsPath(false, lp.Add(Point{-2*p.textSize - small, 0}), lp.Add(Point{-small, 0})), sls.LineStyle)
+				canvas.DrawPath(PointsFromSlice(lp.Add(Point{-2*p.textSize - small, 0}), lp.Add(Point{-small, 0})), sls.LineStyle)
 			}
 			if sls.IsShape() {
 				canvas.DrawShape(lp.Add(Point{-1*p.textSize - small, 0}), sls.Shape, sls.ShapeStyle)
@@ -630,8 +630,7 @@ func (f Function) DrawTo(plot *Plot, canvas Canvas) error {
 		plot: plot,
 		r:    r,
 	}
-	canvas.DrawPath(r.IntersectPath(&path), f.Style)
-	return path.e
+	return canvas.DrawPath(r.IntersectPath(&path), f.Style)
 }
 
 func (f Function) Legend() Legend {
@@ -645,7 +644,8 @@ func (f Function) Legend() Legend {
 // and can have a line style for connecting the points.
 type Scatter struct {
 	ShapeLineStyle
-	Points PointsPath
+	Points Points
+	Closed bool
 	Title  string
 }
 
@@ -666,7 +666,7 @@ func (s Scatter) SetTitle(title string) PlotContent {
 }
 
 func (s Scatter) Close() PlotContent {
-	s.Points.Closed = true
+	s.Closed = true
 	return s
 }
 
@@ -679,7 +679,7 @@ func (s Scatter) String() string {
 
 func (s Scatter) Bounds() (Bounds, Bounds, error) {
 	var x, y Bounds
-	for p, err := range s.Points.Points {
+	for p, err := range s.Points {
 		if err != nil {
 			return Bounds{}, Bounds{}, err
 		}
@@ -698,12 +698,23 @@ func (s Scatter) DrawTo(_ *Plot, canvas Canvas) error {
 
 	sls := s.EnsureSomethingIsVisible()
 	if sls.IsLine() {
-		canvas.DrawPath(canvas.Rect().IntersectPath(s.Points), sls.LineStyle)
+		err := canvas.DrawPath(
+			canvas.Rect().IntersectPath(
+				CloseablePointsPath{
+					Points: s.Points,
+					Closed: s.Closed,
+				}), sls.LineStyle)
+		if err != nil {
+			return err
+		}
 	}
 	if sls.IsShape() {
-		for p := range s.Points.Points {
+		for p := range s.Points {
 			if rect.Contains(p) {
-				canvas.DrawShape(p, sls.Shape, sls.ShapeStyle)
+				err := canvas.DrawShape(p, sls.Shape, sls.ShapeStyle)
+				if err != nil {
+					return err
+				}
 			}
 		}
 	}
@@ -898,8 +909,9 @@ func NewCircleMarker(r float64) Shape {
 	return circleMarker{p1: p1, p2: p2}
 }
 
-func (c circleMarker) DrawTo(canvas Canvas, style *Style) {
+func (c circleMarker) DrawTo(canvas Canvas, style *Style) error {
 	canvas.DrawCircle(c.p1, c.p2, style)
+	return nil
 }
 
 func NewCrossMarker(r float64) Shape {
@@ -911,24 +923,24 @@ func NewCrossMarker(r float64) Shape {
 }
 
 func NewSquareMarker(r float64) Shape {
-	return pointsPath{
-		points: []Point{{-r, -r}, {-r, r}, {r, r}, {r, -r}},
-		closed: true,
+	return CloseablePointsPath{
+		Points: PointsFromSlice(Point{-r, -r}, Point{-r, r}, Point{r, r}, Point{r, -r}),
+		Closed: true,
 	}
 }
 
 func NewTriangleMarker(r float64) Shape {
-	return pointsPath{
-		points: []Point{{0, r}, {-r, -r}, {r, -r}},
-		closed: true,
+	return CloseablePointsPath{
+		Points: PointsFromSlice(Point{0, r}, Point{-r, -r}, Point{r, -r}),
+		Closed: true,
 	}
 }
 
 func NewDiamondMarker(r float64) Shape {
 	r = r * math.Sqrt2
-	return pointsPath{
-		points: []Point{{-r, 0}, {0, r}, {r, 0}, {0, -r}},
-		closed: true,
+	return CloseablePointsPath{
+		Points: PointsFromSlice(Point{-r, 0}, Point{0, r}, Point{r, 0}, Point{0, -r}),
+		Closed: true,
 	}
 }
 
@@ -1058,8 +1070,7 @@ func (p *ParameterFunc) DrawTo(plot *Plot, canvas Canvas) error {
 		plot: plot,
 		r:    canvas.Rect(),
 	}
-	canvas.DrawPath(canvas.Rect().IntersectPath(&path), p.Style)
-	return path.e
+	return canvas.DrawPath(canvas.Rect().IntersectPath(&path), p.Style)
 }
 
 func (p *ParameterFunc) Legend() Legend {
@@ -1073,7 +1084,6 @@ type pFuncPath struct {
 	pf      *ParameterFunc
 	plot    *Plot
 	r       Rect
-	e       error
 	maxDist float64
 }
 
@@ -1094,31 +1104,23 @@ func (p *pFuncPath) f(t, dt float64) (Point, Point, error) {
 	return p0, p1.Sub(p0).Div(dt), nil
 }
 
-func (p *pFuncPath) Iter(yield func(rune, Point) bool) {
+func (p *pFuncPath) Iter(yield func(PathElement, error) bool) {
 	if p.maxDist == 0 {
 		p.maxDist = p.plot.canvas.Rect().Width() / float64(p.pf.Points) * 2
 	}
 	pf := p.pf
 	t0 := pf.InitialT
 	p0, d0, err := p.f(t0, pf.NextT(t0)-t0)
-	if err != nil {
-		p.e = err
-		return
-	}
-	if !yield('M', p0) {
+	if !yield(PathElement{Mode: 'M', Point: p0}, err) {
 		return
 	}
 	for i := 1; i <= pf.Points; i++ {
 		t1 := pf.NextT(t0)
 		p1, d1, err := p.f(t1, t1-t0)
-		if err != nil {
-			p.e = err
-			return
-		}
 		if !p.refine(t0, p0, d0, t1, p1, d1, yield, 10, 0) {
 			return
 		}
-		if !yield('L', p1) {
+		if !yield(PathElement{Mode: 'L', Point: p1}, err) {
 			return
 		}
 		t0 = t1
@@ -1146,7 +1148,7 @@ func cosAngleBetween(d0, d1 Point) float64 {
 	return cos
 }
 
-func (p *pFuncPath) refine(w0 float64, p0, d0 Point, w1 float64, p1, d1 Point, yield func(rune, Point) bool, depth int, lastDist float64) bool {
+func (p *pFuncPath) refine(w0 float64, p0, d0 Point, w1 float64, p1, d1 Point, yield func(PathElement, error) bool, depth int, lastDist float64) bool {
 	dw := w1 - w0
 	dist := p.plot.Dist(p0, p1)
 	if dist > p.maxDist || // the distance of two points is too large
@@ -1155,14 +1157,10 @@ func (p *pFuncPath) refine(w0 float64, p0, d0 Point, w1 float64, p1, d1 Point, y
 		if depth > 0 {
 			w := (w0 + w1) / 2
 			point, delta, err := p.f(w, dw)
-			if err != nil {
-				p.e = err
-				return false
-			}
 			if !p.refine(w0, p0, d0, w, point, delta, yield, depth-1, dist) {
 				return false
 			}
-			if !yield('L', point) {
+			if !yield(PathElement{Mode: 'L', Point: point}, err) {
 				return false
 			}
 			if !p.refine(w, point, delta, w1, p1, d1, yield, depth-1, dist) {
@@ -1172,7 +1170,7 @@ func (p *pFuncPath) refine(w0 float64, p0, d0 Point, w1 float64, p1, d1 Point, y
 			// detecting poles
 			if dist > lastDist*1.001 && dist > p.maxDist {
 				// if a pole is detected, do not draw a line
-				if !yield('M', p1) {
+				if !yield(PathElement{Mode: 'M', Point: p1}, nil) {
 					return false
 				}
 			}

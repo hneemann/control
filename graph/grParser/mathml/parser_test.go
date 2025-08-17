@@ -118,9 +118,6 @@ func TestScanDollar(t *testing.T) {
 }
 
 func Test_parser_parseTableDef(t *testing.T) {
-	type fields struct {
-		tok *Tokenizer
-	}
 	tests := []struct {
 		def  string
 		want []cellStyle

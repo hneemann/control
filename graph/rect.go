@@ -21,9 +21,9 @@ func NewRect(x0, x1, y0, y1 float64) Rect {
 }
 
 func (r Rect) Path() Path {
-	return pointsPath{
-		points: []Point{r.Min, {r.Max.X, r.Min.Y}, r.Max, {r.Min.X, r.Max.Y}},
-		closed: true,
+	return CloseablePointsPath{
+		Points: PointsFromSlice(r.Min, Point{r.Max.X, r.Min.Y}, r.Max, Point{r.Min.X, r.Max.Y}),
+		Closed: true,
 	}
 }
 
@@ -199,46 +199,56 @@ type interPath struct {
 	r Rect
 }
 
-func (i interPath) Iter(yield func(rune, Point) bool) {
+func (i interPath) Iter(yield func(PathElement, error) bool) {
 	var lastPoint Point
 	var lastInside bool
-	for m, point := range i.p.Iter {
-		inside := i.r.Contains(point)
-		if m == 'M' {
+	for pe, err := range i.p.Iter {
+		inside := i.r.Contains(pe.Point)
+		if pe.Mode == 'M' {
 			if inside {
-				if !yield('M', point) {
+				if !yield(pe, err) {
 					return
 				}
 			}
 		} else {
 			if lastInside && inside {
-				if !yield('L', point) {
+				if !yield(PathElement{Mode: 'L', Point: pe.Point}, err) {
 					return
 				}
 			} else if !lastInside && inside {
-				if !yield('M', i.r.Cut(point, lastPoint)) {
+				if !yield(PathElement{Mode: 'M', Point: i.r.Cut(pe.Point, lastPoint)}, err) {
 					return
 				}
-				if !yield('L', point) {
+				if !yield(PathElement{Mode: 'L', Point: pe.Point}, err) {
 					return
 				}
 			} else if lastInside && !inside {
-				if !yield('L', i.r.Cut(lastPoint, point)) {
+				if !yield(PathElement{Mode: 'L', Point: i.r.Cut(lastPoint, pe.Point)}, err) {
 					return
 				}
 			} else {
-				p0, p1, mode := i.r.Intersect(lastPoint, point)
+				p0, p1, mode := i.r.Intersect(lastPoint, pe.Point)
 				if mode == BothOutsidePartVisible {
-					if !yield('M', p0) {
+					if !yield(PathElement{Mode: 'M', Point: p0}, err) {
 						return
 					}
-					if !yield('L', p1) {
+					if !yield(PathElement{Mode: 'L', Point: p1}, err) {
 						return
+					}
+				} else {
+					// if an error occurs, and no other yield call has happened, the last
+					// point including the error is yielded to avoid overlooking the error.
+					if err != nil {
+						if !yield(PathElement{Mode: 'M', Point: pe.Point}, err) {
+							return
+						} else {
+							fmt.Println("Bug in error handling")
+						}
 					}
 				}
 			}
 		}
-		lastPoint = point
+		lastPoint = pe.Point
 		lastInside = inside
 	}
 }

@@ -396,15 +396,13 @@ func (e evansPoints) Swap(i, j int) {
 	e[i], e[j] = e[j], e[i]
 }
 
-func (e evansPoints) getPoints(i int) graph.PointsPath {
-	return graph.PointsPath{
-		Points: func(yield func(graph.Point, error) bool) {
-			for _, ep := range e {
-				if !yield(ep.points[i], nil) {
-					return
-				}
+func (e evansPoints) getPoints(i int) graph.Points {
+	return func(yield func(graph.Point, error) bool) {
+		for _, ep := range e {
+			if !yield(ep.points[i], nil) {
+				return
 			}
-		},
+		}
 	}
 }
 
@@ -427,18 +425,18 @@ type polarPath struct {
 	r      graph.Rect
 }
 
-func (p polarPath) Iter(yield func(rune, graph.Point) bool) {
+func (p polarPath) Iter(yield func(graph.PathElement, error) bool) {
 	radius := p.radius
 	for angle := 90; angle <= 270; angle += 2 {
 		x := radius * math.Cos(float64(angle)*math.Pi/180)
 		y := radius * math.Sin(float64(angle)*math.Pi/180)
 		point := graph.Point{X: x, Y: y}
 		if angle == 90 {
-			if !yield('M', point) {
+			if !yield(graph.PathElement{Mode: 'M', Point: point}, nil) {
 				return
 			}
 		} else {
-			if !yield('L', point) {
+			if !yield(graph.PathElement{Mode: 'L', Point: point}, nil) {
 				return
 			}
 		}
@@ -484,7 +482,10 @@ func (p Polar) DrawTo(plot *graph.Plot, canvas graph.Canvas) error {
 				} else {
 					o |= graph.Right
 				}
-				canvas.DrawPath(graph.NewPointsPath(false, ap, ep), style)
+				err := canvas.DrawPath(graph.PointsFromSlice(ap, ep), style)
+				if err != nil {
+					return err
+				}
 				canvas.DrawText(ep, fmt.Sprintf("%d°", 180-angle), o, text, textSize)
 			}
 		}
@@ -494,7 +495,10 @@ func (p Polar) DrawTo(plot *graph.Plot, canvas graph.Canvas) error {
 		for _, t := range plot.GetXTicks() {
 			radius = -t.Position
 			if radius > 1e-5 {
-				canvas.DrawPath(r.IntersectPath(polarPath{radius: radius, r: r}), style)
+				err := canvas.DrawPath(r.IntersectPath(polarPath{radius: radius, r: r}), style)
+				if err != nil {
+					return err
+				}
 				point := graph.Point{X: 0, Y: radius}
 				if r.Contains(point) {
 					canvas.DrawText(point, t.Label, graph.VCenter|graph.Left, text, textSize)
@@ -540,7 +544,10 @@ func (a Asymptotes) DrawTo(_ *graph.Plot, canvas graph.Canvas) error {
 		y := a.Point.Y + d*math.Sin(alpha)
 
 		if p1, p2, state := r.Intersect(a.Point, graph.Point{X: x, Y: y}); state != graph.CompleteOutside {
-			canvas.DrawPath(graph.NewPointsPath(false, p1, p2), asymptotesStyle)
+			err := canvas.DrawPath(graph.PointsFromSlice(p1, p2), asymptotesStyle)
+			if err != nil {
+				return err
+			}
 		}
 
 		alpha += dAlpha
@@ -621,8 +628,15 @@ func (l *Linear) CreateEvans(kMin, kMax float64) ([]graph.PlotContent, error) {
 		return nil, fmt.Errorf("kMin (%g) must be less than kMax (%g)", kMin, kMax)
 	}
 
+	initial := 0
+	if !lin.IsCausal() && kMin == 0 {
+		// If the system is not causal, k=0 gives fewer roots than k>0
+		// so k=0 is not used to generate the root locus.
+		initial = 1
+	}
+
 	const scalePoints = 40
-	for i := 0; i <= scalePoints; i++ {
+	for i := initial; i <= scalePoints; i++ {
 		k := kMin + (kMax-kMin)*float64(i)/float64(scalePoints)
 		err := ecs.addPolesFor(k)
 		if err != nil {
@@ -651,7 +665,7 @@ func (l *Linear) CreateEvans(kMin, kMax float64) ([]graph.PlotContent, error) {
 		polesMarker := graph.NewCrossMarker(4)
 		curveList = append(curveList,
 			graph.Scatter{
-				Points: graph.PathFromPointSlice(p.ToPoints()),
+				Points: graph.PointsFromSlice(p.ToPoints()...),
 				ShapeLineStyle: graph.ShapeLineStyle{
 					Shape:      polesMarker,
 					ShapeStyle: markerStyle,
@@ -664,7 +678,7 @@ func (l *Linear) CreateEvans(kMin, kMax float64) ([]graph.PlotContent, error) {
 		zeroMarker := graph.NewCircleMarker(4)
 		curveList = append(curveList,
 			graph.Scatter{
-				Points: graph.PathFromPointSlice(z.ToPoints()),
+				Points: graph.PointsFromSlice(z.ToPoints()...),
 				ShapeLineStyle: graph.ShapeLineStyle{
 					Shape:      zeroMarker,
 					ShapeStyle: markerStyle,
@@ -904,7 +918,7 @@ func RootLocus(cpp PolynomialProvider, kMin, kMax float64, parName string) ([]gr
 	}
 
 	minMarker := graph.Scatter{
-		Points: graph.PathFromPointSlice(ecs.evPoints[0].points),
+		Points: graph.PointsFromSlice(ecs.evPoints[0].points...),
 		ShapeLineStyle: graph.ShapeLineStyle{
 			Shape:      graph.NewSquareMarker(4),
 			ShapeStyle: graph.Black.SetStrokeWidth(2),
@@ -912,7 +926,7 @@ func RootLocus(cpp PolynomialProvider, kMin, kMax float64, parName string) ([]gr
 		Title: fmt.Sprintf("%s = %g", parName, kMin),
 	}
 	maxMarker := graph.Scatter{
-		Points: graph.PathFromPointSlice(ecs.evPoints[len(ecs.evPoints)-1].points),
+		Points: graph.PointsFromSlice(ecs.evPoints[len(ecs.evPoints)-1].points...),
 		ShapeLineStyle: graph.ShapeLineStyle{
 			Shape:      graph.NewCircleMarker(4),
 			ShapeStyle: graph.Black.SetStrokeWidth(2),
@@ -1077,9 +1091,8 @@ func (b bodePhase) DependantBounds(xGiven, _ graph.Bounds) (x, y graph.Bounds, e
 func (b bodePhase) DrawTo(plot *graph.Plot, canvas graph.Canvas) error {
 	b.bodeContent.generate(plot.XBounds.Min, plot.XBounds.Max)
 	r := canvas.Rect()
-	path := graph.NewPointsPath(false, b.bodeContent.phase...)
-	canvas.DrawPath(r.IntersectPath(path), b.bodeContent.Style)
-	return nil
+	path := graph.PointsFromSlice(b.bodeContent.phase...)
+	return canvas.DrawPath(r.IntersectPath(path), b.bodeContent.Style)
 }
 
 func (b bodePhase) Legend() graph.Legend {
@@ -1106,9 +1119,8 @@ func (b bodeAmplitude) DependantBounds(xGiven, _ graph.Bounds) (x, y graph.Bound
 func (b bodeAmplitude) DrawTo(plot *graph.Plot, canvas graph.Canvas) error {
 	b.bodeContent.generate(plot.XBounds.Min, plot.XBounds.Max)
 	r := canvas.Rect()
-	path := graph.NewPointsPath(false, b.bodeContent.amplitude...)
-	canvas.DrawPath(r.IntersectPath(path), b.bodeContent.Style)
-	return nil
+	path := graph.PointsFromSlice(b.bodeContent.amplitude...)
+	return canvas.DrawPath(r.IntersectPath(path), b.bodeContent.Style)
 }
 
 func (b bodeAmplitude) Legend() graph.Legend {
@@ -1161,11 +1173,11 @@ func (l *Linear) Nyquist(sMax float64, alsoNeg bool) ([]graph.PlotContent, error
 			return nil, err
 		}
 		cp = append(cp, neg)
-		cp = append(cp, graph.Scatter{Points: graph.PathFromPoint(graph.Point{X: -1, Y: 0}), ShapeLineStyle: graph.ShapeLineStyle{Shape: graph.NewCrossMarker(4), ShapeStyle: graph.Red}})
+		cp = append(cp, graph.Scatter{Points: graph.PointsFromPoint(graph.Point{X: -1, Y: 0}), ShapeLineStyle: graph.ShapeLineStyle{Shape: graph.NewCrossMarker(4), ShapeStyle: graph.Red}})
 	}
 	zeroMarker := graph.NewCircleMarker(4)
 	if isZero {
-		cp = append(cp, graph.Scatter{Points: graph.PathFromPoint(graph.Point{X: real(cZero), Y: imag(cZero)}), ShapeLineStyle: graph.ShapeLineStyle{Shape: zeroMarker, ShapeStyle: graph.Black}, Title: "ω=0"})
+		cp = append(cp, graph.Scatter{Points: graph.PointsFromPoint(graph.Point{X: real(cZero), Y: imag(cZero)}), ShapeLineStyle: graph.ShapeLineStyle{Shape: zeroMarker, ShapeStyle: graph.Black}, Title: "ω=0"})
 	}
 	pos, err := l.NyquistPos(sMax)
 	if err != nil {
@@ -1198,19 +1210,17 @@ func (v dataSet) set(row, col int, val float64) {
 	v.elements[row*v.cols+col] = val
 }
 
-func (v dataSet) toPoints(i0, i1 int) graph.PointsPath {
-	return graph.PointsPath{
-		Points: func(yield func(graph.Point, error) bool) {
-			o := 0
-			for range v.rows {
-				x := v.elements[o+i0]
-				y := v.elements[o+i1]
-				if !yield(graph.Point{X: x, Y: y}, nil) {
-					return
-				}
-				o += v.cols
+func (v dataSet) toPoints(i0, i1 int) graph.Points {
+	return func(yield func(graph.Point, error) bool) {
+		o := 0
+		for range v.rows {
+			x := v.elements[o+i0]
+			y := v.elements[o+i1]
+			if !yield(graph.Point{X: x, Y: y}, nil) {
+				return
 			}
-		},
+			o += v.cols
+		}
 	}
 }
 

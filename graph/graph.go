@@ -63,45 +63,57 @@ func sqr(x float64) float64 {
 	return x * x
 }
 
+// Points iterates also over errors, because if the points are
+// generated on the fly, there might occur errors while generating.
+// The yield function should return false if an error is passed to it
+// and handle the error appropriately.
 type Points func(func(Point, error) bool)
 
-type PointsPath struct {
+func (p Points) Iter(yield func(PathElement, error) bool) {
+	m := 'M'
+	for point := range p {
+		if !yield(PathElement{Mode: m, Point: point}, nil) {
+			return
+		}
+		m = 'L'
+	}
+}
+
+func (p Points) IsClosed() bool {
+	return false
+}
+
+func PointsFromPoint(p Point) Points {
+	return func(yield func(Point, error) bool) {
+		yield(p, nil)
+	}
+}
+
+func PointsFromSlice(pointList ...Point) Points {
+	return func(yield func(Point, error) bool) {
+		for _, point := range pointList {
+			if !yield(point, nil) {
+				return
+			}
+		}
+	}
+}
+
+type CloseablePointsPath struct {
 	Points Points
 	Closed bool
 }
 
-func PathFromPoint(p Point) PointsPath {
-	return PointsPath{
-		Points: func(yield func(Point, error) bool) {
-			yield(p, nil)
-		},
-	}
+func (p CloseablePointsPath) Iter(yield func(PathElement, error) bool) {
+	p.Points.Iter(yield)
 }
 
-func PathFromPointSlice(pointList []Point) PointsPath {
-	return PointsPath{
-		Points: func(yield func(Point, error) bool) {
-			for _, point := range pointList {
-				if !yield(point, nil) {
-					return
-				}
-			}
-		},
-	}
-}
-
-func (p PointsPath) Iter(yield func(rune, Point) bool) {
-	r := 'M'
-	for point := range p.Points {
-		if !yield(r, point) {
-			return
-		}
-		r = 'L'
-	}
-}
-
-func (p PointsPath) IsClosed() bool {
+func (p CloseablePointsPath) IsClosed() bool {
 	return p.Closed
+}
+
+func (p CloseablePointsPath) DrawTo(canvas Canvas, style *Style) error {
+	return canvas.DrawPath(p, style)
 }
 
 type Color struct {
@@ -291,10 +303,10 @@ type Image interface {
 }
 
 type Canvas interface {
-	DrawPath(Path, *Style)
+	DrawPath(Path, *Style) error
 	DrawCircle(Point, Point, *Style)
 	DrawText(Point, string, Orientation, *Style, float64)
-	DrawShape(Point, Shape, *Style)
+	DrawShape(Point, Shape, *Style) error
 	Context() *Context
 	Rect() Rect
 }
@@ -341,7 +353,11 @@ type PathElement struct {
 }
 
 type Path interface {
-	Iter(func(rune, Point) bool)
+	// Iter iterates also over errors, because if the PathElements are
+	// generated on the fly, there might occur errors while generating.
+	// The yield function should return false if an error is passed to it
+	// and handle the error appropriately.
+	Iter(func(PathElement, error) bool)
 	IsClosed() bool
 }
 
@@ -354,9 +370,9 @@ func NewPath(closed bool) SlicePath {
 	return SlicePath{Closed: closed}
 }
 
-func (p SlicePath) Iter(yield func(rune, Point) bool) {
+func (p SlicePath) Iter(yield func(PathElement, error) bool) {
 	for _, e := range p.Elements {
-		if !yield(e.Mode, e.Point) {
+		if !yield(e, nil) {
 			break
 		}
 	}
@@ -381,8 +397,8 @@ func (p SlicePath) String() string {
 	return b.String()
 }
 
-func (p SlicePath) DrawTo(canvas Canvas, style *Style) {
-	canvas.DrawPath(p, style)
+func (p SlicePath) DrawTo(canvas Canvas, style *Style) error {
+	return canvas.DrawPath(p, style)
 }
 
 func (p SlicePath) Add(point Point) SlicePath {
@@ -405,42 +421,8 @@ func (p SlicePath) AddMode(mode rune, point Point) SlicePath {
 	return SlicePath{append(p.Elements, PathElement{Mode: mode, Point: point}), p.Closed}
 }
 
-type pointsPath struct {
-	points []Point
-	closed bool
-}
-
-func (p pointsPath) Iter(yield func(rune, Point) bool) {
-	for i, point := range p.points {
-		if i == 0 {
-			if !yield('M', point) {
-				return
-			}
-		} else {
-			if !yield('L', point) {
-				return
-			}
-		}
-	}
-}
-
-func (p pointsPath) IsClosed() bool {
-	return p.closed
-}
-
-func (p pointsPath) DrawTo(canvas Canvas, style *Style) {
-	canvas.DrawPath(p, style)
-}
-
-func NewPointsPath(closed bool, p ...Point) Path {
-	return pointsPath{
-		points: p,
-		closed: closed,
-	}
-}
-
 type Shape interface {
-	DrawTo(Canvas, *Style)
+	DrawTo(Canvas, *Style) error
 }
 
 type Transform func(Point) Point
@@ -462,9 +444,9 @@ type transPath struct {
 	transform Transform
 }
 
-func (t transPath) Iter(yield func(rune, Point) bool) {
-	for r, p := range t.path.Iter {
-		if !yield(r, t.transform(p)) {
+func (t transPath) Iter(yield func(PathElement, error) bool) {
+	for pe, err := range t.path.Iter {
+		if !yield(PathElement{Mode: pe.Mode, Point: t.transform(pe.Point)}, err) {
 			return
 		}
 	}
@@ -474,15 +456,15 @@ func (t transPath) IsClosed() bool {
 	return t.path.IsClosed()
 }
 
-func (t TransformCanvas) DrawPath(polygon Path, style *Style) {
-	t.parent.DrawPath(transPath{
+func (t TransformCanvas) DrawPath(polygon Path, style *Style) error {
+	return t.parent.DrawPath(transPath{
 		path:      polygon,
 		transform: t.transform,
 	}, style)
 }
 
-func (t TransformCanvas) DrawShape(point Point, shape Shape, style *Style) {
-	t.parent.DrawShape(t.transform(point), shape, style)
+func (t TransformCanvas) DrawShape(point Point, shape Shape, style *Style) error {
+	return t.parent.DrawShape(t.transform(point), shape, style)
 }
 
 func (t TransformCanvas) DrawCircle(a Point, b Point, style *Style) {
@@ -510,12 +492,12 @@ type ResizeCanvas struct {
 	size   Rect
 }
 
-func (r ResizeCanvas) DrawPath(polygon Path, style *Style) {
-	r.parent.DrawPath(polygon, style)
+func (r ResizeCanvas) DrawPath(polygon Path, style *Style) error {
+	return r.parent.DrawPath(polygon, style)
 }
 
-func (r ResizeCanvas) DrawShape(point Point, shape Shape, style *Style) {
-	r.parent.DrawShape(point, shape, style)
+func (r ResizeCanvas) DrawShape(point Point, shape Shape, style *Style) error {
+	return r.parent.DrawShape(point, shape, style)
 }
 
 func (r ResizeCanvas) DrawCircle(a Point, b Point, style *Style) {

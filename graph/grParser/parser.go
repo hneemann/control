@@ -683,7 +683,7 @@ func listMethods() value.MethodMap {
 		"graph": value.MethodAtType(2, func(list *value.List, st funcGen.Stack[value.Value]) (value.Value, error) {
 			switch st.Size() {
 			case 1:
-				s := graph.Scatter{Points: graph.PointsPath{Points: listToPoints(list)}}
+				s := graph.Scatter{Points: listToPoints(list)}
 				if size, ok := list.SizeIfKnown(); ok && size > 200 {
 					s.LineStyle = graph.Black
 				}
@@ -691,7 +691,7 @@ func listMethods() value.MethodMap {
 			case 3:
 				if xc, ok := st.Get(1).ToClosure(); ok && xc.Args == 1 {
 					if yc, ok := st.Get(2).ToClosure(); ok && yc.Args == 1 {
-						s := graph.Scatter{Points: graph.PointsPath{Points: listFuncToPoints(list, xc, yc)}}
+						s := graph.Scatter{Points: listFuncToPoints(list, xc, yc)}
 						if size, ok := list.SizeIfKnown(); ok && size > 200 {
 							s.LineStyle = graph.Black
 						}
