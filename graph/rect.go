@@ -203,47 +203,41 @@ func (i interPath) Iter(yield func(PathElement, error) bool) {
 	var lastPoint Point
 	var lastInside bool
 	for pe, err := range i.p.Iter {
+		if err != nil {
+			yield(pe, err)
+			return
+		}
 		inside := i.r.Contains(pe.Point)
 		if pe.Mode == 'M' {
 			if inside {
-				if !yield(pe, err) {
+				if !yield(pe, nil) {
 					return
 				}
 			}
 		} else {
 			if lastInside && inside {
-				if !yield(PathElement{Mode: 'L', Point: pe.Point}, err) {
+				if !yield(PathElement{Mode: 'L', Point: pe.Point}, nil) {
 					return
 				}
 			} else if !lastInside && inside {
-				if !yield(PathElement{Mode: 'M', Point: i.r.Cut(pe.Point, lastPoint)}, err) {
+				if !yield(PathElement{Mode: 'M', Point: i.r.Cut(pe.Point, lastPoint)}, nil) {
 					return
 				}
-				if !yield(PathElement{Mode: 'L', Point: pe.Point}, err) {
+				if !yield(PathElement{Mode: 'L', Point: pe.Point}, nil) {
 					return
 				}
 			} else if lastInside && !inside {
-				if !yield(PathElement{Mode: 'L', Point: i.r.Cut(lastPoint, pe.Point)}, err) {
+				if !yield(PathElement{Mode: 'L', Point: i.r.Cut(lastPoint, pe.Point)}, nil) {
 					return
 				}
 			} else {
 				p0, p1, mode := i.r.Intersect(lastPoint, pe.Point)
 				if mode == BothOutsidePartVisible {
-					if !yield(PathElement{Mode: 'M', Point: p0}, err) {
+					if !yield(PathElement{Mode: 'M', Point: p0}, nil) {
 						return
 					}
-					if !yield(PathElement{Mode: 'L', Point: p1}, err) {
+					if !yield(PathElement{Mode: 'L', Point: p1}, nil) {
 						return
-					}
-				} else {
-					// if an error occurs, and no other yield call has happened, the last
-					// point including the error is yielded to avoid overlooking the error.
-					if err != nil {
-						if !yield(PathElement{Mode: 'M', Point: pe.Point}, err) {
-							return
-						} else {
-							fmt.Println("Bug in error handling")
-						}
 					}
 				}
 			}

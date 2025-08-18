@@ -709,7 +709,10 @@ func (s Scatter) DrawTo(_ *Plot, canvas Canvas) error {
 		}
 	}
 	if sls.IsShape() {
-		for p := range s.Points {
+		for p, err := range s.Points {
+			if err != nil {
+				return err
+			}
 			if rect.Contains(p) {
 				err := canvas.DrawShape(p, sls.Shape, sls.ShapeStyle)
 				if err != nil {

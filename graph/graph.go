@@ -446,7 +446,7 @@ type transPath struct {
 
 func (t transPath) Iter(yield func(PathElement, error) bool) {
 	for pe, err := range t.path.Iter {
-		if !yield(PathElement{Mode: pe.Mode, Point: t.transform(pe.Point)}, err) {
+		if more := yield(PathElement{Mode: pe.Mode, Point: t.transform(pe.Point)}, err); !more || err != nil {
 			return
 		}
 	}
