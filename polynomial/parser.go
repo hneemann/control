@@ -1271,6 +1271,22 @@ var Parser = value.New().
 		Args:   1,
 		IsPure: true,
 	}.SetDescription("arg", "Creates a linear system. Can be used to cast a float, int or polynomial to a linear system.")).
+	AddStaticFunction("dirac", funcGen.Function[value.Value]{
+		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
+			switch stack.Size() {
+			case 0:
+				return dirac(0.001), nil
+			case 1:
+				if eps, ok := stack.Get(0).ToFloat(); ok {
+					return dirac(eps), nil
+				}
+				return nil, fmt.Errorf("dirac function requires a float value as argument")
+			}
+			return nil, fmt.Errorf("dirac function requires zero or one float value as argument")
+		},
+		Args:   -1,
+		IsPure: true,
+	}.SetDescription("eps", "Returns the rectangular approximation of the dirac function: f(x)=1/eps if 0<x<eps and zero otherwise.")).
 	AddStaticFunction("polar", funcGen.Function[value.Value]{
 		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
 			return grParser.NewPlotContentValue(Polar{}), nil
@@ -1503,6 +1519,23 @@ var Parser = value.New().
 		}))
 		p.AllowComments()
 	})
+
+func dirac(e float64) value.Value {
+	return value.Closure(funcGen.Function[value.Value]{
+		Func: func(st funcGen.Stack[value.Value], _ []value.Value) (value.Value, error) {
+			xv := st.Get(0)
+			if x, ok := xv.ToFloat(); ok {
+				if x > 0 && x < e {
+					return value.Float(1 / e), nil
+				}
+				return value.Float(0), nil
+			}
+			return nil, fmt.Errorf("the dirac function requires a float value as argument")
+		},
+		Args:   1,
+		IsPure: true,
+	})
+}
 
 func createNeg(orig funcGen.UnaryOperatorImpl[value.Value]) funcGen.UnaryOperatorImpl[value.Value] {
 	return func(a value.Value) (value.Value, error) {
