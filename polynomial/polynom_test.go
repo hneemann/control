@@ -141,6 +141,8 @@ func TestPolynom_Roots(t *testing.T) {
 		{"zero", Polynomial{0, 24, 14, -13, -2, 1}, []complex128{complex(-3, 0), complex(-1, 0), 0, complex(2, 0), complex(4, 0)}, ""},
 
 		{"stable", Polynomial{0.5358983848622455, -1.4641016151377544, -0.4641016151377544, 2, 1}, []complex128{complex(-1.4909847033472479, 0), complex(-1.4909848297877935, 0), complex(0.49098476656751755, 0), complex(0.49098476656751755, 0)}, ""},
+
+		{"bug1", Polynomial{-12.43, -2.805702994447472, 1, 0.6729766562843178}, []complex128{complex(-2.07746, 1.61384), complex(2.66898, 0)}, ""},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

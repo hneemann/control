@@ -9,6 +9,7 @@ import (
 	"github.com/hneemann/parser2/value"
 	"github.com/hneemann/parser2/value/export"
 	"github.com/hneemann/parser2/value/export/xmlWriter"
+	"log"
 	"math"
 	"math/cmplx"
 	"strconv"
@@ -407,27 +408,31 @@ func (p Polynomial) Roots() (Roots, error) {
 	}
 }
 
+var startPoints = []complex128{complex(1, 1), complex(-2, 1), complex(10, 4)}
+
 func (p Polynomial) findRootNewton(zEps float64) (complex128, error) {
 	pSearch := p.Normalize()
 	deriv := pSearch.Derivative()
-	var lastz complex128
-	z := complex(1, 1)
-	var f complex128
-	for range 1000 {
-		f = pSearch.EvalCplx(z)
-		if cmplx.Abs(z-lastz) < eps && cmplx.Abs(f) < zEps {
+	for i, z := range startPoints {
+		var f complex128
+		var lastz complex128
+		for range 1000 {
+			f = pSearch.EvalCplx(z)
+			if cmplx.Abs(z-lastz) < eps && cmplx.Abs(f) < zEps {
+				return cleanUp(z), nil
+			}
+			lastz = z
+			z = z - f/deriv.EvalCplx(z)
+		}
+		z = cleanUp(z)
+
+		if cmplx.Abs(f) < zEps {
 			return cleanUp(z), nil
 		}
-		lastz = z
-		z = z - f/deriv.EvalCplx(z)
-	}
-	z = cleanUp(z)
 
-	if cmplx.Abs(f) < zEps {
-		return cleanUp(z), nil
+		log.Println("Newton: no convergence for start point", i)
 	}
-
-	return z, fmt.Errorf("no convergence in %v, s=%v, f(s)=%v", p, z, p.EvalCplx(z))
+	return 0, fmt.Errorf("no root found in Newton solver: no convergence in %v", p)
 }
 
 func cleanUp(z complex128) complex128 {
