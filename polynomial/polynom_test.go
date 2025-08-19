@@ -143,10 +143,56 @@ func TestPolynom_Roots(t *testing.T) {
 		{"stable", Polynomial{0.5358983848622455, -1.4641016151377544, -0.4641016151377544, 2, 1}, []complex128{complex(-1.4909847033472479, 0), complex(-1.4909848297877935, 0), complex(0.49098476656751755, 0), complex(0.49098476656751755, 0)}, ""},
 
 		{"bug1", Polynomial{-12.43, -2.805702994447472, 1, 0.6729766562843178}, []complex128{complex(-2.07746, 1.61384), complex(2.66898, 0)}, ""},
+		{"bug1", Polynomial{0.8819016022183988, -2.0704854033685596, 1, 0.26302679918953814}, []complex128{complex(-5.380674301685478, 0), complex(0.7893901692399328, 0), complex(0.7893901692399328, 0)}, ""},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			roots, err := tt.p.Roots()
+			if tt.errMsg == "" {
+				assert.NoError(t, err)
+			} else {
+				assert.Equal(t, tt.errMsg, err.Error())
+			}
+			assert.Len(t, roots.roots, len(tt.want))
+			sort.Slice(roots.roots, func(i, j int) bool {
+				return real(roots.roots[i]) < real(roots.roots[j])
+			})
+			for i, r := range tt.want {
+				assert.True(t, cmplx.Abs(r-roots.roots[i]) < 1e-5, fmt.Sprintf("expected %v, got %v", r, roots.roots[0]))
+			}
+		})
+	}
+}
+
+func TestPolynom_Aberth(t *testing.T) {
+	tests := []struct {
+		name   string
+		p      Polynomial
+		want   []complex128
+		errMsg string
+	}{
+		{"canonical", Polynomial{0}, nil, "not canonical"},
+		{"canonical2", Polynomial{1, 0}, nil, "not canonical"},
+		{"constant", Polynomial{1}, nil, ""},
+		{"linear", Polynomial{1, 2}, []complex128{complex(-0.5, 0)}, ""},
+		{"linear2", Polynomial{0, 2}, []complex128{complex(0, 0)}, ""},
+		{"quadratic", Polynomial{1, 2, 1}, []complex128{complex(-1, 0), complex(-1, 0)}, ""},
+		{"quadratic2", Polynomial{2, 2, 1}, []complex128{complex(-1, 1)}, ""},
+		{"cubic", Polynomial{2, -1, -2, 1}, []complex128{complex(-1, 0), complex(1, 0), complex(2, 0)}, ""},
+		{"cubic2", Polynomial{2, 0, -1, 1}, []complex128{complex(-1, 0), complex(1, 1)}, ""},
+		{"four", Polynomial{24, 14, -13, -2, 1}, []complex128{complex(-3, 0), complex(-1, 0), complex(2, 0), complex(4, 0)}, ""},
+
+		{"zero", Polynomial{0, 24, 14, -13, -2, 1}, []complex128{complex(-3, 0), complex(-1, 0), 0, complex(2, 0), complex(4, 0)}, ""},
+
+		{"stable", Polynomial{0.5358983848622455, -1.4641016151377544, -0.4641016151377544, 2, 1}, []complex128{complex(-1.4909847033472479, 0), complex(-1.4909848297877935, 0), complex(0.49098476656751755, 0), complex(0.49098476656751755, 0)}, ""},
+
+		{"bug1", Polynomial{-12.43, -2.805702994447472, 1, 0.6729766562843178}, []complex128{complex(-2.07746, 1.61384), complex(2.66898, 0)}, ""},
+		{"bug2", Polynomial{0.8819016022183988, -2.0704854033685596, 1, 0.26302679918953814}, []complex128{complex(-5.380674301685478, 0), complex(0.7893901692399328, 0), complex(0.7893901692399328, 0)}, ""},
+		{"abeth", Polynomial{-100, 150, -104, 43, -10, 1}, []complex128{complex(1, 2), complex(2, 0), complex(3, 1)}, ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			roots, err := tt.p.rootsAberth()
 			if tt.errMsg == "" {
 				assert.NoError(t, err)
 			} else {
@@ -315,5 +361,19 @@ func TestPolynomial_Div(t *testing.T) {
 			assert.EqualValues(t, tt.d, d, "dividend")
 			assert.EqualValues(t, tt.r, r, "remainder")
 		})
+	}
+}
+
+func BenchmarkPolynomial_RootsNewton(b *testing.B) {
+	p := Polynomial{-100, 150, -104, 43, -10, 1}
+	for i := 0; i < b.N; i++ {
+		p.rootsNewton()
+	}
+}
+
+func BenchmarkPolynomial_RootsAberth(b *testing.B) {
+	p := Polynomial{-100, 150, -104, 43, -10, 1}
+	for i := 0; i < b.N; i++ {
+		p.rootsAberth()
 	}
 }

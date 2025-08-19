@@ -18,7 +18,6 @@ import (
 	"net/http"
 	"runtime/debug"
 	"strings"
-	"time"
 )
 
 //go:embed assets/*
@@ -126,7 +125,7 @@ func Execute(writer http.ResponseWriter, request *http.Request) {
 
 	var resHtml template.HTML
 	if src != "" {
-		start := time.Now()
+		//start := time.Now()
 		fu, err := polynomial.Parser.Generate(src, "gui")
 		if err == nil {
 			var res value.Value
@@ -139,7 +138,7 @@ func Execute(writer http.ResponseWriter, request *http.Request) {
 				}
 			}
 		}
-		log.Println("calculation on server took", time.Since(start))
+		//log.Println("calculation on server took", time.Since(start))
 		if err != nil {
 			log.Println("error in calculation:", err)
 			resHtml = template.HTML("<pre>" + html.EscapeString(err.Error()) + "</pre>")

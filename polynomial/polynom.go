@@ -356,6 +356,10 @@ func NewRoots(roots ...complex128) Roots {
 // containing the roots and the leading coefficient of the polynomial.
 // If there are complex roots, only the root with the positive imaginary part is returned.
 func (p Polynomial) Roots() (Roots, error) {
+	return p.rootsNewton()
+}
+
+func (p Polynomial) rootsNewton() (Roots, error) {
 	if len(p) == 0 {
 		return Roots{}, errors.New("no coefficients given")
 	}
@@ -373,39 +377,27 @@ func (p Polynomial) Roots() (Roots, error) {
 		return r, nil
 	}
 
-	switch len(p) {
-	case 1:
-		return Roots{roots: nil, factor: p[0]}, nil
-	case 2:
-		return Roots{roots: []complex128{complex(-p[0]/p[1], 0)}, factor: p[1]}, nil
-	case 3:
-		a, b, c := p[2], p[1], p[0]
-		d := b*b - 4*a*c
-		if d < 0 {
-			sqrtD := math.Sqrt(-d)
-			return Roots{roots: []complex128{complex(-b/(2*a), math.Abs(sqrtD/(2*a)))}, factor: a}, nil
-		}
-		sqrtD := math.Sqrt(d)
-		return Roots{roots: []complex128{complex((-b+sqrtD)/(2*a), 0), complex((-b-sqrtD)/(2*a), 0)}, factor: a}, nil
-	default:
-		zero, err := p.findRootNewton(1e-9)
-		if err != nil {
-			return Roots{}, err
-		}
-		rp := FromRoot(zero)
-		var np Polynomial
-		np, _, err = p.Div(rp)
-		if err != nil {
-			return Roots{}, err
-		}
-		var r Roots
-		r, err = np.Roots()
-		if err != nil {
-			return Roots{}, err
-		}
-		r.roots = append(r.roots, zero)
-		return r, nil
+	if len(p) <= 3 {
+		return p.rootUpToThree()
 	}
+
+	zero, err := p.findRootNewton(1e-9)
+	if err != nil {
+		return Roots{}, err
+	}
+	rp := FromRoot(zero)
+	var np Polynomial
+	np, _, err = p.Div(rp)
+	if err != nil {
+		return Roots{}, err
+	}
+	var r Roots
+	r, err = np.Roots()
+	if err != nil {
+		return Roots{}, err
+	}
+	r.roots = append(r.roots, zero)
+	return r, nil
 }
 
 var startPoints = []complex128{complex(1, 1), complex(-2, 1), complex(10, 4)}
@@ -441,6 +433,118 @@ func cleanUp(z complex128) complex128 {
 		return complex(real(z), 0)
 	}
 	return complex(real(z), absImag)
+}
+
+func (p Polynomial) rootUpToThree() (Roots, error) {
+	switch len(p) {
+	case 1:
+		return Roots{roots: nil, factor: p[0]}, nil
+	case 2:
+		return Roots{roots: []complex128{complex(-p[0]/p[1], 0)}, factor: p[1]}, nil
+	case 3:
+		a, b, c := p[2], p[1], p[0]
+		d := b*b - 4*a*c
+		if d < 0 {
+			sqrtD := math.Sqrt(-d)
+			return Roots{roots: []complex128{complex(-b/(2*a), math.Abs(sqrtD/(2*a)))}, factor: a}, nil
+		}
+		sqrtD := math.Sqrt(d)
+		return Roots{roots: []complex128{complex((-b+sqrtD)/(2*a), 0), complex((-b-sqrtD)/(2*a), 0)}, factor: a}, nil
+	default:
+		return Roots{}, errors.New("polynomial degree is greater than 3, use Roots() method")
+	}
+}
+
+func (p Polynomial) rootsAberth() (Roots, error) {
+	if len(p) == 0 {
+		return Roots{}, errors.New("no coefficients given")
+	}
+	if math.Abs(p[len(p)-1]) < eps {
+		return Roots{}, errors.New("not canonical")
+	}
+
+	if math.Abs(p[0]) < eps {
+		np := p[1:]
+		r, err := np.rootsAberth()
+		if err != nil {
+			return Roots{}, err
+		}
+		r.roots = append(r.roots, 0)
+		return r, nil
+	}
+
+	if len(p) <= 3 {
+		return p.rootUpToThree()
+	}
+
+	maxR := 1.0
+	n := len(p) - 1
+	for i := 0; i < n; i++ {
+		r := p[i] / p[n]
+		if math.Abs(r) > maxR {
+			maxR = math.Abs(r)
+		}
+	}
+
+	z := make([]complex128, n)
+
+	for i := 0; i < n; i++ {
+		angle := 2 * math.Pi * (float64(i) + 0.25) / float64(n)
+		z[i] = complex(-p[n]/float64(n)+maxR*math.Cos(angle)/2, maxR*math.Sin(angle)/2)
+	}
+
+	d := p.Derivative()
+	w := make([]complex128, n)
+
+	for range 30 {
+		for i := 0; i < n; i++ {
+			fa := p.EvalCplx(z[i]) / d.EvalCplx(z[i])
+			m := complex(0, 0)
+			for k := 0; k < n; k++ {
+				if i != k {
+					m += 1 / (z[i] - z[k])
+				}
+			}
+			w[i] = fa / (1 - fa*m)
+		}
+		maxW := 0.0
+		for k := 0; k < n; k++ {
+			z[k] -= w[k]
+			maxW = max(maxW, math.Abs(real(w[k])), math.Abs(imag(w[k])))
+		}
+
+		if maxW < eps {
+			return Roots{roots: cleanUpAberth(z), factor: p[n]}, nil
+		}
+	}
+
+	// probably a precision issue (zeros are calculated, but maxW stays larger eps)
+	areZeros := true
+	for k := 0; k < n; k++ {
+		pv := cmplx.Abs(p.EvalCplx(z[k]))
+		if pv > eps {
+			areZeros = false
+			break
+		}
+	}
+	if areZeros {
+		return Roots{roots: cleanUpAberth(z), factor: p[n]}, nil
+	} else {
+		return Roots{}, fmt.Errorf("no root found in Aberth solver: no convergence in %v", p)
+	}
+
+}
+
+func cleanUpAberth(z []complex128) []complex128 {
+	var r []complex128
+	for _, zz := range z {
+		if math.Abs(imag(zz)) < 1e-7 {
+			r = append(r, complex(real(zz), 0))
+		} else if imag(zz) > 0 {
+			r = append(r, zz)
+		}
+	}
+	return r
 }
 
 func FromRoot(zero complex128) Polynomial {
