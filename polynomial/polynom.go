@@ -455,6 +455,8 @@ func (p Polynomial) rootUpToThree() (Roots, error) {
 	}
 }
 
+// see: Oliver Aberth, "Iteration Methods for Finding all Zeros of
+// a Polynomial Simultaneously" MATHEMATICS OF COMPUTATION, VOLUME 27, NUMBER 122, APRIL, 1973
 func (p Polynomial) rootsAberth() (Roots, error) {
 	if len(p) == 0 {
 		return Roots{}, errors.New("no coefficients given")
@@ -480,9 +482,9 @@ func (p Polynomial) rootsAberth() (Roots, error) {
 	maxR := 1.0
 	n := len(p) - 1
 	for i := 0; i < n; i++ {
-		r := p[i] / p[n]
-		if math.Abs(r) > maxR {
-			maxR = math.Abs(r)
+		r := math.Abs(p[i] / p[n])
+		if r > maxR {
+			maxR = r
 		}
 	}
 
