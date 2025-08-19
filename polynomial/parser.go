@@ -959,8 +959,48 @@ func (s Slider) Html(val string, elements, n int) string {
 	if val == "" {
 		val = strconv.Itoa(int((s.def-s.min)/(s.max-s.min)*1000 + 0.5))
 	}
-	html := fmt.Sprintf(`<div>%s:</div><input oninput="updateByGui(%d)" type="range" min="0" max="1000" value="%s" id="guiElement-%d" class="range-slider"/>`, template.HTMLEscapeString(s.name), elements, val, n)
-	return html
+	sb := strings.Builder{}
+	sb.WriteString(fmt.Sprintf("<label for=\"guiElement-%d\">%s:</label>", n, template.HTMLEscapeString(s.name)))
+	sb.WriteString(fmt.Sprintf(`<input oninput="updateByGui(%d)" type="range" min="0" max="1000" value="%s" id="guiElement-%d" class="range-slider"/>`, elements, val, n))
+	return sb.String()
+}
+
+type Check struct {
+	name string
+	def  bool
+}
+
+func (s Check) Name() string {
+	return s.name
+}
+
+func (s Check) FromValue(val string) value.Value {
+	if val == "true" {
+		return value.Bool(true)
+	} else {
+		return value.Bool(false)
+	}
+}
+
+func (s Check) Def() value.Value {
+	return value.Bool(s.def)
+}
+
+func (s Check) Html(val string, elements, n int) string {
+	bo := s.def
+	if val != "" {
+		if b, ok := s.FromValue(val).ToBool(); ok && b {
+			bo = b
+		}
+	}
+	sb := strings.Builder{}
+	sb.WriteString(fmt.Sprintf(`<label for="guiElement-%d">%s:</label><div>`, n, template.HTMLEscapeString(s.name)))
+	sb.WriteString(fmt.Sprintf(`<input oninput="updateByGui(%d)" type="checkbox" id="guiElement-%d"`, elements, n))
+	if bo {
+		sb.WriteString(` checked="checked"`)
+	}
+	sb.WriteString(`"/></div>`)
+	return sb.String()
 }
 
 type Select struct {
@@ -1069,6 +1109,25 @@ func (r *GuiElements) newSlider(name string, def, min, max float64) value.Value 
 	return slider.Def()
 }
 
+func (r *GuiElements) newCheck(name string, def bool) value.Value {
+	for i, el := range r.elements {
+		if el.Name() == name {
+			if i < len(r.values) {
+				return el.FromValue(r.values[i])
+			}
+			return el.Def()
+		}
+	}
+
+	i := len(r.elements)
+	check := Check{name: name, def: def}
+	r.elements = append(r.elements, check)
+	if i < len(r.values) {
+		return check.FromValue(r.values[i])
+	}
+	return check.Def()
+}
+
 func (r *GuiElements) newSelect(items []string) value.Value {
 	name := items[0]
 	items = items[1:]
@@ -1159,6 +1218,14 @@ func guiMethods() value.MethodMap {
 			return r.newSelect(items), nil
 		}).SetMethodDescription("strings...", "Creates a new select box. The entries must be strings and the "+
 			"first entry is the default entry. The return value of this method call is the selected entry.").Pure(false),
+		"check": value.MethodAtType(2, func(r *GuiElements, st funcGen.Stack[value.Value]) (value.Value, error) {
+			if name, ok := st.Get(1).(value.String); ok {
+				if def, ok := st.GetOptional(2, value.Bool(false)).ToBool(); ok {
+					return r.newCheck(string(name), def), nil
+				}
+			}
+			return nil, fmt.Errorf("check requires a string and a boolean as arguments")
+		}).SetMethodDescription("name", "checked", "Creates a new check box. The default state is 'not checked'.").VarArgsMethod(1, 2).Pure(false),
 	}
 }
 

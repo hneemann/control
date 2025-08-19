@@ -5,7 +5,11 @@ function updateByGui(n) {
         if (slValues !== "") {
             slValues += ",";
         }
-        slValues += sl.value;
+        if (sl.type === "checkbox") {
+            slValues += sl.checked ? "true" : "false";
+        } else {
+            slValues += sl.value;
+        }
     }
 
     let source = document.getElementById('gui-source');

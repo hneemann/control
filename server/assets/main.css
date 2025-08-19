@@ -84,7 +84,7 @@ textarea.source {
     overflow: auto;
 }
 
-input {
+input.file {
     font-size: inherit;
     display: flex;
     margin-left: 0.25em;
