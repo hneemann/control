@@ -24,8 +24,8 @@ github.com/hneemann/iterator v0.0.0-20240630073221-aab15310e28c h1:itki31EzEjJar
 github.com/hneemann/iterator v0.0.0-20240630073221-aab15310e28c/go.mod h1:Y4LjHwBja9p9vaWnjpEzDorwPp/9UcDmycAJPX6WBEI=
 github.com/hneemann/parser2 v0.0.0-20250810071023-e58515e38b62 h1:aM1Ik9dwiIqwF70u/mkwPqpCL7KrGXq7d1ytLKZg0yI=
 github.com/hneemann/parser2 v0.0.0-20250810071023-e58515e38b62/go.mod h1:SS7YsssqCfYO9w+HMtAff0UDfXqdjkq2rhElFNl7tZ4=
-github.com/hneemann/session v0.0.0-20250907111932-9b167ad64024 h1:+9c24tGeb1dazs1TW2sDfQZ0a6P/XGPzdKhTUCJ9fyM=
-github.com/hneemann/session v0.0.0-20250907111932-9b167ad64024/go.mod h1:3lxFYNIGHpgMb2X2fefxmaw6bTH2kmdtNuaWXxh83jQ=
+github.com/hneemann/session v0.0.0-20250908155336-145c1585f845 h1:guvlcJBDFj89A3gQKLAuqiU7gwK/ptDYFgfMXG3FsmQ=
+github.com/hneemann/session v0.0.0-20250908155336-145c1585f845/go.mod h1:3lxFYNIGHpgMb2X2fefxmaw6bTH2kmdtNuaWXxh83jQ=
 github.com/jeremija/gosubmit v0.2.8 h1:mmSITBz9JxVtu8eqbN+zmmwX7Ij2RidQxhcwRVI4wqA=
 github.com/jeremija/gosubmit v0.2.8/go.mod h1:Ui+HS073lCFREXBbdfrJzMB57OI/bdxTiLtrDHHhFPI=
 github.com/kr/pretty v0.3.1 h1:flRD4NNwYAUpkphVc1HcthR4KEIFJ65n8Mw5qdRn3LE=
@@ -64,10 +64,10 @@ go.opentelemetry.io/otel/metric v1.38.0 h1:Kl6lzIYGAh5M159u9NgiRkmoMKjvbsKtYRwgf
 go.opentelemetry.io/otel/metric v1.38.0/go.mod h1:kB5n/QoRM8YwmUahxvI3bO34eVtQf2i4utNVLr9gEmI=
 go.opentelemetry.io/otel/trace v1.38.0 h1:Fxk5bKrDZJUH+AMyyIXGcFAPah0oRcT+LuNtJrmcNLE=
 go.opentelemetry.io/otel/trace v1.38.0/go.mod h1:j1P9ivuFsTceSWe1oY+EeW3sc+Pp42sO++GHkg4wwhs=
-golang.org/x/crypto v0.41.0 h1:WKYxWedPGCTVVl5+WHSSrOBT0O8lx32+zxmHxijgXp4=
-golang.org/x/crypto v0.41.0/go.mod h1:pO5AFd7FA68rFak7rOAGVuygIISepHftHnr8dr6+sUc=
-golang.org/x/net v0.42.0 h1:jzkYrhi3YQWD6MLBJcsklgQsoAcw89EcZbJw8Z614hs=
-golang.org/x/net v0.42.0/go.mod h1:FF1RA5d3u7nAYA4z2TkclSCKh68eSXtiFwcWQpPXdt8=
+golang.org/x/crypto v0.42.0 h1:chiH31gIWm57EkTXpwnqf8qeuMUi0yekh6mT2AvFlqI=
+golang.org/x/crypto v0.42.0/go.mod h1:4+rDnOTJhQCx2q7/j6rAN5XDw8kPjeaXEUR2eL94ix8=
+golang.org/x/net v0.43.0 h1:lat02VYK2j4aLzMzecihNvTlJNQUq316m2Mr9rnM6YE=
+golang.org/x/net v0.43.0/go.mod h1:vhO1fvI4dGsIjh73sWfUVjj3N7CA9WkKJNQm2svM6Jg=
 golang.org/x/oauth2 v0.31.0 h1:8Fq0yVZLh4j4YA47vHKFTa9Ew5XIrCP8LC6UeNZnLxo=
 golang.org/x/oauth2 v0.31.0/go.mod h1:lzm5WQJQwKZ3nwavOZ3IS5Aulzxi68dUSgRHujetwEA=
 golang.org/x/sys v0.0.0-20220715151400-c0bba94af5f8/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
