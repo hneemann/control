@@ -32,6 +32,10 @@ func retry(count int, delay time.Duration, task func() bool) bool {
 
 type persist struct{}
 
+func (p persist) Init(_ fileSys.FileSystem, _ *data.UserData) error {
+	return nil
+}
+
 func (p persist) Load(f fileSys.FileSystem) (*data.UserData, error) {
 	r, err := f.Reader("data.json")
 	if err != nil {
@@ -62,26 +66,22 @@ func main() {
 
 	log.Println("Folder:", *dataFolder)
 
-	var sc *session.Cache[data.UserData]
+	var dm session.Manager[data.UserData]
+	dm = session.NewFileManager[data.UserData](
+		session.NewFileSystemFactory(*dataFolder),
+		persist{})
+
 	if *oidc {
-		sc = session.NewSessionCache[data.UserData](
-			myOidc.NewOidcDataManager[data.UserData](
-				session.NewFileSystemFactory(*dataFolder),
-				persist{}),
-			4*time.Hour, time.Hour)
-	} else {
-		sc = session.NewSessionCache[data.UserData](
-			session.NewDataManager[data.UserData](
-				session.NewFileSystemFactory(*dataFolder),
-				persist{}),
-			4*time.Hour, time.Hour)
-		if *debug {
-			err := sc.CreateDebugSession("admin", "admin", "debugTokenForAdmin")
-			if err != nil {
-				log.Fatal(err)
-			}
+		dm = myOidc.NewOidcDataManager[data.UserData](dm)
+	}
+	sc := session.NewSessionCache[data.UserData](dm, 4*time.Hour, time.Hour)
+	if *debug && !*oidc {
+		err := sc.CreateDebugSession("admin", "admin", "debugTokenForAdmin")
+		if err != nil {
+			log.Fatal(err)
 		}
 	}
+
 	defer sc.Close()
 
 	mux := http.NewServeMux()
