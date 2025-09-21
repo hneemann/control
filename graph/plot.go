@@ -193,14 +193,14 @@ func (p *Plot) DrawTo(canvas Canvas) error {
 		for _, tick := range xTicks {
 			if !p.cross || math.Abs(tick.Position) > 1e-8 {
 				xp := xTrans(tick.Position)
+				if p.Grid != nil {
+					canvas.DrawPath(PointsFromSlice(Point{xp, innerRect.Min.Y}, Point{xp, innerRect.Max.Y}), p.Grid)
+				}
 				if tick.Label == "" {
 					canvas.DrawPath(PointsFromSlice(Point{xp, yp - small}, Point{xp, yp}), thinLine)
 				} else {
 					canvas.DrawText(Point{xp, yp - large - small}, tick.Label, Top|HCenter, textStyle, p.textSize)
 					canvas.DrawPath(PointsFromSlice(Point{xp, yp - large}, Point{xp, yp}), p.Frame)
-				}
-				if p.Grid != nil {
-					canvas.DrawPath(PointsFromSlice(Point{xp, innerRect.Min.Y}, Point{xp, innerRect.Max.Y}), p.Grid)
 				}
 			}
 		}
@@ -213,14 +213,14 @@ func (p *Plot) DrawTo(canvas Canvas) error {
 		for _, tick := range yTicks {
 			if !p.cross || math.Abs(tick.Position) > 1e-8 {
 				yp := yTrans(tick.Position)
+				if p.Grid != nil {
+					canvas.DrawPath(PointsFromSlice(Point{innerRect.Min.X, yp}, Point{innerRect.Max.X, yp}), p.Grid)
+				}
 				if tick.Label == "" {
 					canvas.DrawPath(PointsFromSlice(Point{xp - small, yp}, Point{xp, yp}), thinLine)
 				} else {
 					canvas.DrawText(Point{xp - large, yp}, tick.Label, Right|VCenter, textStyle, p.textSize)
 					canvas.DrawPath(PointsFromSlice(Point{xp - large, yp}, Point{xp, yp}), p.Frame)
-				}
-				if p.Grid != nil {
-					canvas.DrawPath(PointsFromSlice(Point{innerRect.Min.X, yp}, Point{innerRect.Max.X, yp}), p.Grid)
 				}
 			}
 		}
