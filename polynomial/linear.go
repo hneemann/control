@@ -1166,7 +1166,6 @@ func (l *Linear) Nyquist(sMax float64, alsoNeg bool) ([]graph.PlotContent, error
 
 	var cp []graph.PlotContent
 	cp = append(cp, NewImReLabels())
-	cp = append(cp, graph.Cross{Style: graph.Gray})
 	if alsoNeg {
 		neg, err := l.NyquistNeg(sMax)
 		if err != nil {
@@ -1175,8 +1174,8 @@ func (l *Linear) Nyquist(sMax float64, alsoNeg bool) ([]graph.PlotContent, error
 		cp = append(cp, neg)
 		cp = append(cp, graph.Scatter{Points: graph.PointsFromPoint(graph.Point{X: -1, Y: 0}), ShapeLineStyle: graph.ShapeLineStyle{Shape: graph.NewCrossMarker(4), ShapeStyle: graph.Red}})
 	}
-	zeroMarker := graph.NewCircleMarker(4)
 	if isZero {
+		zeroMarker := graph.NewCircleMarker(4)
 		cp = append(cp, graph.Scatter{Points: graph.PointsFromPoint(graph.Point{X: real(cZero), Y: imag(cZero)}), ShapeLineStyle: graph.ShapeLineStyle{Shape: zeroMarker, ShapeStyle: graph.Black}, Title: "ω=0"})
 	}
 	pos, err := l.NyquistPos(sMax)
@@ -1184,6 +1183,7 @@ func (l *Linear) Nyquist(sMax float64, alsoNeg bool) ([]graph.PlotContent, error
 		return nil, err
 	}
 	cp = append(cp, pos)
+	cp = append(cp, graph.Cross{Style: graph.Gray})
 
 	return cp, nil
 }
