@@ -753,23 +753,25 @@ func (h Hint) DependantBounds(_, _ Bounds) (Bounds, Bounds, error) {
 	return Bounds{}, Bounds{}, nil
 }
 
+const arrowLen = 2.5
+
 func (h Hint) DrawTo(plot *Plot, canvas Canvas) error {
 	r := canvas.Rect()
+	textSize := canvas.Context().TextSize
 	if r.Contains(h.Pos) {
 		r := plot.canvas.Rect()
 		hPos := plot.trans(h.Pos)
 		tPos := hPos
-		dx := r.Width() / 30
+		delta := textSize * arrowLen / math.Sqrt(2)
 		if r.IsInLeftHalf(hPos) {
-			tPos = tPos.Add(Point{dx, 0})
+			tPos = tPos.Add(Point{delta, 0})
 		} else {
-			tPos = tPos.Add(Point{-dx, 0})
+			tPos = tPos.Add(Point{-delta, 0})
 		}
-		dy := r.Height() / 30
 		if r.IsInTopHalf(hPos) {
-			tPos = tPos.Add(Point{0, -dy})
+			tPos = tPos.Add(Point{0, -delta})
 		} else {
-			tPos = tPos.Add(Point{0, dy})
+			tPos = tPos.Add(Point{0, delta})
 		}
 		drawArrow(plot, tPos, hPos, h.Style, 1, h.Text)
 	}
@@ -791,7 +793,7 @@ func (h HintDir) DrawTo(plot *Plot, canvas Canvas) error {
 		p1 := plot.trans(h.Pos)
 		p2 := plot.trans(h.PosDir)
 
-		delta := p1.Sub(p2).Norm().Rot90().Mul(plot.canvas.Rect().Width() / 30)
+		delta := p1.Sub(p2).Norm().Rot90().Mul(canvas.Context().TextSize * arrowLen)
 		tPos := p1.Add(delta)
 
 		drawArrow(plot, tPos, p1, h.Style, 1, h.Text)
