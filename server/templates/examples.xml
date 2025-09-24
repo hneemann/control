@@ -106,9 +106,9 @@ let k3 = pid(0.3,2,0.5);
 
 plot(
   yConst(1),
-  (k1*g).loop().simStep(10).graph().line(blue). title("phasenanhebendes Korrekturglied"),
-  (k2*g).loop().simStep(10).graph().line(black).title("PI"),
-  (k3*g).loop().simStep(10).graph().line(green).title("PID")
+  (k1*g).loop().simStep(10).graph().line(blue,  "phasenanhebendes Korrekturglied"),
+  (k2*g).loop().simStep(10).graph().line(black, "PI"),
+  (k3*g).loop().simStep(10).graph().line(green, "PID")
 ).labels("t [s]","h(t)").legendPos(5,0.87)</example>
 
 <example name="Simulation nicht linear" desc="Simulation eines nicht linearen Systems"
@@ -137,9 +137,9 @@ let simNormal  = (K*G).loop().simStep(6);
 
 plot(
   yConst(1),
-  simNormal.graph().      line(green).title("y (u unlimited)"),
-  simLimited.uLim.graph().line(blue). title("u limited"),
-  simLimited.y.graph().   line(black).title("y (u limited)")
+  simNormal.graph().      line(green, "y (u unlimited)"),
+  simLimited.uLim.graph().line(blue,  "u limited"),
+  simLimited.y.graph().   line(black, "y (u limited)")
 ).legendPos(2,0.7)
  .labels("t [s]", "h(t)")
  .title("Effect of a Limiter")</example>
