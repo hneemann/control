@@ -3,7 +3,6 @@ package graph
 import (
 	"bytes"
 	"fmt"
-	"log"
 	"math"
 	"slices"
 )
@@ -147,7 +146,6 @@ func (p *Plot) DrawTo(canvas Canvas) error {
 		yTickSep = 1
 	}
 
-	log.Println("scale x")
 	xExp := 0.02
 	if p.NoXExpand {
 		xExp = 0
@@ -157,7 +155,6 @@ func (p *Plot) DrawTo(canvas Canvas) error {
 			return width > p.textSize*(float64(digits)+1+xTickSep)*0.5
 		}, xExp)
 
-	log.Println("scale y")
 	yExp := 0.0
 	if !p.NoYExpand {
 		yAutoScale := !p.YBounds.isSet
@@ -188,7 +185,6 @@ func (p *Plot) DrawTo(canvas Canvas) error {
 		},
 	}
 
-	log.Println("draw x axis")
 	if !p.HideXAxis {
 		yp := innerRect.Min.Y
 		if p.cross {
@@ -210,7 +206,6 @@ func (p *Plot) DrawTo(canvas Canvas) error {
 		}
 	}
 
-	log.Println("draw y axis")
 	if !p.HideYAxis {
 		xp := innerRect.Min.X
 		if p.cross {
@@ -232,7 +227,6 @@ func (p *Plot) DrawTo(canvas Canvas) error {
 		}
 	}
 
-	log.Println("draw content")
 	var legends []Legend
 	for _, plotContent := range slices.Backward(p.Content) {
 		err := plotContent.DrawTo(p, p.inner)
@@ -245,7 +239,6 @@ func (p *Plot) DrawTo(canvas Canvas) error {
 		}
 	}
 
-	log.Println("draw frame")
 	if p.XLabel != "" || xUnit != "" {
 		yp := innerRect.Min.Y
 		if p.cross {
@@ -288,7 +281,6 @@ func (p *Plot) DrawTo(canvas Canvas) error {
 		canvas.DrawPath(innerRect.Path(), p.Frame)
 	}
 
-	log.Println("draw legend")
 	if len(legends) > 0 {
 		var lp Point
 		if p.legendPosGiven {
@@ -308,7 +300,6 @@ func (p *Plot) DrawTo(canvas Canvas) error {
 			lp = lp.Add(Point{0, -p.textSize * 1.5})
 		}
 	}
-	log.Println("done")
 	return nil
 }
 
