@@ -38,9 +38,19 @@ func (t Ticks) Characters() int {
 type Axis func(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth, expand float64) (func(v float64) float64, Ticks, Bounds, string)
 
 func LinearAxis(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth, expand float64) (func(v float64) float64, Ticks, Bounds, string) {
+	const max = 1e10
 	delta := bounds.Width() * expand
+	if delta > max {
+		delta = max
+	}
 	eMin := bounds.Min - delta
+	if eMin < -max {
+		eMin = -max
+	}
 	eMax := bounds.Max + delta
+	if eMax > max {
+		eMax = max
+	}
 	l := linTickCreator{min: eMin, max: eMax}
 	ticks := l.ticks(minParent, maxParent, ctw)
 	return func(v float64) float64 {
@@ -146,8 +156,14 @@ func LogAxis(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth, ex
 		return LinearAxis(minParent, maxParent, bounds, ctw, expand)
 	}
 
-	logMin := math.Log10(bounds.Min)
 	logMax := math.Log10(bounds.Max)
+	if logMax > 10 {
+		logMax = 10
+	}
+	logMin := math.Log10(bounds.Min)
+	if logMin > logMax {
+		logMin = logMax * 1e-3
+	}
 
 	if logMax-logMin < 1 {
 		return LinearAxis(minParent, maxParent, bounds, ctw, expand)
@@ -244,8 +260,14 @@ func DBAxis(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth, exp
 		return LinearAxis(minParent, maxParent, bounds, ctw, expand)
 	}
 
-	logMin := 20 * math.Log10(bounds.Min)
 	logMax := 20 * math.Log10(bounds.Max)
+	if logMax > 10 {
+		logMax = 10
+	}
+	logMin := 20 * math.Log10(bounds.Min)
+	if logMin > logMax {
+		logMin = logMax * 1e-3
+	}
 
 	if logMax-logMin < 2 {
 		return LinearAxis(minParent, maxParent, bounds, ctw, expand)
