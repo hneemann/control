@@ -266,6 +266,13 @@ func (p Polynomial) GetType() value.Type {
 
 func polyMethods() value.MethodMap {
 	return value.MethodMap{
+		"graph": value.MethodAtType(0, func(pol Polynomial, st funcGen.Stack[value.Value]) (value.Value, error) {
+			f := func(x float64) (float64, error) {
+				return pol.Eval(x), nil
+			}
+			gf := graph.Function{Function: f}
+			return grParser.PlotContentValue{Holder: grParser.Holder[graph.PlotContent]{Value: gf}}, nil
+		}).SetMethodDescription("Returns the graph of the polynomial."),
 		"degree": value.MethodAtType(0, func(pol Polynomial, st funcGen.Stack[value.Value]) (value.Value, error) {
 			if len(pol) == 0 {
 				return value.Int(0), errors.New("degree of empty polynomial is undefined")
@@ -404,6 +411,13 @@ func bodePlotContentMethods() value.MethodMap {
 
 func linMethods() value.MethodMap {
 	return value.MethodMap{
+		"graph": value.MethodAtType(0, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
+			f := func(x float64) (float64, error) {
+				return lin.Eval(x), nil
+			}
+			gf := graph.Function{Function: f}
+			return grParser.PlotContentValue{Holder: grParser.Holder[graph.PlotContent]{Value: gf}}, nil
+		}).SetMethodDescription("Returns the graph of the linear system."),
 		"loop": value.MethodAtType(0, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
 			return lin.Loop(), nil
 		}).SetMethodDescription("Closes the loop. Calculates the closed loop transfer function G/(G+1)=N/(N+D)."),
