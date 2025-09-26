@@ -110,7 +110,7 @@ func (p *Plot) DrawTo(canvas Canvas) (err error) {
 	}
 
 	if p.FillBackground {
-		nErr.Throw(canvas.DrawPath(rect.Path(), White.SetStrokeWidth(0).SetFill(White)))
+		nErr.Try(canvas.DrawPath(rect.Path(), White.SetStrokeWidth(0).SetFill(White)))
 	}
 
 	xBounds, yBounds, err := p.calcBounds()
@@ -198,13 +198,13 @@ func (p *Plot) DrawTo(canvas Canvas) (err error) {
 			if !p.cross || math.Abs(tick.Position) > 1e-8 {
 				xp := xTrans(tick.Position)
 				if p.Grid != nil {
-					nErr.Throw(canvas.DrawPath(PointsFromSlice(Point{xp, innerRect.Min.Y}, Point{xp, innerRect.Max.Y}), p.Grid))
+					nErr.Try(canvas.DrawPath(PointsFromSlice(Point{xp, innerRect.Min.Y}, Point{xp, innerRect.Max.Y}), p.Grid))
 				}
 				if tick.Label == "" {
-					nErr.Throw(canvas.DrawPath(PointsFromSlice(Point{xp, yp - small}, Point{xp, yp}), thinLine))
+					nErr.Try(canvas.DrawPath(PointsFromSlice(Point{xp, yp - small}, Point{xp, yp}), thinLine))
 				} else {
 					canvas.DrawText(Point{xp, yp - large - small}, tick.Label, Top|HCenter, textStyle, p.textSize)
-					nErr.Throw(canvas.DrawPath(PointsFromSlice(Point{xp, yp - large}, Point{xp, yp}), p.Frame))
+					nErr.Try(canvas.DrawPath(PointsFromSlice(Point{xp, yp - large}, Point{xp, yp}), p.Frame))
 				}
 			}
 		}
@@ -219,13 +219,13 @@ func (p *Plot) DrawTo(canvas Canvas) (err error) {
 			if !p.cross || math.Abs(tick.Position) > 1e-8 {
 				yp := yTrans(tick.Position)
 				if p.Grid != nil {
-					nErr.Throw(canvas.DrawPath(PointsFromSlice(Point{innerRect.Min.X, yp}, Point{innerRect.Max.X, yp}), p.Grid))
+					nErr.Try(canvas.DrawPath(PointsFromSlice(Point{innerRect.Min.X, yp}, Point{innerRect.Max.X, yp}), p.Grid))
 				}
 				if tick.Label == "" {
-					nErr.Throw(canvas.DrawPath(PointsFromSlice(Point{xp - small, yp}, Point{xp, yp}), thinLine))
+					nErr.Try(canvas.DrawPath(PointsFromSlice(Point{xp - small, yp}, Point{xp, yp}), thinLine))
 				} else {
 					canvas.DrawText(Point{xp - large, yp}, tick.Label, Right|VCenter, textStyle, p.textSize)
-					nErr.Throw(canvas.DrawPath(PointsFromSlice(Point{xp - large, yp}, Point{xp, yp}), p.Frame))
+					nErr.Try(canvas.DrawPath(PointsFromSlice(Point{xp - large, yp}, Point{xp, yp}), p.Frame))
 				}
 			}
 		}
@@ -233,10 +233,7 @@ func (p *Plot) DrawTo(canvas Canvas) (err error) {
 
 	var legends []Legend
 	for _, plotContent := range slices.Backward(p.Content) {
-		err := plotContent.DrawTo(p, p.inner)
-		if err != nil {
-			return err
-		}
+		nErr.Try(plotContent.DrawTo(p, p.inner))
 		l := plotContent.Legend()
 		if l.Name != "" && !p.HideLegend {
 			legends = append(legends, l)
@@ -265,24 +262,24 @@ func (p *Plot) DrawTo(canvas Canvas) (err error) {
 		yp := yTrans(0)
 		cs := p.Frame.StrokeWidth / 2
 		al := p.textSize * 0.8
-		nErr.Throw(canvas.DrawPath(PointsFromSlice(
+		nErr.Try(canvas.DrawPath(PointsFromSlice(
 			Point{xp, innerRect.Min.Y},
 			Point{xp, innerRect.Max.Y - cs}), p.Frame))
-		nErr.Throw(canvas.DrawPath(PointsFromSlice(
+		nErr.Try(canvas.DrawPath(PointsFromSlice(
 			Point{xp - al/4, innerRect.Max.Y - al},
 			Point{xp, innerRect.Max.Y - cs},
 			Point{xp + al/4, innerRect.Max.Y - al},
 		), p.Frame))
-		nErr.Throw(canvas.DrawPath(PointsFromSlice(
+		nErr.Try(canvas.DrawPath(PointsFromSlice(
 			Point{innerRect.Min.X, yp},
 			Point{innerRect.Max.X - cs, yp}), p.Frame))
-		nErr.Throw(canvas.DrawPath(PointsFromSlice(
+		nErr.Try(canvas.DrawPath(PointsFromSlice(
 			Point{innerRect.Max.X - al, yp + al/4},
 			Point{innerRect.Max.X - cs, yp},
 			Point{innerRect.Max.X - al, yp - al/4},
 		), p.Frame))
 	} else {
-		nErr.Throw(canvas.DrawPath(innerRect.Path(), p.Frame))
+		nErr.Try(canvas.DrawPath(innerRect.Path(), p.Frame))
 	}
 
 	if len(legends) > 0 {
@@ -296,10 +293,10 @@ func (p *Plot) DrawTo(canvas Canvas) (err error) {
 			canvas.DrawText(lp, leg.Name, Left|VCenter, textStyle, p.textSize)
 			sls := leg.EnsureSomethingIsVisible()
 			if sls.IsLine() {
-				nErr.Throw(canvas.DrawPath(PointsFromSlice(lp.Add(Point{-2*p.textSize - small, 0}), lp.Add(Point{-small, 0})), sls.LineStyle))
+				nErr.Try(canvas.DrawPath(PointsFromSlice(lp.Add(Point{-2*p.textSize - small, 0}), lp.Add(Point{-small, 0})), sls.LineStyle))
 			}
 			if sls.IsShape() {
-				nErr.Throw(canvas.DrawShape(lp.Add(Point{-1*p.textSize - small, 0}), sls.Shape, sls.ShapeStyle))
+				nErr.Try(canvas.DrawShape(lp.Add(Point{-1*p.textSize - small, 0}), sls.Shape, sls.ShapeStyle))
 			}
 			lp = lp.Add(Point{0, -p.textSize * 1.5})
 		}
@@ -1236,7 +1233,7 @@ func (s ImageInset) DrawTo(p *Plot, _ Canvas) (cErr error) {
 			sMin := p.trans(ir.Min)
 			sMax := p.trans(ir.Max)
 
-			nErr.Throw(
+			nErr.Try(
 				p.canvas.DrawPath(SlicePath{Closed: true}.
 					Add(sMin).
 					Add(Point{X: sMax.X, Y: sMin.Y}).
@@ -1252,16 +1249,16 @@ func (s ImageInset) DrawTo(p *Plot, _ Canvas) (cErr error) {
 			l21 := Point{X: lMax.X, Y: lMin.Y}
 
 			if (lMin.X < sMin.X && lMin.Y > sMin.Y) || (lMin.X > sMin.X && lMin.Y < sMin.Y) {
-				nErr.Throw(p.canvas.DrawPath(NewPath(false).Add(sMin).Add(lMin), s.VisualGuide))
+				nErr.Try(p.canvas.DrawPath(NewPath(false).Add(sMin).Add(lMin), s.VisualGuide))
 			}
 			if (l12.X > s12.X && l12.Y > s12.Y) || (l12.X < s12.X && l12.Y < s12.Y) {
-				nErr.Throw(p.canvas.DrawPath(NewPath(false).Add(s12).Add(l12), s.VisualGuide))
+				nErr.Try(p.canvas.DrawPath(NewPath(false).Add(s12).Add(l12), s.VisualGuide))
 			}
 			if (lMax.X < sMax.X && lMax.Y > sMax.Y) || (lMax.X > sMax.X && lMax.Y < sMax.Y) {
-				nErr.Throw(p.canvas.DrawPath(NewPath(false).Add(sMax).Add(lMax), s.VisualGuide))
+				nErr.Try(p.canvas.DrawPath(NewPath(false).Add(sMax).Add(lMax), s.VisualGuide))
 			}
 			if (l21.X > s21.X && l21.Y > s21.Y) || (l21.X < s21.X && l21.Y < s21.Y) {
-				nErr.Throw(p.canvas.DrawPath(NewPath(false).Add(s21).Add(l21), s.VisualGuide))
+				nErr.Try(p.canvas.DrawPath(NewPath(false).Add(s21).Add(l21), s.VisualGuide))
 			}
 		}
 	}
