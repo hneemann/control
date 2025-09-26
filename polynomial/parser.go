@@ -1479,7 +1479,15 @@ var Parser = value.New().
 		},
 		Args:   4,
 		IsPure: true,
-	}.SetDescription("func", "initial", "delta", "iterations", "Calculates a Nelder&Mead optimization.").VarArgs(2, 4)).
+	}.SetDescription("func", "initial", "delta", "iterations", "Calculates a Nelder&Mead optimization. "+
+		"The arguments initial and “delta” are lists that have as many entries as the function has arguments. "+
+		"The values in the initial list are used as arguments for the function, and the values in the "+
+		"delta list are used to determine the additional vectors for the search algorithm. To do this, "+
+		"a component from the delta vector is added to the initial vector to determine as many additional "+
+		"vectors as the function has arguments. "+
+		"If the delta list is not specified, the components of the initial list are changed by 10% each. "+
+		"The value iterations specifies the number of iterations after which the search should be terminated "+
+		"if the search vectors do not converge. The default is 1000").VarArgs(2, 4)).
 	AddStaticFunction("blockDelay", funcGen.Function[value.Value]{
 		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
 			if delay, ok := stack.Get(0).ToFloat(); ok {
