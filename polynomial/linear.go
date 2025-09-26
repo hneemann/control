@@ -958,7 +958,7 @@ type BodePlot struct {
 }
 
 func (b *BodePlot) DrawTo(canvas graph.Canvas) error {
-	bode := graph.SplitHorizontal{Top: b.amplitude, Bottom: b.phase}
+	bode := graph.SplitHorizontal{b.amplitude, b.phase}
 	return bode.DrawTo(canvas)
 }
 

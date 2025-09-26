@@ -311,40 +311,42 @@ type Canvas interface {
 	Rect() Rect
 }
 
-type SplitHorizontal struct {
-	Top    Image
-	Bottom Image
-}
+type SplitHorizontal []Image
 
 func (s SplitHorizontal) DrawTo(canvas Canvas) error {
 	r := canvas.Rect()
-	half := (r.Min.Y + r.Max.Y) / 2
-	bottom := TransformCanvas{transform: Translate(Point{0, 0}), parent: canvas, size: Rect{Min: r.Min, Max: Point{r.Max.X, half}}}
-	top := TransformCanvas{transform: Translate(Point{0, 0}), parent: canvas, size: Rect{Min: Point{r.Min.X, half}, Max: r.Max}}
-
-	err := s.Top.DrawTo(top)
-	if err != nil {
-		return err
+	l := len(s)
+	dy := (r.Max.Y - r.Min.Y) / float64(l)
+	y := r.Max.Y
+	for _, img := range s {
+		rect := Rect{Min: Point{r.Min.X, y - dy}, Max: Point{r.Max.X, y}}
+		ca := TransformCanvas{transform: Translate(Point{0, 0}), parent: canvas, size: rect}
+		err := img.DrawTo(ca)
+		if err != nil {
+			return err
+		}
+		y -= dy
 	}
-	return s.Bottom.DrawTo(bottom)
+	return nil
 }
 
-type SplitVertical struct {
-	Left  Image
-	Right Image
-}
+type SplitVertical []Image
 
 func (s SplitVertical) DrawTo(canvas Canvas) error {
 	r := canvas.Rect()
-	half := (r.Min.X + r.Max.X) / 2
-	left := TransformCanvas{transform: Translate(Point{0, 0}), parent: canvas, size: Rect{Min: r.Min, Max: Point{half, r.Max.Y}}}
-	right := TransformCanvas{transform: Translate(Point{0, 0}), parent: canvas, size: Rect{Min: Point{half, r.Min.Y}, Max: r.Max}}
-
-	err := s.Left.DrawTo(left)
-	if err != nil {
-		return err
+	l := len(s)
+	dx := (r.Max.X - r.Min.X) / float64(l)
+	x := r.Min.X
+	for _, img := range s {
+		rect := Rect{Min: Point{x, r.Min.Y}, Max: Point{x + dx, r.Max.Y}}
+		ca := TransformCanvas{transform: Translate(Point{0, 0}), parent: canvas, size: rect}
+		err := img.DrawTo(ca)
+		if err != nil {
+			return err
+		}
+		x += dx
 	}
-	return s.Right.DrawTo(right)
+	return nil
 }
 
 type PathElement struct {

@@ -609,7 +609,7 @@ type BodePlotValue struct {
 }
 
 func (b BodePlotValue) ToImage() graph.Image {
-	return graph.SplitHorizontal{Top: b.Value.amplitude, Bottom: b.Value.phase}
+	return graph.SplitHorizontal{b.Value.amplitude, b.Value.phase}
 }
 
 var (

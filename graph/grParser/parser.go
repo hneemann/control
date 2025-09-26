@@ -1082,42 +1082,48 @@ func Setup(fg *value.FunctionGenerator) {
 	}.SetDescription("x1", "y1", "x2", "y2", "text", "marker", "color", "Creates an arrow plot content.").VarArgs(5, 7))
 	fg.AddStaticFunction("splitHorizontal", funcGen.Function[value.Value]{
 		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
-			if i1, ok := st.Get(0).(ToImageInterface); ok {
-				if i2, ok := st.Get(1).(ToImageInterface); ok {
-					im := graph.SplitHorizontal{
-						Top:    i1.ToImage(),
-						Bottom: i2.ToImage(),
-					}
-					return ImageValue{
-						Holder:  Holder[graph.Image]{im},
-						context: graph.DefaultContext,
-					}, nil
+			if st.Size() < 2 {
+				return nil, fmt.Errorf("splitHorizontal requires at least two images as arguments")
+			}
+			images := make(graph.SplitHorizontal, st.Size())
+			for i := 0; i < st.Size(); i++ {
+				if img, ok := st.Get(i).(ToImageInterface); ok {
+					images[i] = img.ToImage()
+				} else {
+					return nil, fmt.Errorf("splitHorizontal requires images as arguments")
 				}
 			}
-			return nil, fmt.Errorf("hintDir requires four floats and a string")
+
+			return ImageValue{
+				Holder:  Holder[graph.Image]{images},
+				context: graph.DefaultContext,
+			}, nil
 		},
-		Args:   2,
+		Args:   -1,
 		IsPure: true,
-	}.SetDescription("image1", "image2", "Combines two images by a horizontal splitting."))
+	}.SetDescription("image...", "Plots images on top of each other."))
 	fg.AddStaticFunction("splitVertical", funcGen.Function[value.Value]{
 		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
-			if i1, ok := st.Get(0).(ToImageInterface); ok {
-				if i2, ok := st.Get(1).(ToImageInterface); ok {
-					im := graph.SplitVertical{
-						Left:  i1.ToImage(),
-						Right: i2.ToImage(),
-					}
-					return ImageValue{
-						Holder:  Holder[graph.Image]{im},
-						context: graph.DefaultContext,
-					}, nil
+			if st.Size() < 2 {
+				return nil, fmt.Errorf("splitHorizontal requires at least two images as arguments")
+			}
+			images := make(graph.SplitVertical, st.Size())
+			for i := 0; i < st.Size(); i++ {
+				if img, ok := st.Get(i).(ToImageInterface); ok {
+					images[i] = img.ToImage()
+				} else {
+					return nil, fmt.Errorf("splitHorizontal requires images as arguments")
 				}
 			}
-			return nil, fmt.Errorf("hintDir requires four floats and a string")
+
+			return ImageValue{
+				Holder:  Holder[graph.Image]{images},
+				context: graph.DefaultContext,
+			}, nil
 		},
-		Args:   2,
+		Args:   -1,
 		IsPure: true,
-	}.SetDescription("image1", "image2", "Combines two images by a vertical splitting."))
+	}.SetDescription("image...", "Plots images side by side."))
 	fg.AddStaticFunction("dataSet", funcGen.Function[value.Value]{
 		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
 			var content []graph.DataContent
