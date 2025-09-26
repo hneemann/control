@@ -253,27 +253,27 @@ func CreateFixedStepAxis(step float64) Axis {
 
 // DBAxis creates a dB axis.
 // To draw the ticks in bB scale, it uses a linear axis.
-// It uses a common linear axis if the bounds are less than 40 dB apart.
+// It uses a common linear axis if the bounds are less than 20 dB apart.
 // Otherwise, it uses a linear axis with a fixed step size of 20 dB.
 func DBAxis(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth, expand float64) (func(v float64) float64, Ticks, Bounds, string) {
 	if bounds.Min <= 0 {
 		return LinearAxis(minParent, maxParent, bounds, ctw, expand)
 	}
 
-	logMax := 20 * math.Log10(bounds.Max)
-	if logMax > 400 {
-		logMax = 400
+	dBMax := 20 * math.Log10(bounds.Max)
+	if dBMax > 400 {
+		dBMax = 400
 	}
-	logMin := 20 * math.Log10(bounds.Min)
-	if logMin > logMax {
-		logMin = logMax - 60
+	dBMin := 20 * math.Log10(bounds.Min)
+	if dBMin > dBMax {
+		dBMin = dBMax - 60
 	}
 
-	if logMax-logMin < 2 {
+	if dBMax-dBMin < 20 {
 		return LinearAxis(minParent, maxParent, bounds, ctw, expand)
 	}
 
-	tr, ticks, b, unit := CreateFixedStepAxis(20)(minParent, maxParent, Bounds{bounds.isSet, logMin, logMax}, ctw, expand)
+	tr, ticks, b, unit := CreateFixedStepAxis(20)(minParent, maxParent, Bounds{bounds.isSet, dBMin, dBMax}, ctw, expand)
 	for i := range ticks {
 		ticks[i].Position = math.Pow(10, ticks[i].Position/20)
 	}
