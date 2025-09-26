@@ -261,12 +261,12 @@ func DBAxis(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth, exp
 	}
 
 	logMax := 20 * math.Log10(bounds.Max)
-	if logMax > 10 {
-		logMax = 10
+	if logMax > 400 {
+		logMax = 400
 	}
 	logMin := 20 * math.Log10(bounds.Min)
 	if logMin > logMax {
-		logMin = logMax * 1e-3
+		logMin = logMax - 60
 	}
 
 	if logMax-logMin < 2 {
