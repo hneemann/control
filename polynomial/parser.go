@@ -394,7 +394,7 @@ func bodePlotContentMethods() value.MethodMap {
 			return plot, nil
 		}).Pure(false).SetMethodDescription("str", "Sets a string to show in the legend."),
 		"line": value.MethodAtType(2, func(plot BodePlotContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
-			if style, ok := stack.Get(1).(grParser.StyleValue); ok {
+			if style, err := grParser.GetStyle(stack, 1, nil); err == nil {
 				plot.Value.Style = style.Value
 				if title, ok := stack.GetOptional(2, value.String("")).(value.String); ok {
 					if title != "" {
@@ -403,7 +403,7 @@ func bodePlotContentMethods() value.MethodMap {
 				}
 				return plot, nil
 			} else {
-				return nil, fmt.Errorf("line requires a style")
+				return nil, fmt.Errorf("line requires a style: %w", err)
 			}
 		}).Pure(false).SetMethodDescription("color", "title", "Sets the line style and title.").VarArgsMethod(1, 2),
 	}
@@ -699,12 +699,12 @@ func bodeMethods() value.MethodMap {
 			return plot, nil
 		}).SetMethodDescription("color", "Adds a grid.").VarArgsMethod(0, 1),
 		"frame": value.MethodAtType(1, func(plot BodePlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
-			if styleVal, ok := stack.Get(1).(grParser.StyleValue); ok {
+			if styleVal, err := grParser.GetStyle(stack, 1, nil); err == nil {
 				plot.Value.amplitude.Frame = styleVal.Value
 				plot.Value.phase.Frame = styleVal.Value
 				return plot, nil
 			} else {
-				return nil, fmt.Errorf("frame requires a style")
+				return nil, fmt.Errorf("frame requires a style: %w", err)
 			}
 		}).SetMethodDescription("color", "Sets the frame color."),
 		"ampModify": value.MethodAtType(1, func(bode BodePlotValue, st funcGen.Stack[value.Value]) (value.Value, error) {
