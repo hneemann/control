@@ -229,7 +229,7 @@ function deleteFile() {
             showPopUpById('deleteError')
             return;
         }
-        hidePopUp();
+        showSaveAs();
     })
 }
 
