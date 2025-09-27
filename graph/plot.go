@@ -91,7 +91,6 @@ type Plot struct {
 	canvas         Canvas
 	inner          Canvas
 	textSize       float64
-	cross          bool
 }
 
 func (p *Plot) DrawTo(canvas Canvas) (err error) {
@@ -122,7 +121,7 @@ func (p *Plot) DrawTo(canvas Canvas) (err error) {
 		xBounds, yBounds = p.BoundsModifier(xBounds, yBounds, p, canvas)
 	}
 
-	p.cross = p.Cross && xBounds.Min < 0 && xBounds.Max > 0 && yBounds.Min < 0 && yBounds.Max > 0
+	cross := p.Cross && xBounds.Min < 0 && xBounds.Max > 0 && yBounds.Min < 0 && yBounds.Max > 0
 
 	xAxis := p.XAxis
 	if xAxis == nil {
@@ -138,7 +137,10 @@ func (p *Plot) DrawTo(canvas Canvas) (err error) {
 
 	thinLine := p.Frame.SetStrokeWidth(p.Frame.StrokeWidth / 2)
 
-	innerRect := p.calculateInnerRect(rect)
+	innerRect := rect
+	if !cross {
+		innerRect = p.calculateInnerRect(rect)
+	}
 
 	xTickSep := p.XTickSep
 	if xTickSep <= 0 {
@@ -150,6 +152,10 @@ func (p *Plot) DrawTo(canvas Canvas) (err error) {
 	}
 
 	xExp := 0.02
+	if cross {
+		// space for arrow head
+		xExp = 0.022
+	}
 	if p.NoXExpand {
 		xExp = 0
 	}
@@ -163,7 +169,12 @@ func (p *Plot) DrawTo(canvas Canvas) (err error) {
 	yExp := 0.0
 	if !p.NoYExpand {
 		yAutoScale := !p.YBounds.isSet
-		yExp = 0.02
+		if cross {
+			// space for arrow head
+			yExp = 0.03
+		} else {
+			yExp = 0.02
+		}
 		if p.ProtectLabels && yAutoScale && (p.XLabel != "" || p.YLabel != "") {
 			yExp = 1.8 * p.textSize / innerRect.Height()
 		}
@@ -191,11 +202,11 @@ func (p *Plot) DrawTo(canvas Canvas) (err error) {
 
 	if !p.HideXAxis {
 		yp := innerRect.Min.Y
-		if p.cross {
+		if cross {
 			yp = yTrans(0)
 		}
 		for _, tick := range xTicks {
-			if !p.cross || math.Abs(tick.Position) > 1e-8 {
+			if !cross || math.Abs(tick.Position) > 1e-8 {
 				xp := xTrans(tick.Position)
 				if p.Grid != nil {
 					nErr.Try(canvas.DrawPath(PointsFromSlice(Point{xp, innerRect.Min.Y}, Point{xp, innerRect.Max.Y}), p.Grid))
@@ -212,11 +223,11 @@ func (p *Plot) DrawTo(canvas Canvas) (err error) {
 
 	if !p.HideYAxis {
 		xp := innerRect.Min.X
-		if p.cross {
+		if cross {
 			xp = xTrans(0)
 		}
 		for _, tick := range yTicks {
-			if !p.cross || math.Abs(tick.Position) > 1e-8 {
+			if !cross || math.Abs(tick.Position) > 1e-8 {
 				yp := yTrans(tick.Position)
 				if p.Grid != nil {
 					nErr.Try(canvas.DrawPath(PointsFromSlice(Point{innerRect.Min.X, yp}, Point{innerRect.Max.X, yp}), p.Grid))
@@ -242,14 +253,14 @@ func (p *Plot) DrawTo(canvas Canvas) (err error) {
 
 	if p.XLabel != "" || xUnit != "" {
 		yp := innerRect.Min.Y
-		if p.cross {
+		if cross {
 			yp = yTrans(0)
 		}
 		canvas.DrawText(Point{innerRect.Max.X - small, yp + small}, p.XLabel+" "+xUnit, Bottom|Right, textStyle, p.textSize)
 	}
 	if p.YLabel != "" || yUnit != "" {
 		xp := innerRect.Min.X
-		if p.cross {
+		if cross {
 			xp = xTrans(0)
 		}
 		canvas.DrawText(Point{xp + small, innerRect.Max.Y - small}, p.YLabel+" "+yUnit, Top|Left, textStyle, p.textSize)
@@ -257,7 +268,7 @@ func (p *Plot) DrawTo(canvas Canvas) (err error) {
 	if p.Title != "" {
 		canvas.DrawText(Point{innerRect.Max.X - small, innerRect.Max.Y - small}, p.Title, Top|Right, textStyle, p.textSize)
 	}
-	if p.cross {
+	if cross {
 		xp := xTrans(0)
 		yp := yTrans(0)
 		cs := p.Frame.StrokeWidth / 2
@@ -280,6 +291,22 @@ func (p *Plot) DrawTo(canvas Canvas) (err error) {
 		), p.Frame))
 	} else {
 		nErr.Try(canvas.DrawPath(innerRect.Path(), p.Frame))
+	}
+
+	// user wants a cross but origin is not visible, so cross could not be plotted
+	if p.Cross && !cross {
+		if xBounds.Min < 0 && xBounds.Max > 0 {
+			xp := xTrans(0)
+			nErr.Try(canvas.DrawPath(PointsFromSlice(
+				Point{xp, innerRect.Min.Y},
+				Point{xp, innerRect.Max.Y}), p.Frame))
+		}
+		if yBounds.Min < 0 && yBounds.Max > 0 {
+			yp := yTrans(0)
+			nErr.Try(canvas.DrawPath(PointsFromSlice(
+				Point{innerRect.Min.X, yp},
+				Point{innerRect.Max.X, yp}), p.Frame))
+		}
 	}
 
 	if len(legends) > 0 {
@@ -344,10 +371,6 @@ func (p *Plot) calcBounds() (Bounds, Bounds, error) {
 }
 
 func (p *Plot) calculateInnerRect(rect Rect) Rect {
-	if p.cross {
-		return rect
-	}
-
 	rMin := rect.Min
 	rMax := rect.Max
 
