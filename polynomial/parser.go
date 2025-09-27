@@ -1480,14 +1480,14 @@ var Parser = value.New().
 		Args:   4,
 		IsPure: true,
 	}.SetDescription("func", "initial", "delta", "iterations", "Calculates a Nelder&Mead optimization. "+
-		"The arguments initial and “delta” are lists that have as many entries as the function has arguments. "+
+		"The arguments initial and delta are lists that have as many entries as the function has arguments. "+
 		"The values in the initial list are used as arguments for the function, and the values in the "+
 		"delta list are used to determine the additional vectors for the search algorithm. To do this, "+
 		"a component from the delta vector is added to the initial vector to determine as many additional "+
 		"vectors as the function has arguments. "+
 		"If the delta list is not specified, the components of the initial list are changed by 10% each. "+
 		"The value iterations specifies the number of iterations after which the search should be terminated "+
-		"if the search vectors do not converge. The default is 1000").VarArgs(2, 4)).
+		"if the search vectors do not converge. The default is 1000.").VarArgs(2, 4)).
 	AddStaticFunction("blockDelay", funcGen.Function[value.Value]{
 		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
 			if delay, ok := stack.Get(0).ToFloat(); ok {
@@ -1960,10 +1960,18 @@ func NelderMead(fu funcGen.Function[value.Value], initial *value.List, delta *va
 	del := make(nelderMead.Vector, len(cent))
 	if len(delt) > 0 {
 		for i := 0; i < len(cent); i++ {
-			if f, ok := delt[i].ToFloat(); !ok {
+			if d, ok := delt[i].ToFloat(); !ok {
 				return nil, fmt.Errorf("initial vector must have float elements")
 			} else {
-				del[i] = f
+				if d == 0 {
+					if init[i] == 0 {
+						del[i] = 0.1
+					} else {
+						del[i] = 0.1 * init[i]
+					}
+				} else {
+					del[i] = d
+				}
 			}
 		}
 	} else {
@@ -1987,7 +1995,7 @@ func NelderMead(fu funcGen.Function[value.Value], initial *value.List, delta *va
 
 	vec, minVal, err := nelderMead.NelderMead(f, initTable, iter)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("nelderMead failed: %w", err)
 	}
 
 	m := make(map[string]value.Value)

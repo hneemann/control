@@ -125,7 +125,7 @@ func NelderMeadBase(f Solvable, initial []Vector, alpha, gamma, beta, sigma floa
 
 		maxIter--
 		if maxIter < 0 {
-			return nil, 0, errors.New("nelderMead: max iterations reached")
+			return nil, 0, errors.New("max iterations reached")
 		}
 
 		if s.size() < 1e-13 {
