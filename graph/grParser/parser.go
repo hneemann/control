@@ -174,6 +174,18 @@ func createStyleMethods() value.MethodMap {
 			}
 			return StyleValue{Holder[*graph.Style]{style.SetDash(dash...)}}, nil
 		}).SetMethodDescription("l1", "l2", "l3", "l4", "l5", "l6", "Sets the dash style.").VarArgsMethod(2, 6),
+		"red": value.MethodAtType(0, func(styleValue StyleValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			return value.Int(styleValue.Value.Color.R), nil
+		}).SetMethodDescription("Returns the red color value."),
+		"green": value.MethodAtType(0, func(styleValue StyleValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			return value.Int(styleValue.Value.Color.G), nil
+		}).SetMethodDescription("Returns the green color value."),
+		"blue": value.MethodAtType(0, func(styleValue StyleValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			return value.Int(styleValue.Value.Color.B), nil
+		}).SetMethodDescription("Returns the blue color value."),
+		"alpha": value.MethodAtType(0, func(styleValue StyleValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			return value.Int(styleValue.Value.Color.A), nil
+		}).SetMethodDescription("Returns the alpha color value."),
 		"darker": value.MethodAtType(0, func(styleValue StyleValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			style := styleValue.Value
 			return StyleValue{Holder[*graph.Style]{style.Darker()}}, nil
@@ -197,7 +209,7 @@ func createStyleMethods() value.MethodMap {
 				return nil, fmt.Errorf("trans requires a float")
 			}
 			return StyleValue{Holder[*graph.Style]{style.SetTrans(tr)}}, nil
-		}).SetMethodDescription("width", "Sets the stroke width."),
+		}).SetMethodDescription("transparency", "Sets the colors transparency. The value 0 means no transparency, and 1 means fully transparent."),
 		"fill": value.MethodAtType(1, func(styleValue StyleValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			style := styleValue.Value
 			styleVal, err := GetStyle(stack, 1, nil)
@@ -871,27 +883,34 @@ func Setup(fg *value.FunctionGenerator) {
 	fg.AddConstant("yellow", StyleValue{Holder[*graph.Style]{graph.Yellow}})
 	fg.AddStaticFunction("color", funcGen.Function[value.Value]{
 		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
-			if st.Size() == 1 {
+			switch st.Size() {
+			case 1:
 				if i, ok := st.Get(0).ToInt(); ok {
 					return StyleValue{Holder[*graph.Style]{graph.GetColor(i)}}, nil
 				}
 				return nil, fmt.Errorf("color requires an int")
-			} else if st.Size() == 3 {
+			case 3, 4:
 				if r, ok := st.Get(0).ToInt(); ok {
 					if g, ok := st.Get(1).ToInt(); ok {
 						if b, ok := st.Get(2).ToInt(); ok {
-							return StyleValue{Holder[*graph.Style]{graph.NewStyle(uint8(r), uint8(g), uint8(b))}}, nil
+							if st.Size() == 4 {
+								if a, ok := st.Get(3).ToInt(); ok {
+									return StyleValue{Holder[*graph.Style]{graph.NewStyleAlpha(uint8(r), uint8(g), uint8(b), uint8(a))}}, nil
+								}
+							} else {
+								return StyleValue{Holder[*graph.Style]{graph.NewStyle(uint8(r), uint8(g), uint8(b))}}, nil
+							}
 						}
 					}
 				}
-				return nil, fmt.Errorf("color requires three ints")
-			} else {
-				return nil, fmt.Errorf("color requires either one or three arguments")
+				return nil, fmt.Errorf("color requires three or four ints")
+			default:
+				return nil, fmt.Errorf("color requires either one, three or four arguments")
 			}
 		},
 		Args:   -1,
 		IsPure: true,
-	}.SetDescription("r or n", "g", "b", "Returns the color with the number n or, if three arguments are specified, the given rgb color.").VarArgs(1, 3))
+	}.SetDescription("r or n", "g", "b", "a", "Returns the color with the number n or, if three arguments are specified, the given rgb color.").VarArgs(1, 4))
 	fg.AddStaticFunction("plot", funcGen.Function[value.Value]{
 		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
 			p := NewPlotValue(&graph.Plot{})

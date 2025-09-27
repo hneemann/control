@@ -129,24 +129,42 @@ func (c Color) Opacity() string {
 }
 
 func (c Color) Darker() Color {
-	return Color{ //ToDo : use a better algorithm: RGB->HSV->Darken->RGB
-		R: dMax(int(c.R) * 2 / 3),
-		G: dMax(int(c.G) * 2 / 3),
-		B: dMax(int(c.B) * 2 / 3),
-		A: c.A,
-	}
-}
-func (c Color) Brighter() Color {
-	return Color{ //ToDo : use a better algorithm: RGB->HSV->Brighten->RGB
-		R: dMax(int(c.R) * 3 / 2),
-		G: dMax(int(c.G) * 3 / 2),
-		B: dMax(int(c.B) * 3 / 2),
+	return Color{
+		R: colVal(int(c.R) * 7 / 10),
+		G: colVal(int(c.G) * 7 / 10),
+		B: colVal(int(c.B) * 7 / 10),
 		A: c.A,
 	}
 }
 
-func dMax(u int) uint8 {
-	if u > 255 {
+func (c Color) Brighter() Color {
+	r := int(c.R)
+	if r < 3 {
+		r = 3
+	}
+
+	g := int(c.G)
+	if g < 3 {
+		g = 3
+	}
+
+	b := int(c.B)
+	if b < 3 {
+		b = 3
+	}
+
+	return Color{
+		colVal(r * 10 / 7),
+		colVal(g * 10 / 7),
+		colVal(b * 10 / 7),
+		c.A,
+	}
+}
+
+func colVal(u int) uint8 {
+	if u < 0 {
+		return 0
+	} else if u > 255 {
 		return 255
 	} else {
 		return uint8(u)
@@ -154,7 +172,11 @@ func dMax(u int) uint8 {
 }
 
 func NewStyle(r, g, b uint8) *Style {
-	return &Style{Stroke: true, Color: Color{r, g, b, 255}, Fill: false, FillColor: Color{r, g, b, 255}, StrokeWidth: 1}
+	return NewStyleAlpha(r, g, b, 255)
+}
+
+func NewStyleAlpha(r, g, b, a uint8) *Style {
+	return &Style{Stroke: true, Color: Color{r, g, b, a}, Fill: false, FillColor: Color{r, g, b, a}, StrokeWidth: 1}
 }
 
 var (
@@ -222,15 +244,7 @@ func (s *Style) SetStrokeWidth(sw float64) *Style {
 func (s *Style) SetTrans(tr float64) *Style {
 	var style Style
 	style = *s
-	var c uint8
-	if tr <= 0 {
-		c = 0
-	} else if tr >= 1 {
-		c = 255
-	} else {
-		c = uint8(tr * 255)
-	}
-	style.Color.A = c
+	style.Color.A = colVal(int((1 - tr) * 255))
 	return &style
 }
 
