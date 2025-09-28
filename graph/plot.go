@@ -59,10 +59,11 @@ func Zoom(p Point, f float64) BoundsModifier {
 }
 
 type Plot struct {
-	XAxis          Axis
-	YAxis          Axis
+	XAxisFactory   AxisFactory
+	YAxisFactory   AxisFactory
 	XBounds        Bounds
 	YBounds        Bounds
+	Square         bool
 	LeftBorder     float64
 	RightBorder    float64
 	NoBorder       bool
@@ -80,8 +81,8 @@ type Plot struct {
 	HideXAxis      bool
 	HideYAxis      bool
 	BoundsModifier BoundsModifier
-	xTicks         Ticks
-	yTicks         Ticks
+	xAxis          Axis
+	yAxis          Axis
 	XTickSep       float64
 	YTickSep       float64
 	HideLegend     bool
@@ -112,24 +113,24 @@ func (p *Plot) DrawTo(canvas Canvas) (err error) {
 		nErr.Try(canvas.DrawPath(rect.Path(), White.SetStrokeWidth(0).SetFill(White)))
 	}
 
-	xBounds, yBounds, err := p.calcBounds()
+	xBoundsPre, yBoundsPre, err := p.calcBounds()
 	if err != nil {
 		return fmt.Errorf("error calculating plot bounds: %w", err)
 	}
 
 	if p.BoundsModifier != nil {
-		xBounds, yBounds = p.BoundsModifier(xBounds, yBounds, p, canvas)
+		xBoundsPre, yBoundsPre = p.BoundsModifier(xBoundsPre, yBoundsPre, p, canvas)
 	}
 
-	cross := p.Cross && xBounds.Min < 0 && xBounds.Max > 0 && yBounds.Min < 0 && yBounds.Max > 0
+	cross := p.Cross && xBoundsPre.Min < 0 && xBoundsPre.Max > 0 && yBoundsPre.Min < 0 && yBoundsPre.Max > 0
 
-	xAxis := p.XAxis
-	if xAxis == nil {
-		xAxis = LinearAxis
+	xAxisFactory := p.XAxisFactory
+	if xAxisFactory == nil {
+		xAxisFactory = LinearAxis
 	}
-	yAxis := p.YAxis
-	if yAxis == nil {
-		yAxis = LinearAxis
+	yAxisFactory := p.YAxisFactory
+	if yAxisFactory == nil {
+		yAxisFactory = LinearAxis
 	}
 
 	large := p.textSize / 2
@@ -159,12 +160,10 @@ func (p *Plot) DrawTo(canvas Canvas) (err error) {
 	if p.NoXExpand {
 		xExp = 0
 	}
-	xTrans, xTicks, xBounds, xUnit := xAxis(innerRect.Min.X, innerRect.Max.X, xBounds,
+	p.xAxis = xAxisFactory(innerRect.Min.X, innerRect.Max.X, xBoundsPre,
 		func(width float64, digits int) bool {
 			return width > p.textSize*(float64(digits)+1+xTickSep)*0.5
 		}, xExp)
-
-	p.xTicks = xTicks
 
 	yExp := 0.0
 	if !p.NoYExpand {
@@ -180,34 +179,44 @@ func (p *Plot) DrawTo(canvas Canvas) (err error) {
 		}
 	}
 
-	yTrans, yTicks, yBounds, yUnit := yAxis(innerRect.Min.Y, innerRect.Max.Y, yBounds,
+	if p.Square && p.xAxis.IsLinear {
+		yBoundsWidth := innerRect.Height() * p.xAxis.Bounds.Width() / innerRect.Width()
+		dif := (yBoundsWidth - yBoundsPre.Width()) / 2
+		yBoundsPre.Min -= dif
+		yBoundsPre.Max += dif
+		yExp = 0
+	}
+
+	p.yAxis = yAxisFactory(innerRect.Min.Y, innerRect.Max.Y, yBoundsPre,
 		func(width float64, _ int) bool {
 			return width > p.textSize*(1+yTickSep)
 		}, yExp)
 
-	p.yTicks = yTicks
+	if p.Square && (!p.xAxis.IsLinear || !p.yAxis.IsLinear) {
+		return fmt.Errorf("square plots are only supported if both axis are linear")
+	}
 
-	p.trans = func(p Point) Point {
-		return Point{xTrans(p.X), yTrans(p.Y)}
+	p.trans = func(point Point) Point {
+		return Point{p.xAxis.Trans(point.X), p.yAxis.Trans(point.Y)}
 	}
 
 	p.inner = TransformCanvas{
 		transform: p.trans,
 		parent:    canvas,
 		size: Rect{
-			Min: Point{xBounds.Min, yBounds.Min},
-			Max: Point{xBounds.Max, yBounds.Max},
+			Min: Point{p.xAxis.Bounds.Min, p.yAxis.Bounds.Min},
+			Max: Point{p.xAxis.Bounds.Max, p.yAxis.Bounds.Max},
 		},
 	}
 
 	if !p.HideXAxis {
 		yp := innerRect.Min.Y
 		if cross {
-			yp = yTrans(0)
+			yp = p.yAxis.Trans(0)
 		}
-		for _, tick := range xTicks {
+		for _, tick := range p.xAxis.Ticks {
 			if !cross || math.Abs(tick.Position) > 1e-8 {
-				xp := xTrans(tick.Position)
+				xp := p.xAxis.Trans(tick.Position)
 				if p.Grid != nil {
 					nErr.Try(canvas.DrawPath(PointsFromSlice(Point{xp, innerRect.Min.Y}, Point{xp, innerRect.Max.Y}), p.Grid))
 				}
@@ -224,11 +233,11 @@ func (p *Plot) DrawTo(canvas Canvas) (err error) {
 	if !p.HideYAxis {
 		xp := innerRect.Min.X
 		if cross {
-			xp = xTrans(0)
+			xp = p.xAxis.Trans(0)
 		}
-		for _, tick := range yTicks {
+		for _, tick := range p.yAxis.Ticks {
 			if !cross || math.Abs(tick.Position) > 1e-8 {
-				yp := yTrans(tick.Position)
+				yp := p.yAxis.Trans(tick.Position)
 				if p.Grid != nil {
 					nErr.Try(canvas.DrawPath(PointsFromSlice(Point{innerRect.Min.X, yp}, Point{innerRect.Max.X, yp}), p.Grid))
 				}
@@ -251,26 +260,26 @@ func (p *Plot) DrawTo(canvas Canvas) (err error) {
 		}
 	}
 
-	if p.XLabel != "" || xUnit != "" {
+	if p.XLabel != "" || p.xAxis.Unit != "" {
 		yp := innerRect.Min.Y
 		if cross {
-			yp = yTrans(0)
+			yp = p.yAxis.Trans(0)
 		}
-		canvas.DrawText(Point{innerRect.Max.X - small, yp + small}, p.XLabel+" "+xUnit, Bottom|Right, textStyle, p.textSize)
+		canvas.DrawText(Point{innerRect.Max.X - small, yp + small}, p.XLabel+" "+p.xAxis.Unit, Bottom|Right, textStyle, p.textSize)
 	}
-	if p.YLabel != "" || yUnit != "" {
+	if p.YLabel != "" || p.yAxis.Unit != "" {
 		xp := innerRect.Min.X
 		if cross {
-			xp = xTrans(0)
+			xp = p.xAxis.Trans(0)
 		}
-		canvas.DrawText(Point{xp + small, innerRect.Max.Y - small}, p.YLabel+" "+yUnit, Top|Left, textStyle, p.textSize)
+		canvas.DrawText(Point{xp + small, innerRect.Max.Y - small}, p.YLabel+" "+p.yAxis.Unit, Top|Left, textStyle, p.textSize)
 	}
 	if p.Title != "" {
 		canvas.DrawText(Point{innerRect.Max.X - small, innerRect.Max.Y - small}, p.Title, Top|Right, textStyle, p.textSize)
 	}
 	if cross {
-		xp := xTrans(0)
-		yp := yTrans(0)
+		xp := p.xAxis.Trans(0)
+		yp := p.yAxis.Trans(0)
 		cs := p.Frame.StrokeWidth / 2
 		al := p.textSize * 0.8
 		nErr.Try(canvas.DrawPath(PointsFromSlice(
@@ -295,14 +304,14 @@ func (p *Plot) DrawTo(canvas Canvas) (err error) {
 
 	// user wants a cross but origin is not visible, so cross could not be plotted
 	if p.Cross && !cross {
-		if xBounds.Min < 0 && xBounds.Max > 0 {
-			xp := xTrans(0)
+		if p.xAxis.Bounds.Min < 0 && p.xAxis.Bounds.Max > 0 {
+			xp := p.xAxis.Trans(0)
 			nErr.Try(canvas.DrawPath(PointsFromSlice(
 				Point{xp, innerRect.Min.Y},
 				Point{xp, innerRect.Max.Y}), p.Frame))
 		}
-		if yBounds.Min < 0 && yBounds.Max > 0 {
-			yp := yTrans(0)
+		if p.yAxis.Bounds.Min < 0 && p.yAxis.Bounds.Max > 0 {
+			yp := p.yAxis.Trans(0)
 			nErr.Try(canvas.DrawPath(PointsFromSlice(
 				Point{innerRect.Min.X, yp},
 				Point{innerRect.Max.X, yp}), p.Frame))
@@ -443,11 +452,11 @@ func (p *Plot) GetTransform() Transform {
 }
 
 func (p *Plot) GetXTicks() []Tick {
-	return p.xTicks
+	return p.xAxis.Ticks
 }
 
 func (p *Plot) GetYTicks() []Tick {
-	return p.yTicks
+	return p.yAxis.Ticks
 }
 
 func (p *Plot) AddContent(content PlotContent) {

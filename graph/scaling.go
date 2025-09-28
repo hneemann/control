@@ -32,12 +32,30 @@ func (t Ticks) Characters() int {
 	return chars
 }
 
-// Axis is a function that takes the parent coordinate space and the bounds of the axis and returns a function
+// Axis represents an axis.
+type Axis struct {
+	// Trans converts a value in the axis coordinate space to the parent coordinate space.
+	// The parent coordinate space is typically the pixel space of the graph.
+	Trans func(v float64) float64
+	// Ticks are the ticks to be drawn on the axis.
+	Ticks Ticks
+	// Bounds are the bounds of the axis in the axis coordinate space.
+	// They may be expanded beyond the data bounds to ensure that the axis labels are
+	// not too close to the ends of the coordinate space.
+	Bounds Bounds
+	// Unit is the unit of the axis.
+	// It is used to deal with special units like dB.
+	Unit string
+	// IsLinear is true if the axis is linear.
+	IsLinear bool
+}
+
+// AxisFactory is a function that takes the parent coordinate space and the bounds of the axis and returns a function
 // to convert values to the parent space, a slice of ticks, and the expanded bounds of the axis.
 // The expanded bounds are required to ensure that the axis labels are not too close to the ends of the coordinate space.
-type Axis func(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth, expand float64) (func(v float64) float64, Ticks, Bounds, string)
+type AxisFactory func(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth, expand float64) Axis
 
-func LinearAxis(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth, expand float64) (func(v float64) float64, Ticks, Bounds, string) {
+func LinearAxis(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth, expand float64) Axis {
 	const max = 1e10
 	delta := bounds.Width() * expand
 	if delta > max {
@@ -52,10 +70,14 @@ func LinearAxis(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth,
 		eMax = max
 	}
 	l := linTickCreator{min: eMin, max: eMax}
-	ticks := l.ticks(minParent, maxParent, ctw)
-	return func(v float64) float64 {
-		return (v-eMin)/(eMax-eMin)*(maxParent-minParent) + minParent
-	}, ticks, Bounds{bounds.isSet, eMin, eMax}, ""
+	return Axis{
+		Trans: func(v float64) float64 {
+			return (v-eMin)/(eMax-eMin)*(maxParent-minParent) + minParent
+		},
+		Ticks:    l.ticks(minParent, maxParent, ctw),
+		Bounds:   Bounds{bounds.isSet, eMin, eMax},
+		IsLinear: true,
+	}
 }
 
 type linTickCreator struct {
@@ -151,7 +173,7 @@ func exp10(log int) float64 {
 	return e10
 }
 
-func LogAxis(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth, expand float64) (func(v float64) float64, Ticks, Bounds, string) {
+func LogAxis(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth, expand float64) Axis {
 	if bounds.Min <= 0 {
 		return LinearAxis(minParent, maxParent, bounds, ctw, expand)
 	}
@@ -177,8 +199,11 @@ func LogAxis(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth, ex
 		f := (math.Log10(v) - logMin) / (logMax - logMin)
 		return f*(maxParent-minParent) + minParent
 	}
-	ticks := createLogTicks(logMin, minParent, maxParent, tr)
-	return tr, ticks, Bounds{bounds.isSet, math.Pow(10, logMin), math.Pow(10, logMax)}, ""
+	return Axis{
+		Trans:  tr,
+		Ticks:  createLogTicks(logMin, minParent, maxParent, tr),
+		Bounds: Bounds{bounds.isSet, math.Pow(10, logMin), math.Pow(10, logMax)},
+	}
 }
 
 func createLogTicks(logMin, parentMin, parentMax float64, tr func(v float64) float64) []Tick {
@@ -208,36 +233,36 @@ func createLogTicks(logMin, parentMin, parentMax float64, tr func(v float64) flo
 // CreateFixedStepAxis creates an axis with a fixed step size.
 // If there are less than two or more than 20 tick marks in the available space,
 // it falls back to a linear axis.
-func CreateFixedStepAxis(step float64) Axis {
-	return func(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth, expand float64) (func(v float64) float64, Ticks, Bounds, string) {
-		tr, ticks, b, unit := LinearAxis(minParent, maxParent, bounds, ctw, expand)
+func CreateFixedStepAxis(step float64) AxisFactory {
+	return func(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth, expand float64) Axis {
+		linearDef := LinearAxis(minParent, maxParent, bounds, ctw, expand)
 
-		width := b.Width()
+		width := linearDef.Bounds.Width()
 		if width < step*2 || width > step*20 {
-			return tr, ticks, b, unit
+			return linearDef
 		}
 
 		delta := step
 		var start float64
 		for {
-			start = math.Floor(b.Min/delta) * delta
+			start = math.Floor(linearDef.Bounds.Min/delta) * delta
 			next := start + delta
 
-			widthAvail := tr(next) - tr(start)
+			widthAvail := linearDef.Trans(next) - linearDef.Trans(start)
 			if ctw(widthAvail, 3) {
 				break
 			}
 			delta *= 2
 		}
 
-		ticks = []Tick{}
-		pos := math.Ceil(b.Min/step) * step
+		pos := math.Ceil(linearDef.Bounds.Min/step) * step
 
 		for pos > start {
 			start += delta
 		}
 
-		for pos <= b.Max {
+		var ticks Ticks
+		for pos <= linearDef.Bounds.Max {
 			if math.Abs(pos-start) < 1e-6 {
 				ticks = append(ticks, Tick{pos, fmt.Sprintf("%g", pos)})
 				start += delta
@@ -247,7 +272,13 @@ func CreateFixedStepAxis(step float64) Axis {
 			pos += step
 		}
 
-		return tr, ticks, b, ""
+		return Axis{
+			Trans:    linearDef.Trans,
+			Ticks:    ticks,
+			Bounds:   linearDef.Bounds,
+			Unit:     linearDef.Unit,
+			IsLinear: true,
+		}
 	}
 }
 
@@ -255,7 +286,7 @@ func CreateFixedStepAxis(step float64) Axis {
 // To draw the ticks in bB scale, it uses a linear axis.
 // It uses a common linear axis if the bounds are less than 20 dB apart.
 // Otherwise, it uses a linear axis with a fixed step size of 20 dB.
-func DBAxis(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth, expand float64) (func(v float64) float64, Ticks, Bounds, string) {
+func DBAxis(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth, expand float64) Axis {
 	if bounds.Min <= 0 {
 		return LinearAxis(minParent, maxParent, bounds, ctw, expand)
 	}
@@ -273,28 +304,35 @@ func DBAxis(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth, exp
 		return LinearAxis(minParent, maxParent, bounds, ctw, expand)
 	}
 
-	tr, ticks, b, unit := CreateFixedStepAxis(20)(minParent, maxParent, Bounds{bounds.isSet, dBMin, dBMax}, ctw, expand)
-	for i := range ticks {
-		ticks[i].Position = math.Pow(10, ticks[i].Position/20)
+	fixedAxis := CreateFixedStepAxis(20)(minParent, maxParent, Bounds{bounds.isSet, dBMin, dBMax}, ctw, expand)
+	var ticks Ticks
+	for _, t := range fixedAxis.Ticks {
+		ticks = append(ticks, Tick{Position: math.Pow(10, t.Position/20), Label: t.Label})
 	}
-	if unit == "" {
+	unit := ""
+	if fixedAxis.Unit == "" {
 		unit = "[dB]"
 	} else {
-		unit = "[" + unit + " in dB]"
+		unit = "[" + fixedAxis.Unit + " in dB]"
 	}
-	return func(v float64) float64 {
-			return tr(20 * math.Log10(v))
-		}, ticks, Bounds{
+	return Axis{
+		Trans: func(v float64) float64 {
+			return fixedAxis.Trans(20 * math.Log10(v))
+		},
+		Ticks: ticks,
+		Bounds: Bounds{
 			isSet: true,
-			Min:   math.Pow(10, b.Min/20),
-			Max:   math.Pow(10, b.Max/20),
-		}, unit
+			Min:   math.Pow(10, fixedAxis.Bounds.Min/20),
+			Max:   math.Pow(10, fixedAxis.Bounds.Max/20),
+		},
+		Unit: unit,
+	}
 }
 
 // CreateDateAxis creates a date axis.
 // The values are expected to be in seconds since the epoch.
-func CreateDateAxis(formatDate, formatMin string) Axis {
-	return func(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth, expand float64) (func(v float64) float64, Ticks, Bounds, string) {
+func CreateDateAxis(formatDate, formatMin string) AxisFactory {
+	return func(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth, expand float64) Axis {
 		delta := bounds.Width() * expand
 		if delta < 1e-10 {
 			delta = 1 + expand
@@ -353,7 +391,12 @@ func CreateDateAxis(formatDate, formatMin string) Axis {
 			smallTickTime = smallIncr.inc(smallTickTime)
 		}
 
-		return tr, ticks, Bounds{bounds.isSet, eMin, eMax}, ""
+		return Axis{
+			Trans:    tr,
+			Ticks:    ticks,
+			Bounds:   Bounds{bounds.isSet, eMin, eMax},
+			IsLinear: true,
+		}
 	}
 }
 

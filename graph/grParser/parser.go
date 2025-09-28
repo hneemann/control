@@ -313,42 +313,42 @@ func createPlotMethods() value.MethodMap {
 		}).SetMethodDescription("name", "Creates a svg-file to download."),
 		"xLog": value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			plot = plot.Copy()
-			plot.Value.XAxis = graph.LogAxis
+			plot.Value.XAxisFactory = graph.LogAxis
 			return plot, nil
 		}).SetMethodDescription("Enables log scaling of x-Axis."),
 		"yLog": value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			plot = plot.Copy()
-			plot.Value.YAxis = graph.LogAxis
+			plot.Value.YAxisFactory = graph.LogAxis
 			return plot, nil
 		}).SetMethodDescription("Enables log scaling of y-Axis."),
 		"xdB": value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			plot = plot.Copy()
-			plot.Value.XAxis = graph.DBAxis
+			plot.Value.XAxisFactory = graph.DBAxis
 			return plot, nil
 		}).SetMethodDescription("Enables dB scaling of x-Axis."),
 		"ydB": value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			plot = plot.Copy()
-			plot.Value.YAxis = graph.DBAxis
+			plot.Value.YAxisFactory = graph.DBAxis
 			return plot, nil
 		}).SetMethodDescription("Enables dB scaling of y-Axis."),
 		"xLin": value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			plot = plot.Copy()
-			plot.Value.XAxis = graph.LinearAxis
+			plot.Value.XAxisFactory = graph.LinearAxis
 			return plot, nil
 		}).SetMethodDescription("Enables linear scaling of x-Axis."),
 		"yLin": value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			plot = plot.Copy()
-			plot.Value.YAxis = graph.LinearAxis
+			plot.Value.YAxisFactory = graph.LinearAxis
 			return plot, nil
 		}).SetMethodDescription("Enables linear scaling of y-Axis."),
 		"xDate": value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			plot = plot.Copy()
-			plot.Value.XAxis = graph.CreateDateAxis("02.01.06", "02.01.06 15:04")
+			plot.Value.XAxisFactory = graph.CreateDateAxis("02.01.06", "02.01.06 15:04")
 			return plot, nil
 		}).SetMethodDescription("Enables date scaling of x-Axis."),
 		"yDate": value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			plot = plot.Copy()
-			plot.Value.YAxis = graph.CreateDateAxis("02.01.06", "02.01.06 15:04")
+			plot.Value.YAxisFactory = graph.CreateDateAxis("02.01.06", "02.01.06 15:04")
 			return plot, nil
 		}).SetMethodDescription("Enables date scaling of y-Axis."),
 		"borders": value.MethodAtType(2, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
@@ -393,6 +393,11 @@ func createPlotMethods() value.MethodMap {
 			plot.Value.Cross = true
 			return plot, nil
 		}).SetMethodDescription("Draws a coordinate cross instead of a rectangle around the plot."),
+		"square": value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			plot = plot.Copy()
+			plot.Value.Square = true
+			return plot, nil
+		}).SetMethodDescription("Sets the aspect ratio of the axis bounds to one by modifying the set Y bounds appropriately."),
 		"noBorders": value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			plot = plot.Copy()
 			plot.Value.NoBorder = true

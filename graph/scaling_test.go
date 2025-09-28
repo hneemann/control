@@ -26,53 +26,53 @@ func Test_Axis(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, ti, _, _ := LinearAxis(tt.min, tt.max, tt.bounds, tt.ctw, 0.02)
-			assert.EqualValues(t, tt.want, ti)
+			ad := LinearAxis(tt.min, tt.max, tt.bounds, tt.ctw, 0.02)
+			assert.EqualValues(t, tt.want, ad.Ticks)
 		})
 	}
 }
 
 func Test_LinAxisInf(t *testing.T) {
 	bounds := NewBounds(18, math.Inf(-1))
-	_, _, bounds, _ = LinearAxis(0, 60, bounds,
+	ad := LinearAxis(0, 60, bounds,
 		func(width float64, _ int) bool {
 			return width > 25
 		}, 0.02)
 
-	assert.False(t, math.IsNaN(bounds.Max) || math.IsInf(bounds.Max, -1) || math.IsInf(bounds.Max, 1))
-	assert.False(t, math.IsNaN(bounds.Min) || math.IsInf(bounds.Min, -1) || math.IsInf(bounds.Min, 1))
+	assert.False(t, math.IsNaN(ad.Bounds.Max) || math.IsInf(ad.Bounds.Max, -1) || math.IsInf(ad.Bounds.Max, 1))
+	assert.False(t, math.IsNaN(ad.Bounds.Min) || math.IsInf(ad.Bounds.Min, -1) || math.IsInf(ad.Bounds.Min, 1))
 }
 
 func Test_LogAxisInf(t *testing.T) {
 	bounds := NewBounds(1, math.Inf(1))
-	_, _, bounds, _ = LogAxis(0, 60, bounds,
+	ad := LogAxis(0, 60, bounds,
 		func(width float64, _ int) bool {
 			return width > 25
 		}, 0.02)
 
-	assert.False(t, math.IsNaN(bounds.Max) || math.IsInf(bounds.Max, -1) || math.IsInf(bounds.Max, 1))
-	assert.False(t, math.IsNaN(bounds.Min) || math.IsInf(bounds.Min, -1) || math.IsInf(bounds.Min, 1))
+	assert.False(t, math.IsNaN(ad.Bounds.Max) || math.IsInf(ad.Bounds.Max, -1) || math.IsInf(ad.Bounds.Max, 1))
+	assert.False(t, math.IsNaN(ad.Bounds.Min) || math.IsInf(ad.Bounds.Min, -1) || math.IsInf(ad.Bounds.Min, 1))
 }
 
 func Test_dBAxisInf(t *testing.T) {
 	bounds := NewBounds(1, math.Inf(1))
-	_, _, bounds, _ = DBAxis(0, 60, bounds,
+	ad := DBAxis(0, 60, bounds,
 		func(width float64, _ int) bool {
 			return width > 25
 		}, 0.02)
 
-	assert.False(t, math.IsNaN(bounds.Max) || math.IsInf(bounds.Max, -1) || math.IsInf(bounds.Max, 1))
-	assert.False(t, math.IsNaN(bounds.Min) || math.IsInf(bounds.Min, -1) || math.IsInf(bounds.Min, 1))
+	assert.False(t, math.IsNaN(ad.Bounds.Max) || math.IsInf(ad.Bounds.Max, -1) || math.IsInf(ad.Bounds.Max, 1))
+	assert.False(t, math.IsNaN(ad.Bounds.Min) || math.IsInf(ad.Bounds.Min, -1) || math.IsInf(ad.Bounds.Min, 1))
 }
 
 func Test_FixedStepIsInf(t *testing.T) {
 	bounds := NewBounds(1, math.Inf(1))
 	ax := CreateFixedStepAxis(100)
-	_, _, bounds, _ = ax(0, 60, bounds,
+	ad := ax(0, 60, bounds,
 		func(width float64, _ int) bool {
 			return width > 25
 		}, 0.02)
 
-	assert.False(t, math.IsNaN(bounds.Max) || math.IsInf(bounds.Max, -1) || math.IsInf(bounds.Max, 1))
-	assert.False(t, math.IsNaN(bounds.Min) || math.IsInf(bounds.Min, -1) || math.IsInf(bounds.Min, 1))
+	assert.False(t, math.IsNaN(ad.Bounds.Max) || math.IsInf(ad.Bounds.Max, -1) || math.IsInf(ad.Bounds.Max, 1))
+	assert.False(t, math.IsNaN(ad.Bounds.Min) || math.IsInf(ad.Bounds.Min, -1) || math.IsInf(ad.Bounds.Min, 1))
 }

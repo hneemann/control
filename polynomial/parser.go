@@ -682,11 +682,11 @@ func bodeMethods() value.MethodMap {
 			return nil, errors.New("pBounds requires two float values")
 		}).SetMethodDescription("min", "max", "Sets the phase bounds.").Pure(false),
 		"aLin": value.MethodAtType(0, func(bode BodePlotValue, st funcGen.Stack[value.Value]) (value.Value, error) {
-			bode.Value.amplitude.YAxis = graph.LinearAxis
+			bode.Value.amplitude.YAxisFactory = graph.LinearAxis
 			return bode, nil
 		}).SetMethodDescription("Sets the y-axis of the amplitude plot to linear.").Pure(false),
 		"aLog": value.MethodAtType(0, func(bode BodePlotValue, st funcGen.Stack[value.Value]) (value.Value, error) {
-			bode.Value.amplitude.YAxis = graph.LogAxis
+			bode.Value.amplitude.YAxisFactory = graph.LogAxis
 			return bode, nil
 		}).SetMethodDescription("Sets the y-axis of the amplitude plot to logarithmic.").Pure(false),
 		"grid": value.MethodAtType(1, func(plot BodePlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {

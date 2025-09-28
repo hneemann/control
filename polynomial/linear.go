@@ -994,8 +994,8 @@ func (l *Linear) CreateBode(style *graph.Style, title string, steps int) BodePlo
 func NewBode(wMin, wMax float64) *BodePlot {
 	amplitude := &graph.Plot{
 		XBounds:       graph.NewBounds(wMin, wMax),
-		XAxis:         graph.LogAxis,
-		YAxis:         graph.DBAxis,
+		XAxisFactory:  graph.LogAxis,
+		YAxisFactory:  graph.DBAxis,
 		Grid:          grParser.GridStyle,
 		XLabel:        "ω [rad/s]",
 		YLabel:        "Amplitude",
@@ -1003,8 +1003,8 @@ func NewBode(wMin, wMax float64) *BodePlot {
 	}
 	phase := &graph.Plot{
 		XBounds:       graph.NewBounds(wMin, wMax),
-		XAxis:         graph.LogAxis,
-		YAxis:         graph.CreateFixedStepAxis(45),
+		XAxisFactory:  graph.LogAxis,
+		YAxisFactory:  graph.CreateFixedStepAxis(45),
 		Grid:          grParser.GridStyle,
 		XLabel:        "ω [rad/s]",
 		YLabel:        "Phase [°]",
