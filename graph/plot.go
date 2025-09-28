@@ -152,9 +152,9 @@ func (p *Plot) DrawTo(canvas Canvas) (err error) {
 	}
 
 	xExp := 0.02
-	if cross {
-		// space for arrow head
-		xExp = 0.022
+	if cross && !p.HideXAxis {
+		// space for the arrow head
+		xExp = 1.1 * p.textSize / innerRect.Width()
 	}
 	if p.NoXExpand {
 		xExp = 0
@@ -170,12 +170,12 @@ func (p *Plot) DrawTo(canvas Canvas) (err error) {
 	if !p.NoYExpand {
 		yAutoScale := !p.YBounds.isSet
 		if cross {
-			// space for arrow head
-			yExp = 0.03
+			// space for the arrow head
+			yExp = 1.1 * p.textSize / innerRect.Height()
 		} else {
 			yExp = 0.02
 		}
-		if p.ProtectLabels && yAutoScale && (p.XLabel != "" || p.YLabel != "") {
+		if p.ProtectLabels && yAutoScale && !cross && (p.XLabel != "" || p.YLabel != "") {
 			yExp = 1.8 * p.textSize / innerRect.Height()
 		}
 	}
