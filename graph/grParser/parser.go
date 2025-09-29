@@ -862,14 +862,14 @@ func closureMethods() value.MethodMap {
 			if tMin, ok := st.Get(1).ToFloat(); ok {
 				if tMax, ok := st.Get(2).ToFloat(); ok {
 					steps := 0
-					if s, ok := st.GetOptional(4, value.Int(0)).ToFloat(); ok {
+					if s, ok := st.GetOptional(3, value.Int(0)).ToFloat(); ok {
 						steps = int(s)
 					} else {
 						return nil, fmt.Errorf("heat requires a number as third argument")
 					}
 
 					var colors []graph.Color
-					if s, ok := st.GetOptional(3, colorList).(*value.List); ok {
+					if s, ok := st.GetOptional(4, colorList).(*value.List); ok {
 						cls, err := s.ToSlice(st)
 						if err != nil {
 							return nil, fmt.Errorf("heat requires a list of colors as fourth argument: %w", err)
@@ -915,7 +915,7 @@ func closureMethods() value.MethodMap {
 				}
 			}
 			return nil, fmt.Errorf("heat requires two floats as first arguments")
-		}).SetMethodDescription("zMin", "zMax", "listOfColors", "steps", "Creates a heat plot of the function. "+
+		}).SetMethodDescription("zMin", "zMax", "steps", "listOfColors", "Creates a heat plot of the function. "+
 			"The function needs to have two arguments (x,y) and has to return a float (z). "+
 			"The z-value is used to calculate a color, which is used to draw a square located at the coordinate (x,y).").VarArgsMethod(2, 4),
 	}

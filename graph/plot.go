@@ -1459,8 +1459,8 @@ func (h Heat) DrawTo(plot *Plot, canvas Canvas) error {
 				Y: ya.Reverse(r.Min.Y + (r.Max.Y-r.Min.Y)*float64(y)/float64(steps)),
 			}
 			p2 := Point{
-				X: xa.Reverse(r.Min.X + (r.Max.X-r.Min.X)*float64(x+1)/100),
-				Y: ya.Reverse(r.Min.Y + (r.Max.Y-r.Min.Y)*float64(y+1)/100),
+				X: xa.Reverse(r.Min.X + (r.Max.X-r.Min.X)*float64(x+1)/float64(steps)),
+				Y: ya.Reverse(r.Min.Y + (r.Max.Y-r.Min.Y)*float64(y+1)/float64(steps)),
 			}
 			vz, err := h.Func((p1.X+p2.X)/2, (p1.Y+p2.Y)/2)
 			if err != nil {
@@ -1485,13 +1485,12 @@ func (h Heat) Legend() Legend {
 }
 
 func (h Heat) getColor(z float64) Color {
-	if z < 0 {
-		return h.Colors[0]
-	}
 	f := math.Floor(z)
 	p := z - f
 	i := int(f)
-	if i >= len(h.Colors)-1 {
+	if i < 0 {
+		return h.Colors[0]
+	} else if i >= len(h.Colors)-1 {
 		return h.Colors[len(h.Colors)-1]
 	}
 	c1 := h.Colors[i]
