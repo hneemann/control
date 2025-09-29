@@ -763,7 +763,7 @@ type ToPoint interface {
 
 var colorList = value.NewListConvert(func(c *graph.Style) value.Value {
 	return StyleValue{Holder[*graph.Style]{c}}
-}, []*graph.Style{graph.White, graph.Black})
+}, []*graph.Style{graph.Blue, graph.White, graph.Green})
 
 func closureMethods() value.MethodMap {
 	return value.MethodMap{
