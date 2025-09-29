@@ -253,6 +253,29 @@ func (p *Plot) DrawTo(canvas Canvas) (err error) {
 		}
 	}
 
+	if cross {
+		xp := p.xAxis.Trans(0)
+		yp := p.yAxis.Trans(0)
+		cs := p.Frame.StrokeWidth / 2
+		al := p.textSize * 0.8
+		nErr.Try(canvas.DrawPath(PointsFromSlice(
+			Point{xp, innerRect.Min.Y},
+			Point{xp, innerRect.Max.Y - cs}), p.Frame))
+		nErr.Try(canvas.DrawPath(PointsFromSlice(
+			Point{xp - al/4, innerRect.Max.Y - al},
+			Point{xp, innerRect.Max.Y - cs},
+			Point{xp + al/4, innerRect.Max.Y - al},
+		), p.Frame))
+		nErr.Try(canvas.DrawPath(PointsFromSlice(
+			Point{innerRect.Min.X, yp},
+			Point{innerRect.Max.X - cs, yp}), p.Frame))
+		nErr.Try(canvas.DrawPath(PointsFromSlice(
+			Point{innerRect.Max.X - al, yp + al/4},
+			Point{innerRect.Max.X - cs, yp},
+			Point{innerRect.Max.X - al, yp - al/4},
+		), p.Frame))
+	}
+
 	var legends []Legend
 	for _, plotContent := range slices.Backward(p.Content) {
 		nErr.Try(plotContent.DrawTo(p, p.inner))
@@ -279,28 +302,8 @@ func (p *Plot) DrawTo(canvas Canvas) (err error) {
 	if p.Title != "" {
 		canvas.DrawText(Point{innerRect.Max.X - small, innerRect.Max.Y - small}, p.Title, Top|Right, textStyle, p.textSize)
 	}
-	if cross {
-		xp := p.xAxis.Trans(0)
-		yp := p.yAxis.Trans(0)
-		cs := p.Frame.StrokeWidth / 2
-		al := p.textSize * 0.8
-		nErr.Try(canvas.DrawPath(PointsFromSlice(
-			Point{xp, innerRect.Min.Y},
-			Point{xp, innerRect.Max.Y - cs}), p.Frame))
-		nErr.Try(canvas.DrawPath(PointsFromSlice(
-			Point{xp - al/4, innerRect.Max.Y - al},
-			Point{xp, innerRect.Max.Y - cs},
-			Point{xp + al/4, innerRect.Max.Y - al},
-		), p.Frame))
-		nErr.Try(canvas.DrawPath(PointsFromSlice(
-			Point{innerRect.Min.X, yp},
-			Point{innerRect.Max.X - cs, yp}), p.Frame))
-		nErr.Try(canvas.DrawPath(PointsFromSlice(
-			Point{innerRect.Max.X - al, yp + al/4},
-			Point{innerRect.Max.X - cs, yp},
-			Point{innerRect.Max.X - al, yp - al/4},
-		), p.Frame))
-	} else {
+
+	if !cross {
 		nErr.Try(canvas.DrawPath(innerRect.Path(), p.Frame))
 	}
 
