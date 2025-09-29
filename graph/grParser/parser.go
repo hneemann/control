@@ -761,6 +761,10 @@ type ToPoint interface {
 	ToPoint() graph.Point
 }
 
+var colorList = value.NewListConvert(func(c *graph.Style) value.Value {
+	return StyleValue{Holder[*graph.Style]{c}}
+}, []*graph.Style{graph.White, graph.Black})
+
 func closureMethods() value.MethodMap {
 	return value.MethodMap{
 		"graph": value.MethodAtType(1, func(cl value.Closure, st funcGen.Stack[value.Value]) (value.Value, error) {
@@ -854,14 +858,34 @@ func closureMethods() value.MethodMap {
 			}
 			return nil, fmt.Errorf("pGraph requires two floats as first arguments")
 		}).SetMethodDescription("tMin", "tMax", "steps", "log", "Creates a parametric graph of the function to be used in the plot command.").VarArgsMethod(2, 4),
-		"heat": value.MethodAtType(3, func(cl value.Closure, st funcGen.Stack[value.Value]) (value.Value, error) {
+		"heat": value.MethodAtType(4, func(cl value.Closure, st funcGen.Stack[value.Value]) (value.Value, error) {
 			if tMin, ok := st.Get(1).ToFloat(); ok {
 				if tMax, ok := st.Get(2).ToFloat(); ok {
 					steps := 0
-					if s, ok := st.GetOptional(3, value.Int(0)).ToFloat(); ok {
+					if s, ok := st.GetOptional(4, value.Int(0)).ToFloat(); ok {
 						steps = int(s)
 					} else {
 						return nil, fmt.Errorf("heat requires a number as third argument")
+					}
+
+					var colors []graph.Color
+					if s, ok := st.GetOptional(3, colorList).(*value.List); ok {
+						cls, err := s.ToSlice(st)
+						if err != nil {
+							return nil, fmt.Errorf("heat requires a list of colors as fourth argument: %w", err)
+						}
+						for _, c := range cls {
+							if cv, ok := c.(StyleValue); ok {
+								colors = append(colors, cv.Value.Color)
+							} else {
+								return nil, fmt.Errorf("heat requires a list of colors as fourth argument")
+							}
+						}
+					} else {
+						return nil, fmt.Errorf("heat requires a list of colors as fourth argument")
+					}
+					if len(colors) < 2 {
+						return nil, fmt.Errorf("heat requires at least two colors")
 					}
 
 					if cl.Args != 2 {
@@ -884,15 +908,16 @@ func closureMethods() value.MethodMap {
 					h := graph.Heat{
 						Func:    f,
 						Steps:   steps,
+						Colors:  colors,
 						ZBounds: graph.NewBounds(tMin, tMax),
 					}
 					return PlotContentValue{Holder[graph.PlotContent]{h}}, nil
 				}
 			}
 			return nil, fmt.Errorf("heat requires two floats as first arguments")
-		}).SetMethodDescription("zMin", "zMax", "steps", "Creates a heat plot of the function. "+
+		}).SetMethodDescription("zMin", "zMax", "listOfColors", "steps", "Creates a heat plot of the function. "+
 			"The function needs to have two arguments (x,y) and has to return a float (z). "+
-			"The z-value is used to calculate a color, which is used to draw a square located at the coordinate (x,y).").VarArgsMethod(2, 3),
+			"The z-value is used to calculate a color, which is used to draw a square located at the coordinate (x,y).").VarArgsMethod(2, 4),
 	}
 }
 

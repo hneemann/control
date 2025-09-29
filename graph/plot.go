@@ -1409,6 +1409,7 @@ type Heat struct {
 	ZBounds     Bounds
 	Func        func(x, y float64) (float64, error)
 	Steps       int
+	Colors      []Color
 }
 
 func (h Heat) Bounds() (x, y Bounds, err error) {
@@ -1438,10 +1439,9 @@ func (h Heat) DrawTo(plot *Plot, canvas Canvas) error {
 	if h.Func == nil {
 		return fmt.Errorf("heat plot requires a function")
 	}
-
-	za := h.AxisFactory(0, 255, h.ZBounds, func(width float64, digits int) bool {
-		return width < float64(digits)*10
-	}, 0)
+	if len(h.Colors) < 2 {
+		return fmt.Errorf("heat plot requires at least two colors")
+	}
 
 	steps := h.Steps
 	if steps <= 0 {
@@ -1463,18 +1463,12 @@ func (h Heat) DrawTo(plot *Plot, canvas Canvas) error {
 			if err != nil {
 				return fmt.Errorf("error evaluating heat function: %w", err)
 			}
-			z := za.Trans(vz)
-			if z < 0 {
-				z = 0
-			} else if z > 255 {
-				z = 255
-			}
-			c := Color{R: uint8(z), G: uint8(z), B: uint8(z), A: 255}
+			z := (vz - h.ZBounds.Min) / h.ZBounds.Width() * float64(len(h.Colors)-1)
 			err = canvas.DrawPath(NewPath(true).
 				MoveTo(Point{X: p1.X, Y: p1.Y}).
 				LineTo(Point{X: p2.X, Y: p1.Y}).
 				LineTo(Point{X: p2.X, Y: p2.Y}).
-				LineTo(Point{X: p1.X, Y: p2.Y}), &Style{Fill: true, FillColor: c, StrokeWidth: 0})
+				LineTo(Point{X: p1.X, Y: p2.Y}), &Style{Fill: true, FillColor: h.getColor(z), StrokeWidth: 0})
 			if err != nil {
 				return fmt.Errorf("error drawing heat rectangle: %w", err)
 			}
@@ -1485,4 +1479,24 @@ func (h Heat) DrawTo(plot *Plot, canvas Canvas) error {
 
 func (h Heat) Legend() Legend {
 	return Legend{}
+}
+
+func (h Heat) getColor(z float64) Color {
+	if z < 0 {
+		return h.Colors[0]
+	}
+	f := math.Floor(z)
+	p := z - f
+	i := int(f)
+	if i >= len(h.Colors)-1 {
+		return h.Colors[len(h.Colors)-1]
+	}
+	c1 := h.Colors[i]
+	c2 := h.Colors[i+1]
+	return Color{
+		R: uint8(float64(c1.R)*(1-p) + float64(c2.R)*p),
+		G: uint8(float64(c1.G)*(1-p) + float64(c2.G)*p),
+		B: uint8(float64(c1.B)*(1-p) + float64(c2.B)*p),
+		A: 255,
+	}
 }
