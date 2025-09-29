@@ -1436,7 +1436,7 @@ func (h Heat) DrawTo(plot *Plot, canvas Canvas) error {
 	if ya.Reverse == nil {
 		return fmt.Errorf("heat plot requires a reverable y axis")
 	}
-	if h.ZBounds.isSet == false {
+	if h.ZBounds.isSet == false || h.ZBounds.Width() <= 1e-6 {
 		h.ZBounds = NewBounds(-1, 1)
 	}
 	if h.Func == nil {
@@ -1452,6 +1452,7 @@ func (h Heat) DrawTo(plot *Plot, canvas Canvas) error {
 	}
 
 	r := plot.innerRect
+	mul := float64(len(h.Colors)-1) / h.ZBounds.Width()
 	for x := 0; x < steps; x++ {
 		for y := 0; y < steps; y++ {
 			p1 := Point{
@@ -1466,7 +1467,7 @@ func (h Heat) DrawTo(plot *Plot, canvas Canvas) error {
 			if err != nil {
 				return fmt.Errorf("error evaluating heat function: %w", err)
 			}
-			z := (vz - h.ZBounds.Min) / h.ZBounds.Width() * float64(len(h.Colors)-1)
+			z := (vz - h.ZBounds.Min) * mul
 			err = canvas.DrawPath(NewPath(true).
 				MoveTo(Point{X: p1.X, Y: p1.Y}).
 				LineTo(Point{X: p2.X, Y: p1.Y}).
