@@ -37,6 +37,8 @@ type Axis struct {
 	// Trans converts a value in the axis coordinate space to the parent coordinate space.
 	// The parent coordinate space is typically the pixel space of the graph.
 	Trans func(v float64) float64
+	// Reverse converts a value in the parent coordinate space to the axis coordinate space.
+	Reverse func(v float64) float64
 	// Ticks are the ticks to be drawn on the axis.
 	Ticks Ticks
 	// Bounds are the bounds of the axis in the axis coordinate space.
@@ -73,6 +75,9 @@ func LinearAxis(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth,
 	return Axis{
 		Trans: func(v float64) float64 {
 			return (v-eMin)/(eMax-eMin)*(maxParent-minParent) + minParent
+		},
+		Reverse: func(v float64) float64 {
+			return (v-minParent)/(maxParent-minParent)*(eMax-eMin) + eMin
 		},
 		Ticks:    l.ticks(minParent, maxParent, ctw),
 		Bounds:   Bounds{bounds.isSet, eMin, eMax},
@@ -199,10 +204,14 @@ func LogAxis(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth, ex
 		f := (math.Log10(v) - logMin) / (logMax - logMin)
 		return f*(maxParent-minParent) + minParent
 	}
+	rv := func(v float64) float64 {
+		return math.Pow(10, (v-minParent)*(logMax-logMin)/(maxParent-minParent)+logMin)
+	}
 	return Axis{
-		Trans:  tr,
-		Ticks:  createLogTicks(logMin, minParent, maxParent, tr),
-		Bounds: Bounds{bounds.isSet, math.Pow(10, logMin), math.Pow(10, logMax)},
+		Trans:   tr,
+		Reverse: rv,
+		Ticks:   createLogTicks(logMin, minParent, maxParent, tr),
+		Bounds:  Bounds{bounds.isSet, math.Pow(10, logMin), math.Pow(10, logMax)},
 	}
 }
 
@@ -274,6 +283,7 @@ func CreateFixedStepAxis(step float64) AxisFactory {
 
 		return Axis{
 			Trans:    linearDef.Trans,
+			Reverse:  linearDef.Reverse,
 			Ticks:    ticks,
 			Bounds:   linearDef.Bounds,
 			Unit:     linearDef.Unit,
@@ -342,6 +352,9 @@ func CreateDateAxis(formatDate, formatMin string) AxisFactory {
 		tr := func(v float64) float64 {
 			return (v-eMin)/(eMax-eMin)*(maxParent-minParent) + minParent
 		}
+		rv := func(v float64) float64 {
+			return (v-minParent)/(maxParent-minParent)*(eMax-eMin) + eMin
+		}
 
 		t := time.UnixMilli(int64(eMin) * 1000)
 		index := 0
@@ -393,6 +406,7 @@ func CreateDateAxis(formatDate, formatMin string) AxisFactory {
 
 		return Axis{
 			Trans:    tr,
+			Reverse:  rv,
 			Ticks:    ticks,
 			Bounds:   Bounds{bounds.isSet, eMin, eMax},
 			IsLinear: true,

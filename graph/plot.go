@@ -91,6 +91,7 @@ type Plot struct {
 	trans          Transform
 	canvas         Canvas
 	inner          Canvas
+	innerRect      Rect
 	textSize       float64
 }
 
@@ -142,6 +143,7 @@ func (p *Plot) DrawTo(canvas Canvas) (err error) {
 	if !cross {
 		innerRect = p.calculateInnerRect(rect)
 	}
+	p.innerRect = innerRect
 
 	xTickSep := p.XTickSep
 	if xTickSep <= 0 {
@@ -1399,5 +1401,88 @@ func (t Text) DrawTo(_ *Plot, canvas Canvas) error {
 }
 
 func (t Text) Legend() Legend {
+	return Legend{}
+}
+
+type Heat struct {
+	AxisFactory AxisFactory
+	ZBounds     Bounds
+	Func        func(x, y float64) (float64, error)
+	Steps       int
+}
+
+func (h Heat) Bounds() (x, y Bounds, err error) {
+	return Bounds{}, Bounds{}, nil
+}
+
+func (h Heat) DependantBounds(_, _ Bounds) (x, y Bounds, err error) {
+	return Bounds{}, Bounds{}, nil
+}
+
+func (h Heat) DrawTo(plot *Plot, canvas Canvas) error {
+	if h.AxisFactory == nil {
+		h.AxisFactory = LinearAxis
+	}
+
+	xa := plot.xAxis
+	if xa.Reverse == nil {
+		return fmt.Errorf("heat plot requires a reverable x axis")
+	}
+	ya := plot.yAxis
+	if ya.Reverse == nil {
+		return fmt.Errorf("heat plot requires a reverable y axis")
+	}
+	if h.ZBounds.isSet == false {
+		h.ZBounds = NewBounds(-1, 1)
+	}
+	if h.Func == nil {
+		return fmt.Errorf("heat plot requires a function")
+	}
+
+	za := h.AxisFactory(0, 255, h.ZBounds, func(width float64, digits int) bool {
+		return width < float64(digits)*10
+	}, 0)
+
+	steps := h.Steps
+	if steps <= 0 {
+		steps = 100
+	}
+
+	r := plot.innerRect
+	for x := 0; x < steps; x++ {
+		for y := 0; y < steps; y++ {
+			p1 := Point{
+				X: xa.Reverse(r.Min.X + (r.Max.X-r.Min.X)*float64(x)/float64(steps)),
+				Y: ya.Reverse(r.Min.Y + (r.Max.Y-r.Min.Y)*float64(y)/float64(steps)),
+			}
+			p2 := Point{
+				X: xa.Reverse(r.Min.X + (r.Max.X-r.Min.X)*float64(x+1)/100),
+				Y: ya.Reverse(r.Min.Y + (r.Max.Y-r.Min.Y)*float64(y+1)/100),
+			}
+			vz, err := h.Func((p1.X+p2.X)/2, (p1.Y+p2.Y)/2)
+			if err != nil {
+				return fmt.Errorf("error evaluating heat function: %w", err)
+			}
+			z := za.Trans(vz)
+			if z < 0 {
+				z = 0
+			} else if z > 255 {
+				z = 255
+			}
+			c := Color{R: uint8(z), G: uint8(z), B: uint8(z), A: 255}
+			err = canvas.DrawPath(NewPath(true).
+				MoveTo(Point{X: p1.X, Y: p1.Y}).
+				LineTo(Point{X: p2.X, Y: p1.Y}).
+				LineTo(Point{X: p2.X, Y: p2.Y}).
+				LineTo(Point{X: p1.X, Y: p2.Y}), &Style{Fill: true, FillColor: c, StrokeWidth: 0})
+			if err != nil {
+				return fmt.Errorf("error drawing heat rectangle: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+func (h Heat) Legend() Legend {
 	return Legend{}
 }

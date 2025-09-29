@@ -854,6 +854,45 @@ func closureMethods() value.MethodMap {
 			}
 			return nil, fmt.Errorf("pGraph requires two floats as first arguments")
 		}).SetMethodDescription("tMin", "tMax", "steps", "log", "Creates a parametric graph of the function to be used in the plot command.").VarArgsMethod(2, 4),
+		"heat": value.MethodAtType(3, func(cl value.Closure, st funcGen.Stack[value.Value]) (value.Value, error) {
+			if tMin, ok := st.Get(1).ToFloat(); ok {
+				if tMax, ok := st.Get(2).ToFloat(); ok {
+					steps := 0
+					if s, ok := st.GetOptional(3, value.Int(0)).ToFloat(); ok {
+						steps = int(s)
+					} else {
+						return nil, fmt.Errorf("heat requires a number as third argument")
+					}
+
+					if cl.Args != 2 {
+						return nil, fmt.Errorf("heat requires a function with two arguments")
+					}
+					stack := funcGen.NewEmptyStack[value.Value]()
+					f := func(x, y float64) (float64, error) {
+						stack.Push(value.Float(x))
+						stack.Push(value.Float(y))
+						zVal, err := cl.Func(stack.CreateFrame(2), nil)
+						if err != nil {
+							return 0, err
+						}
+						if z, ok := zVal.ToFloat(); ok {
+							return z, nil
+						}
+						return 0, fmt.Errorf("the function given to heat must return a float")
+					}
+
+					h := graph.Heat{
+						Func:    f,
+						Steps:   steps,
+						ZBounds: graph.NewBounds(tMin, tMax),
+					}
+					return PlotContentValue{Holder[graph.PlotContent]{h}}, nil
+				}
+			}
+			return nil, fmt.Errorf("heat requires two floats as first arguments")
+		}).SetMethodDescription("zMin", "zMax", "steps", "Creates a heat plot of the function. "+
+			"The function needs to have two arguments (x,y) and has to return a float (z). "+
+			"The z-value is used to calculate a color, which is used to draw a square located at the coordinate (x,y).").VarArgsMethod(2, 3),
 	}
 }
 

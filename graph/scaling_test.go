@@ -28,6 +28,13 @@ func Test_Axis(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ad := LinearAxis(tt.min, tt.max, tt.bounds, tt.ctw, 0.02)
 			assert.EqualValues(t, tt.want, ad.Ticks)
+
+			for _, ti := range tt.want {
+				pix := ad.Trans(ti.Position)
+				rev := ad.Reverse(pix)
+				assert.InDelta(t, ti.Position, rev, 0.0001, "position %v pix %v rev %v", ti.Position, pix, rev)
+			}
+
 		})
 	}
 }
