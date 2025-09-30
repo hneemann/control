@@ -329,6 +329,9 @@ func DBAxis(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth, exp
 		Trans: func(v float64) float64 {
 			return fixedAxis.Trans(20 * math.Log10(v))
 		},
+		Reverse: func(v float64) float64 {
+			return math.Pow(10, fixedAxis.Reverse(v)/20)
+		},
 		Ticks: ticks,
 		Bounds: Bounds{
 			isSet: true,

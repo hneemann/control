@@ -591,11 +591,11 @@ func (p PlotPreferences) String() string {
 
 func NewImReLabels() PlotPreferences {
 	return PlotPreferences{Modify: func(plot *graph.Plot) {
-		if plot.YLabel == "" {
-			plot.YLabel = "Im"
+		if plot.Y.Label == "" {
+			plot.Y.Label = "Im"
 		}
-		if plot.XLabel == "" {
-			plot.XLabel = "Re"
+		if plot.X.Label == "" {
+			plot.X.Label = "Re"
 		}
 	}}
 }
@@ -963,16 +963,16 @@ func (b *BodePlot) DrawTo(canvas graph.Canvas) error {
 }
 
 func (b *BodePlot) SetFrequencyBounds(min, max float64) {
-	b.amplitude.XBounds = graph.NewBounds(min, max)
-	b.phase.XBounds = graph.NewBounds(min, max)
+	b.amplitude.X.Bounds = graph.NewBounds(min, max)
+	b.phase.X.Bounds = graph.NewBounds(min, max)
 }
 
 func (b *BodePlot) SetAmplitudeBounds(min, max float64) {
-	b.amplitude.YBounds = graph.NewBounds(min, max)
+	b.amplitude.Y.Bounds = graph.NewBounds(min, max)
 }
 
 func (b *BodePlot) SetPhaseBounds(min, max float64) {
-	b.phase.YBounds = graph.NewBounds(min, max)
+	b.phase.Y.Bounds = graph.NewBounds(min, max)
 }
 
 func (l *Linear) CreateBode(style *graph.Style, title string, steps int) BodePlotContent {
@@ -993,21 +993,29 @@ func (l *Linear) CreateBode(style *graph.Style, title string, steps int) BodePlo
 
 func NewBode(wMin, wMax float64) *BodePlot {
 	amplitude := &graph.Plot{
-		XBounds:       graph.NewBounds(wMin, wMax),
-		XAxisFactory:  graph.LogAxis,
-		YAxisFactory:  graph.DBAxis,
+		X: graph.AxisDescription{
+			Bounds:  graph.NewBounds(wMin, wMax),
+			Factory: graph.LogAxis,
+			Label:   "ω [rad/s]",
+		},
+		Y: graph.AxisDescription{
+			Factory: graph.DBAxis,
+			Label:   "Amplitude",
+		},
 		Grid:          grParser.GridStyle,
-		XLabel:        "ω [rad/s]",
-		YLabel:        "Amplitude",
 		ProtectLabels: true,
 	}
 	phase := &graph.Plot{
-		XBounds:       graph.NewBounds(wMin, wMax),
-		XAxisFactory:  graph.LogAxis,
-		YAxisFactory:  graph.CreateFixedStepAxis(45),
+		X: graph.AxisDescription{
+			Bounds:  graph.NewBounds(wMin, wMax),
+			Factory: graph.LogAxis,
+			Label:   "ω [rad/s]",
+		},
+		Y: graph.AxisDescription{
+			Factory: graph.CreateFixedStepAxis(45),
+			Label:   "Phase [°]",
+		},
 		Grid:          grParser.GridStyle,
-		XLabel:        "ω [rad/s]",
-		YLabel:        "Phase [°]",
 		ProtectLabels: true,
 	}
 
@@ -1089,7 +1097,7 @@ func (b bodePhase) DependantBounds(xGiven, _ graph.Bounds) (x, y graph.Bounds, e
 }
 
 func (b bodePhase) DrawTo(plot *graph.Plot, canvas graph.Canvas) error {
-	b.bodeContent.generate(plot.XBounds.Min, plot.XBounds.Max)
+	b.bodeContent.generate(plot.X.Bounds.Min, plot.X.Bounds.Max)
 	r := canvas.Rect()
 	path := graph.PointsFromSlice(b.bodeContent.phase...)
 	return canvas.DrawPath(r.IntersectPath(path), b.bodeContent.Style)
@@ -1117,7 +1125,7 @@ func (b bodeAmplitude) DependantBounds(xGiven, _ graph.Bounds) (x, y graph.Bound
 }
 
 func (b bodeAmplitude) DrawTo(plot *graph.Plot, canvas graph.Canvas) error {
-	b.bodeContent.generate(plot.XBounds.Min, plot.XBounds.Max)
+	b.bodeContent.generate(plot.X.Bounds.Min, plot.X.Bounds.Max)
 	r := canvas.Rect()
 	path := graph.PointsFromSlice(b.bodeContent.amplitude...)
 	return canvas.DrawPath(r.IntersectPath(path), b.bodeContent.Style)

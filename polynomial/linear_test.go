@@ -209,7 +209,7 @@ func Test_Evans1(t *testing.T) {
 	g0 := FromRoots(n, d)
 
 	pl := &graph.Plot{Content: Must(g0.CreateEvans(0.01, 15))}
-	pl.XBounds = graph.NewBounds(-4, 0.1)
+	pl.X.Bounds = graph.NewBounds(-4, 0.1)
 	if pl != nil {
 		err := exportPlot(pl, "wok1.svg")
 		assert.NoError(t, err)
@@ -224,8 +224,8 @@ func Test_Evans2(t *testing.T) {
 	pl := &graph.Plot{Content: Must(g0.CreateEvans(0.01, 25))}
 	fmt.Println(pl)
 	if pl != nil {
-		pl.XBounds = graph.NewBounds(-1, 3)
-		pl.YBounds = graph.NewBounds(-1.5, 1.5)
+		pl.X.Bounds = graph.NewBounds(-1, 3)
+		pl.Y.Bounds = graph.NewBounds(-1.5, 1.5)
 
 		err := exportPlot(pl, "wok2.svg")
 		assert.NoError(t, err)
@@ -244,8 +244,8 @@ func Test_Evans3(t *testing.T) {
 
 	pl := &graph.Plot{Content: Must(g0.CreateEvans(0.01, 100))}
 	if pl != nil {
-		pl.XBounds = graph.NewBounds(-6, 3)
-		pl.YBounds = graph.NewBounds(-4, 4)
+		pl.X.Bounds = graph.NewBounds(-6, 3)
+		pl.Y.Bounds = graph.NewBounds(-4, 4)
 
 		err = exportPlot(pl, "wok3.svg")
 		assert.NoError(t, err)
@@ -264,8 +264,8 @@ func Test_Evans4(t *testing.T) {
 
 	pl := &graph.Plot{Content: Must(g0.CreateEvans(0.01, 10))}
 	if pl != nil {
-		pl.XBounds = graph.NewBounds(-2, 0.5)
-		pl.YBounds = graph.NewBounds(-3, 3)
+		pl.X.Bounds = graph.NewBounds(-2, 0.5)
+		pl.Y.Bounds = graph.NewBounds(-3, 3)
 
 		err = exportPlot(pl, "wok4.svg")
 		assert.NoError(t, err)
@@ -279,8 +279,8 @@ func Test_Evans5(t *testing.T) {
 
 	pl := &graph.Plot{Content: Must(g0.CreateEvans(0.01, 10))}
 	if pl != nil {
-		pl.XBounds = graph.NewBounds(-2, 0.5)
-		pl.YBounds = graph.NewBounds(-2, 2)
+		pl.X.Bounds = graph.NewBounds(-2, 0.5)
+		pl.Y.Bounds = graph.NewBounds(-2, 2)
 
 		err := exportPlot(pl, "wok5.svg")
 		assert.NoError(t, err)
@@ -305,7 +305,7 @@ func Test_Evans7(t *testing.T) {
 	g0 := FromRoots(n, d)
 
 	pl := &graph.Plot{Content: Must(g0.CreateEvans(0.01, 5))}
-	pl.XBounds = graph.NewBounds(-2, 0.2)
+	pl.X.Bounds = graph.NewBounds(-2, 0.2)
 	if pl != nil {
 		err := exportPlot(pl, "wok7.svg")
 		assert.NoError(t, err)

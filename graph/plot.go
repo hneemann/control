@@ -58,33 +58,31 @@ func Zoom(p Point, f float64) BoundsModifier {
 	}
 }
 
+type AxisDescription struct {
+	Factory  AxisFactory
+	TickSep  float64
+	Bounds   Bounds
+	NoExpand bool
+	Label    string
+	HideAxis bool
+}
+
 type Plot struct {
-	XAxisFactory   AxisFactory
-	YAxisFactory   AxisFactory
-	XBounds        Bounds
-	YBounds        Bounds
+	X, Y           AxisDescription
 	Square         bool
 	LeftBorder     float64
 	RightBorder    float64
 	NoBorder       bool
-	NoXExpand      bool
-	NoYExpand      bool
 	Cross          bool
 	Grid           *Style
 	Frame          *Style
 	Title          string
-	XLabel         string
-	YLabel         string
 	ProtectLabels  bool
 	Content        []PlotContent
 	FillBackground bool
-	HideXAxis      bool
-	HideYAxis      bool
 	BoundsModifier BoundsModifier
 	xAxis          Axis
 	yAxis          Axis
-	XTickSep       float64
-	YTickSep       float64
 	HideLegend     bool
 	legendPosGiven bool
 	legendPos      Point
@@ -125,11 +123,11 @@ func (p *Plot) DrawTo(canvas Canvas) (err error) {
 
 	cross := p.Cross && xBoundsPre.Min < 0 && xBoundsPre.Max > 0 && yBoundsPre.Min < 0 && yBoundsPre.Max > 0
 
-	xAxisFactory := p.XAxisFactory
+	xAxisFactory := p.X.Factory
 	if xAxisFactory == nil {
 		xAxisFactory = LinearAxis
 	}
-	yAxisFactory := p.YAxisFactory
+	yAxisFactory := p.Y.Factory
 	if yAxisFactory == nil {
 		yAxisFactory = LinearAxis
 	}
@@ -145,21 +143,21 @@ func (p *Plot) DrawTo(canvas Canvas) (err error) {
 	}
 	p.innerRect = innerRect
 
-	xTickSep := p.XTickSep
+	xTickSep := p.X.TickSep
 	if xTickSep <= 0 {
 		xTickSep = 1
 	}
-	yTickSep := p.YTickSep
+	yTickSep := p.Y.TickSep
 	if yTickSep <= 0 {
 		yTickSep = 1
 	}
 
 	xExp := 0.02
-	if cross && !p.HideXAxis {
+	if cross && !p.X.HideAxis {
 		// space for the arrow head
 		xExp = 1.1 * p.textSize / innerRect.Width()
 	}
-	if p.NoXExpand {
+	if p.X.NoExpand {
 		xExp = 0
 	}
 	p.xAxis = xAxisFactory(innerRect.Min.X, innerRect.Max.X, xBoundsPre,
@@ -168,15 +166,15 @@ func (p *Plot) DrawTo(canvas Canvas) (err error) {
 		}, xExp)
 
 	yExp := 0.0
-	if !p.NoYExpand {
-		yAutoScale := !p.YBounds.isSet
+	if !p.Y.NoExpand {
+		yAutoScale := !p.Y.Bounds.isSet
 		if cross {
 			// space for the arrow head
 			yExp = 1.1 * p.textSize / innerRect.Height()
 		} else {
 			yExp = 0.02
 		}
-		if p.ProtectLabels && yAutoScale && !cross && (p.XLabel != "" || p.YLabel != "") {
+		if p.ProtectLabels && yAutoScale && !cross && (p.X.Label != "" || p.Y.Label != "") {
 			yExp = 1.8 * p.textSize / innerRect.Height()
 		}
 	}
@@ -195,7 +193,7 @@ func (p *Plot) DrawTo(canvas Canvas) (err error) {
 		}, yExp)
 
 	if p.Square && (!p.xAxis.IsLinear || !p.yAxis.IsLinear) {
-		return fmt.Errorf("square plots are only supported if both axis are linear")
+		return fmt.Errorf("square plots are only possible if both axis are linear")
 	}
 
 	p.trans = func(point Point) Point {
@@ -211,7 +209,7 @@ func (p *Plot) DrawTo(canvas Canvas) (err error) {
 		},
 	}
 
-	if !p.HideXAxis {
+	if !p.X.HideAxis {
 		yp := innerRect.Min.Y
 		if cross {
 			yp = p.yAxis.Trans(0)
@@ -232,7 +230,7 @@ func (p *Plot) DrawTo(canvas Canvas) (err error) {
 		}
 	}
 
-	if !p.HideYAxis {
+	if !p.Y.HideAxis {
 		xp := innerRect.Min.X
 		if cross {
 			xp = p.xAxis.Trans(0)
@@ -285,19 +283,19 @@ func (p *Plot) DrawTo(canvas Canvas) (err error) {
 		}
 	}
 
-	if p.XLabel != "" || p.xAxis.Unit != "" {
+	if p.X.Label != "" || p.xAxis.Unit != "" {
 		yp := innerRect.Min.Y
 		if cross {
 			yp = p.yAxis.Trans(0)
 		}
-		canvas.DrawText(Point{innerRect.Max.X - small, yp + small}, p.XLabel+" "+p.xAxis.Unit, Bottom|Right, textStyle, p.textSize)
+		canvas.DrawText(Point{innerRect.Max.X - small, yp + small}, p.X.Label+" "+p.xAxis.Unit, Bottom|Right, textStyle, p.textSize)
 	}
-	if p.YLabel != "" || p.yAxis.Unit != "" {
+	if p.Y.Label != "" || p.yAxis.Unit != "" {
 		xp := innerRect.Min.X
 		if cross {
 			xp = p.xAxis.Trans(0)
 		}
-		canvas.DrawText(Point{xp + small, innerRect.Max.Y - small}, p.YLabel+" "+p.yAxis.Unit, Top|Left, textStyle, p.textSize)
+		canvas.DrawText(Point{xp + small, innerRect.Max.Y - small}, p.Y.Label+" "+p.yAxis.Unit, Top|Left, textStyle, p.textSize)
 	}
 	if p.Title != "" {
 		canvas.DrawText(Point{innerRect.Max.X - small, innerRect.Max.Y - small}, p.Title, Top|Right, textStyle, p.textSize)
@@ -346,8 +344,8 @@ func (p *Plot) DrawTo(canvas Canvas) (err error) {
 }
 
 func (p *Plot) calcBounds() (Bounds, Bounds, error) {
-	xBounds := p.XBounds
-	yBounds := p.YBounds
+	xBounds := p.X.Bounds
+	yBounds := p.Y.Bounds
 
 	if !(xBounds.isSet && yBounds.isSet) {
 		mergeX := !xBounds.isSet
@@ -390,8 +388,8 @@ func (p *Plot) calculateInnerRect(rect Rect) Rect {
 
 	lb := p.LeftBorder
 	if lb <= 0 {
-		if p.HideYAxis {
-			if p.NoXExpand {
+		if p.Y.HideAxis {
+			if p.X.NoExpand {
 				lb = 1
 			} else {
 				lb = 0
@@ -404,7 +402,7 @@ func (p *Plot) calculateInnerRect(rect Rect) Rect {
 	if rb < 0 {
 		rb = 0
 	}
-	if rb == 0 && p.NoXExpand {
+	if rb == 0 && p.X.NoExpand {
 		rb = 1
 	}
 
@@ -431,8 +429,8 @@ func (p *Plot) calculateInnerRect(rect Rect) Rect {
 		rMin.Y += stroke / 2
 		rMax.Y -= stroke / 2
 	} else {
-		if p.HideXAxis {
-			if p.NoYExpand {
+		if p.X.HideAxis {
+			if p.Y.NoExpand {
 				rMin.Y += p.textSize / 3 * 2
 				rMax.Y -= p.textSize / 3 * 2
 			} else {
@@ -441,7 +439,7 @@ func (p *Plot) calculateInnerRect(rect Rect) Rect {
 			}
 		} else {
 			rMin.Y += p.textSize * 2
-			if p.NoYExpand && !p.HideYAxis {
+			if p.Y.NoExpand && !p.Y.HideAxis {
 				rMax.Y -= p.textSize / 3 * 2
 			} else {
 				rMax.Y -= stroke / 2

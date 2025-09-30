@@ -256,8 +256,8 @@ func createPlotMethods() value.MethodMap {
 			if xStr, ok := stack.Get(1).(value.String); ok {
 				if yStr, ok := stack.Get(2).(value.String); ok {
 					plot = plot.Copy()
-					plot.Value.XLabel = string(xStr)
-					plot.Value.YLabel = string(yStr)
+					plot.Value.X.Label = string(xStr)
+					plot.Value.Y.Label = string(yStr)
 					return plot, nil
 				}
 			}
@@ -266,7 +266,7 @@ func createPlotMethods() value.MethodMap {
 		"xLabel": value.MethodAtType(1, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if str, ok := stack.Get(1).(value.String); ok {
 				plot = plot.Copy()
-				plot.Value.XLabel = string(str)
+				plot.Value.X.Label = string(str)
 			} else {
 				return nil, fmt.Errorf("xLabel requires a string")
 			}
@@ -275,7 +275,7 @@ func createPlotMethods() value.MethodMap {
 		"yLabel": value.MethodAtType(1, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if str, ok := stack.Get(1).(value.String); ok {
 				plot = plot.Copy()
-				plot.Value.YLabel = string(str)
+				plot.Value.Y.Label = string(str)
 			} else {
 				return nil, fmt.Errorf("yLabel requires a string")
 			}
@@ -313,42 +313,42 @@ func createPlotMethods() value.MethodMap {
 		}).SetMethodDescription("name", "Creates a svg-file to download."),
 		"xLog": value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			plot = plot.Copy()
-			plot.Value.XAxisFactory = graph.LogAxis
+			plot.Value.X.Factory = graph.LogAxis
 			return plot, nil
 		}).SetMethodDescription("Enables log scaling of x-Axis."),
 		"yLog": value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			plot = plot.Copy()
-			plot.Value.YAxisFactory = graph.LogAxis
+			plot.Value.Y.Factory = graph.LogAxis
 			return plot, nil
 		}).SetMethodDescription("Enables log scaling of y-Axis."),
 		"xdB": value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			plot = plot.Copy()
-			plot.Value.XAxisFactory = graph.DBAxis
+			plot.Value.X.Factory = graph.DBAxis
 			return plot, nil
 		}).SetMethodDescription("Enables dB scaling of x-Axis."),
 		"ydB": value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			plot = plot.Copy()
-			plot.Value.YAxisFactory = graph.DBAxis
+			plot.Value.Y.Factory = graph.DBAxis
 			return plot, nil
 		}).SetMethodDescription("Enables dB scaling of y-Axis."),
 		"xLin": value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			plot = plot.Copy()
-			plot.Value.XAxisFactory = graph.LinearAxis
+			plot.Value.X.Factory = graph.LinearAxis
 			return plot, nil
 		}).SetMethodDescription("Enables linear scaling of x-Axis."),
 		"yLin": value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			plot = plot.Copy()
-			plot.Value.YAxisFactory = graph.LinearAxis
+			plot.Value.Y.Factory = graph.LinearAxis
 			return plot, nil
 		}).SetMethodDescription("Enables linear scaling of y-Axis."),
 		"xDate": value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			plot = plot.Copy()
-			plot.Value.XAxisFactory = graph.CreateDateAxis("02.01.06", "02.01.06 15:04")
+			plot.Value.X.Factory = graph.CreateDateAxis("02.01.06", "02.01.06 15:04")
 			return plot, nil
 		}).SetMethodDescription("Enables date scaling of x-Axis."),
 		"yDate": value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			plot = plot.Copy()
-			plot.Value.YAxisFactory = graph.CreateDateAxis("02.01.06", "02.01.06 15:04")
+			plot.Value.Y.Factory = graph.CreateDateAxis("02.01.06", "02.01.06 15:04")
 			return plot, nil
 		}).SetMethodDescription("Enables date scaling of y-Axis."),
 		"borders": value.MethodAtType(2, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
@@ -365,7 +365,7 @@ func createPlotMethods() value.MethodMap {
 		"tickSepX": value.MethodAtType(1, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if ts, ok := stack.Get(1).ToFloat(); ok {
 				plot = plot.Copy()
-				plot.Value.XTickSep = ts
+				plot.Value.X.TickSep = ts
 				return plot, nil
 			}
 			return nil, fmt.Errorf("tickSepX requires a float value")
@@ -373,19 +373,19 @@ func createPlotMethods() value.MethodMap {
 		"tickSepY": value.MethodAtType(1, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if ts, ok := stack.Get(1).ToFloat(); ok {
 				plot = plot.Copy()
-				plot.Value.YTickSep = ts
+				plot.Value.Y.TickSep = ts
 				return plot, nil
 			}
 			return nil, fmt.Errorf("tickSepY requires a float value")
 		}).SetMethodDescription("with", "Sets the space between ticks measured in characters."),
 		"noXExpand": value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			plot = plot.Copy()
-			plot.Value.NoXExpand = true
+			plot.Value.X.NoExpand = true
 			return plot, nil
 		}).SetMethodDescription("No expansion of x-Axis. By default, the x-axis is expanded to the left and right to prevent points from being drawn directly on top of the frame."),
 		"noYExpand": value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			plot = plot.Copy()
-			plot.Value.NoYExpand = true
+			plot.Value.Y.NoExpand = true
 			return plot, nil
 		}).SetMethodDescription("No expansion of y-Axis. By default, the y-axis is expanded to the top and bottom to prevent points from being drawn directly on top of the frame."),
 		"cross": value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
@@ -408,7 +408,7 @@ func createPlotMethods() value.MethodMap {
 			if vMin, ok := stack.Get(1).ToFloat(); ok {
 				if vMax, ok := stack.Get(2).ToFloat(); ok {
 					plot = plot.Copy()
-					plot.Value.XBounds = graph.NewBounds(vMin, vMax)
+					plot.Value.X.Bounds = graph.NewBounds(vMin, vMax)
 					return plot, nil
 				}
 			}
@@ -418,7 +418,7 @@ func createPlotMethods() value.MethodMap {
 			if vMin, ok := stack.Get(1).ToFloat(); ok {
 				if vMax, ok := stack.Get(2).ToFloat(); ok {
 					plot = plot.Copy()
-					plot.Value.YBounds = graph.NewBounds(vMin, vMax)
+					plot.Value.Y.Bounds = graph.NewBounds(vMin, vMax)
 					return plot, nil
 				}
 			}
@@ -439,11 +439,11 @@ func createPlotMethods() value.MethodMap {
 			return plot, nil
 		}).SetMethodDescription("Hides the legend."),
 		"noXAxis": value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
-			plot.Value.HideXAxis = true
+			plot.Value.X.HideAxis = true
 			return plot, nil
 		}).SetMethodDescription("Hides the x-axis."),
 		"noYAxis": value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
-			plot.Value.HideYAxis = true
+			plot.Value.Y.HideAxis = true
 			return plot, nil
 		}).SetMethodDescription("Hides the y-axis."),
 		"textSize": value.MethodAtType(1, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
