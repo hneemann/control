@@ -862,23 +862,23 @@ func closureMethods() value.MethodMap {
 			if tMin, ok := st.Get(1).ToFloat(); ok {
 				if tMax, ok := st.Get(2).ToFloat(); ok {
 					steps := 0
-					if s, ok := st.GetOptional(3, value.Int(0)).ToFloat(); ok {
+					if s, ok := st.GetOptional(4, value.Int(0)).ToFloat(); ok {
 						steps = int(s)
 					} else {
-						return nil, fmt.Errorf("heat requires a number as third argument")
+						return nil, fmt.Errorf("heat requires a number as fourth argument")
 					}
 
 					var colors []graph.Color
-					if s, ok := st.GetOptional(4, colorList).(*value.List); ok {
+					if s, ok := st.GetOptional(3, colorList).(*value.List); ok {
 						cls, err := s.ToSlice(st)
 						if err != nil {
-							return nil, fmt.Errorf("heat requires a list of colors as fourth argument: %w", err)
+							return nil, fmt.Errorf("heat requires a list of colors as third argument: %w", err)
 						}
 						for _, c := range cls {
 							if cv, ok := c.(StyleValue); ok {
 								colors = append(colors, cv.Value.Color)
 							} else {
-								return nil, fmt.Errorf("heat requires a list of colors as fourth argument")
+								return nil, fmt.Errorf("heat requires a list of colors as third argument")
 							}
 						}
 					} else {
@@ -891,22 +891,25 @@ func closureMethods() value.MethodMap {
 					if cl.Args != 2 {
 						return nil, fmt.Errorf("heat requires a function with two arguments")
 					}
-					stack := funcGen.NewEmptyStack[value.Value]()
-					f := func(x, y float64) (float64, error) {
-						stack.Push(value.Float(x))
-						stack.Push(value.Float(y))
-						zVal, err := cl.Func(stack.CreateFrame(2), nil)
-						if err != nil {
-							return 0, err
+
+					f := func() func(x, y float64) (float64, error) {
+						stack := funcGen.NewEmptyStack[value.Value]()
+						return func(x, y float64) (float64, error) {
+							stack.Push(value.Float(x))
+							stack.Push(value.Float(y))
+							zVal, err := cl.Func(stack.CreateFrame(2), nil)
+							if err != nil {
+								return 0, err
+							}
+							if z, ok := zVal.ToFloat(); ok {
+								return z, nil
+							}
+							return 0, fmt.Errorf("the function given to heat must return a float")
 						}
-						if z, ok := zVal.ToFloat(); ok {
-							return z, nil
-						}
-						return 0, fmt.Errorf("the function given to heat must return a float")
 					}
 
 					h := graph.Heat{
-						Func:    f,
+						FuncFac: f,
 						Steps:   steps,
 						Colors:  colors,
 						ZBounds: graph.NewBounds(tMin, tMax),
@@ -915,7 +918,7 @@ func closureMethods() value.MethodMap {
 				}
 			}
 			return nil, fmt.Errorf("heat requires two floats as first arguments")
-		}).SetMethodDescription("zMin", "zMax", "steps", "listOfColors", "Creates a heat plot of the function. "+
+		}).SetMethodDescription("zMin", "zMax", "listOfColors", "steps", "Creates a heat plot of the function. "+
 			"The function needs to have two arguments (x,y) and has to return a float (z). "+
 			"The z-value is used to calculate a color, which is used to draw a square located at the coordinate (x,y).").VarArgsMethod(2, 4),
 	}

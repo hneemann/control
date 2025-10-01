@@ -1410,7 +1410,7 @@ func (t Text) Legend() Legend {
 type Heat struct {
 	AxisFactory AxisFactory
 	ZBounds     Bounds
-	Func        func(x, y float64) (float64, error)
+	FuncFac     func() func(x, y float64) (float64, error)
 	Steps       int
 	Colors      []Color
 }
@@ -1439,7 +1439,7 @@ func (h Heat) DrawTo(plot *Plot, canvas Canvas) error {
 	if h.ZBounds.isSet == false || h.ZBounds.Width() <= 1e-6 {
 		h.ZBounds = NewBounds(-1, 1)
 	}
-	if h.Func == nil {
+	if h.FuncFac == nil {
 		return fmt.Errorf("heat plot requires a function")
 	}
 	if len(h.Colors) < 2 {
@@ -1448,18 +1448,21 @@ func (h Heat) DrawTo(plot *Plot, canvas Canvas) error {
 
 	steps := h.Steps
 	if steps <= 0 {
-		steps = 500
+		steps = 200
 	}
 
 	im := img.NewRGBA(img.Rectangle{img.Point{0, 0}, img.Point{steps, steps}})
 
 	r := plot.innerRect
 	mul := float64(len(h.Colors)-1) / h.ZBounds.Width()
+
+	f := h.FuncFac()
+
 	for x := 0; x < steps; x++ {
+		xp := xa.Reverse(r.Min.X + (r.Max.X-r.Min.X)*float64(x)/float64(steps-1))
 		for y := 0; y < steps; y++ {
-			xp := xa.Reverse(r.Min.X + (r.Max.X-r.Min.X)*float64(x)/float64(steps-1))
 			yp := ya.Reverse(r.Min.Y + (r.Max.Y-r.Min.Y)*float64(y)/float64(steps-1))
-			vz, err := h.Func(xp, yp)
+			vz, err := f(xp, yp)
 			if err != nil {
 				return fmt.Errorf("error evaluating heat function: %w", err)
 			}
