@@ -2,9 +2,12 @@ package graph
 
 import (
 	"bytes"
+	"encoding/base64"
 	"fmt"
 	"github.com/hneemann/control/graph/grParser/mathml"
 	"github.com/hneemann/parser2/value/export/xmlWriter"
+	img "image"
+	"image/png"
 	"math"
 	"strings"
 )
@@ -111,6 +114,30 @@ func (s *SVG) DrawCircle(a Point, b Point, style *Style) {
 		Attr("ry", fmt.Sprintf("%0.2f", math.Abs(a.Y-b.Y)/2)).
 		Attr("style", styleString(style)).
 		Close()
+}
+
+func (s *SVG) DrawImage(a Point, b Point, img img.Image) error {
+	var buf bytes.Buffer
+	err := png.Encode(&buf, img)
+	if err != nil {
+		return fmt.Errorf("error encoding image to png: %w", err)
+	}
+
+	xp := math.Min(a.X, b.X)
+	yp := s.rect.Max.Y - math.Max(a.Y, b.Y)
+	width := math.Abs(a.X - b.X)
+	height := math.Abs(a.Y - b.Y)
+
+	s.w.Open("image").
+		Attr("preserveAspectRatio", "none").
+		Attr("x", fmt.Sprintf("%0.2f", xp)).
+		Attr("y", fmt.Sprintf("%0.2f", yp)).
+		Attr("width", fmt.Sprintf("%0.2f", width)).
+		Attr("height", fmt.Sprintf("%0.2f", height)).
+		Attr("href", "data:image/png;base64,"+base64.StdEncoding.EncodeToString(buf.Bytes())).
+		Close()
+
+	return nil
 }
 
 func (s *SVG) DrawText(a Point, text string, orientation Orientation, style *Style, textSize float64) {

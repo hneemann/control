@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/hneemann/control/nErr"
+	img "image"
+	col "image/color"
 	"math"
 	"slices"
 )
@@ -1446,55 +1448,46 @@ func (h Heat) DrawTo(plot *Plot, canvas Canvas) error {
 
 	steps := h.Steps
 	if steps <= 0 {
-		steps = 100
+		steps = 500
 	}
+
+	im := img.NewRGBA(img.Rectangle{img.Point{0, 0}, img.Point{steps, steps}})
 
 	r := plot.innerRect
 	mul := float64(len(h.Colors)-1) / h.ZBounds.Width()
 	for x := 0; x < steps; x++ {
 		for y := 0; y < steps; y++ {
-			p1 := Point{
-				X: xa.Reverse(r.Min.X + (r.Max.X-r.Min.X)*float64(x)/float64(steps)),
-				Y: ya.Reverse(r.Min.Y + (r.Max.Y-r.Min.Y)*float64(y)/float64(steps)),
-			}
-			p2 := Point{
-				X: xa.Reverse(r.Min.X + (r.Max.X-r.Min.X)*float64(x+1)/float64(steps)),
-				Y: ya.Reverse(r.Min.Y + (r.Max.Y-r.Min.Y)*float64(y+1)/float64(steps)),
-			}
-			vz, err := h.Func((p1.X+p2.X)/2, (p1.Y+p2.Y)/2)
+			xp := xa.Reverse(r.Min.X + (r.Max.X-r.Min.X)*float64(x)/float64(steps-1))
+			yp := ya.Reverse(r.Min.Y + (r.Max.Y-r.Min.Y)*float64(y)/float64(steps-1))
+			vz, err := h.Func(xp, yp)
 			if err != nil {
 				return fmt.Errorf("error evaluating heat function: %w", err)
 			}
 			z := (vz - h.ZBounds.Min) * mul
-			err = canvas.DrawPath(NewPath(true).
-				MoveTo(Point{X: p1.X, Y: p1.Y}).
-				LineTo(Point{X: p2.X, Y: p1.Y}).
-				LineTo(Point{X: p2.X, Y: p2.Y}).
-				LineTo(Point{X: p1.X, Y: p2.Y}), &Style{Fill: true, FillColor: h.getColor(z), StrokeWidth: 0})
-			if err != nil {
-				return fmt.Errorf("error drawing heat rectangle: %w", err)
-			}
+			im.Set(x, steps-y-1, h.getColor(z))
 		}
 	}
-	return nil
+	p1 := Point{X: xa.Reverse(r.Min.X), Y: ya.Reverse(r.Min.Y)}
+	p2 := Point{X: xa.Reverse(r.Max.X), Y: ya.Reverse(r.Max.Y)}
+	return canvas.DrawImage(p1, p2, im)
 }
 
 func (h Heat) Legend() Legend {
 	return Legend{}
 }
 
-func (h Heat) getColor(z float64) Color {
+func (h Heat) getColor(z float64) col.RGBA {
 	f := math.Floor(z)
 	p := z - f
 	i := int(f)
 	if i < 0 {
-		return h.Colors[0]
+		return h.Colors[0].ToGoColor()
 	} else if i >= len(h.Colors)-1 {
-		return h.Colors[len(h.Colors)-1]
+		return h.Colors[len(h.Colors)-1].ToGoColor()
 	}
 	c1 := h.Colors[i]
 	c2 := h.Colors[i+1]
-	return Color{
+	return col.RGBA{
 		R: uint8(float64(c1.R)*(1-p) + float64(c2.R)*p),
 		G: uint8(float64(c1.G)*(1-p) + float64(c2.G)*p),
 		B: uint8(float64(c1.B)*(1-p) + float64(c2.B)*p),

@@ -3,6 +3,8 @@ package graph
 import (
 	"bytes"
 	"fmt"
+	img "image"
+	col "image/color"
 	"math"
 )
 
@@ -126,6 +128,15 @@ func (c Color) Color() string {
 
 func (c Color) Opacity() string {
 	return fmt.Sprintf("%0.2f", float64(c.A)/255)
+}
+
+func (c Color) ToGoColor() col.RGBA {
+	return col.RGBA{
+		R: c.R,
+		G: c.G,
+		B: c.B,
+		A: c.A,
+	}
 }
 
 func (c Color) Darker() Color {
@@ -321,6 +332,7 @@ type Canvas interface {
 	DrawCircle(Point, Point, *Style)
 	DrawText(Point, string, Orientation, *Style, float64)
 	DrawShape(Point, Shape, *Style) error
+	DrawImage(Point, Point, img.Image) error
 	Context() *Context
 	Rect() Rect
 }
@@ -332,10 +344,10 @@ func (s SplitHorizontal) DrawTo(canvas Canvas) error {
 	l := len(s)
 	dy := (r.Max.Y - r.Min.Y) / float64(l)
 	y := r.Max.Y
-	for _, img := range s {
+	for _, im := range s {
 		rect := Rect{Min: Point{r.Min.X, y - dy}, Max: Point{r.Max.X, y}}
 		ca := TransformCanvas{transform: Translate(Point{0, 0}), parent: canvas, size: rect}
-		err := img.DrawTo(ca)
+		err := im.DrawTo(ca)
 		if err != nil {
 			return err
 		}
@@ -351,10 +363,10 @@ func (s SplitVertical) DrawTo(canvas Canvas) error {
 	l := len(s)
 	dx := (r.Max.X - r.Min.X) / float64(l)
 	x := r.Min.X
-	for _, img := range s {
+	for _, im := range s {
 		rect := Rect{Min: Point{x, r.Min.Y}, Max: Point{x + dx, r.Max.Y}}
 		ca := TransformCanvas{transform: Translate(Point{0, 0}), parent: canvas, size: rect}
-		err := img.DrawTo(ca)
+		err := im.DrawTo(ca)
 		if err != nil {
 			return err
 		}
@@ -487,6 +499,10 @@ func (t TransformCanvas) DrawCircle(a Point, b Point, style *Style) {
 	t.parent.DrawCircle(t.transform(a), t.transform(b), style)
 }
 
+func (t TransformCanvas) DrawImage(a Point, b Point, img img.Image) error {
+	return t.parent.DrawImage(t.transform(a), t.transform(b), img)
+}
+
 func (t TransformCanvas) DrawText(a Point, s string, orientation Orientation, style *Style, testSize float64) {
 	t.parent.DrawText(t.transform(a), s, orientation, style, testSize)
 }
@@ -518,6 +534,10 @@ func (r ResizeCanvas) DrawShape(point Point, shape Shape, style *Style) error {
 
 func (r ResizeCanvas) DrawCircle(a Point, b Point, style *Style) {
 	r.parent.DrawCircle(a, b, style)
+}
+
+func (r ResizeCanvas) DrawImage(a Point, b Point, img img.Image) error {
+	return r.parent.DrawImage(a, b, img)
 }
 
 func (r ResizeCanvas) DrawText(a Point, s string, orientation Orientation, style *Style, testSize float64) {
