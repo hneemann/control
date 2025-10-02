@@ -1465,9 +1465,14 @@ func (h Heat) DrawTo(plot *Plot, canvas Canvas) error {
 	mul := float64(len(h.Colors)-1) / h.ZBounds.Width()
 
 	lines := make(chan int)
+	stop := make(chan struct{})
 	go func() {
 		for y := 0; y < steps; y++ {
-			lines <- y
+			select {
+			case <-stop:
+				return
+			case lines <- y:
+			}
 		}
 		close(lines)
 	}()
@@ -1484,17 +1489,22 @@ func (h Heat) DrawTo(plot *Plot, canvas Canvas) error {
 			l := 0
 			for y := range lines {
 				yp := ya.Reverse(r.Min.Y + (r.Max.Y-r.Min.Y)*float64(y)/float64(steps-1))
+				var vz float64
+				var err error
 				for x := 0; x < steps; x++ {
 					xp := xa.Reverse(r.Min.X + (r.Max.X-r.Min.X)*float64(x)/float64(steps-1))
-					vz, err := f(xp, yp)
+					vz, err = f(xp, yp)
 					if err != nil {
-						results <- pixLine{err: err}
-						return
+						break
 					}
 					z := (vz - h.ZBounds.Min) * mul
 					pix[l][x] = h.getColor(z)
 				}
-				results <- pixLine{y: y, pix: pix[l]}
+				select {
+				case <-stop:
+					return
+				case results <- pixLine{y: y, pix: pix[l], err: err}:
+				}
 				l = 1 - l
 			}
 		}()
@@ -1507,6 +1517,7 @@ func (h Heat) DrawTo(plot *Plot, canvas Canvas) error {
 
 	for pixL := range results {
 		if pixL.err != nil {
+			close(stop)
 			return fmt.Errorf("error evaluating heat function: %w", pixL.err)
 		}
 		for x := 0; x < steps; x++ {
