@@ -861,13 +861,6 @@ func closureMethods() value.MethodMap {
 		"heat": value.MethodAtType(4, func(cl value.Closure, st funcGen.Stack[value.Value]) (value.Value, error) {
 			if tMin, ok := st.Get(1).ToFloat(); ok {
 				if tMax, ok := st.Get(2).ToFloat(); ok {
-					steps := 0
-					if s, ok := st.GetOptional(4, value.Int(0)).ToFloat(); ok {
-						steps = int(s)
-					} else {
-						return nil, fmt.Errorf("heat requires a number as fourth argument")
-					}
-
 					var colors []graph.Color
 					if s, ok := st.GetOptional(3, colorList).(*value.List); ok {
 						cls, err := s.ToSlice(st)
@@ -888,11 +881,18 @@ func closureMethods() value.MethodMap {
 						return nil, fmt.Errorf("heat requires at least two colors")
 					}
 
+					steps := 0
+					if s, ok := st.GetOptional(4, value.Int(0)).ToFloat(); ok {
+						steps = int(s)
+					} else {
+						return nil, fmt.Errorf("heat requires a number as fourth argument")
+					}
+
 					if cl.Args != 2 {
 						return nil, fmt.Errorf("heat requires a function with two arguments")
 					}
 
-					f := func() func(x, y float64) (float64, error) {
+					fac := func() func(x, y float64) (float64, error) {
 						stack := funcGen.NewEmptyStack[value.Value]()
 						return func(x, y float64) (float64, error) {
 							stack.Push(value.Float(x))
@@ -909,7 +909,7 @@ func closureMethods() value.MethodMap {
 					}
 
 					h := graph.Heat{
-						FuncFac: f,
+						FuncFac: fac,
 						Steps:   steps,
 						Colors:  colors,
 						ZBounds: graph.NewBounds(tMin, tMax),

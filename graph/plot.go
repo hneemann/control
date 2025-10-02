@@ -7,7 +7,9 @@ import (
 	img "image"
 	col "image/color"
 	"math"
+	"runtime"
 	"slices"
+	"sync"
 )
 
 type ShapeLineStyle struct {
@@ -1423,6 +1425,12 @@ func (h Heat) DependantBounds(_, _ Bounds) (x, y Bounds, err error) {
 	return Bounds{}, Bounds{}, nil
 }
 
+type pixLine struct {
+	y   int
+	pix []col.RGBA
+	err error
+}
+
 func (h Heat) DrawTo(plot *Plot, canvas Canvas) error {
 	if h.AxisFactory == nil {
 		h.AxisFactory = LinearAxis
@@ -1448,7 +1456,7 @@ func (h Heat) DrawTo(plot *Plot, canvas Canvas) error {
 
 	steps := h.Steps
 	if steps <= 0 {
-		steps = 200
+		steps = 400
 	}
 
 	im := img.NewRGBA(img.Rectangle{img.Point{0, 0}, img.Point{steps, steps}})
@@ -1456,20 +1464,56 @@ func (h Heat) DrawTo(plot *Plot, canvas Canvas) error {
 	r := plot.innerRect
 	mul := float64(len(h.Colors)-1) / h.ZBounds.Width()
 
-	f := h.FuncFac()
-
-	for x := 0; x < steps; x++ {
-		xp := xa.Reverse(r.Min.X + (r.Max.X-r.Min.X)*float64(x)/float64(steps-1))
+	lines := make(chan int)
+	go func() {
 		for y := 0; y < steps; y++ {
-			yp := ya.Reverse(r.Min.Y + (r.Max.Y-r.Min.Y)*float64(y)/float64(steps-1))
-			vz, err := f(xp, yp)
-			if err != nil {
-				return fmt.Errorf("error evaluating heat function: %w", err)
+			lines <- y
+		}
+		close(lines)
+	}()
+	wg := sync.WaitGroup{}
+	n := runtime.NumCPU()
+	results := make(chan pixLine)
+	for range n {
+		wg.Add(1)
+		f := h.FuncFac()
+		go func() {
+			defer wg.Done()
+
+			pix := [][]col.RGBA{make([]col.RGBA, steps), make([]col.RGBA, steps)}
+			l := 0
+			for y := range lines {
+				yp := ya.Reverse(r.Min.Y + (r.Max.Y-r.Min.Y)*float64(y)/float64(steps-1))
+				for x := 0; x < steps; x++ {
+					xp := xa.Reverse(r.Min.X + (r.Max.X-r.Min.X)*float64(x)/float64(steps-1))
+					vz, err := f(xp, yp)
+					if err != nil {
+						results <- pixLine{err: err}
+						return
+					}
+					z := (vz - h.ZBounds.Min) * mul
+					pix[l][x] = h.getColor(z)
+				}
+				results <- pixLine{y: y, pix: pix[l]}
+				l = 1 - l
 			}
-			z := (vz - h.ZBounds.Min) * mul
-			im.Set(x, steps-y-1, h.getColor(z))
+		}()
+	}
+
+	go func() {
+		wg.Wait()
+		close(results)
+	}()
+
+	for pixL := range results {
+		if pixL.err != nil {
+			return fmt.Errorf("error evaluating heat function: %w", pixL.err)
+		}
+		for x := 0; x < steps; x++ {
+			im.Set(x, steps-pixL.y-1, pixL.pix[x])
 		}
 	}
+
 	p1 := Point{X: xa.Reverse(r.Min.X), Y: ya.Reverse(r.Min.Y)}
 	p2 := Point{X: xa.Reverse(r.Max.X), Y: ya.Reverse(r.Max.Y)}
 	return canvas.DrawImage(p1, p2, im)
