@@ -79,6 +79,7 @@ func (l LinePath3d) IsClosed() bool {
 
 type Cube interface {
 	DrawPath(Path3d, *Style) error
+	DrawText(Point3d, string, Orientation, *Style)
 	Bounds() (x, y, z Bounds)
 }
 
@@ -94,9 +95,16 @@ type Plot3d struct {
 	alpha    float64
 	beta     float64
 	gamma    float64
+	HideCube bool
 }
 
-const cubeSize = 100
+func NewPlot3d() *Plot3d {
+	return &Plot3d{
+		alpha: 0.2,
+		beta:  0.4,
+		gamma: 0,
+	}
+}
 
 type unityCube struct {
 	parent     Cube
@@ -106,7 +114,7 @@ type unityCube struct {
 
 func newUnityCube(parent Cube, x, y, z AxisDescription) *unityCube {
 	ctw := func(width float64, digits int) bool {
-		return width > float64(digits)*3
+		return width > float64(digits)*10
 	}
 	ax := x.Factory(-100, 100, x.Bounds, ctw, 0.02)
 	ay := y.Factory(-100, 100, y.Bounds, ctw, 0.02)
@@ -118,6 +126,14 @@ func newUnityCube(parent Cube, x, y, z AxisDescription) *unityCube {
 	}
 }
 
+func (t *unityCube) transform(p Point3d) Point3d {
+	return Point3d{
+		X: t.ax.Trans(p.X),
+		Y: t.ay.Trans(p.Y),
+		Z: t.az.Trans(p.Z),
+	}
+}
+
 type unityPath3d struct {
 	p Path3d
 	u *unityCube
@@ -125,12 +141,7 @@ type unityPath3d struct {
 
 func (t unityPath3d) Iter(yield func(PathElement3d, error) bool) {
 	for pe, err := range t.p.Iter {
-		d := Point3d{
-			X: t.u.ax.Trans(pe.X),
-			Y: t.u.ay.Trans(pe.Y),
-			Z: t.u.az.Trans(pe.Z),
-		}
-		if !yield(PathElement3d{Mode: pe.Mode, Point3d: d}, err) {
+		if !yield(PathElement3d{Mode: pe.Mode, Point3d: t.u.transform(pe.Point3d)}, err) {
 			return
 		}
 		if err != nil {
@@ -147,6 +158,10 @@ func (uc *unityCube) DrawPath(d Path3d, style *Style) error {
 	return uc.parent.DrawPath(&unityPath3d{d, uc}, style)
 }
 
+func (uc *unityCube) DrawText(p Point3d, s string, orientation Orientation, style *Style) {
+	uc.parent.DrawText(uc.transform(p), s, orientation, style)
+}
+
 func (uc *unityCube) Bounds() (x, y, z Bounds) {
 	return uc.X, uc.Y, uc.Z
 }
@@ -156,7 +171,7 @@ type RotCube struct {
 	matrix Matrix3d
 }
 
-func NewRotCube(cube CanvasCube, alpha float64, beta float64, gamma float64) Cube {
+func NewRotCube(cube Cube, alpha float64, beta float64, gamma float64) Cube {
 	return RotCube{
 		parent: cube,
 		matrix: NewRotX(alpha).MulMatrix(NewRotY(gamma)).MulMatrix(NewRotZ(beta)),
@@ -165,6 +180,10 @@ func NewRotCube(cube CanvasCube, alpha float64, beta float64, gamma float64) Cub
 
 func (r RotCube) DrawPath(p Path3d, style *Style) error {
 	return r.parent.DrawPath(&rotPath3d{p, r}, style)
+}
+
+func (r RotCube) DrawText(p Point3d, s string, orientation Orientation, style *Style) {
+	r.parent.DrawText(r.matrix.MulPoint(p), s, orientation, style)
 }
 
 func (r RotCube) Bounds() (x, y, z Bounds) {
@@ -238,36 +257,34 @@ func (t *rotPath3d) IsClosed() bool {
 }
 
 type CanvasCube struct {
-	canvas Canvas
-	dx, dy float64
-	fac    float64
+	canvas   Canvas
+	textSize float64
+	dx, dy   float64
+	fac      float64
 }
 
-func newCanvasCube(canvas Canvas) CanvasCube {
+func newCanvasCube(canvas Canvas) *CanvasCube {
 	rect := canvas.Rect()
 
 	fac := math.Min(rect.Width(), rect.Height()) / math.Sqrt(2) / 200
 
-	return CanvasCube{
-		canvas: canvas,
-		dx:     rect.Min.X + rect.Width()/2,
-		dy:     rect.Min.Y + rect.Height()/2,
-		fac:    fac,
+	return &CanvasCube{
+		canvas:   canvas,
+		textSize: canvas.Context().TextSize,
+		dx:       rect.Min.X + rect.Width()/2,
+		dy:       rect.Min.Y + rect.Height()/2,
+		fac:      fac,
 	}
 }
 
 type cPath struct {
-	p      Path3d
-	fac    float64
-	dx, dy float64
+	p  Path3d
+	cc *CanvasCube
 }
 
 func (c cPath) Iter(yield func(PathElement, error) bool) {
 	for pe, err := range c.p.Iter {
-		if !yield(PathElement{Mode: pe.Mode, Point: Point{
-			X: pe.X*c.fac + c.dx,
-			Y: c.dy + pe.Z*c.fac,
-		}}, err) {
+		if !yield(PathElement{Mode: pe.Mode, Point: c.cc.To2d(pe.Point3d)}, err) {
 			return
 		}
 		if err != nil {
@@ -280,11 +297,22 @@ func (c cPath) IsClosed() bool {
 	return c.p.IsClosed()
 }
 
-func (c CanvasCube) DrawPath(p Path3d, style *Style) error {
-	return c.canvas.DrawPath(cPath{p: p, fac: c.fac, dx: c.dx, dy: c.dy}, style)
+func (c *CanvasCube) To2d(p Point3d) Point {
+	return Point{
+		X: p.X*c.fac + c.dx,
+		Y: c.dy + p.Z*c.fac,
+	}
 }
 
-func (c CanvasCube) Bounds() (x, y, z Bounds) {
+func (c *CanvasCube) DrawPath(p Path3d, style *Style) error {
+	return c.canvas.DrawPath(cPath{p: p, cc: c}, style)
+}
+
+func (c *CanvasCube) DrawText(p Point3d, s string, orientation Orientation, style *Style) {
+	c.canvas.DrawText(c.To2d(p), s, orientation, style, c.textSize)
+}
+
+func (c *CanvasCube) Bounds() (x, y, z Bounds) {
 	return NewBounds(-100, 100), NewBounds(-100, 100), NewBounds(-100, 100)
 }
 
@@ -294,26 +322,80 @@ func (p *Plot3d) DrawTo(canvas Canvas) (err error) {
 	canvasCube := newCanvasCube(canvas)
 	rot := NewRotCube(canvasCube, p.alpha, p.beta, p.gamma)
 
-	nErr.Try(rot.DrawPath(NewPath3d(true).Add(Point3d{-100, -100, -100}).
-		Add(Point3d{100, -100, -100}).
-		Add(Point3d{100, 100, -100}).
-		Add(Point3d{-100, 100, -100}), Black))
+	cubeColor := Gray
+	textColor := cubeColor.SetFill(cubeColor)
+	if !p.HideCube {
+		nErr.Try(rot.DrawPath(NewPath3d(true).Add(Point3d{-100, -100, -100}).
+			Add(Point3d{100, -100, -100}).
+			Add(Point3d{100, 100, -100}).
+			Add(Point3d{-100, 100, -100}), cubeColor))
 
-	nErr.Try(rot.DrawPath(NewPath3d(true).Add(Point3d{-100, -100, 100}).
-		Add(Point3d{100, -100, 100}).
-		Add(Point3d{100, 100, 100}).
-		Add(Point3d{-100, 100, 100}), Black))
+		nErr.Try(rot.DrawPath(NewPath3d(true).Add(Point3d{-100, -100, 100}).
+			Add(Point3d{100, -100, 100}).
+			Add(Point3d{100, 100, 100}).
+			Add(Point3d{-100, 100, 100}), cubeColor))
 
-	nErr.Try(rot.DrawPath(NewPath3d(true).Add(Point3d{100, 100, -100}).
-		Add(Point3d{100, 100, 100}), Black))
-	nErr.Try(rot.DrawPath(NewPath3d(true).Add(Point3d{-100, 100, -100}).
-		Add(Point3d{-100, 100, 100}), Black))
-	nErr.Try(rot.DrawPath(NewPath3d(true).Add(Point3d{100, -100, -100}).
-		Add(Point3d{100, -100, 100}), Black))
-	nErr.Try(rot.DrawPath(NewPath3d(true).Add(Point3d{-100, -100, -100}).
-		Add(Point3d{-100, -100, 100}), Black))
-
+		nErr.Try(rot.DrawPath(NewPath3d(true).Add(Point3d{100, 100, -100}).
+			Add(Point3d{100, 100, 100}), cubeColor))
+		nErr.Try(rot.DrawPath(NewPath3d(true).Add(Point3d{-100, 100, -100}).
+			Add(Point3d{-100, 100, 100}), cubeColor))
+		nErr.Try(rot.DrawPath(NewPath3d(true).Add(Point3d{100, -100, -100}).
+			Add(Point3d{100, -100, 100}), cubeColor))
+		nErr.Try(rot.DrawPath(NewPath3d(true).Add(Point3d{-100, -100, -100}).
+			Add(Point3d{-100, -100, 100}), cubeColor))
+	}
 	cube := newUnityCube(rot, p.X.MakeValid(), p.Y.MakeValid(), p.Z.MakeValid())
+	facShortLabel := 1.02
+	facLongLabel := 1.04
+	facText := 1.1
+	if !p.X.HideAxis {
+		for _, tick := range cube.ax.Ticks {
+			xp := cube.ax.Trans(tick.Position)
+			yp := -100.0
+			zp := -100.0
+			if tick.Label == "" {
+				nErr.Try(rot.DrawPath(NewPath3d(true).Add(Point3d{xp, yp, zp}).
+					Add(Point3d{xp, yp * facShortLabel, zp * facShortLabel}), cubeColor))
+			} else {
+				nErr.Try(rot.DrawPath(NewPath3d(true).Add(Point3d{xp, yp, zp}).
+					Add(Point3d{xp, yp * facLongLabel, zp * facLongLabel}), cubeColor))
+				rot.DrawText(Point3d{xp, yp * facText, zp * facText}, tick.Label, HCenter|VCenter, textColor)
+			}
+		}
+		rot.DrawText(Point3d{100 * facText, -100, -100}, checkEmpty(p.X.Label, "x"), HCenter|VCenter, textColor)
+	}
+	if !p.Y.HideAxis {
+		for _, tick := range cube.ay.Ticks {
+			xp := -100.0
+			yp := cube.ay.Trans(tick.Position)
+			zp := -100.0
+			if tick.Label == "" {
+				nErr.Try(rot.DrawPath(NewPath3d(true).Add(Point3d{xp, yp, zp}).
+					Add(Point3d{xp * facShortLabel, yp, zp * facShortLabel}), cubeColor))
+			} else {
+				nErr.Try(rot.DrawPath(NewPath3d(true).Add(Point3d{xp, yp, zp}).
+					Add(Point3d{xp * facLongLabel, yp, zp * facLongLabel}), cubeColor))
+				rot.DrawText(Point3d{xp * facText, yp, zp * facText}, tick.Label, HCenter|VCenter, textColor)
+			}
+		}
+		rot.DrawText(Point3d{-100, 100 * facText, -100}, checkEmpty(p.Y.Label, "y"), HCenter|VCenter, textColor)
+	}
+	if !p.Z.HideAxis {
+		for _, tick := range cube.az.Ticks {
+			xp := -100.0
+			yp := -100.0
+			zp := cube.az.Trans(tick.Position)
+			if tick.Label == "" {
+				nErr.Try(rot.DrawPath(NewPath3d(true).Add(Point3d{xp, yp, zp}).
+					Add(Point3d{xp * facShortLabel, yp * facShortLabel, zp}), cubeColor))
+			} else {
+				nErr.Try(rot.DrawPath(NewPath3d(true).Add(Point3d{xp, yp, zp}).
+					Add(Point3d{xp * facLongLabel, yp * facLongLabel, zp}), cubeColor))
+				rot.DrawText(Point3d{xp * facText, yp * facText, zp}, tick.Label, HCenter|VCenter, textColor)
+			}
+		}
+		rot.DrawText(Point3d{-100, -100, 100 * facText}, checkEmpty(p.Z.Label, "z"), HCenter|VCenter, textColor)
+	}
 	for _, c := range p.Contents {
 		err := c.DrawTo(p, cube)
 		if err != nil {
@@ -321,6 +403,13 @@ func (p *Plot3d) DrawTo(canvas Canvas) (err error) {
 		}
 	}
 	return nil
+}
+
+func checkEmpty(str string, def string) string {
+	if str == "" {
+		return def
+	}
+	return str
 }
 
 func (p *Plot3d) AddContent(value Plot3dContent) {

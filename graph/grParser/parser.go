@@ -281,6 +281,37 @@ func createPlot3dMethods() value.MethodMap {
 			}
 			return Plot3dValue{}, fmt.Errorf("angle requires three float values")
 		}).SetMethodDescription("alpha", "beta", "gamma", "Sets the projection angles."),
+		"labels": value.MethodAtType(3, func(plot Plot3dValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			if xStr, ok := stack.Get(1).(value.String); ok {
+				if yStr, ok := stack.Get(2).(value.String); ok {
+					if zStr, ok := stack.Get(3).(value.String); ok {
+						plot.Value.X.Label = string(xStr)
+						plot.Value.Y.Label = string(yStr)
+						plot.Value.Z.Label = string(zStr)
+						return plot, nil
+					}
+				}
+			}
+			return nil, fmt.Errorf("xLabel requires a string")
+		}).SetMethodDescription("xLabel", "yLabel", "zLabel", "Sets the axis labels."),
+		"noAxis": value.MethodAtType(0, func(plot Plot3dValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			plot.Value.X.HideAxis = true
+			plot.Value.Y.HideAxis = true
+			plot.Value.Z.HideAxis = true
+			return plot, nil
+		}).SetMethodDescription("Hides all axis."),
+		"noXAxis": value.MethodAtType(0, func(plot Plot3dValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			plot.Value.X.HideAxis = true
+			return plot, nil
+		}).SetMethodDescription("Hides the x-axis."),
+		"noYAxis": value.MethodAtType(0, func(plot Plot3dValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			plot.Value.Y.HideAxis = true
+			return plot, nil
+		}).SetMethodDescription("Hides the y-axis."),
+		"noZAxis": value.MethodAtType(0, func(plot Plot3dValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			plot.Value.Z.HideAxis = true
+			return plot, nil
+		}).SetMethodDescription("Hides the z-axis."),
 		"xBounds": value.MethodAtType(2, func(plot Plot3dValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if vMin, ok := stack.Get(1).ToFloat(); ok {
 				if vMax, ok := stack.Get(2).ToFloat(); ok {
@@ -308,6 +339,13 @@ func createPlot3dMethods() value.MethodMap {
 			}
 			return nil, fmt.Errorf("zBounds requires two float values")
 		}).SetMethodDescription("zMin", "zMax", "Sets the z-bounds."),
+		"svg": value.MethodAtType(1, func(plot Plot3dValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			if str, ok := stack.Get(1).(value.String); ok {
+				return ImageToSvg(plot, &plot.context, string(str))
+			} else {
+				return nil, fmt.Errorf("svg requires a string")
+			}
+		}).SetMethodDescription("name", "Creates a svg-file to download."),
 	}
 }
 
@@ -1121,7 +1159,7 @@ func Setup(fg *value.FunctionGenerator) {
 	}.SetDescription("content...", "Creates a new plot."))
 	fg.AddStaticFunction("plot3d", funcGen.Function[value.Value]{
 		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
-			p := NewPlot3dValue(&graph.Plot3d{})
+			p := NewPlot3dValue(graph.NewPlot3d())
 			for i := 0; i < st.Size(); i++ {
 				err := p.Add(st.Get(i))
 				if err != nil {
