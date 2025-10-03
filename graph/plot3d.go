@@ -153,9 +153,14 @@ func (uc *unityCube) Bounds() (x, y, z Bounds) {
 
 type RotCube struct {
 	parent Cube
-	alpha  float64
-	beta   float64
-	gamma  float64
+	matrix Matrix3d
+}
+
+func NewRotCube(cube CanvasCube, alpha float64, beta float64, gamma float64) Cube {
+	return RotCube{
+		parent: cube,
+		matrix: NewRotX(alpha).MulMatrix(NewRotY(gamma)).MulMatrix(NewRotZ(beta)),
+	}
 }
 
 func (r RotCube) DrawPath(p Path3d, style *Style) error {
@@ -173,7 +178,7 @@ type rotPath3d struct {
 
 func (t *rotPath3d) Iter(yield func(PathElement3d, error) bool) {
 	for pe, err := range t.p.Iter {
-		if !yield(PathElement3d{Mode: pe.Mode, Point3d: t.rotate(pe.Point3d)}, err) {
+		if !yield(PathElement3d{Mode: pe.Mode, Point3d: t.r.matrix.MulPoint(pe.Point3d)}, err) {
 			return
 		}
 		if err != nil {
@@ -182,20 +187,49 @@ func (t *rotPath3d) Iter(yield func(PathElement3d, error) bool) {
 	}
 }
 
-func (t *rotPath3d) rotate(d Point3d) Point3d {
-	alpha := t.r.alpha
-	beta := t.r.beta
-	gamma := t.r.gamma
+type Matrix3d [3][3]float64
+
+func (m Matrix3d) MulMatrix(n Matrix3d) Matrix3d {
+	var r Matrix3d
+	for i := 0; i < 3; i++ {
+		for j := 0; j < 3; j++ {
+			for k := 0; k < 3; k++ {
+				r[i][j] += m[i][k] * n[k][j]
+			}
+		}
+	}
+	return r
+}
+
+func (m Matrix3d) MulPoint(p Point3d) Point3d {
 	return Point3d{
-		X: d.X*(math.Cos(beta)*math.Cos(gamma)) +
-			d.Y*(math.Sin(alpha)*math.Sin(beta)*math.Cos(gamma)-math.Cos(alpha)*math.Sin(gamma)) +
-			d.Z*(math.Cos(alpha)*math.Sin(beta)*math.Cos(gamma)+math.Sin(alpha)*math.Sin(gamma)),
-		Y: d.X*(math.Cos(beta)*math.Sin(gamma)) +
-			d.Y*(math.Sin(alpha)*math.Sin(beta)*math.Sin(gamma)+math.Cos(alpha)*math.Cos(gamma)) +
-			d.Z*(math.Cos(alpha)*math.Sin(beta)*math.Sin(gamma)-math.Sin(alpha)*math.Cos(gamma)),
-		Z: d.X*(-math.Sin(beta)) +
-			d.Y*(math.Sin(alpha)*math.Cos(beta)) +
-			d.Z*(math.Cos(alpha)*math.Cos(beta)),
+		X: m[0][0]*p.X + m[0][1]*p.Y + m[0][2]*p.Z,
+		Y: m[1][0]*p.X + m[1][1]*p.Y + m[1][2]*p.Z,
+		Z: m[2][0]*p.X + m[2][1]*p.Y + m[2][2]*p.Z,
+	}
+}
+
+func NewRotX(alpha float64) Matrix3d {
+	return Matrix3d{
+		{1, 0, 0},
+		{0, math.Cos(alpha), -math.Sin(alpha)},
+		{0, math.Sin(alpha), math.Cos(alpha)},
+	}
+}
+
+func NewRotY(beta float64) Matrix3d {
+	return Matrix3d{
+		{math.Cos(beta), 0, math.Sin(beta)},
+		{0, 1, 0},
+		{-math.Sin(beta), 0, math.Cos(beta)},
+	}
+}
+
+func NewRotZ(gamma float64) Matrix3d {
+	return Matrix3d{
+		{math.Cos(gamma), -math.Sin(gamma), 0},
+		{math.Sin(gamma), math.Cos(gamma), 0},
+		{0, 0, 1},
 	}
 }
 
@@ -212,7 +246,7 @@ type CanvasCube struct {
 func newCanvasCube(canvas Canvas) CanvasCube {
 	rect := canvas.Rect()
 
-	fac := math.Min(rect.Width(), rect.Height()) / math.Sqrt(3) / 200
+	fac := math.Min(rect.Width(), rect.Height()) / math.Sqrt(2) / 200
 
 	return CanvasCube{
 		canvas: canvas,
@@ -258,7 +292,7 @@ func (p *Plot3d) DrawTo(canvas Canvas) (err error) {
 	defer nErr.CatchErr(&err)
 
 	canvasCube := newCanvasCube(canvas)
-	rot := RotCube{parent: canvasCube, alpha: p.alpha, beta: p.beta, gamma: p.gamma}
+	rot := NewRotCube(canvasCube, p.alpha, p.beta, p.gamma)
 
 	nErr.Try(rot.DrawPath(NewPath3d(true).Add(Point3d{-100, -100, -100}).
 		Add(Point3d{100, -100, -100}).
