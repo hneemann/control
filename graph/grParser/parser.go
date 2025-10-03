@@ -281,6 +281,20 @@ func createPlot3dMethods() value.MethodMap {
 			}
 			return Plot3dValue{}, fmt.Errorf("angle requires three float values")
 		}).SetMethodDescription("alpha", "beta", "gamma", "Sets the projection angles."),
+		"size": value.MethodAtType(1, func(plot Plot3dValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			if size, ok := stack.Get(1).ToFloat(); ok {
+				plot.Value.Size = size
+				return plot, nil
+			}
+			return Plot3dValue{}, fmt.Errorf("size requires a float value")
+		}).SetMethodDescription("size", "Sets the size of the cube. Default is 1."),
+		"perspective": value.MethodAtType(1, func(plot Plot3dValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			if size, ok := stack.Get(1).ToFloat(); ok {
+				plot.Value.Perspective = size
+				return plot, nil
+			}
+			return Plot3dValue{}, fmt.Errorf("size requires a float value")
+		}).SetMethodDescription("size", "Sets the size of the cube. Default is 1."),
 		"labels": value.MethodAtType(3, func(plot Plot3dValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if xStr, ok := stack.Get(1).(value.String); ok {
 				if yStr, ok := stack.Get(2).(value.String); ok {

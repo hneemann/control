@@ -90,19 +90,23 @@ type Plot3dContent interface {
 }
 
 type Plot3d struct {
-	X, Y, Z  AxisDescription
-	Contents []Plot3dContent
-	alpha    float64
-	beta     float64
-	gamma    float64
-	HideCube bool
+	X, Y, Z     AxisDescription
+	Contents    []Plot3dContent
+	alpha       float64
+	beta        float64
+	gamma       float64
+	HideCube    bool
+	Size        float64
+	Perspective float64
 }
 
 func NewPlot3d() *Plot3d {
 	return &Plot3d{
-		alpha: 0.2,
-		beta:  0.4,
-		gamma: 0,
+		alpha:       0.2,
+		beta:        0.4,
+		gamma:       0,
+		Size:        1,
+		Perspective: 1,
 	}
 }
 
@@ -174,7 +178,7 @@ type RotCube struct {
 func NewRotCube(cube Cube, alpha float64, beta float64, gamma float64) Cube {
 	return RotCube{
 		parent: cube,
-		matrix: NewRotX(alpha).MulMatrix(NewRotY(gamma)).MulMatrix(NewRotZ(beta)),
+		matrix: NewRotX(-alpha).MulMatrix(NewRotY(gamma)).MulMatrix(NewRotZ(beta)),
 	}
 }
 
@@ -257,23 +261,25 @@ func (t *rotPath3d) IsClosed() bool {
 }
 
 type CanvasCube struct {
-	canvas   Canvas
-	textSize float64
-	dx, dy   float64
-	fac      float64
+	canvas      Canvas
+	textSize    float64
+	dx, dy      float64
+	fac         float64
+	perspective float64
 }
 
-func newCanvasCube(canvas Canvas) *CanvasCube {
+func newCanvasCube(canvas Canvas, size, perspective float64) *CanvasCube {
 	rect := canvas.Rect()
 
-	fac := math.Min(rect.Width(), rect.Height()) / math.Sqrt(2) / 200
+	fac := size * math.Min(rect.Width(), rect.Height()) / math.Sqrt(2) / 200
 
 	return &CanvasCube{
-		canvas:   canvas,
-		textSize: canvas.Context().TextSize,
-		dx:       rect.Min.X + rect.Width()/2,
-		dy:       rect.Min.Y + rect.Height()/2,
-		fac:      fac,
+		canvas:      canvas,
+		textSize:    canvas.Context().TextSize,
+		dx:          rect.Min.X + rect.Width()/2,
+		dy:          rect.Min.Y + rect.Height()/2,
+		fac:         fac,
+		perspective: perspective,
 	}
 }
 
@@ -298,9 +304,10 @@ func (c cPath) IsClosed() bool {
 }
 
 func (c *CanvasCube) To2d(p Point3d) Point {
+	zFac := 1 + p.Y/800*c.perspective
 	return Point{
-		X: p.X*c.fac + c.dx,
-		Y: c.dy + p.Z*c.fac,
+		X: p.X*c.fac*zFac + c.dx,
+		Y: c.dy + p.Z*c.fac*zFac,
 	}
 }
 
@@ -319,7 +326,7 @@ func (c *CanvasCube) Bounds() (x, y, z Bounds) {
 func (p *Plot3d) DrawTo(canvas Canvas) (err error) {
 	defer nErr.CatchErr(&err)
 
-	canvasCube := newCanvasCube(canvas)
+	canvasCube := newCanvasCube(canvas, p.Size, p.Perspective)
 	rot := NewRotCube(canvasCube, p.alpha, p.beta, p.gamma)
 
 	cubeColor := Gray
@@ -436,7 +443,7 @@ func (g Grid3d) Bounds() (x, y, z Bounds, err error) {
 func (g Grid3d) DrawTo(_ *Plot3d, cube Cube) error {
 	steps := g.Steps
 	if steps <= 0 {
-		steps = 40
+		steps = 41
 	}
 	x, y, z := cube.Bounds()
 	for xn := 0; xn <= steps; xn++ {
