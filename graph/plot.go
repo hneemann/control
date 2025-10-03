@@ -71,6 +71,14 @@ type AxisDescription struct {
 	HideAxis bool
 }
 
+func (a AxisDescription) MakeValid() AxisDescription {
+	a.Bounds = a.Bounds.makeValid()
+	if a.Factory == nil {
+		a.Factory = LinearAxis
+	}
+	return a
+}
+
 type Plot struct {
 	X, Y           AxisDescription
 	Square         bool
@@ -552,6 +560,19 @@ func (b *Bounds) Merge(p float64) {
 			}
 		}
 	}
+}
+
+func (b Bounds) Bind(v float64) float64 {
+	if !b.isSet {
+		return v
+	}
+	if v < b.Min {
+		return b.Min
+	}
+	if v > b.Max {
+		return b.Max
+	}
+	return v
 }
 
 // PlotContent is the interface that all plot contents must implement.

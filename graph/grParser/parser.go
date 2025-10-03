@@ -46,12 +46,14 @@ func (w Holder[T]) ToClosure() (funcGen.Function[value.Value], bool) {
 }
 
 var (
-	PlotType        value.Type
-	PlotContentType value.Type
-	StyleType       value.Type
-	ImageType       value.Type
-	DataContentType value.Type
-	DataType        value.Type
+	PlotType          value.Type
+	PlotContentType   value.Type
+	StyleType         value.Type
+	ImageType         value.Type
+	DataContentType   value.Type
+	DataType          value.Type
+	Plot3dType        value.Type
+	Plot3dContentType value.Type
 )
 
 type ToImageInterface interface {
@@ -107,6 +109,51 @@ func createImageMethods() value.MethodMap {
 			return nil, fmt.Errorf("outputSize requires two float values")
 		}).SetMethodDescription("width", "height", "Sets the svg-output size."),
 	}
+}
+
+type Plot3dContentValue struct {
+	Holder[graph.Plot3dContent]
+}
+
+func (p Plot3dContentValue) GetType() value.Type {
+	return Plot3dContentType
+}
+
+type Plot3dValue struct {
+	Holder[*graph.Plot3d]
+	context graph.Context
+}
+
+func (p Plot3dValue) ToImage() graph.Image {
+	return p.Value
+}
+
+func (p Plot3dValue) DrawTo(canvas graph.Canvas) error {
+	return p.Holder.Value.DrawTo(canvas)
+}
+
+func NewPlot3dValue(plot *graph.Plot3d) Plot3dValue {
+	return Plot3dValue{Holder[*graph.Plot3d]{plot}, graph.DefaultContext}
+}
+
+func (p Plot3dValue) GetType() value.Type {
+	return Plot3dType
+}
+
+func (p Plot3dValue) Add(pc value.Value) error {
+	if c, ok := pc.(Plot3dContentValue); ok {
+		p.Holder.Value.AddContent(c.Value)
+		return nil
+	} else if l, ok := pc.ToList(); ok {
+		return l.Iterate(funcGen.NewEmptyStack[value.Value](), func(v value.Value) error {
+			return p.Add(v)
+		})
+	}
+	return errors.New("value is not a plot3d content")
+}
+
+func (p Plot3dValue) ToHtml(_ funcGen.Stack[value.Value], w *xmlWriter.XMLWriter) error {
+	return CreateSVG(p, &p.context, w)
 }
 
 type PlotValue struct {
@@ -218,6 +265,49 @@ func createStyleMethods() value.MethodMap {
 			}
 			return StyleValue{Holder[*graph.Style]{style.SetFill(styleVal.Value)}}, nil
 		}).SetMethodDescription("color", "The color used to fill."),
+	}
+}
+
+func createPlot3dMethods() value.MethodMap {
+	return value.MethodMap{
+		"angles": value.MethodAtType(3, func(plot Plot3dValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			if alpha, ok := stack.Get(1).ToFloat(); ok {
+				if beta, ok := stack.Get(2).ToFloat(); ok {
+					if gamma, ok := stack.Get(3).ToFloat(); ok {
+						plot.Value.SetAngle(alpha, beta, gamma)
+						return plot, nil
+					}
+				}
+			}
+			return Plot3dValue{}, fmt.Errorf("angle requires three float values")
+		}).SetMethodDescription("alpha", "beta", "gamma", "Sets the projection angles."),
+		"xBounds": value.MethodAtType(2, func(plot Plot3dValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			if vMin, ok := stack.Get(1).ToFloat(); ok {
+				if vMax, ok := stack.Get(2).ToFloat(); ok {
+					plot.Value.X.Bounds = graph.NewBounds(vMin, vMax)
+					return plot, nil
+				}
+			}
+			return nil, fmt.Errorf("xBounds requires two float values")
+		}).SetMethodDescription("xMin", "xMax", "Sets the x-bounds."),
+		"yBounds": value.MethodAtType(2, func(plot Plot3dValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			if vMin, ok := stack.Get(1).ToFloat(); ok {
+				if vMax, ok := stack.Get(2).ToFloat(); ok {
+					plot.Value.Y.Bounds = graph.NewBounds(vMin, vMax)
+					return plot, nil
+				}
+			}
+			return nil, fmt.Errorf("yBounds requires two float values")
+		}).SetMethodDescription("yMin", "yMax", "Sets the y-bounds."),
+		"zBounds": value.MethodAtType(2, func(plot Plot3dValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			if vMin, ok := stack.Get(1).ToFloat(); ok {
+				if vMax, ok := stack.Get(2).ToFloat(); ok {
+					plot.Value.Z.Bounds = graph.NewBounds(vMin, vMax)
+					return plot, nil
+				}
+			}
+			return nil, fmt.Errorf("zBounds requires two float values")
+		}).SetMethodDescription("zMin", "zMax", "Sets the z-bounds."),
 	}
 }
 
@@ -795,6 +885,35 @@ func closureMethods() value.MethodMap {
 			return PlotContentValue{Holder[graph.PlotContent]{gf}}, nil
 		}).SetMethodDescription("steps", "Creates a graph of the function to be used in the plot command.").VarArgsMethod(0, 1),
 
+		"graph3d": value.MethodAtType(1, func(cl value.Closure, st funcGen.Stack[value.Value]) (value.Value, error) {
+			steps := 0
+			if s, ok := st.GetOptional(1, value.Int(0)).ToFloat(); ok {
+				steps = int(s)
+			} else {
+				return nil, fmt.Errorf("graph requires a number as argument")
+			}
+
+			var f func(x, y float64) (float64, error)
+			if cl.Args != 2 {
+				return nil, fmt.Errorf("graph requires the function to have one argument")
+			}
+			stack := funcGen.NewEmptyStack[value.Value]()
+			f = func(x, y float64) (float64, error) {
+				stack.Push(value.Float(x))
+				stack.Push(value.Float(y))
+				z, err := cl.Func(stack.CreateFrame(2), nil)
+				if err != nil {
+					return 0, err
+				}
+				if fl, ok := z.ToFloat(); ok {
+					return fl, nil
+				}
+				return 0, fmt.Errorf("the function given to graph3d must return a float")
+			}
+			gf := graph.Grid3d{Func: f, Steps: steps}
+			return Plot3dContentValue{Holder[graph.Plot3dContent]{gf}}, nil
+		}).SetMethodDescription("steps", "Creates a graph of the function to be used in the plot command.").VarArgsMethod(0, 1),
+
 		"pGraph": value.MethodAtType(4, func(cl value.Closure, st funcGen.Stack[value.Value]) (value.Value, error) {
 			if tMin, ok := st.Get(1).ToFloat(); ok {
 				if tMax, ok := st.Get(2).ToFloat(); ok {
@@ -933,6 +1052,8 @@ func Setup(fg *value.FunctionGenerator) {
 	ImageType = fg.RegisterType("image")
 	DataContentType = fg.RegisterType("dataContent")
 	DataType = fg.RegisterType("data")
+	Plot3dType = fg.RegisterType("plot3d")
+	Plot3dContentType = fg.RegisterType("plot3dContent")
 
 	fg.RegisterMethods(PlotType, createPlotMethods())
 	fg.RegisterMethods(PlotContentType, createPlotContentMethods())
@@ -941,6 +1062,7 @@ func Setup(fg *value.FunctionGenerator) {
 	fg.RegisterMethods(DataType, createDataMethods())
 	fg.RegisterMethods(value.ListTypeId, listMethods())
 	fg.RegisterMethods(value.ClosureTypeId, closureMethods())
+	fg.RegisterMethods(Plot3dType, createPlot3dMethods())
 	export.AddZipHelpers(fg)
 	export.AddHTMLStylingHelpers(fg)
 	fg.AddConstant("black", StyleValue{Holder[*graph.Style]{graph.Black}})
@@ -986,6 +1108,20 @@ func Setup(fg *value.FunctionGenerator) {
 	fg.AddStaticFunction("plot", funcGen.Function[value.Value]{
 		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
 			p := NewPlotValue(&graph.Plot{})
+			for i := 0; i < st.Size(); i++ {
+				err := p.Add(st.Get(i))
+				if err != nil {
+					return nil, err
+				}
+			}
+			return p, nil
+		},
+		Args:   -1,
+		IsPure: true,
+	}.SetDescription("content...", "Creates a new plot."))
+	fg.AddStaticFunction("plot3d", funcGen.Function[value.Value]{
+		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
+			p := NewPlot3dValue(&graph.Plot3d{})
 			for i := 0; i < st.Size(); i++ {
 				err := p.Add(st.Get(i))
 				if err != nil {
