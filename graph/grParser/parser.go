@@ -133,9 +133,10 @@ func createPlot3dContentMethods() value.MethodMap {
 				if err != nil {
 					return nil, err
 				} else {
-					_, err = pc.Value.SetStyle2(style2.Value)
-					if err != nil {
-						return nil, err
+					if ss, ok := pc.Value.(graph.SecondaryStyle); ok {
+						ss.SetSecondaryStyle(style2.Value)
+					} else {
+						return nil, errors.New("the plot3d content does not support a secondary style")
 					}
 				}
 			}
@@ -975,7 +976,7 @@ func closureMethods() value.MethodMap {
 				return nil, fmt.Errorf("graph requires a number as argument")
 			}
 
-			gf := &graph.Grid3d{Func: f, Steps: steps, StepsHigh: stepsHigh}
+			gf := &graph.Graph3d{Func: f, Steps: steps, StepsHigh: stepsHigh}
 			return Plot3dContentValue{Holder[graph.Plot3dContent]{gf}}, nil
 		}).SetMethodDescription("steps", "stepsLine", "Creates a graph of the function to be used in the plot command.").VarArgsMethod(0, 2),
 

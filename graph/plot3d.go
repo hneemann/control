@@ -1,7 +1,6 @@
 package graph
 
 import (
-	"fmt"
 	"github.com/hneemann/control/nErr"
 	"math"
 	"sort"
@@ -124,7 +123,6 @@ type Plot3dContent interface {
 	DrawTo(*Plot3d, Cube) error
 	Legend() Legend
 	SetStyle(s *Style) Plot3dContent
-	SetStyle2(value *Style) (Plot3dContent, error)
 }
 
 type Plot3d struct {
@@ -140,8 +138,8 @@ type Plot3d struct {
 
 func NewPlot3d() *Plot3d {
 	return &Plot3d{
-		alpha:       0.2,
-		beta:        0.4,
+		alpha:       0.3,
+		beta:        0.2,
 		gamma:       0,
 		Size:        1,
 		Perspective: 1,
@@ -573,7 +571,11 @@ func (p *Plot3d) SetAngle(alpha float64, beta float64, gamma float64) {
 	p.gamma = gamma
 }
 
-type Grid3d struct {
+type SecondaryStyle interface {
+	SetSecondaryStyle(s *Style) Plot3dContent
+}
+
+type Graph3d struct {
 	Func      func(x, y float64) (float64, error)
 	Style     *Style
 	Steps     int
@@ -581,20 +583,16 @@ type Grid3d struct {
 	Name      string
 }
 
-func (g *Grid3d) SetStyle(s *Style) Plot3dContent {
+func (g *Graph3d) SetStyle(s *Style) Plot3dContent {
 	g.Style = s
 	return g
 }
 
-func (g *Grid3d) SetStyle2(_ *Style) (Plot3dContent, error) {
-	return g, fmt.Errorf("grid3d does not support second style")
-}
-
-func (g *Grid3d) Bounds() (x, y, z Bounds, err error) {
+func (g *Graph3d) Bounds() (x, y, z Bounds, err error) {
 	return Bounds{}, Bounds{}, Bounds{}, err
 }
 
-func (g *Grid3d) DrawTo(_ *Plot3d, cube Cube) error {
+func (g *Graph3d) DrawTo(_ *Plot3d, cube Cube) error {
 	steps := g.Steps
 	if steps <= 0 {
 		steps = 31
@@ -640,7 +638,7 @@ func (g *Grid3d) DrawTo(_ *Plot3d, cube Cube) error {
 	return nil
 }
 
-func (g *Grid3d) Legend() Legend {
+func (g *Graph3d) Legend() Legend {
 	return Legend{Name: g.Name, ShapeLineStyle: ShapeLineStyle{LineStyle: g.Style}}
 }
 
@@ -652,14 +650,16 @@ type Solid3d struct {
 	Name   string
 }
 
+var _ SecondaryStyle = (*Solid3d)(nil)
+
 func (g *Solid3d) SetStyle(s *Style) Plot3dContent {
 	g.Style1 = s
 	return g
 }
 
-func (g *Solid3d) SetStyle2(s *Style) (Plot3dContent, error) {
+func (g *Solid3d) SetSecondaryStyle(s *Style) Plot3dContent {
 	g.Style2 = s
-	return g, nil
+	return g
 }
 
 func (g *Solid3d) Bounds() (x, y, z Bounds, err error) {

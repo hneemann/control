@@ -27,7 +27,7 @@ func TestPlot3d_DrawTo(t *testing.T) {
 			Factory: LinearAxis,
 		},
 		Contents: []Plot3dContent{
-			&Grid3d{
+			&Graph3d{
 				Func: func(x, y float64) (float64, error) {
 					r := math.Sqrt(x*x + y*y)
 					return math.Cos(r), nil
