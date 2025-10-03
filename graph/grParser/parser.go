@@ -937,32 +937,29 @@ func closureMethods() value.MethodMap {
 			return PlotContentValue{Holder[graph.PlotContent]{gf}}, nil
 		}).SetMethodDescription("steps", "Creates a graph of the function to be used in the plot command.").VarArgsMethod(0, 1),
 
-		"graph3d": value.MethodAtType(1, func(cl value.Closure, st funcGen.Stack[value.Value]) (value.Value, error) {
-			steps := 0
-			if s, ok := st.GetOptional(1, value.Int(0)).ToFloat(); ok {
-				steps = int(s)
+		"graph3d": value.MethodAtType(2, func(cl value.Closure, st funcGen.Stack[value.Value]) (value.Value, error) {
+			steps, f, err := create3dFunc(cl, st)
+			if err != nil {
+				return nil, err
+			}
+
+			stepsHigh := 0
+			if s, ok := st.GetOptional(2, value.Int(0)).ToFloat(); ok {
+				stepsHigh = int(s)
 			} else {
 				return nil, fmt.Errorf("graph requires a number as argument")
 			}
 
-			var f func(x, y float64) (float64, error)
-			if cl.Args != 2 {
-				return nil, fmt.Errorf("graph requires the function to have one argument")
+			gf := graph.Grid3d{Func: f, Steps: steps, StepsHigh: stepsHigh}
+			return Plot3dContentValue{Holder[graph.Plot3dContent]{gf}}, nil
+		}).SetMethodDescription("steps", "stepsLine", "Creates a graph of the function to be used in the plot command.").VarArgsMethod(0, 2),
+
+		"solid3d": value.MethodAtType(1, func(cl value.Closure, st funcGen.Stack[value.Value]) (value.Value, error) {
+			steps, f, err := create3dFunc(cl, st)
+			if err != nil {
+				return nil, err
 			}
-			stack := funcGen.NewEmptyStack[value.Value]()
-			f = func(x, y float64) (float64, error) {
-				stack.Push(value.Float(x))
-				stack.Push(value.Float(y))
-				z, err := cl.Func(stack.CreateFrame(2), nil)
-				if err != nil {
-					return 0, err
-				}
-				if fl, ok := z.ToFloat(); ok {
-					return fl, nil
-				}
-				return 0, fmt.Errorf("the function given to graph3d must return a float")
-			}
-			gf := graph.Grid3d{Func: f, Steps: steps}
+			gf := graph.Solid3d{Func: f, Steps: steps}
 			return Plot3dContentValue{Holder[graph.Plot3dContent]{gf}}, nil
 		}).SetMethodDescription("steps", "Creates a graph of the function to be used in the plot command.").VarArgsMethod(0, 1),
 
@@ -1093,6 +1090,34 @@ func closureMethods() value.MethodMap {
 			"The function needs to have two arguments (x,y) and has to return a float (z). "+
 			"The z-value is used to calculate a color, which is used to draw a square located at the coordinate (x,y).").VarArgsMethod(2, 4),
 	}
+}
+
+func create3dFunc(cl value.Closure, st funcGen.Stack[value.Value]) (int, func(x float64, y float64) (float64, error), error) {
+	steps := 0
+	if s, ok := st.GetOptional(1, value.Int(0)).ToFloat(); ok {
+		steps = int(s)
+	} else {
+		return 0, nil, fmt.Errorf("graph requires a number as argument")
+	}
+
+	var f func(x, y float64) (float64, error)
+	if cl.Args != 2 {
+		return 0, nil, fmt.Errorf("graph requires the function to have one argument")
+	}
+	stack := funcGen.NewEmptyStack[value.Value]()
+	f = func(x, y float64) (float64, error) {
+		stack.Push(value.Float(x))
+		stack.Push(value.Float(y))
+		z, err := cl.Func(stack.CreateFrame(2), nil)
+		if err != nil {
+			return 0, err
+		}
+		if fl, ok := z.ToFloat(); ok {
+			return fl, nil
+		}
+		return 0, fmt.Errorf("the function given to graph3d must return a float")
+	}
+	return steps, f, nil
 }
 
 const defSize = 4
