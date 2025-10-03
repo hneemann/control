@@ -119,6 +119,31 @@ func (p Plot3dContentValue) GetType() value.Type {
 	return Plot3dContentType
 }
 
+func createPlot3dContentMethods() value.MethodMap {
+	return value.MethodMap{
+		"color": value.MethodAtType(2, func(pc Plot3dContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			style, err := GetStyle(stack, 1, graph.Black)
+			if err != nil {
+				return nil, err
+			}
+			pc.Value.SetStyle(style.Value)
+
+			if stack.Size() > 2 {
+				style2, err := GetStyle(stack, 2, graph.Black)
+				if err != nil {
+					return nil, err
+				} else {
+					_, err = pc.Value.SetStyle2(style2.Value)
+					if err != nil {
+						return nil, err
+					}
+				}
+			}
+			return pc, nil
+		}).Pure(false).SetMethodDescription("color1", "color2", "Sets the color.").VarArgsMethod(1, 2),
+	}
+}
+
 type Plot3dValue struct {
 	Holder[*graph.Plot3d]
 	context graph.Context
@@ -950,7 +975,7 @@ func closureMethods() value.MethodMap {
 				return nil, fmt.Errorf("graph requires a number as argument")
 			}
 
-			gf := graph.Grid3d{Func: f, Steps: steps, StepsHigh: stepsHigh}
+			gf := &graph.Grid3d{Func: f, Steps: steps, StepsHigh: stepsHigh}
 			return Plot3dContentValue{Holder[graph.Plot3dContent]{gf}}, nil
 		}).SetMethodDescription("steps", "stepsLine", "Creates a graph of the function to be used in the plot command.").VarArgsMethod(0, 2),
 
@@ -959,7 +984,7 @@ func closureMethods() value.MethodMap {
 			if err != nil {
 				return nil, err
 			}
-			gf := graph.Solid3d{Func: f, Steps: steps}
+			gf := &graph.Solid3d{Func: f, Steps: steps}
 			return Plot3dContentValue{Holder[graph.Plot3dContent]{gf}}, nil
 		}).SetMethodDescription("steps", "Creates a graph of the function to be used in the plot command.").VarArgsMethod(0, 1),
 
@@ -1140,6 +1165,7 @@ func Setup(fg *value.FunctionGenerator) {
 	fg.RegisterMethods(value.ListTypeId, listMethods())
 	fg.RegisterMethods(value.ClosureTypeId, closureMethods())
 	fg.RegisterMethods(Plot3dType, createPlot3dMethods())
+	fg.RegisterMethods(Plot3dContentType, createPlot3dContentMethods())
 	export.AddZipHelpers(fg)
 	export.AddHTMLStylingHelpers(fg)
 	fg.AddConstant("black", StyleValue{Holder[*graph.Style]{graph.Black}})

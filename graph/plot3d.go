@@ -1,6 +1,7 @@
 package graph
 
 import (
+	"fmt"
 	"github.com/hneemann/control/nErr"
 	"math"
 	"sort"
@@ -122,6 +123,8 @@ type Plot3dContent interface {
 	Bounds() (x, y, z Bounds, err error)
 	DrawTo(*Plot3d, Cube) error
 	Legend() Legend
+	SetStyle(s *Style) Plot3dContent
+	SetStyle2(value *Style) (Plot3dContent, error)
 }
 
 type Plot3d struct {
@@ -578,11 +581,20 @@ type Grid3d struct {
 	Name      string
 }
 
-func (g Grid3d) Bounds() (x, y, z Bounds, err error) {
+func (g *Grid3d) SetStyle(s *Style) Plot3dContent {
+	g.Style = s
+	return g
+}
+
+func (g *Grid3d) SetStyle2(_ *Style) (Plot3dContent, error) {
+	return g, fmt.Errorf("grid3d does not support second style")
+}
+
+func (g *Grid3d) Bounds() (x, y, z Bounds, err error) {
 	return Bounds{}, Bounds{}, Bounds{}, err
 }
 
-func (g Grid3d) DrawTo(_ *Plot3d, cube Cube) error {
+func (g *Grid3d) DrawTo(_ *Plot3d, cube Cube) error {
 	steps := g.Steps
 	if steps <= 0 {
 		steps = 31
@@ -628,7 +640,7 @@ func (g Grid3d) DrawTo(_ *Plot3d, cube Cube) error {
 	return nil
 }
 
-func (g Grid3d) Legend() Legend {
+func (g *Grid3d) Legend() Legend {
 	return Legend{Name: g.Name, ShapeLineStyle: ShapeLineStyle{LineStyle: g.Style}}
 }
 
@@ -640,11 +652,21 @@ type Solid3d struct {
 	Name   string
 }
 
-func (g Solid3d) Bounds() (x, y, z Bounds, err error) {
+func (g *Solid3d) SetStyle(s *Style) Plot3dContent {
+	g.Style1 = s
+	return g
+}
+
+func (g *Solid3d) SetStyle2(s *Style) (Plot3dContent, error) {
+	g.Style2 = s
+	return g, nil
+}
+
+func (g *Solid3d) Bounds() (x, y, z Bounds, err error) {
 	return Bounds{}, Bounds{}, Bounds{}, err
 }
 
-func (g Solid3d) DrawTo(_ *Plot3d, cube Cube) error {
+func (g *Solid3d) DrawTo(_ *Plot3d, cube Cube) error {
 	steps := g.Steps
 	if steps <= 0 {
 		steps = 31
@@ -655,6 +677,10 @@ func (g Solid3d) DrawTo(_ *Plot3d, cube Cube) error {
 	if style1 == nil {
 		style1 = Black.SetStrokeWidth(0.5).SetFill(White)
 		style2 = nil
+	} else {
+		if !style1.Fill {
+			style1 = style1.SetFill(White)
+		}
 	}
 
 	x, y, z := cube.Bounds()
@@ -704,6 +730,6 @@ func (g Solid3d) DrawTo(_ *Plot3d, cube Cube) error {
 	return nil
 }
 
-func (g Solid3d) Legend() Legend {
+func (g *Solid3d) Legend() Legend {
 	return Legend{Name: g.Name, ShapeLineStyle: ShapeLineStyle{LineStyle: g.Style1}}
 }
