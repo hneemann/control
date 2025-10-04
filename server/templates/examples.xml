@@ -187,5 +187,22 @@ let ges=tpCascade(
  ["Vuf:",   ges.voltageGain(15000)],
  ["Rin:",   ges.inputImp(15000)],
 ]</example>
+    <example name="Rotationskörper" desc="Interaktiver Rotationskörper"
+             name-en="Solid of revolution" desc-en="interactive Solid of revolution">let alpha=gui.slider("alpha",0.3,-pi,pi);
+let beta =gui.slider("beta" ,0.2,-pi,pi);
+
+func sor(u,v)
+  [u*sin(v),u*cos(v),u^2];
+
+plot3d(
+  sor.solid3d()
+     .uBounds(0,2)
+     .vBounds(0,2*pi)
+     .color(black.fill(color(100,0,0)),red)
+).xBounds(-3,3)
+ .yBounds(-3,3)
+ .zBounds(0,4)
+ .angles(alpha,beta,0)
+</example>
 
 </Examples>

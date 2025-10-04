@@ -121,24 +121,24 @@ func (p Plot3dContentValue) GetType() value.Type {
 
 func createPlot3dContentMethods() value.MethodMap {
 	return value.MethodMap{
-		"xBounds": value.MethodAtType(2, func(pc Plot3dContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+		"uBounds": value.MethodAtType(2, func(pc Plot3dContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if vMin, ok := stack.Get(1).ToFloat(); ok {
 				if vMax, ok := stack.Get(2).ToFloat(); ok {
-					pc.Value.SetXBounds(graph.NewBounds(vMin, vMax))
+					pc.Value.SetUBounds(graph.NewBounds(vMin, vMax))
 					return pc, nil
 				}
 			}
 			return nil, fmt.Errorf("xBounds requires two float values")
-		}).SetMethodDescription("pMin", "pMax", "Sets the parameter x-bounds."),
-		"yBounds": value.MethodAtType(2, func(pc Plot3dContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+		}).SetMethodDescription("uMin", "uMax", "Sets the parameter u-bounds."),
+		"vBounds": value.MethodAtType(2, func(pc Plot3dContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if vMin, ok := stack.Get(1).ToFloat(); ok {
 				if vMax, ok := stack.Get(2).ToFloat(); ok {
-					pc.Value.SetYBounds(graph.NewBounds(vMin, vMax))
+					pc.Value.SetVBounds(graph.NewBounds(vMin, vMax))
 					return pc, nil
 				}
 			}
-			return nil, fmt.Errorf("yBounds requires two float values")
-		}).SetMethodDescription("pMin", "pMax", "Sets the parameter y-bounds."),
+			return nil, fmt.Errorf("vBounds requires two float values")
+		}).SetMethodDescription("vMin", "vMax", "Sets the parameter v-bounds."),
 		"color": value.MethodAtType(2, func(pc Plot3dContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			style, err := GetStyle(stack, 1, graph.Black)
 			if err != nil {

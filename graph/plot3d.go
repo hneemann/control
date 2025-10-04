@@ -123,8 +123,8 @@ type Plot3dContent interface {
 	DrawTo(*Plot3d, Cube) error
 	Legend() Legend
 	SetStyle(s *Style) Plot3dContent
-	SetXBounds(bounds Bounds) Plot3dContent
-	SetYBounds(bounds Bounds) Plot3dContent
+	SetUBounds(bounds Bounds) Plot3dContent
+	SetVBounds(bounds Bounds) Plot3dContent
 }
 
 type Plot3d struct {
@@ -575,21 +575,21 @@ type SecondaryStyle interface {
 
 type Graph3d struct {
 	Func      func(x, y float64) (Point3d, error)
-	X         Bounds
-	Y         Bounds
+	U         Bounds
+	V         Bounds
 	Style     *Style
 	Steps     int
 	StepsHigh int
 	Name      string
 }
 
-func (g *Graph3d) SetXBounds(bounds Bounds) Plot3dContent {
-	g.X = bounds
+func (g *Graph3d) SetUBounds(bounds Bounds) Plot3dContent {
+	g.U = bounds
 	return g
 }
 
-func (g *Graph3d) SetYBounds(bounds Bounds) Plot3dContent {
-	g.Y = bounds
+func (g *Graph3d) SetVBounds(bounds Bounds) Plot3dContent {
+	g.V = bounds
 	return g
 }
 
@@ -618,23 +618,23 @@ func (g *Graph3d) DrawTo(_ *Plot3d, cube Cube) error {
 
 	x, y, z := cube.Bounds()
 
-	xB := g.X
-	if !xB.isSet {
-		xB = x
+	uB := g.U
+	if !uB.isSet {
+		uB = x
 	}
-	yB := g.Y
-	if !yB.isSet {
-		yB = y
+	vB := g.V
+	if !vB.isSet {
+		vB = y
 	}
 
 	for xn := 0; xn <= steps; xn++ {
-		xv := xB.Min + float64(xn)*xB.Width()/float64(steps)
+		uv := uB.Min + float64(xn)*uB.Width()/float64(steps)
 		err := cube.DrawPath(LinePath3d{
-			Func: func(yv float64) (Point3d, error) {
-				v, err := g.Func(xv, yv)
+			Func: func(vv float64) (Point3d, error) {
+				v, err := g.Func(uv, vv)
 				return Point3d{X: x.Bind(v.X), Y: y.Bind(v.Y), Z: z.Bind(v.Z)}, err
 			},
-			Bounds: yB,
+			Bounds: vB,
 			Steps:  stepsHigh,
 		}, style)
 		if err != nil {
@@ -642,13 +642,13 @@ func (g *Graph3d) DrawTo(_ *Plot3d, cube Cube) error {
 		}
 	}
 	for yn := 0; yn <= steps; yn++ {
-		yv := yB.Min + float64(yn)*yB.Width()/float64(steps)
+		vv := vB.Min + float64(yn)*vB.Width()/float64(steps)
 		err := cube.DrawPath(LinePath3d{
-			Func: func(xv float64) (Point3d, error) {
-				v, err := g.Func(xv, yv)
+			Func: func(uv float64) (Point3d, error) {
+				v, err := g.Func(uv, vv)
 				return Point3d{X: x.Bind(v.X), Y: y.Bind(v.Y), Z: z.Bind(v.Z)}, err
 			},
-			Bounds: xB,
+			Bounds: uB,
 			Steps:  stepsHigh,
 		}, style)
 		if err != nil {
@@ -664,8 +664,8 @@ func (g *Graph3d) Legend() Legend {
 
 type Solid3d struct {
 	Func   func(x, y float64) (Point3d, error)
-	X      Bounds
-	Y      Bounds
+	U      Bounds
+	V      Bounds
 	Style1 *Style
 	Style2 *Style
 	Steps  int
@@ -679,13 +679,13 @@ func (g *Solid3d) SetStyle(s *Style) Plot3dContent {
 	return g
 }
 
-func (g *Solid3d) SetXBounds(bounds Bounds) Plot3dContent {
-	g.X = bounds
+func (g *Solid3d) SetUBounds(bounds Bounds) Plot3dContent {
+	g.U = bounds
 	return g
 }
 
-func (g *Solid3d) SetYBounds(bounds Bounds) Plot3dContent {
-	g.Y = bounds
+func (g *Solid3d) SetVBounds(bounds Bounds) Plot3dContent {
+	g.V = bounds
 	return g
 }
 
@@ -719,21 +719,21 @@ func (g *Solid3d) DrawTo(_ *Plot3d, cube Cube) (err error) {
 
 	x, y, z := cube.Bounds()
 
-	xB := g.X
-	if !xB.isSet {
-		xB = x
+	uB := g.U
+	if !uB.isSet {
+		uB = x
 	}
-	yB := g.Y
-	if !yB.isSet {
-		yB = y
+	vB := g.V
+	if !vB.isSet {
+		vB = y
 	}
 
 	for xn := 0; xn < steps; xn++ {
-		xv0 := xB.Min + float64(xn)*xB.Width()/float64(steps)
-		xv1 := xB.Min + float64(xn+1)*xB.Width()/float64(steps)
+		xv0 := uB.Min + float64(xn)*uB.Width()/float64(steps)
+		xv1 := uB.Min + float64(xn+1)*uB.Width()/float64(steps)
 		for yn := 0; yn < steps; yn++ {
-			yv0 := yB.Min + float64(yn)*yB.Width()/float64(steps)
-			yv1 := yB.Min + float64(yn+1)*yB.Width()/float64(steps)
+			yv0 := vB.Min + float64(yn)*vB.Width()/float64(steps)
+			yv1 := vB.Min + float64(yn+1)*vB.Width()/float64(steps)
 
 			v00 := nErr.TryArg(g.Func(xv0, yv0))
 			v01 := nErr.TryArg(g.Func(xv0, yv1))
