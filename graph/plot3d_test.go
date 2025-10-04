@@ -28,9 +28,9 @@ func TestPlot3d_DrawTo(t *testing.T) {
 		},
 		Contents: []Plot3dContent{
 			&Graph3d{
-				Func: func(x, y float64) (float64, error) {
+				Func: func(x, y float64) (Point3d, error) {
 					r := math.Sqrt(x*x + y*y)
-					return math.Cos(r), nil
+					return Point3d{x, y, math.Cos(r)}, nil
 				},
 				Style: Black,
 				Steps: 40,
