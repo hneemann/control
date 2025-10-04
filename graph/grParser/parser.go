@@ -277,13 +277,19 @@ func createStyleMethods() value.MethodMap {
 		"alpha": value.MethodAtType(0, func(styleValue StyleValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			return value.Int(styleValue.Value.Color.A), nil
 		}).SetMethodDescription("Returns the alpha color value."),
-		"darker": value.MethodAtType(0, func(styleValue StyleValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
-			style := styleValue.Value
-			return StyleValue{Holder[*graph.Style]{style.Darker()}}, nil
-		}).SetMethodDescription("Makes the color darker."),
+		"darker": value.MethodAtType(1, func(styleValue StyleValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			if p, ok := stack.Get(1).ToInt(); ok {
+				style := styleValue.Value
+				return StyleValue{Holder[*graph.Style]{style.Darker(p)}}, nil
+			}
+			return nil, fmt.Errorf("darker requires a float")
+		}).SetMethodDescription("percent", "Makes the color darker."),
 		"brighter": value.MethodAtType(0, func(styleValue StyleValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
-			style := styleValue.Value
-			return StyleValue{Holder[*graph.Style]{style.Brighter()}}, nil
+			if p, ok := stack.Get(1).ToInt(); ok {
+				style := styleValue.Value
+				return StyleValue{Holder[*graph.Style]{style.Brighter(p)}}, nil
+			}
+			return nil, fmt.Errorf("brighter requires a float")
 		}).SetMethodDescription("Makes the color brighter."),
 		"stroke": value.MethodAtType(1, func(styleValue StyleValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			style := styleValue.Value

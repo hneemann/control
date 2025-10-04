@@ -139,16 +139,21 @@ func (c Color) ToGoColor() col.RGBA {
 	}
 }
 
-func (c Color) Darker() Color {
+func (c Color) Darker(p int) Color {
+	if p > 99 {
+		p = 99
+	} else if p < 0 {
+		p = 0
+	}
 	return Color{
-		R: colVal(int(c.R) * 7 / 10),
-		G: colVal(int(c.G) * 7 / 10),
-		B: colVal(int(c.B) * 7 / 10),
+		R: colVal(int(c.R) * (100 - p) / 100),
+		G: colVal(int(c.G) * (100 - p) / 100),
+		B: colVal(int(c.B) * (100 - p) / 100),
 		A: c.A,
 	}
 }
 
-func (c Color) Brighter() Color {
+func (c Color) Brighter(p int) Color {
 	r := int(c.R)
 	if r < 3 {
 		r = 3
@@ -163,11 +168,16 @@ func (c Color) Brighter() Color {
 	if b < 3 {
 		b = 3
 	}
+	if p > 99 {
+		p = 99
+	} else if p < 0 {
+		p = 0
+	}
 
 	return Color{
-		colVal(r * 10 / 7),
-		colVal(g * 10 / 7),
-		colVal(b * 10 / 7),
+		colVal(r * 100 / (100 - p)),
+		colVal(g * 100 / (100 - p)),
+		colVal(b * 100 / (100 - p)),
 		c.A,
 	}
 }
@@ -266,17 +276,17 @@ func (s *Style) SetDash(d ...float64) *Style {
 	return &style
 }
 
-func (s *Style) Darker() *Style {
+func (s *Style) Darker(p int) *Style {
 	var style Style
 	style = *s
-	style.Color = s.Color.Darker()
+	style.Color = s.Color.Darker(p)
 	return &style
 }
 
-func (s *Style) Brighter() *Style {
+func (s *Style) Brighter(p int) *Style {
 	var style Style
 	style = *s
-	style.Color = s.Color.Brighter()
+	style.Color = s.Color.Brighter(p)
 	return &style
 }
 
