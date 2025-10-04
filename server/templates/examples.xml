@@ -202,6 +202,7 @@ plot3d(
 ).xBounds(-3,3)
  .yBounds(-3,3)
  .zBounds(0,4)
+ .outputSize(800,800)
  .angles(alpha,beta,0)
 </example>
 

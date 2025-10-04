@@ -16,14 +16,24 @@
     }
 }
 
+@media (orientation: landscape) {
+    svg.svg {
+        width: auto;
+        height: 100%;
+    }
+}
+
+@media (orientation: portrait) {
+    svg.svg {
+        width: 100%;
+        height: auto;
+    }
+}
+
+
 body, html {
     margin: 0;
     padding: 0;
-}
-
-svg.svg {
-    width: auto;
-    height: 100%;
 }
 
 math {

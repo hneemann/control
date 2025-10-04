@@ -404,6 +404,16 @@ func createPlot3dMethods() value.MethodMap {
 				return nil, fmt.Errorf("svg requires a string")
 			}
 		}).SetMethodDescription("name", "Creates a svg-file to download."),
+		"outputSize": value.MethodAtType(2, func(im Plot3dValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			if width, ok := stack.Get(1).ToFloat(); ok {
+				if height, ok := stack.Get(2).ToFloat(); ok {
+					im.context.Width = width
+					im.context.Height = height
+					return im, nil
+				}
+			}
+			return nil, fmt.Errorf("outputSize requires two float values")
+		}).SetMethodDescription("width", "height", "Sets the svg-output size."),
 	}
 }
 
