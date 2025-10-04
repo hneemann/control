@@ -121,6 +121,24 @@ func (p Plot3dContentValue) GetType() value.Type {
 
 func createPlot3dContentMethods() value.MethodMap {
 	return value.MethodMap{
+		"xBounds": value.MethodAtType(2, func(pc Plot3dContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			if vMin, ok := stack.Get(1).ToFloat(); ok {
+				if vMax, ok := stack.Get(2).ToFloat(); ok {
+					pc.Value.SetXBounds(graph.NewBounds(vMin, vMax))
+					return pc, nil
+				}
+			}
+			return nil, fmt.Errorf("xBounds requires two float values")
+		}).SetMethodDescription("pMin", "pMax", "Sets the parameter x-bounds."),
+		"yBounds": value.MethodAtType(2, func(pc Plot3dContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			if vMin, ok := stack.Get(1).ToFloat(); ok {
+				if vMax, ok := stack.Get(2).ToFloat(); ok {
+					pc.Value.SetYBounds(graph.NewBounds(vMin, vMax))
+					return pc, nil
+				}
+			}
+			return nil, fmt.Errorf("yBounds requires two float values")
+		}).SetMethodDescription("pMin", "pMax", "Sets the parameter y-bounds."),
 		"color": value.MethodAtType(2, func(pc Plot3dContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			style, err := GetStyle(stack, 1, graph.Black)
 			if err != nil {
@@ -1118,7 +1136,7 @@ func closureMethods() value.MethodMap {
 	}
 }
 
-func create3dFunc(cl value.Closure, st funcGen.Stack[value.Value]) (int, func(x float64, y float64) (float64, error), error) {
+func create3dFunc(cl value.Closure, st funcGen.Stack[value.Value]) (int, func(x, y float64) (graph.Point3d, error), error) {
 	steps := 0
 	if s, ok := st.GetOptional(1, value.Int(0)).ToFloat(); ok {
 		steps = int(s)
@@ -1126,22 +1144,36 @@ func create3dFunc(cl value.Closure, st funcGen.Stack[value.Value]) (int, func(x 
 		return 0, nil, fmt.Errorf("graph requires a number as argument")
 	}
 
-	var f func(x, y float64) (float64, error)
+	var f func(x, y float64) (graph.Point3d, error)
 	if cl.Args != 2 {
 		return 0, nil, fmt.Errorf("graph requires the function to have one argument")
 	}
 	stack := funcGen.NewEmptyStack[value.Value]()
-	f = func(x, y float64) (float64, error) {
+	f = func(x, y float64) (graph.Point3d, error) {
 		stack.Push(value.Float(x))
 		stack.Push(value.Float(y))
 		z, err := cl.Func(stack.CreateFrame(2), nil)
 		if err != nil {
-			return 0, err
+			return graph.Point3d{}, err
 		}
-		if fl, ok := z.ToFloat(); ok {
-			return fl, nil
+		if zf, ok := z.ToFloat(); ok {
+			return graph.Point3d{X: x, Y: y, Z: zf}, nil
+		} else if li, ok := z.(*value.List); ok {
+			sl, err := li.ToSlice(stack)
+			if err != nil {
+				return graph.Point3d{}, err
+			}
+			if len(sl) == 3 {
+				xv, ok1 := sl[0].ToFloat()
+				yv, ok2 := sl[1].ToFloat()
+				zv, ok3 := sl[2].ToFloat()
+				if ok1 && ok2 && ok3 {
+					return graph.Point3d{X: xv, Y: yv, Z: zv}, nil
+				}
+				return graph.Point3d{}, fmt.Errorf("the list returned by the function given to graph3d must contain three floats")
+			}
 		}
-		return 0, fmt.Errorf("the function given to graph3d must return a float")
+		return graph.Point3d{}, fmt.Errorf("the function given to graph3d must return a float")
 	}
 	return steps, f, nil
 }
