@@ -666,7 +666,9 @@ func (g *Solid3d) Bounds() (x, y, z Bounds, err error) {
 	return Bounds{}, Bounds{}, Bounds{}, err
 }
 
-func (g *Solid3d) DrawTo(_ *Plot3d, cube Cube) error {
+func (g *Solid3d) DrawTo(_ *Plot3d, cube Cube) (err error) {
+	defer nErr.CatchErr(&err)
+
 	steps := g.Steps
 	if steps <= 0 {
 		steps = 31
@@ -691,40 +693,21 @@ func (g *Solid3d) DrawTo(_ *Plot3d, cube Cube) error {
 			yv0 := y.Min + float64(yn)*y.Width()/float64(steps)
 			yv1 := y.Min + float64(yn+1)*y.Width()/float64(steps)
 
-			z00, err := g.Func(xv0, yv0)
-			if err != nil {
-				return err
-			}
-			z01, err := g.Func(xv0, yv1)
-			if err != nil {
-				return err
-			}
-			z10, err := g.Func(xv1, yv0)
-			if err != nil {
-				return err
-			}
-			z11, err := g.Func(xv1, yv1)
-			if err != nil {
-				return err
-			}
+			z00 := nErr.TryArg(g.Func(xv0, yv0))
+			z01 := nErr.TryArg(g.Func(xv0, yv1))
+			z10 := nErr.TryArg(g.Func(xv1, yv0))
+			z11 := nErr.TryArg(g.Func(xv1, yv1))
 
-			err = cube.DrawTriangle(
+			nErr.Try(cube.DrawTriangle(
 				Point3d{X: xv0, Y: yv0, Z: z.Bind(z00)},
 				Point3d{X: xv1, Y: yv0, Z: z.Bind(z10)},
 				Point3d{X: xv1, Y: yv1, Z: z.Bind(z11)},
-				style1, style2)
-			if err != nil {
-				return err
-			}
-			err = cube.DrawTriangle(
+				style1, style2))
+			nErr.Try(cube.DrawTriangle(
 				Point3d{X: xv0, Y: yv0, Z: z.Bind(z00)},
 				Point3d{X: xv1, Y: yv1, Z: z.Bind(z11)},
 				Point3d{X: xv0, Y: yv1, Z: z.Bind(z01)},
-				style1, style2)
-			if err != nil {
-				return err
-			}
-
+				style1, style2))
 		}
 	}
 	return nil
