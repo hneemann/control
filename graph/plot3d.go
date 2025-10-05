@@ -10,36 +10,52 @@ type Point3d struct {
 	X, Y, Z float64
 }
 
-func (d Point3d) sub(p2 Point3d) Point3d {
+func (p Point3d) sub(p2 Point3d) Point3d {
 	return Point3d{
-		X: d.X - p2.X,
-		Y: d.Y - p2.Y,
-		Z: d.Z - p2.Z,
+		X: p.X - p2.X,
+		Y: p.Y - p2.Y,
+		Z: p.Z - p2.Z,
 	}
 }
 
-func (d Point3d) cross(p2 Point3d) Point3d {
+func (p Point3d) cross(p2 Point3d) Point3d {
 	return Point3d{
-		X: d.Y*p2.Z - d.Z*p2.Y,
-		Y: d.Z*p2.X - d.X*p2.Z,
-		Z: d.X*p2.Y - d.Y*p2.X,
+		X: p.Y*p2.Z - p.Z*p2.Y,
+		Y: p.Z*p2.X - p.X*p2.Z,
+		Z: p.X*p2.Y - p.Y*p2.X,
 	}
 }
 
-func (d Point3d) normalize() Point3d {
-	l := math.Sqrt(d.X*d.X + d.Y*d.Y + d.Z*d.Z)
+func (p Point3d) normalize() Point3d {
+	l := math.Sqrt(p.X*p.X + p.Y*p.Y + p.Z*p.Z)
 	if l == 0 {
 		return Point3d{0, 0, 0}
 	}
 	return Point3d{
-		X: d.X / l,
-		Y: d.Y / l,
-		Z: d.Z / l,
+		X: p.X / l,
+		Y: p.Y / l,
+		Z: p.Z / l,
 	}
 }
 
-func (d Point3d) scalar(p Point3d) float64 {
-	return d.X*p.X + d.Y*p.Y + d.Z*p.Z
+func (p Point3d) scalar(p2 Point3d) float64 {
+	return p.X*p2.X + p.Y*p2.Y + p.Z*p2.Z
+}
+
+func (p Point3d) mul(f float64) Point3d {
+	return Point3d{
+		X: p.X * f,
+		Y: p.Y * f,
+		Z: p.Z * f,
+	}
+}
+
+func (p Point3d) add(d Point3d) Point3d {
+	return Point3d{
+		X: p.X + d.X,
+		Y: p.Y + d.Y,
+		Z: p.Z + d.Z,
+	}
 }
 
 type PathElement3d struct {
@@ -124,6 +140,9 @@ type Plot3dContent interface {
 	Legend() Legend
 	SetStyle(s *Style) Plot3dContent
 	SetUBounds(bounds Bounds) Plot3dContent
+}
+
+type VBoundsSetter interface {
 	SetVBounds(bounds Bounds) Plot3dContent
 }
 
@@ -492,20 +511,20 @@ func (p *Plot3d) DrawTo(canvas Canvas) (err error) {
 	cubeColor := Gray
 	textColor := cubeColor.SetFill(cubeColor)
 	if !p.HideCube {
-		rot.DrawLine(Point3d{100, 100, 100}, Point3d{100, -100, 100}, cubeColor, "", nil)
-		rot.DrawLine(Point3d{100, 100, -100}, Point3d{100, -100, -100}, cubeColor, "", nil)
-		rot.DrawLine(Point3d{-100, 100, 100}, Point3d{-100, -100, 100}, cubeColor, "", nil)
-		rot.DrawLine(Point3d{-100, 100, -100}, Point3d{-100, -100, -100}, cubeColor, "", nil)
+		DrawLongLine(rot, Point3d{100, 100, 100}, Point3d{100, -100, 100}, cubeColor)
+		DrawLongLine(rot, Point3d{100, 100, -100}, Point3d{100, -100, -100}, cubeColor)
+		DrawLongLine(rot, Point3d{-100, 100, 100}, Point3d{-100, -100, 100}, cubeColor)
+		DrawLongLine(rot, Point3d{-100, 100, -100}, Point3d{-100, -100, -100}, cubeColor)
 
-		rot.DrawLine(Point3d{100, 100, 100}, Point3d{-100, 100, 100}, cubeColor, "", nil)
-		rot.DrawLine(Point3d{100, 100, -100}, Point3d{-100, 100, -100}, cubeColor, "", nil)
-		rot.DrawLine(Point3d{100, -100, 100}, Point3d{-100, -100, 100}, cubeColor, "", nil)
-		rot.DrawLine(Point3d{100, -100, -100}, Point3d{-100, -100, -100}, cubeColor, "", nil)
+		DrawLongLine(rot, Point3d{100, 100, 100}, Point3d{-100, 100, 100}, cubeColor)
+		DrawLongLine(rot, Point3d{100, 100, -100}, Point3d{-100, 100, -100}, cubeColor)
+		DrawLongLine(rot, Point3d{100, -100, 100}, Point3d{-100, -100, 100}, cubeColor)
+		DrawLongLine(rot, Point3d{100, -100, -100}, Point3d{-100, -100, -100}, cubeColor)
 
-		rot.DrawLine(Point3d{100, 100, -100}, Point3d{100, 100, 100}, cubeColor, "", nil)
-		rot.DrawLine(Point3d{-100, 100, -100}, Point3d{-100, 100, 100}, cubeColor, "", nil)
-		rot.DrawLine(Point3d{100, -100, -100}, Point3d{100, -100, 100}, cubeColor, "", nil)
-		rot.DrawLine(Point3d{-100, -100, -100}, Point3d{-100, -100, 100}, cubeColor, "", nil)
+		DrawLongLine(rot, Point3d{100, 100, -100}, Point3d{100, 100, 100}, cubeColor)
+		DrawLongLine(rot, Point3d{-100, 100, -100}, Point3d{-100, 100, 100}, cubeColor)
+		DrawLongLine(rot, Point3d{100, -100, -100}, Point3d{100, -100, 100}, cubeColor)
+		DrawLongLine(rot, Point3d{-100, -100, -100}, Point3d{-100, -100, 100}, cubeColor)
 	}
 	cube := newUnityCube(rot, p.X.MakeValid(), p.Y.MakeValid(), p.Z.MakeValid())
 	const facShortLabel = 1.02
@@ -549,6 +568,18 @@ func (p *Plot3d) DrawTo(canvas Canvas) (err error) {
 	}
 
 	return canvasCube.DrawObjects()
+}
+
+// DrawLongLine draws a long line from p1 to p2 by splitting it into n segments
+// to avoid issues with very long lines in 3D rendering.
+func DrawLongLine(rot Cube, p1 Point3d, p2 Point3d, style *Style) {
+	const n = 10
+	d := p2.sub(p1).mul(1 / float64(n))
+	for i := 0; i < n; i++ {
+		p2 := p1.add(d)
+		rot.DrawLine(p1, p2, style, "", nil)
+		p1 = p2
+	}
 }
 
 func checkEmpty(str string, def string) string {
@@ -756,4 +787,62 @@ func (g *Solid3d) DrawTo(_ *Plot3d, cube Cube) (err error) {
 
 func (g *Solid3d) Legend() Legend {
 	return Legend{Name: g.Name, ShapeLineStyle: ShapeLineStyle{LineStyle: g.Style1}}
+}
+
+type Line3d struct {
+	Func  func(u float64) (Point3d, error)
+	U     Bounds
+	Style *Style
+	Steps int
+	Name  string
+}
+
+func (g *Line3d) SetUBounds(bounds Bounds) Plot3dContent {
+	g.U = bounds
+	return g
+}
+
+func (g *Line3d) SetStyle(s *Style) Plot3dContent {
+	g.Style = s
+	return g
+}
+
+func (g *Line3d) Bounds() (x, y, z Bounds, err error) {
+	return Bounds{}, Bounds{}, Bounds{}, err
+}
+
+func (g *Line3d) DrawTo(_ *Plot3d, cube Cube) error {
+	steps := g.Steps
+	if steps <= 0 {
+		steps = 200
+	}
+	style := g.Style
+	if style == nil {
+		style = Black.SetStrokeWidth(0.5)
+	}
+
+	x, y, z := cube.Bounds()
+
+	uB := g.U
+	if !uB.isSet {
+		uB = NewBounds(0, 1)
+	}
+
+	err := cube.DrawPath(LinePath3d{
+		Func: func(vv float64) (Point3d, error) {
+			v, err := g.Func(vv)
+			return Point3d{X: x.Bind(v.X), Y: y.Bind(v.Y), Z: z.Bind(v.Z)}, err
+		},
+		Bounds: uB,
+		Steps:  steps,
+	}, style)
+
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (g *Line3d) Legend() Legend {
+	return Legend{Name: g.Name, ShapeLineStyle: ShapeLineStyle{LineStyle: g.Style}}
 }
