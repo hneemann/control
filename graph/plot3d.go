@@ -1,66 +1,112 @@
 package graph
 
 import (
+	"fmt"
 	"github.com/hneemann/control/nErr"
+	"github.com/hneemann/parser2/funcGen"
+	"github.com/hneemann/parser2/listMap"
+	"github.com/hneemann/parser2/value"
 	"math"
 	"sort"
 )
 
-type Point3d struct {
+var Vector3dType value.Type
+
+type Vector3d struct {
 	X, Y, Z float64
 }
 
-func (p Point3d) sub(p2 Point3d) Point3d {
-	return Point3d{
-		X: p.X - p2.X,
-		Y: p.Y - p2.Y,
-		Z: p.Z - p2.Z,
+func (v Vector3d) ToList() (*value.List, bool) {
+	return nil, false
+}
+
+func (v Vector3d) ToMap() (value.Map, bool) {
+	return value.NewMap(listMap.New[value.Value](3).Append("x", value.Float(v.X)).Append("y", value.Float(v.Y)).Append("z", value.Float(v.Z))), true
+}
+
+func (v Vector3d) ToInt() (int, bool) {
+	return 0, false
+}
+
+func (v Vector3d) ToFloat() (float64, bool) {
+	return 0, false
+}
+
+func (v Vector3d) ToString(st funcGen.Stack[value.Value]) (string, error) {
+	return fmt.Sprintf("(%g,%g,%g)", v.X, v.Y, v.Z), nil
+}
+
+func (v Vector3d) ToBool() (bool, bool) {
+	return false, false
+}
+
+func (v Vector3d) ToClosure() (funcGen.Function[value.Value], bool) {
+	return funcGen.Function[value.Value]{}, false
+}
+
+func (v Vector3d) GetType() value.Type {
+	return Vector3dType
+}
+
+func (v Vector3d) Sub(p2 Vector3d) Vector3d {
+	return Vector3d{
+		X: v.X - p2.X,
+		Y: v.Y - p2.Y,
+		Z: v.Z - p2.Z,
 	}
 }
 
-func (p Point3d) cross(p2 Point3d) Point3d {
-	return Point3d{
-		X: p.Y*p2.Z - p.Z*p2.Y,
-		Y: p.Z*p2.X - p.X*p2.Z,
-		Z: p.X*p2.Y - p.Y*p2.X,
+func (v Vector3d) Cross(p2 Vector3d) Vector3d {
+	return Vector3d{
+		X: v.Y*p2.Z - v.Z*p2.Y,
+		Y: v.Z*p2.X - v.X*p2.Z,
+		Z: v.X*p2.Y - v.Y*p2.X,
 	}
 }
 
-func (p Point3d) normalize() Point3d {
-	l := math.Sqrt(p.X*p.X + p.Y*p.Y + p.Z*p.Z)
+func (v Vector3d) Normalize() Vector3d {
+	l := math.Sqrt(v.X*v.X + v.Y*v.Y + v.Z*v.Z)
 	if l == 0 {
-		return Point3d{0, 0, 0}
+		return Vector3d{0, 0, 0}
 	}
-	return Point3d{
-		X: p.X / l,
-		Y: p.Y / l,
-		Z: p.Z / l,
-	}
-}
-
-func (p Point3d) scalar(p2 Point3d) float64 {
-	return p.X*p2.X + p.Y*p2.Y + p.Z*p2.Z
-}
-
-func (p Point3d) mul(f float64) Point3d {
-	return Point3d{
-		X: p.X * f,
-		Y: p.Y * f,
-		Z: p.Z * f,
+	return Vector3d{
+		X: v.X / l,
+		Y: v.Y / l,
+		Z: v.Z / l,
 	}
 }
 
-func (p Point3d) add(d Point3d) Point3d {
-	return Point3d{
-		X: p.X + d.X,
-		Y: p.Y + d.Y,
-		Z: p.Z + d.Z,
+func (v Vector3d) Scalar(p2 Vector3d) float64 {
+	return v.X*p2.X + v.Y*p2.Y + v.Z*p2.Z
+}
+
+func (v Vector3d) Mul(f float64) Vector3d {
+	return Vector3d{
+		X: v.X * f,
+		Y: v.Y * f,
+		Z: v.Z * f,
 	}
+}
+
+func (v Vector3d) Add(d Vector3d) Vector3d {
+	return Vector3d{
+		X: v.X + d.X,
+		Y: v.Y + d.Y,
+		Z: v.Z + d.Z,
+	}
+}
+
+func (v Vector3d) Abs() float64 {
+	return math.Sqrt(v.X*v.X + v.Y*v.Y + v.Z*v.Z)
+}
+
+func (v Vector3d) Zero() bool {
+	return v.X == 0 && v.Y == 0 && v.Z == 0
 }
 
 type PathElement3d struct {
 	Mode rune
-	Point3d
+	Vector3d
 }
 
 type Path3d interface {
@@ -89,16 +135,16 @@ func (p SlicePath3d) IsClosed() bool {
 	return p.Closed
 }
 
-func (p SlicePath3d) Add(point Point3d) SlicePath3d {
+func (p SlicePath3d) Add(point Vector3d) SlicePath3d {
 	if len(p.Elements) == 0 {
-		return SlicePath3d{append(p.Elements, PathElement3d{Mode: 'M', Point3d: point}), p.Closed}
+		return SlicePath3d{append(p.Elements, PathElement3d{Mode: 'M', Vector3d: point}), p.Closed}
 	} else {
-		return SlicePath3d{append(p.Elements, PathElement3d{Mode: 'L', Point3d: point}), p.Closed}
+		return SlicePath3d{append(p.Elements, PathElement3d{Mode: 'L', Vector3d: point}), p.Closed}
 	}
 }
 
 type LinePath3d struct {
-	Func   func(t float64) (Point3d, error)
+	Func   func(t float64) (Vector3d, error)
 	Bounds Bounds
 	Steps  int
 }
@@ -128,17 +174,18 @@ func (l LinePath3d) IsClosed() bool {
 
 type Cube interface {
 	DrawPath(Path3d, *Style) error
-	DrawTriangle(Point3d, Point3d, Point3d, *Style, *Style) error
-	DrawLine(Point3d, Point3d, *Style, string, *Style)
-	DrawText(Point3d, string, Orientation, *Style)
+	DrawTriangle(Vector3d, Vector3d, Vector3d, *Style, *Style) error
+	DrawLine(Vector3d, Vector3d, *Style, string, *Style)
+	DrawText(Vector3d, string, Orientation, *Style)
 	Bounds() (x, y, z Bounds)
 }
 
 type Plot3dContent interface {
-	Bounds() (x, y, z Bounds, err error)
 	DrawTo(*Plot3d, Cube) error
 	Legend() Legend
 	SetStyle(s *Style) Plot3dContent
+}
+type UBoundsSetter interface {
 	SetUBounds(bounds Bounds) Plot3dContent
 }
 
@@ -187,8 +234,8 @@ func newUnityCube(parent Cube, x, y, z AxisDescription) *unityCube {
 	}
 }
 
-func (t *unityCube) transform(p Point3d) Point3d {
-	return Point3d{
+func (t *unityCube) transform(p Vector3d) Vector3d {
+	return Vector3d{
 		X: t.ax.Trans(p.X),
 		Y: t.ay.Trans(p.Y),
 		Z: t.az.Trans(p.Z),
@@ -202,7 +249,7 @@ type unityPath3d struct {
 
 func (t unityPath3d) Iter(yield func(PathElement3d, error) bool) {
 	for pe, err := range t.p.Iter {
-		if !yield(PathElement3d{Mode: pe.Mode, Point3d: t.u.transform(pe.Point3d)}, err) {
+		if !yield(PathElement3d{Mode: pe.Mode, Vector3d: t.u.transform(pe.Vector3d)}, err) {
 			return
 		}
 		if err != nil {
@@ -219,15 +266,15 @@ func (uc *unityCube) DrawPath(d Path3d, style *Style) error {
 	return uc.parent.DrawPath(&unityPath3d{d, uc}, style)
 }
 
-func (uc *unityCube) DrawTriangle(p1, p2, p3 Point3d, s1, s2 *Style) error {
+func (uc *unityCube) DrawTriangle(p1, p2, p3 Vector3d, s1, s2 *Style) error {
 	return uc.parent.DrawTriangle(uc.transform(p1), uc.transform(p2), uc.transform(p3), s1, s2)
 }
 
-func (uc *unityCube) DrawLine(p1, p2 Point3d, lineStyle *Style, s string, textStyle *Style) {
+func (uc *unityCube) DrawLine(p1, p2 Vector3d, lineStyle *Style, s string, textStyle *Style) {
 	uc.parent.DrawLine(uc.transform(p1), uc.transform(p2), lineStyle, s, textStyle)
 }
 
-func (uc *unityCube) DrawText(p Point3d, s string, orientation Orientation, style *Style) {
+func (uc *unityCube) DrawText(p Vector3d, s string, orientation Orientation, style *Style) {
 	uc.parent.DrawText(uc.transform(p), s, orientation, style)
 }
 
@@ -251,15 +298,15 @@ func (r RotCube) DrawPath(p Path3d, style *Style) error {
 	return r.parent.DrawPath(&rotPath3d{p, r}, style)
 }
 
-func (r RotCube) DrawText(p Point3d, s string, orientation Orientation, style *Style) {
+func (r RotCube) DrawText(p Vector3d, s string, orientation Orientation, style *Style) {
 	r.parent.DrawText(r.matrix.MulPoint(p), s, orientation, style)
 }
 
-func (r RotCube) DrawTriangle(p1, p2, p3 Point3d, s1, s2 *Style) error {
+func (r RotCube) DrawTriangle(p1, p2, p3 Vector3d, s1, s2 *Style) error {
 	return r.parent.DrawTriangle(r.matrix.MulPoint(p1), r.matrix.MulPoint(p2), r.matrix.MulPoint(p3), s1, s2)
 }
 
-func (r RotCube) DrawLine(p1, p2 Point3d, lineStyle *Style, s string, textStyle *Style) {
+func (r RotCube) DrawLine(p1, p2 Vector3d, lineStyle *Style, s string, textStyle *Style) {
 	r.parent.DrawLine(r.matrix.MulPoint(p1), r.matrix.MulPoint(p2), lineStyle, s, textStyle)
 }
 
@@ -274,7 +321,7 @@ type rotPath3d struct {
 
 func (t *rotPath3d) Iter(yield func(PathElement3d, error) bool) {
 	for pe, err := range t.p.Iter {
-		if !yield(PathElement3d{Mode: pe.Mode, Point3d: t.r.matrix.MulPoint(pe.Point3d)}, err) {
+		if !yield(PathElement3d{Mode: pe.Mode, Vector3d: t.r.matrix.MulPoint(pe.Vector3d)}, err) {
 			return
 		}
 		if err != nil {
@@ -297,8 +344,8 @@ func (m Matrix3d) MulMatrix(n Matrix3d) Matrix3d {
 	return r
 }
 
-func (m Matrix3d) MulPoint(p Point3d) Point3d {
-	return Point3d{
+func (m Matrix3d) MulPoint(p Vector3d) Vector3d {
+	return Vector3d{
 		X: m[0][0]*p.X + m[0][1]*p.Y + m[0][2]*p.Z,
 		Y: m[1][0]*p.X + m[1][1]*p.Y + m[1][2]*p.Z,
 		Z: m[2][0]*p.X + m[2][1]*p.Y + m[2][2]*p.Z,
@@ -339,7 +386,7 @@ type Object interface {
 }
 
 type Triangle3d struct {
-	P1, P2, P3     Point3d
+	P1, P2, P3     Vector3d
 	Style1, Style2 *Style
 }
 
@@ -370,9 +417,9 @@ func (d Triangle3d) dist() float64 {
 }
 
 func (d Triangle3d) lightAngle() float64 {
-	n := d.P2.sub(d.P1).cross(d.P3.sub(d.P1)).normalize()
-	lightDir := Point3d{X: 1, Y: 1, Z: 1}.normalize()
-	return n.scalar(lightDir)
+	n := d.P2.Sub(d.P1).Cross(d.P3.Sub(d.P1)).Normalize()
+	lightDir := Vector3d{X: 1, Y: 1, Z: 1}.Normalize()
+	return n.Scalar(lightDir)
 }
 
 type CanvasCube struct {
@@ -407,7 +454,7 @@ type cPath struct {
 
 func (c cPath) Iter(yield func(PathElement, error) bool) {
 	for pe, err := range c.p.Iter {
-		if !yield(PathElement{Mode: pe.Mode, Point: c.cc.To2d(pe.Point3d)}, err) {
+		if !yield(PathElement{Mode: pe.Mode, Point: c.cc.To2d(pe.Vector3d)}, err) {
 			return
 		}
 		if err != nil {
@@ -420,7 +467,7 @@ func (c cPath) IsClosed() bool {
 	return c.p.IsClosed()
 }
 
-func (c *CanvasCube) To2d(p Point3d) Point {
+func (c *CanvasCube) To2d(p Vector3d) Point {
 	zFac := 1 + p.Y/800*c.perspective
 	return Point{
 		X: p.X*c.fac*zFac + c.dx,
@@ -432,13 +479,13 @@ func (c *CanvasCube) DrawPath(p Path3d, style *Style) error {
 	return c.canvas.DrawPath(cPath{p: p, cc: c}, style)
 }
 
-func (c *CanvasCube) DrawTriangle(p1, p2, p3 Point3d, s1, s2 *Style) error {
+func (c *CanvasCube) DrawTriangle(p1, p2, p3 Vector3d, s1, s2 *Style) error {
 	c.objects = append(c.objects, Triangle3d{p1, p2, p3, s1, s2})
 	return nil
 }
 
 type line3d struct {
-	P1, P2    Point3d
+	P1, P2    Vector3d
 	LineStyle *Style
 	Str       string
 	TextStyle *Style
@@ -461,12 +508,12 @@ func (l line3d) dist() float64 {
 	return (l.P1.Y + l.P2.Y) / 2
 }
 
-func (c *CanvasCube) DrawLine(p1, p2 Point3d, lineStyle *Style, s string, textStyle *Style) {
+func (c *CanvasCube) DrawLine(p1, p2 Vector3d, lineStyle *Style, s string, textStyle *Style) {
 	c.objects = append(c.objects, line3d{p1, p2, lineStyle, s, textStyle})
 }
 
 type text3d struct {
-	p           Point3d
+	p           Vector3d
 	s           string
 	orientation Orientation
 	style       *Style
@@ -481,7 +528,7 @@ func (t text3d) dist() float64 {
 	return t.p.Y
 }
 
-func (c *CanvasCube) DrawText(p Point3d, s string, orientation Orientation, style *Style) {
+func (c *CanvasCube) DrawText(p Vector3d, s string, orientation Orientation, style *Style) {
 	c.objects = append(c.objects, text3d{p, s, orientation, style})
 }
 
@@ -511,20 +558,20 @@ func (p *Plot3d) DrawTo(canvas Canvas) (err error) {
 	cubeColor := Gray
 	textColor := cubeColor.SetFill(cubeColor)
 	if !p.HideCube {
-		DrawLongLine(rot, Point3d{100, 100, 100}, Point3d{100, -100, 100}, cubeColor)
-		DrawLongLine(rot, Point3d{100, 100, -100}, Point3d{100, -100, -100}, cubeColor)
-		DrawLongLine(rot, Point3d{-100, 100, 100}, Point3d{-100, -100, 100}, cubeColor)
-		DrawLongLine(rot, Point3d{-100, 100, -100}, Point3d{-100, -100, -100}, cubeColor)
+		DrawLongLine(rot, Vector3d{100, 100, 100}, Vector3d{100, -100, 100}, cubeColor)
+		DrawLongLine(rot, Vector3d{100, 100, -100}, Vector3d{100, -100, -100}, cubeColor)
+		DrawLongLine(rot, Vector3d{-100, 100, 100}, Vector3d{-100, -100, 100}, cubeColor)
+		DrawLongLine(rot, Vector3d{-100, 100, -100}, Vector3d{-100, -100, -100}, cubeColor)
 
-		DrawLongLine(rot, Point3d{100, 100, 100}, Point3d{-100, 100, 100}, cubeColor)
-		DrawLongLine(rot, Point3d{100, 100, -100}, Point3d{-100, 100, -100}, cubeColor)
-		DrawLongLine(rot, Point3d{100, -100, 100}, Point3d{-100, -100, 100}, cubeColor)
-		DrawLongLine(rot, Point3d{100, -100, -100}, Point3d{-100, -100, -100}, cubeColor)
+		DrawLongLine(rot, Vector3d{100, 100, 100}, Vector3d{-100, 100, 100}, cubeColor)
+		DrawLongLine(rot, Vector3d{100, 100, -100}, Vector3d{-100, 100, -100}, cubeColor)
+		DrawLongLine(rot, Vector3d{100, -100, 100}, Vector3d{-100, -100, 100}, cubeColor)
+		DrawLongLine(rot, Vector3d{100, -100, -100}, Vector3d{-100, -100, -100}, cubeColor)
 
-		DrawLongLine(rot, Point3d{100, 100, -100}, Point3d{100, 100, 100}, cubeColor)
-		DrawLongLine(rot, Point3d{-100, 100, -100}, Point3d{-100, 100, 100}, cubeColor)
-		DrawLongLine(rot, Point3d{100, -100, -100}, Point3d{100, -100, 100}, cubeColor)
-		DrawLongLine(rot, Point3d{-100, -100, -100}, Point3d{-100, -100, 100}, cubeColor)
+		DrawLongLine(rot, Vector3d{100, 100, -100}, Vector3d{100, 100, 100}, cubeColor)
+		DrawLongLine(rot, Vector3d{-100, 100, -100}, Vector3d{-100, 100, 100}, cubeColor)
+		DrawLongLine(rot, Vector3d{100, -100, -100}, Vector3d{100, -100, 100}, cubeColor)
+		DrawLongLine(rot, Vector3d{-100, -100, -100}, Vector3d{-100, -100, 100}, cubeColor)
 	}
 	cube := newUnityCube(rot, p.X.MakeValid(), p.Y.MakeValid(), p.Z.MakeValid())
 	const facShortLabel = 1.02
@@ -535,30 +582,30 @@ func (p *Plot3d) DrawTo(canvas Canvas) (err error) {
 			xp := cube.ax.Trans(tick.Position)
 			yp := -100.0
 			zp := -100.0
-			rot.DrawLine(Point3d{xp, yp, zp}, Point3d{xp, yp * facLongLabel, zp}, cubeColor, tick.Label, textColor)
+			rot.DrawLine(Vector3d{xp, yp, zp}, Vector3d{xp, yp * facLongLabel, zp}, cubeColor, tick.Label, textColor)
 		}
-		t := Point3d{100 * facText, -100, -100}
-		rot.DrawLine(Point3d{t.X, t.Y, t.Z}, Point3d{t.X, t.Y * facLongLabel, t.Z}, nil, checkEmpty(p.X.Label, "x"), textColor)
+		t := Vector3d{100 * facText, -100, -100}
+		rot.DrawLine(Vector3d{t.X, t.Y, t.Z}, Vector3d{t.X, t.Y * facLongLabel, t.Z}, nil, checkEmpty(p.X.Label, "x"), textColor)
 	}
 	if !p.Y.HideAxis {
 		for _, tick := range cube.ay.Ticks {
 			xp := -100.0
 			yp := cube.ay.Trans(tick.Position)
 			zp := -100.0
-			rot.DrawLine(Point3d{xp, yp, zp}, Point3d{xp * facShortLabel, yp, zp}, cubeColor, tick.Label, textColor)
+			rot.DrawLine(Vector3d{xp, yp, zp}, Vector3d{xp * facShortLabel, yp, zp}, cubeColor, tick.Label, textColor)
 		}
-		t := Point3d{-100, 100 * facText, -100}
-		rot.DrawLine(Point3d{t.X, t.Y, t.Z}, Point3d{t.X * facLongLabel, t.Y, t.Z}, nil, checkEmpty(p.Y.Label, "y"), textColor)
+		t := Vector3d{-100, 100 * facText, -100}
+		rot.DrawLine(Vector3d{t.X, t.Y, t.Z}, Vector3d{t.X * facLongLabel, t.Y, t.Z}, nil, checkEmpty(p.Y.Label, "y"), textColor)
 	}
 	if !p.Z.HideAxis {
 		for _, tick := range cube.az.Ticks {
 			xp := -100.0
 			yp := -100.0
 			zp := cube.az.Trans(tick.Position)
-			rot.DrawLine(Point3d{xp, yp, zp}, Point3d{xp * facShortLabel, yp * facShortLabel, zp}, cubeColor, tick.Label, textColor)
+			rot.DrawLine(Vector3d{xp, yp, zp}, Vector3d{xp * facShortLabel, yp * facShortLabel, zp}, cubeColor, tick.Label, textColor)
 		}
-		t := Point3d{-100, -100, 100 * facText}
-		rot.DrawLine(Point3d{t.X, t.Y, t.Z}, Point3d{t.X * facLongLabel, t.Y * facLongLabel, t.Z}, nil, checkEmpty(p.Z.Label, "z"), textColor)
+		t := Vector3d{-100, -100, 100 * facText}
+		rot.DrawLine(Vector3d{t.X, t.Y, t.Z}, Vector3d{t.X * facLongLabel, t.Y * facLongLabel, t.Z}, nil, checkEmpty(p.Z.Label, "z"), textColor)
 	}
 	for _, c := range p.Contents {
 		err := c.DrawTo(p, cube)
@@ -572,11 +619,11 @@ func (p *Plot3d) DrawTo(canvas Canvas) (err error) {
 
 // DrawLongLine draws a long line from p1 to p2 by splitting it into n segments
 // to avoid issues with very long lines in 3D rendering.
-func DrawLongLine(rot Cube, p1 Point3d, p2 Point3d, style *Style) {
+func DrawLongLine(rot Cube, p1 Vector3d, p2 Vector3d, style *Style) {
 	const n = 10
-	d := p2.sub(p1).mul(1 / float64(n))
+	d := p2.Sub(p1).Mul(1 / float64(n))
 	for i := 0; i < n; i++ {
-		p2 := p1.add(d)
+		p2 := p1.Add(d)
 		rot.DrawLine(p1, p2, style, "", nil)
 		p1 = p2
 	}
@@ -604,7 +651,7 @@ type SecondaryStyle interface {
 }
 
 type Graph3d struct {
-	Func      func(x, y float64) (Point3d, error)
+	Func      func(x, y float64) (Vector3d, error)
 	U         Bounds
 	V         Bounds
 	Style     *Style
@@ -626,10 +673,6 @@ func (g *Graph3d) SetVBounds(bounds Bounds) Plot3dContent {
 func (g *Graph3d) SetStyle(s *Style) Plot3dContent {
 	g.Style = s
 	return g
-}
-
-func (g *Graph3d) Bounds() (x, y, z Bounds, err error) {
-	return Bounds{}, Bounds{}, Bounds{}, err
 }
 
 func (g *Graph3d) DrawTo(_ *Plot3d, cube Cube) error {
@@ -660,9 +703,9 @@ func (g *Graph3d) DrawTo(_ *Plot3d, cube Cube) error {
 	for xn := 0; xn <= steps; xn++ {
 		uv := uB.Min + float64(xn)*uB.Width()/float64(steps)
 		err := cube.DrawPath(LinePath3d{
-			Func: func(vv float64) (Point3d, error) {
+			Func: func(vv float64) (Vector3d, error) {
 				v, err := g.Func(uv, vv)
-				return Point3d{X: x.Bind(v.X), Y: y.Bind(v.Y), Z: z.Bind(v.Z)}, err
+				return Vector3d{X: x.Bind(v.X), Y: y.Bind(v.Y), Z: z.Bind(v.Z)}, err
 			},
 			Bounds: vB,
 			Steps:  stepsHigh,
@@ -674,9 +717,9 @@ func (g *Graph3d) DrawTo(_ *Plot3d, cube Cube) error {
 	for yn := 0; yn <= steps; yn++ {
 		vv := vB.Min + float64(yn)*vB.Width()/float64(steps)
 		err := cube.DrawPath(LinePath3d{
-			Func: func(uv float64) (Point3d, error) {
+			Func: func(uv float64) (Vector3d, error) {
 				v, err := g.Func(uv, vv)
-				return Point3d{X: x.Bind(v.X), Y: y.Bind(v.Y), Z: z.Bind(v.Z)}, err
+				return Vector3d{X: x.Bind(v.X), Y: y.Bind(v.Y), Z: z.Bind(v.Z)}, err
 			},
 			Bounds: uB,
 			Steps:  stepsHigh,
@@ -693,7 +736,7 @@ func (g *Graph3d) Legend() Legend {
 }
 
 type Solid3d struct {
-	Func   func(x, y float64) (Point3d, error)
+	Func   func(x, y float64) (Vector3d, error)
 	U      Bounds
 	V      Bounds
 	Style1 *Style
@@ -723,10 +766,6 @@ func (g *Solid3d) SetVBounds(bounds Bounds) Plot3dContent {
 func (g *Solid3d) SetSecondaryStyle(s *Style) Plot3dContent {
 	g.Style2 = s
 	return g
-}
-
-func (g *Solid3d) Bounds() (x, y, z Bounds, err error) {
-	return Bounds{}, Bounds{}, Bounds{}, err
 }
 
 func (g *Solid3d) DrawTo(_ *Plot3d, cube Cube) (err error) {
@@ -776,14 +815,14 @@ func (g *Solid3d) DrawTo(_ *Plot3d, cube Cube) (err error) {
 			v11 := nErr.TryArg(g.Func(xv1, yv1))
 
 			nErr.Try(cube.DrawTriangle(
-				Point3d{X: x.Bind(v00.X), Y: y.Bind(v00.Y), Z: z.Bind(v00.Z)},
-				Point3d{X: x.Bind(v10.X), Y: y.Bind(v10.Y), Z: z.Bind(v10.Z)},
-				Point3d{X: x.Bind(v11.X), Y: y.Bind(v11.Y), Z: z.Bind(v11.Z)},
+				Vector3d{X: x.Bind(v00.X), Y: y.Bind(v00.Y), Z: z.Bind(v00.Z)},
+				Vector3d{X: x.Bind(v10.X), Y: y.Bind(v10.Y), Z: z.Bind(v10.Z)},
+				Vector3d{X: x.Bind(v11.X), Y: y.Bind(v11.Y), Z: z.Bind(v11.Z)},
 				style1, style2))
 			nErr.Try(cube.DrawTriangle(
-				Point3d{X: x.Bind(v00.X), Y: y.Bind(v00.Y), Z: z.Bind(v00.Z)},
-				Point3d{X: x.Bind(v11.X), Y: y.Bind(v11.Y), Z: z.Bind(v11.Z)},
-				Point3d{X: x.Bind(v01.X), Y: y.Bind(v01.Y), Z: z.Bind(v01.Z)},
+				Vector3d{X: x.Bind(v00.X), Y: y.Bind(v00.Y), Z: z.Bind(v00.Z)},
+				Vector3d{X: x.Bind(v11.X), Y: y.Bind(v11.Y), Z: z.Bind(v11.Z)},
+				Vector3d{X: x.Bind(v01.X), Y: y.Bind(v01.Y), Z: z.Bind(v01.Z)},
 				style1, style2))
 		}
 	}
@@ -795,7 +834,7 @@ func (g *Solid3d) Legend() Legend {
 }
 
 type Line3d struct {
-	Func  func(u float64) (Point3d, error)
+	Func  func(u float64) (Vector3d, error)
 	U     Bounds
 	Style *Style
 	Steps int
@@ -810,10 +849,6 @@ func (g *Line3d) SetUBounds(bounds Bounds) Plot3dContent {
 func (g *Line3d) SetStyle(s *Style) Plot3dContent {
 	g.Style = s
 	return g
-}
-
-func (g *Line3d) Bounds() (x, y, z Bounds, err error) {
-	return Bounds{}, Bounds{}, Bounds{}, err
 }
 
 func (g *Line3d) DrawTo(_ *Plot3d, cube Cube) error {
@@ -834,9 +869,9 @@ func (g *Line3d) DrawTo(_ *Plot3d, cube Cube) error {
 	}
 
 	err := cube.DrawPath(LinePath3d{
-		Func: func(vv float64) (Point3d, error) {
+		Func: func(vv float64) (Vector3d, error) {
 			v, err := g.Func(vv)
-			return Point3d{X: x.Bind(v.X), Y: y.Bind(v.Y), Z: z.Bind(v.Z)}, err
+			return Vector3d{X: x.Bind(v.X), Y: y.Bind(v.Y), Z: z.Bind(v.Z)}, err
 		},
 		Bounds: uB,
 		Steps:  steps,
@@ -850,4 +885,47 @@ func (g *Line3d) DrawTo(_ *Plot3d, cube Cube) error {
 
 func (g *Line3d) Legend() Legend {
 	return Legend{Name: g.Name, ShapeLineStyle: ShapeLineStyle{LineStyle: g.Style}}
+}
+
+type Arrow3d struct {
+	From, To Vector3d
+	Plane    Vector3d
+	Style    *Style
+	Label    string
+}
+
+func (a Arrow3d) DrawTo(_ *Plot3d, cube Cube) error {
+	cube.DrawLine(a.From, a.To, a.Style, "", nil)
+
+	const len = 0.2
+	d := a.To.Sub(a.From)
+	if d.Abs() > len {
+		d = d.Normalize()
+		plane := a.Plane
+		if plane.Zero() {
+			if d.X == 0 {
+				plane = Vector3d{0, 1, 0}
+			} else {
+				plane = Vector3d{-d.Y / d.X, 1, 0}.Normalize()
+			}
+		} else {
+			plane = d.Cross(plane).Normalize()
+		}
+
+		d = d.Mul(len)
+		plane = plane.Mul(len / 2)
+		cube.DrawLine(a.To, a.To.Sub(d).Add(plane), a.Style, "", nil)
+		cube.DrawLine(a.To, a.To.Sub(d).Sub(plane), a.Style, "", nil)
+	}
+
+	return nil
+}
+
+func (a Arrow3d) Legend() Legend {
+	return Legend{Name: "", ShapeLineStyle: ShapeLineStyle{LineStyle: a.Style}}
+}
+
+func (a Arrow3d) SetStyle(s *Style) Plot3dContent {
+	a.Style = s
+	return a
 }

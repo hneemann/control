@@ -1640,61 +1640,8 @@ func createNeg(orig funcGen.UnaryOperatorImpl[value.Value]) funcGen.UnaryOperato
 	}
 }
 
-func typeOperationCommutative[T value.Value](
-	orig funcGen.OperatorImpl[value.Value],
-	f func(a, b T) (value.Value, error),
-	fl func(a T, b value.Value) (value.Value, error)) funcGen.OperatorImpl[value.Value] {
-
-	return func(st funcGen.Stack[value.Value], a value.Value, b value.Value) (value.Value, error) {
-		if ae, ok := a.(T); ok {
-			if be, ok := b.(T); ok {
-				// both are of type T
-				return f(ae, be)
-			} else {
-				// a is of type T, b isn't
-				return fl(ae, b)
-			}
-		} else {
-			if be, ok := b.(T); ok {
-				// b is of type T, a isn't
-				return fl(be, a)
-			} else {
-				// no value of Type T at all
-				return orig(st, a, b)
-			}
-		}
-	}
-}
-
-func typeOperation[T value.Value](
-	orig funcGen.OperatorImpl[value.Value],
-	f func(a, b T) (value.Value, error),
-	fl1 func(a T, b value.Value) (value.Value, error),
-	fl2 func(a value.Value, T T) (value.Value, error)) funcGen.OperatorImpl[value.Value] {
-
-	return func(st funcGen.Stack[value.Value], a value.Value, b value.Value) (value.Value, error) {
-		if ae, ok := a.(T); ok {
-			if be, ok := b.(T); ok {
-				// both are of type T
-				return f(ae, be)
-			} else {
-				// a is of type T, b isn't
-				return fl1(ae, b)
-			}
-		} else {
-			if be, ok := b.(T); ok {
-				// b is of type T, a isn't
-				return fl2(a, be)
-			} else {
-				// no value of Type T at all
-				return orig(st, a, b)
-			}
-		}
-	}
-}
-
 func createExp(old funcGen.OperatorImpl[value.Value]) funcGen.OperatorImpl[value.Value] {
-	cplx := typeOperation(old, func(a, b Complex) (value.Value, error) {
+	cplx := grParser.TypeOperation(old, func(a, b Complex) (value.Value, error) {
 		return Complex(cmplx.Pow(complex128(a), complex128(b))), nil
 	}, func(a Complex, b value.Value) (value.Value, error) {
 		if bf, ok := b.ToFloat(); ok {
@@ -1707,7 +1654,7 @@ func createExp(old funcGen.OperatorImpl[value.Value]) funcGen.OperatorImpl[value
 		}
 		return nil, fmt.Errorf("complex exp requires a complex or a float value")
 	})
-	poly := typeOperation(cplx, func(a, b Polynomial) (value.Value, error) {
+	poly := grParser.TypeOperation(cplx, func(a, b Polynomial) (value.Value, error) {
 		return nil, fmt.Errorf("polynomial exp requires an int value")
 	}, func(a Polynomial, b value.Value) (value.Value, error) {
 		if bi, ok := b.(value.Int); ok {
@@ -1721,7 +1668,7 @@ func createExp(old funcGen.OperatorImpl[value.Value]) funcGen.OperatorImpl[value
 	}, func(a value.Value, b Polynomial) (value.Value, error) {
 		return nil, fmt.Errorf("polynomial exp requires an int value")
 	})
-	lin := typeOperation(poly, func(a, b *Linear) (value.Value, error) {
+	lin := grParser.TypeOperation(poly, func(a, b *Linear) (value.Value, error) {
 		return nil, fmt.Errorf("linear exp requires an int value")
 	}, func(a *Linear, b value.Value) (value.Value, error) {
 		if bf, ok := b.(value.Int); ok {
@@ -1739,7 +1686,7 @@ func createExp(old funcGen.OperatorImpl[value.Value]) funcGen.OperatorImpl[value
 }
 
 func createMul(old funcGen.OperatorImpl[value.Value]) funcGen.OperatorImpl[value.Value] {
-	cplx := typeOperationCommutative(old, func(a, b Complex) (value.Value, error) {
+	cplx := grParser.TypeOperationCommutative(old, func(a, b Complex) (value.Value, error) {
 		return a * b, nil
 	}, func(a Complex, b value.Value) (value.Value, error) {
 		if bf, ok := b.ToFloat(); ok {
@@ -1747,7 +1694,7 @@ func createMul(old funcGen.OperatorImpl[value.Value]) funcGen.OperatorImpl[value
 		}
 		return nil, fmt.Errorf("complex multiplication requires a complex or a float value")
 	})
-	poly := typeOperationCommutative(cplx, func(a, b Polynomial) (value.Value, error) {
+	poly := grParser.TypeOperationCommutative(cplx, func(a, b Polynomial) (value.Value, error) {
 		return a.Mul(b), nil
 	}, func(a Polynomial, b value.Value) (value.Value, error) {
 		if bf, ok := b.ToFloat(); ok {
@@ -1755,7 +1702,7 @@ func createMul(old funcGen.OperatorImpl[value.Value]) funcGen.OperatorImpl[value
 		}
 		return nil, fmt.Errorf("polynomial multiplication requires a polynomial or a float value")
 	})
-	lin := typeOperationCommutative(poly, func(a, b *Linear) (value.Value, error) {
+	lin := grParser.TypeOperationCommutative(poly, func(a, b *Linear) (value.Value, error) {
 		return a.Mul(b), nil
 	}, func(a *Linear, b value.Value) (value.Value, error) {
 		if bf, ok := b.ToFloat(); ok {
@@ -1770,7 +1717,7 @@ func createMul(old funcGen.OperatorImpl[value.Value]) funcGen.OperatorImpl[value
 }
 
 func createDiv(old funcGen.OperatorImpl[value.Value]) funcGen.OperatorImpl[value.Value] {
-	cplx := typeOperation(old, func(a, b Complex) (value.Value, error) {
+	cplx := grParser.TypeOperation(old, func(a, b Complex) (value.Value, error) {
 		return a / b, nil
 	}, func(a Complex, b value.Value) (value.Value, error) {
 		if bf, ok := b.ToFloat(); ok {
@@ -1783,7 +1730,7 @@ func createDiv(old funcGen.OperatorImpl[value.Value]) funcGen.OperatorImpl[value
 		}
 		return nil, fmt.Errorf("complex div requires a complex or a float value")
 	})
-	poly := typeOperation(cplx, func(a, b Polynomial) (value.Value, error) {
+	poly := grParser.TypeOperation(cplx, func(a, b Polynomial) (value.Value, error) {
 		return &Linear{
 			Numerator:   a,
 			Denominator: b,
@@ -1802,7 +1749,7 @@ func createDiv(old funcGen.OperatorImpl[value.Value]) funcGen.OperatorImpl[value
 		}
 		return nil, fmt.Errorf("polynomial div requires a polynomial or a float value")
 	})
-	lin := typeOperation(poly, func(a, b *Linear) (value.Value, error) {
+	lin := grParser.TypeOperation(poly, func(a, b *Linear) (value.Value, error) {
 		return a.Div(b), nil
 	}, func(a *Linear, b value.Value) (value.Value, error) {
 		if bf, ok := b.ToFloat(); ok {
@@ -1829,7 +1776,7 @@ func createDiv(old funcGen.OperatorImpl[value.Value]) funcGen.OperatorImpl[value
 }
 
 func createAdd(old funcGen.OperatorImpl[value.Value]) funcGen.OperatorImpl[value.Value] {
-	cplx := typeOperationCommutative(old, func(a, b Complex) (value.Value, error) {
+	cplx := grParser.TypeOperationCommutative(old, func(a, b Complex) (value.Value, error) {
 		return a + b, nil
 	}, func(a Complex, b value.Value) (value.Value, error) {
 		if bf, ok := b.ToFloat(); ok {
@@ -1837,7 +1784,7 @@ func createAdd(old funcGen.OperatorImpl[value.Value]) funcGen.OperatorImpl[value
 		}
 		return nil, fmt.Errorf("complex add requires a complex or a float value")
 	})
-	poly := typeOperationCommutative(cplx, func(a, b Polynomial) (value.Value, error) {
+	poly := grParser.TypeOperationCommutative(cplx, func(a, b Polynomial) (value.Value, error) {
 		return a.Add(b), nil
 	}, func(a Polynomial, b value.Value) (value.Value, error) {
 		if bf, ok := b.ToFloat(); ok {
@@ -1845,7 +1792,7 @@ func createAdd(old funcGen.OperatorImpl[value.Value]) funcGen.OperatorImpl[value
 		}
 		return nil, fmt.Errorf("polynomial add requires a polynomial or a float value")
 	})
-	lin := typeOperationCommutative(poly, func(a, b *Linear) (value.Value, error) {
+	lin := grParser.TypeOperationCommutative(poly, func(a, b *Linear) (value.Value, error) {
 		return a.Add(b)
 	}, func(a *Linear, b value.Value) (value.Value, error) {
 		if bf, ok := b.ToFloat(); ok {
@@ -1863,7 +1810,7 @@ func createAdd(old funcGen.OperatorImpl[value.Value]) funcGen.OperatorImpl[value
 }
 
 func createSub(old funcGen.OperatorImpl[value.Value]) funcGen.OperatorImpl[value.Value] {
-	cplx := typeOperation(old, func(a, b Complex) (value.Value, error) {
+	cplx := grParser.TypeOperation(old, func(a, b Complex) (value.Value, error) {
 		return a - b, nil
 	}, func(a Complex, b value.Value) (value.Value, error) {
 		if bf, ok := b.ToFloat(); ok {
@@ -1876,7 +1823,7 @@ func createSub(old funcGen.OperatorImpl[value.Value]) funcGen.OperatorImpl[value
 		}
 		return nil, fmt.Errorf("complex sub requires a complex or a float value")
 	})
-	poly := typeOperation(cplx, func(a, b Polynomial) (value.Value, error) {
+	poly := grParser.TypeOperation(cplx, func(a, b Polynomial) (value.Value, error) {
 		return a.Add(b.MulFloat(-1)), nil
 	}, func(a Polynomial, b value.Value) (value.Value, error) {
 		if bf, ok := b.ToFloat(); ok {
@@ -1889,7 +1836,7 @@ func createSub(old funcGen.OperatorImpl[value.Value]) funcGen.OperatorImpl[value
 		}
 		return nil, fmt.Errorf("polynomial sub requires a polynomial or a float value")
 	})
-	lin := typeOperation(poly, func(a, b *Linear) (value.Value, error) {
+	lin := grParser.TypeOperation(poly, func(a, b *Linear) (value.Value, error) {
 		return a.Add(b.MulFloat(-1))
 	}, func(a *Linear, b value.Value) (value.Value, error) {
 		if bf, ok := b.ToFloat(); ok {

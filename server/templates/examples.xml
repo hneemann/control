@@ -188,8 +188,8 @@ let ges=tpCascade(
  ["Rin:",   ges.inputImp(15000)],
 ]</example>
     <example name="Rotationskörper" desc="Interaktiver Rotationskörper"
-             name-en="Solid of revolution" desc-en="interactive Solid of revolution">let alpha=gui.slider("alpha",0.3,-pi,pi);
-let beta =gui.slider("beta" ,0.2,-pi,pi);
+             name-en="Solid of revolution" desc-en="interactive Solid of revolution">let alpha=gui.slider("#alpha",0.3,-pi,pi);
+let beta =gui.slider("#beta" ,0.2,-pi,pi);
 
 func sor(u,v)
   [u*sin(v),u*cos(v),u^2];

@@ -45,6 +45,23 @@ func (w Holder[T]) ToClosure() (funcGen.Function[value.Value], bool) {
 	return funcGen.Function[value.Value]{}, false
 }
 
+func createVector3dMethods() value.MethodMap {
+	return value.MethodMap{
+		"cross": value.MethodAtType(1, func(v graph.Vector3d, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			if v2, ok := stack.Get(1).(graph.Vector3d); ok {
+				return v.Cross(v2), nil
+			}
+			return nil, errors.New("cross requires a vector3d")
+		}).SetMethodDescription("vector3d", "Calculates the cross product."),
+		"norm": value.MethodAtType(0, func(v graph.Vector3d, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			return v.Normalize(), nil
+		}).SetMethodDescription("Normalizes the vector."),
+		"abs": value.MethodAtType(0, func(v graph.Vector3d, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			return value.Float(v.Abs()), nil
+		}).SetMethodDescription("Calculates the length of the vector."),
+	}
+}
+
 var (
 	PlotType          value.Type
 	PlotContentType   value.Type
@@ -124,7 +141,11 @@ func createPlot3dContentMethods() value.MethodMap {
 		"uBounds": value.MethodAtType(2, func(pc Plot3dContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if vMin, ok := stack.Get(1).ToFloat(); ok {
 				if vMax, ok := stack.Get(2).ToFloat(); ok {
-					pc.Value.SetUBounds(graph.NewBounds(vMin, vMax))
+					if vbs, ok := pc.Value.(graph.UBoundsSetter); ok {
+						vbs.SetUBounds(graph.NewBounds(vMin, vMax))
+					} else {
+						return nil, errors.New("the plot3d content does not support u-bounds")
+					}
 					return pc, nil
 				}
 			}
@@ -1159,7 +1180,7 @@ func closureMethods() value.MethodMap {
 	}
 }
 
-func create3dFunc(cl value.Closure, st funcGen.Stack[value.Value]) (int, int, func(x, y float64) (graph.Point3d, error), error) {
+func create3dFunc(cl value.Closure, st funcGen.Stack[value.Value]) (int, int, func(x, y float64) (graph.Vector3d, error), error) {
 	uSteps := 0
 	if s, ok := st.GetOptional(1, value.Int(0)).ToFloat(); ok {
 		uSteps = int(s)
@@ -1173,41 +1194,29 @@ func create3dFunc(cl value.Closure, st funcGen.Stack[value.Value]) (int, int, fu
 		return 0, 0, nil, fmt.Errorf("graph3d/soild3d requires a number as second argument")
 	}
 
-	var f func(x, y float64) (graph.Point3d, error)
+	var f func(x, y float64) (graph.Vector3d, error)
 	if cl.Args != 2 {
 		return 0, 0, nil, fmt.Errorf("graph3d/solid3d requires the function to have two arguments")
 	}
 	stack := funcGen.NewEmptyStack[value.Value]()
-	f = func(x, y float64) (graph.Point3d, error) {
+	f = func(x, y float64) (graph.Vector3d, error) {
 		stack.Push(value.Float(x))
 		stack.Push(value.Float(y))
 		z, err := cl.Func(stack.CreateFrame(2), nil)
 		if err != nil {
-			return graph.Point3d{}, err
+			return graph.Vector3d{}, err
 		}
 		if zf, ok := z.ToFloat(); ok {
-			return graph.Point3d{X: x, Y: y, Z: zf}, nil
-		} else if li, ok := z.(*value.List); ok {
-			sl, err := li.ToSlice(stack)
-			if err != nil {
-				return graph.Point3d{}, err
-			}
-			if len(sl) == 3 {
-				xv, ok1 := sl[0].ToFloat()
-				yv, ok2 := sl[1].ToFloat()
-				zv, ok3 := sl[2].ToFloat()
-				if ok1 && ok2 && ok3 {
-					return graph.Point3d{X: xv, Y: yv, Z: zv}, nil
-				}
-				return graph.Point3d{}, fmt.Errorf("the list returned by the function given to graph3d/solid3d must contain three floats")
-			}
+			return graph.Vector3d{X: x, Y: y, Z: zf}, nil
+		} else if v, ok := z.(graph.Vector3d); ok {
+			return v, nil
 		}
-		return graph.Point3d{}, fmt.Errorf("the function given to graph3d/solid3d must return a float or a list of three floats")
+		return graph.Vector3d{}, fmt.Errorf("the function given to graph3d/solid3d must return a float or a vector")
 	}
 	return uSteps, vSteps, f, nil
 }
 
-func create3dFuncLine(cl value.Closure, st funcGen.Stack[value.Value]) (int, func(u float64) (graph.Point3d, error), error) {
+func create3dFuncLine(cl value.Closure, st funcGen.Stack[value.Value]) (int, func(u float64) (graph.Vector3d, error), error) {
 	steps := 0
 	if s, ok := st.GetOptional(1, value.Int(0)).ToFloat(); ok {
 		steps = int(s)
@@ -1215,33 +1224,21 @@ func create3dFuncLine(cl value.Closure, st funcGen.Stack[value.Value]) (int, fun
 		return 0, nil, fmt.Errorf("line3d requires a number as argument")
 	}
 
-	var f func(u float64) (graph.Point3d, error)
+	var f func(u float64) (graph.Vector3d, error)
 	if cl.Args != 1 {
 		return 0, nil, fmt.Errorf("line3d requires the function to have one argument")
 	}
 	stack := funcGen.NewEmptyStack[value.Value]()
-	f = func(u float64) (graph.Point3d, error) {
+	f = func(u float64) (graph.Vector3d, error) {
 		stack.Push(value.Float(u))
 		z, err := cl.Func(stack.CreateFrame(1), nil)
 		if err != nil {
-			return graph.Point3d{}, err
+			return graph.Vector3d{}, err
 		}
-		if li, ok := z.(*value.List); ok {
-			sl, err := li.ToSlice(stack)
-			if err != nil {
-				return graph.Point3d{}, err
-			}
-			if len(sl) == 3 {
-				xv, ok1 := sl[0].ToFloat()
-				yv, ok2 := sl[1].ToFloat()
-				zv, ok3 := sl[2].ToFloat()
-				if ok1 && ok2 && ok3 {
-					return graph.Point3d{X: xv, Y: yv, Z: zv}, nil
-				}
-				return graph.Point3d{}, fmt.Errorf("the list returned by the function given to line3d must contain three floats")
-			}
+		if v, ok := z.(graph.Vector3d); ok {
+			return v, nil
 		}
-		return graph.Point3d{}, fmt.Errorf("the function given to graph3d must return a list of three floats")
+		return graph.Vector3d{}, fmt.Errorf("the function given to graph3d must return a vector")
 	}
 	return steps, f, nil
 }
@@ -1257,6 +1254,7 @@ func Setup(fg *value.FunctionGenerator) {
 	DataType = fg.RegisterType("data")
 	Plot3dType = fg.RegisterType("plot3d")
 	Plot3dContentType = fg.RegisterType("plot3dContent")
+	graph.Vector3dType = fg.RegisterType("vector")
 
 	fg.RegisterMethods(PlotType, createPlotMethods())
 	fg.RegisterMethods(PlotContentType, createPlotContentMethods())
@@ -1267,6 +1265,7 @@ func Setup(fg *value.FunctionGenerator) {
 	fg.RegisterMethods(value.ClosureTypeId, closureMethods())
 	fg.RegisterMethods(Plot3dType, createPlot3dMethods())
 	fg.RegisterMethods(Plot3dContentType, createPlot3dContentMethods())
+	fg.RegisterMethods(graph.Vector3dType, createVector3dMethods())
 	export.AddZipHelpers(fg)
 	export.AddHTMLStylingHelpers(fg)
 	fg.AddConstant("black", StyleValue{Holder[*graph.Style]{graph.Black}})
@@ -1309,6 +1308,20 @@ func Setup(fg *value.FunctionGenerator) {
 		Args:   -1,
 		IsPure: true,
 	}.SetDescription("r or n", "g", "b", "a", "Returns the color with the number n or, if three arguments are specified, the given rgb color.").VarArgs(1, 4))
+	fg.AddStaticFunction("vec", funcGen.Function[value.Value]{
+		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
+			if x, ok := st.Get(0).ToFloat(); ok {
+				if y, ok := st.Get(1).ToFloat(); ok {
+					if z, ok := st.Get(2).ToFloat(); ok {
+						return graph.Vector3d{x, y, z}, nil
+					}
+				}
+			}
+			return nil, fmt.Errorf("vec requires three floats")
+		},
+		Args:   3,
+		IsPure: true,
+	}.SetDescription("x", "y", "z", "Creates a vector."))
 	fg.AddStaticFunction("plot", funcGen.Function[value.Value]{
 		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
 			p := NewPlotValue(&graph.Plot{})
@@ -1493,8 +1506,8 @@ func Setup(fg *value.FunctionGenerator) {
 								if err != nil {
 									return nil, fmt.Errorf("arrow: %w", err)
 								}
-
 								arrow.Style = styleVal.Value
+
 								if mode, ok := st.GetOptional(6, value.Int(3)).ToInt(); ok {
 									arrow.Mode = mode
 								} else {
@@ -1511,6 +1524,36 @@ func Setup(fg *value.FunctionGenerator) {
 		Args:   7,
 		IsPure: true,
 	}.SetDescription("x1", "y1", "x2", "y2", "text", "marker", "color", "Creates an arrow plot content.").VarArgs(5, 7))
+	fg.AddStaticFunction("arrow3d", funcGen.Function[value.Value]{
+		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
+			if v1, ok := st.Get(0).(graph.Vector3d); ok {
+				if v2, ok := st.Get(1).(graph.Vector3d); ok {
+					if text, ok := st.Get(2).(value.String); ok {
+						arrow := graph.Arrow3d{
+							From:  v1,
+							To:    v2,
+							Label: string(text),
+						}
+						styleVal, err := GetStyle(st, 3, graph.Black)
+						if err != nil {
+							return nil, fmt.Errorf("arrow: %w", err)
+						}
+						arrow.Style = styleVal.Value
+
+						if plane, ok := st.GetOptional(4, graph.Vector3d{}).(graph.Vector3d); ok {
+							arrow.Plane = plane
+						} else {
+							return nil, fmt.Errorf("arrow requires an int as fifth argument")
+						}
+						return Plot3dContentValue{Holder: Holder[graph.Plot3dContent]{arrow}}, nil
+					}
+				}
+			}
+			return nil, fmt.Errorf("arrow requires four floats and a string")
+		},
+		Args:   5,
+		IsPure: true,
+	}.SetDescription("v1", "v2", "text", "marker", "color", "Creates an arrow plot3d content.").VarArgs(3, 5))
 	fg.AddStaticFunction("splitHorizontal", funcGen.Function[value.Value]{
 		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
 			if st.Size() < 2 {
@@ -1575,6 +1618,94 @@ func Setup(fg *value.FunctionGenerator) {
 		IsPure: true,
 	}.SetDescription("data...", "Creates a dataSet which can be used to create dat or csv files. "+
 		"A list can be used to create the content by calling the data-Method."))
+	fg.ReplaceOp("*", true, true, createMul).
+		ReplaceOp("-", false, true, createSub).
+		ReplaceOp("+", false, true, createAdd)
+}
+
+func TypeOperationCommutative[T value.Value](
+	orig funcGen.OperatorImpl[value.Value],
+	f func(a, b T) (value.Value, error),
+	fl func(a T, b value.Value) (value.Value, error)) funcGen.OperatorImpl[value.Value] {
+
+	return func(st funcGen.Stack[value.Value], a value.Value, b value.Value) (value.Value, error) {
+		if ae, ok := a.(T); ok {
+			if be, ok := b.(T); ok {
+				// both are of type T
+				return f(ae, be)
+			} else {
+				// a is of type T, b isn't
+				return fl(ae, b)
+			}
+		} else {
+			if be, ok := b.(T); ok {
+				// b is of type T, a isn't
+				return fl(be, a)
+			} else {
+				// no value of Type T at all
+				return orig(st, a, b)
+			}
+		}
+	}
+}
+
+func TypeOperation[T value.Value](
+	orig funcGen.OperatorImpl[value.Value],
+	f func(a, b T) (value.Value, error),
+	fl1 func(a T, b value.Value) (value.Value, error),
+	fl2 func(a value.Value, T T) (value.Value, error)) funcGen.OperatorImpl[value.Value] {
+
+	return func(st funcGen.Stack[value.Value], a value.Value, b value.Value) (value.Value, error) {
+		if ae, ok := a.(T); ok {
+			if be, ok := b.(T); ok {
+				// both are of type T
+				return f(ae, be)
+			} else {
+				// a is of type T, b isn't
+				return fl1(ae, b)
+			}
+		} else {
+			if be, ok := b.(T); ok {
+				// b is of type T, a isn't
+				return fl2(a, be)
+			} else {
+				// no value of Type T at all
+				return orig(st, a, b)
+			}
+		}
+	}
+}
+
+func createAdd(old funcGen.OperatorImpl[value.Value]) funcGen.OperatorImpl[value.Value] {
+	vec := TypeOperationCommutative(old, func(a, b graph.Vector3d) (value.Value, error) {
+		return a.Add(b), nil
+	}, func(a graph.Vector3d, b value.Value) (value.Value, error) {
+		return nil, fmt.Errorf("vector add requires a vector value")
+	})
+	return vec
+}
+
+func createMul(old funcGen.OperatorImpl[value.Value]) funcGen.OperatorImpl[value.Value] {
+	vec := TypeOperationCommutative(old, func(a, b graph.Vector3d) (value.Value, error) {
+		return value.Float(a.Scalar(b)), nil
+	}, func(a graph.Vector3d, b value.Value) (value.Value, error) {
+		if f, ok := b.ToFloat(); ok {
+			return a.Mul(f), nil
+		}
+		return nil, fmt.Errorf("vector mul requires a float value")
+	})
+	return vec
+}
+
+func createSub(old funcGen.OperatorImpl[value.Value]) funcGen.OperatorImpl[value.Value] {
+	vec := TypeOperation(old, func(a, b graph.Vector3d) (value.Value, error) {
+		return a.Sub(b), nil
+	}, func(a graph.Vector3d, b value.Value) (value.Value, error) {
+		return nil, fmt.Errorf("vector sub requires a vector value")
+	}, func(a value.Value, b graph.Vector3d) (value.Value, error) {
+		return nil, fmt.Errorf("vector sub requires a vector value")
+	})
+	return vec
 }
 
 func GetStyle(st funcGen.Stack[value.Value], index int, defStyle *graph.Style) (StyleValue, error) {
