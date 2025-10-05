@@ -535,20 +535,20 @@ func (p *Plot3d) DrawTo(canvas Canvas) (err error) {
 			xp := cube.ax.Trans(tick.Position)
 			yp := -100.0
 			zp := -100.0
-			rot.DrawLine(Point3d{xp, yp, zp}, Point3d{xp, yp * facLongLabel, zp * facLongLabel}, cubeColor, tick.Label, textColor)
+			rot.DrawLine(Point3d{xp, yp, zp}, Point3d{xp, yp * facLongLabel, zp}, cubeColor, tick.Label, textColor)
 		}
 		t := Point3d{100 * facText, -100, -100}
-		rot.DrawLine(Point3d{t.X, t.Y, t.Z}, Point3d{t.X, t.Y * facLongLabel, t.Z * facLongLabel}, nil, checkEmpty(p.X.Label, "x"), textColor)
+		rot.DrawLine(Point3d{t.X, t.Y, t.Z}, Point3d{t.X, t.Y * facLongLabel, t.Z}, nil, checkEmpty(p.X.Label, "x"), textColor)
 	}
 	if !p.Y.HideAxis {
 		for _, tick := range cube.ay.Ticks {
 			xp := -100.0
 			yp := cube.ay.Trans(tick.Position)
 			zp := -100.0
-			rot.DrawLine(Point3d{xp, yp, zp}, Point3d{xp * facShortLabel, yp, zp * facShortLabel}, cubeColor, tick.Label, textColor)
+			rot.DrawLine(Point3d{xp, yp, zp}, Point3d{xp * facShortLabel, yp, zp}, cubeColor, tick.Label, textColor)
 		}
 		t := Point3d{-100, 100 * facText, -100}
-		rot.DrawLine(Point3d{t.X, t.Y, t.Z}, Point3d{t.X * facLongLabel, t.Y, t.Z * facLongLabel}, nil, checkEmpty(p.Y.Label, "y"), textColor)
+		rot.DrawLine(Point3d{t.X, t.Y, t.Z}, Point3d{t.X * facLongLabel, t.Y, t.Z}, nil, checkEmpty(p.Y.Label, "y"), textColor)
 	}
 	if !p.Z.HideAxis {
 		for _, tick := range cube.az.Ticks {
