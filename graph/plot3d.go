@@ -698,7 +698,8 @@ type Solid3d struct {
 	V      Bounds
 	Style1 *Style
 	Style2 *Style
-	Steps  int
+	USteps int
+	VSteps int
 	Name   string
 }
 
@@ -731,9 +732,13 @@ func (g *Solid3d) Bounds() (x, y, z Bounds, err error) {
 func (g *Solid3d) DrawTo(_ *Plot3d, cube Cube) (err error) {
 	defer nErr.CatchErr(&err)
 
-	steps := g.Steps
-	if steps <= 0 {
-		steps = 31
+	uSteps := g.USteps
+	if uSteps <= 0 {
+		uSteps = 31
+	}
+	vSteps := g.VSteps
+	if vSteps <= 0 {
+		vSteps = uSteps
 	}
 
 	style1 := g.Style1
@@ -758,12 +763,12 @@ func (g *Solid3d) DrawTo(_ *Plot3d, cube Cube) (err error) {
 		vB = y
 	}
 
-	for xn := 0; xn < steps; xn++ {
-		xv0 := uB.Min + float64(xn)*uB.Width()/float64(steps)
-		xv1 := uB.Min + float64(xn+1)*uB.Width()/float64(steps)
-		for yn := 0; yn < steps; yn++ {
-			yv0 := vB.Min + float64(yn)*vB.Width()/float64(steps)
-			yv1 := vB.Min + float64(yn+1)*vB.Width()/float64(steps)
+	for xn := 0; xn < uSteps; xn++ {
+		xv0 := uB.Min + float64(xn)*uB.Width()/float64(uSteps)
+		xv1 := uB.Min + float64(xn+1)*uB.Width()/float64(uSteps)
+		for yn := 0; yn < vSteps; yn++ {
+			yv0 := vB.Min + float64(yn)*vB.Width()/float64(vSteps)
+			yv1 := vB.Min + float64(yn+1)*vB.Width()/float64(vSteps)
 
 			v00 := nErr.TryArg(g.Func(xv0, yv0))
 			v01 := nErr.TryArg(g.Func(xv0, yv1))
