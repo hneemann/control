@@ -198,11 +198,10 @@ plot3d(
   sor.solid3d()
      .uBounds(0,2)
      .vBounds(0,2*pi)
-     .color(black.fill(color(100,0,0)),red)
+     .color(black.fill(red.darker(50)),red)
 ).xBounds(-3,3)
  .yBounds(-3,3)
  .zBounds(0,4)
- .outputSize(800,800)
  .angles(alpha,beta,0)
 </example>
 

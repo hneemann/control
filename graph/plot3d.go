@@ -113,7 +113,7 @@ func (l LinePath3d) IsClosed() bool {
 type Cube interface {
 	DrawPath(Path3d, *Style) error
 	DrawTriangle(Point3d, Point3d, Point3d, *Style, *Style) error
-	DrawLine(Point3d, Point3d, *Style)
+	DrawLine(Point3d, Point3d, *Style, string, *Style)
 	DrawText(Point3d, string, Orientation, *Style)
 	Bounds() (x, y, z Bounds)
 }
@@ -204,8 +204,8 @@ func (uc *unityCube) DrawTriangle(p1, p2, p3 Point3d, s1, s2 *Style) error {
 	return uc.parent.DrawTriangle(uc.transform(p1), uc.transform(p2), uc.transform(p3), s1, s2)
 }
 
-func (uc *unityCube) DrawLine(p1, p2 Point3d, style *Style) {
-	uc.parent.DrawLine(uc.transform(p1), uc.transform(p2), style)
+func (uc *unityCube) DrawLine(p1, p2 Point3d, lineStyle *Style, s string, textStyle *Style) {
+	uc.parent.DrawLine(uc.transform(p1), uc.transform(p2), lineStyle, s, textStyle)
 }
 
 func (uc *unityCube) DrawText(p Point3d, s string, orientation Orientation, style *Style) {
@@ -240,8 +240,8 @@ func (r RotCube) DrawTriangle(p1, p2, p3 Point3d, s1, s2 *Style) error {
 	return r.parent.DrawTriangle(r.matrix.MulPoint(p1), r.matrix.MulPoint(p2), r.matrix.MulPoint(p3), s1, s2)
 }
 
-func (r RotCube) DrawLine(p1, p2 Point3d, style *Style) {
-	r.parent.DrawLine(r.matrix.MulPoint(p1), r.matrix.MulPoint(p2), style)
+func (r RotCube) DrawLine(p1, p2 Point3d, lineStyle *Style, s string, textStyle *Style) {
+	r.parent.DrawLine(r.matrix.MulPoint(p1), r.matrix.MulPoint(p2), lineStyle, s, textStyle)
 }
 
 func (r RotCube) Bounds() (x, y, z Bounds) {
@@ -419,20 +419,31 @@ func (c *CanvasCube) DrawTriangle(p1, p2, p3 Point3d, s1, s2 *Style) error {
 }
 
 type line3d struct {
-	P1, P2 Point3d
-	Style  *Style
+	P1, P2    Point3d
+	LineStyle *Style
+	Str       string
+	TextStyle *Style
 }
 
 func (l line3d) DrawTo(cube *CanvasCube) error {
-	return cube.canvas.DrawPath(NewPath(false).Add(cube.To2d(l.P1)).Add(cube.To2d(l.P2)), l.Style)
+	p1 := cube.To2d(l.P1)
+	p2 := cube.To2d(l.P2)
+	if l.Str != "" {
+		o := orientationByDelta(p2.Sub(p1))
+		cube.canvas.DrawText(p2, l.Str, o, l.TextStyle, cube.canvas.Context().TextSize)
+	}
+	if l.LineStyle == nil {
+		return nil
+	}
+	return cube.canvas.DrawPath(NewPath(false).Add(p1).Add(p2), l.LineStyle)
 }
 
 func (l line3d) dist() float64 {
 	return (l.P1.Y + l.P2.Y) / 2
 }
 
-func (c *CanvasCube) DrawLine(p1, p2 Point3d, style *Style) {
-	c.objects = append(c.objects, line3d{p1, p2, style})
+func (c *CanvasCube) DrawLine(p1, p2 Point3d, lineStyle *Style, s string, textStyle *Style) {
+	c.objects = append(c.objects, line3d{p1, p2, lineStyle, s, textStyle})
 }
 
 type text3d struct {
@@ -481,66 +492,54 @@ func (p *Plot3d) DrawTo(canvas Canvas) (err error) {
 	cubeColor := Gray
 	textColor := cubeColor.SetFill(cubeColor)
 	if !p.HideCube {
-		rot.DrawLine(Point3d{100, 100, 100}, Point3d{100, -100, 100}, cubeColor)
-		rot.DrawLine(Point3d{100, 100, -100}, Point3d{100, -100, -100}, cubeColor)
-		rot.DrawLine(Point3d{-100, 100, 100}, Point3d{-100, -100, 100}, cubeColor)
-		rot.DrawLine(Point3d{-100, 100, -100}, Point3d{-100, -100, -100}, cubeColor)
+		rot.DrawLine(Point3d{100, 100, 100}, Point3d{100, -100, 100}, cubeColor, "", nil)
+		rot.DrawLine(Point3d{100, 100, -100}, Point3d{100, -100, -100}, cubeColor, "", nil)
+		rot.DrawLine(Point3d{-100, 100, 100}, Point3d{-100, -100, 100}, cubeColor, "", nil)
+		rot.DrawLine(Point3d{-100, 100, -100}, Point3d{-100, -100, -100}, cubeColor, "", nil)
 
-		rot.DrawLine(Point3d{100, 100, 100}, Point3d{-100, 100, 100}, cubeColor)
-		rot.DrawLine(Point3d{100, 100, -100}, Point3d{-100, 100, -100}, cubeColor)
-		rot.DrawLine(Point3d{100, -100, 100}, Point3d{-100, -100, 100}, cubeColor)
-		rot.DrawLine(Point3d{100, -100, -100}, Point3d{-100, -100, -100}, cubeColor)
+		rot.DrawLine(Point3d{100, 100, 100}, Point3d{-100, 100, 100}, cubeColor, "", nil)
+		rot.DrawLine(Point3d{100, 100, -100}, Point3d{-100, 100, -100}, cubeColor, "", nil)
+		rot.DrawLine(Point3d{100, -100, 100}, Point3d{-100, -100, 100}, cubeColor, "", nil)
+		rot.DrawLine(Point3d{100, -100, -100}, Point3d{-100, -100, -100}, cubeColor, "", nil)
 
-		rot.DrawLine(Point3d{100, 100, -100}, Point3d{100, 100, 100}, cubeColor)
-		rot.DrawLine(Point3d{-100, 100, -100}, Point3d{-100, 100, 100}, cubeColor)
-		rot.DrawLine(Point3d{100, -100, -100}, Point3d{100, -100, 100}, cubeColor)
-		rot.DrawLine(Point3d{-100, -100, -100}, Point3d{-100, -100, 100}, cubeColor)
+		rot.DrawLine(Point3d{100, 100, -100}, Point3d{100, 100, 100}, cubeColor, "", nil)
+		rot.DrawLine(Point3d{-100, 100, -100}, Point3d{-100, 100, 100}, cubeColor, "", nil)
+		rot.DrawLine(Point3d{100, -100, -100}, Point3d{100, -100, 100}, cubeColor, "", nil)
+		rot.DrawLine(Point3d{-100, -100, -100}, Point3d{-100, -100, 100}, cubeColor, "", nil)
 	}
 	cube := newUnityCube(rot, p.X.MakeValid(), p.Y.MakeValid(), p.Z.MakeValid())
-	facShortLabel := 1.02
-	facLongLabel := 1.04
-	facText := 1.1
+	const facShortLabel = 1.02
+	const facLongLabel = 1.04
+	const facText = 1.1
 	if !p.X.HideAxis {
 		for _, tick := range cube.ax.Ticks {
 			xp := cube.ax.Trans(tick.Position)
 			yp := -100.0
 			zp := -100.0
-			if tick.Label == "" {
-				rot.DrawLine(Point3d{xp, yp, zp}, Point3d{xp, yp * facShortLabel, zp * facShortLabel}, cubeColor)
-			} else {
-				rot.DrawLine(Point3d{xp, yp, zp}, Point3d{xp, yp * facLongLabel, zp * facLongLabel}, cubeColor)
-				rot.DrawText(Point3d{xp, yp * facText, zp * facText}, tick.Label, HCenter|VCenter, textColor)
-			}
+			rot.DrawLine(Point3d{xp, yp, zp}, Point3d{xp, yp * facLongLabel, zp * facLongLabel}, cubeColor, tick.Label, textColor)
 		}
-		rot.DrawText(Point3d{100 * facText, -100, -100}, checkEmpty(p.X.Label, "x"), HCenter|VCenter, textColor)
+		t := Point3d{100 * facText, -100, -100}
+		rot.DrawLine(Point3d{t.X, t.Y, t.Z}, Point3d{t.X, t.Y * facLongLabel, t.Z * facLongLabel}, nil, checkEmpty(p.X.Label, "x"), textColor)
 	}
 	if !p.Y.HideAxis {
 		for _, tick := range cube.ay.Ticks {
 			xp := -100.0
 			yp := cube.ay.Trans(tick.Position)
 			zp := -100.0
-			if tick.Label == "" {
-				rot.DrawLine(Point3d{xp, yp, zp}, Point3d{xp * facShortLabel, yp, zp * facShortLabel}, cubeColor)
-			} else {
-				rot.DrawLine(Point3d{xp, yp, zp}, Point3d{xp * facLongLabel, yp, zp * facLongLabel}, cubeColor)
-				rot.DrawText(Point3d{xp * facText, yp, zp * facText}, tick.Label, HCenter|VCenter, textColor)
-			}
+			rot.DrawLine(Point3d{xp, yp, zp}, Point3d{xp * facShortLabel, yp, zp * facShortLabel}, cubeColor, tick.Label, textColor)
 		}
-		rot.DrawText(Point3d{-100, 100 * facText, -100}, checkEmpty(p.Y.Label, "y"), HCenter|VCenter, textColor)
+		t := Point3d{-100, 100 * facText, -100}
+		rot.DrawLine(Point3d{t.X, t.Y, t.Z}, Point3d{t.X * facLongLabel, t.Y, t.Z * facLongLabel}, nil, checkEmpty(p.Y.Label, "y"), textColor)
 	}
 	if !p.Z.HideAxis {
 		for _, tick := range cube.az.Ticks {
 			xp := -100.0
 			yp := -100.0
 			zp := cube.az.Trans(tick.Position)
-			if tick.Label == "" {
-				rot.DrawLine(Point3d{xp, yp, zp}, Point3d{xp * facShortLabel, yp * facShortLabel, zp}, cubeColor)
-			} else {
-				rot.DrawLine(Point3d{xp, yp, zp}, Point3d{xp * facLongLabel, yp * facLongLabel, zp}, cubeColor)
-				rot.DrawText(Point3d{xp * facText, yp * facText, zp}, tick.Label, HCenter|VCenter, textColor)
-			}
+			rot.DrawLine(Point3d{xp, yp, zp}, Point3d{xp * facShortLabel, yp * facShortLabel, zp}, cubeColor, tick.Label, textColor)
 		}
-		rot.DrawText(Point3d{-100, -100, 100 * facText}, checkEmpty(p.Z.Label, "z"), HCenter|VCenter, textColor)
+		t := Point3d{-100, -100, 100 * facText}
+		rot.DrawLine(Point3d{t.X, t.Y, t.Z}, Point3d{t.X * facLongLabel, t.Y * facLongLabel, t.Z}, nil, checkEmpty(p.Z.Label, "z"), textColor)
 	}
 	for _, c := range p.Contents {
 		err := c.DrawTo(p, cube)
