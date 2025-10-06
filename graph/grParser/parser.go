@@ -366,14 +366,14 @@ func createPlot3dMethods() value.MethodMap {
 				return plot, nil
 			}
 			return Plot3dValue{}, fmt.Errorf("size requires a float value")
-		}).SetMethodDescription("size", "Sets the size of the cube. Default is 1."),
+		}).SetMethodDescription("size", "Sets the size of the cube in the 3d plot. Default is 1."),
 		"perspective": value.MethodAtType(1, func(plot Plot3dValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
-			if size, ok := stack.Get(1).ToFloat(); ok {
-				plot.Value.Perspective = size
+			if p, ok := stack.Get(1).ToFloat(); ok {
+				plot.Value.Perspective = p
 				return plot, nil
 			}
-			return Plot3dValue{}, fmt.Errorf("size requires a float value")
-		}).SetMethodDescription("size", "Sets the size of the cube. Default is 1."),
+			return Plot3dValue{}, fmt.Errorf("perspective requires a float value")
+		}).SetMethodDescription("perspective", "Sets the perspective of the 3d plot. Default is 1."),
 		"labels": value.MethodAtType(3, func(plot Plot3dValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if xStr, ok := stack.Get(1).(value.String); ok {
 				if yStr, ok := stack.Get(2).(value.String); ok {
