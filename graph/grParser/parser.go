@@ -345,6 +345,10 @@ func createStyleMethods() value.MethodMap {
 
 func createPlot3dMethods() value.MethodMap {
 	return value.MethodMap{
+		"add": value.MethodAtType(1, func(plot Plot3dValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			err := plot.Add(stack.Get(1))
+			return plot, err
+		}).SetMethodDescription("plotContent", "Adds a plot content to the plot."),
 		"angles": value.MethodAtType(3, func(plot Plot3dValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if alpha, ok := stack.Get(1).ToFloat(); ok {
 				if beta, ok := stack.Get(2).ToFloat(); ok {
@@ -453,13 +457,9 @@ var GridStyle = graph.Gray.SetDash(5, 5).SetStrokeWidth(1)
 func createPlotMethods() value.MethodMap {
 	return value.MethodMap{
 		"add": value.MethodAtType(1, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
-			if pc, ok := stack.Get(1).(PlotContentValue); ok {
-				plot = plot.Copy()
-				plot.Value.AddContent(pc.Value)
-			} else {
-				return nil, fmt.Errorf("add requires a plot content")
-			}
-			return plot, nil
+			plot = plot.Copy()
+			err := plot.Add(stack.Get(1))
+			return plot, err
 		}).SetMethodDescription("plotContent", "Adds a plot content to the plot."),
 		"addAtTop": value.MethodAtType(1, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if pc, ok := stack.Get(1).(PlotContentValue); ok {
@@ -1349,7 +1349,7 @@ func Setup(fg *value.FunctionGenerator) {
 		},
 		Args:   -1,
 		IsPure: true,
-	}.SetDescription("content...", "Creates a new plot."))
+	}.SetDescription("content...", "Creates a new 3d plot."))
 	fg.AddStaticFunction("graph", funcGen.Function[value.Value]{
 		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
 			steps := 0
