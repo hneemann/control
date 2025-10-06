@@ -1545,15 +1545,22 @@ func Setup(fg *value.FunctionGenerator) {
 						} else {
 							return nil, fmt.Errorf("arrow requires an int as fifth argument")
 						}
+
+						if mode, ok := st.GetOptional(5, value.Int(1)).ToInt(); ok {
+							arrow.Mode = mode
+						} else {
+							return nil, fmt.Errorf("arrow requires an int as fifth argument")
+						}
+
 						return Plot3dContentValue{Holder: Holder[graph.Plot3dContent]{arrow}}, nil
 					}
 				}
 			}
 			return nil, fmt.Errorf("arrow requires four floats and a string")
 		},
-		Args:   5,
+		Args:   6,
 		IsPure: true,
-	}.SetDescription("v1", "v2", "text", "marker", "color", "Creates an arrow plot3d content.").VarArgs(3, 5))
+	}.SetDescription("v1", "v2", "text", "color", "plane", "mode", "Creates an arrow plot3d content.").VarArgs(3, 6))
 	fg.AddStaticFunction("splitHorizontal", funcGen.Function[value.Value]{
 		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
 			if st.Size() < 2 {
@@ -1620,7 +1627,18 @@ func Setup(fg *value.FunctionGenerator) {
 		"A list can be used to create the content by calling the data-Method."))
 	fg.ReplaceOp("*", true, true, createMul).
 		ReplaceOp("-", false, true, createSub).
-		ReplaceOp("+", false, true, createAdd)
+		ReplaceOp("+", false, true, createAdd).
+		ReplaceUnary("-", createNeg)
+
+}
+
+func createNeg(orig funcGen.UnaryOperatorImpl[value.Value]) funcGen.UnaryOperatorImpl[value.Value] {
+	return func(a value.Value) (value.Value, error) {
+		if aa, ok := a.(graph.Vector3d); ok {
+			return aa.Neg(), nil
+		}
+		return orig(a)
+	}
 }
 
 func TypeOperationCommutative[T value.Value](

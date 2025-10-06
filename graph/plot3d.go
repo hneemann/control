@@ -104,6 +104,10 @@ func (v Vector3d) Zero() bool {
 	return v.X == 0 && v.Y == 0 && v.Z == 0
 }
 
+func (v Vector3d) Neg() value.Value {
+	return Vector3d{-v.X, -v.Y, -v.Z}
+}
+
 type PathElement3d struct {
 	Mode rune
 	Vector3d
@@ -175,8 +179,8 @@ func (l LinePath3d) IsClosed() bool {
 type Cube interface {
 	DrawPath(Path3d, *Style) error
 	DrawTriangle(Vector3d, Vector3d, Vector3d, *Style, *Style) error
-	DrawLine(Vector3d, Vector3d, *Style, string, *Style)
-	DrawText(Vector3d, string, Orientation, *Style)
+	DrawLine(Vector3d, Vector3d, *Style)
+	DrawText(Vector3d, Vector3d, string, *Style)
 	Bounds() (x, y, z Bounds)
 }
 
@@ -270,12 +274,12 @@ func (uc *unityCube) DrawTriangle(p1, p2, p3 Vector3d, s1, s2 *Style) error {
 	return uc.parent.DrawTriangle(uc.transform(p1), uc.transform(p2), uc.transform(p3), s1, s2)
 }
 
-func (uc *unityCube) DrawLine(p1, p2 Vector3d, lineStyle *Style, s string, textStyle *Style) {
-	uc.parent.DrawLine(uc.transform(p1), uc.transform(p2), lineStyle, s, textStyle)
+func (uc *unityCube) DrawLine(p1, p2 Vector3d, lineStyle *Style) {
+	uc.parent.DrawLine(uc.transform(p1), uc.transform(p2), lineStyle)
 }
 
-func (uc *unityCube) DrawText(p Vector3d, s string, orientation Orientation, style *Style) {
-	uc.parent.DrawText(uc.transform(p), s, orientation, style)
+func (uc *unityCube) DrawText(p, d Vector3d, s string, style *Style) {
+	uc.parent.DrawText(uc.transform(p), uc.transform(d), s, style)
 }
 
 func (uc *unityCube) Bounds() (x, y, z Bounds) {
@@ -298,16 +302,16 @@ func (r RotCube) DrawPath(p Path3d, style *Style) error {
 	return r.parent.DrawPath(&rotPath3d{p, r}, style)
 }
 
-func (r RotCube) DrawText(p Vector3d, s string, orientation Orientation, style *Style) {
-	r.parent.DrawText(r.matrix.MulPoint(p), s, orientation, style)
+func (r RotCube) DrawText(p, d Vector3d, s string, style *Style) {
+	r.parent.DrawText(r.matrix.MulPoint(p), r.matrix.MulPoint(d), s, style)
 }
 
 func (r RotCube) DrawTriangle(p1, p2, p3 Vector3d, s1, s2 *Style) error {
 	return r.parent.DrawTriangle(r.matrix.MulPoint(p1), r.matrix.MulPoint(p2), r.matrix.MulPoint(p3), s1, s2)
 }
 
-func (r RotCube) DrawLine(p1, p2 Vector3d, lineStyle *Style, s string, textStyle *Style) {
-	r.parent.DrawLine(r.matrix.MulPoint(p1), r.matrix.MulPoint(p2), lineStyle, s, textStyle)
+func (r RotCube) DrawLine(p1, p2 Vector3d, lineStyle *Style) {
+	r.parent.DrawLine(r.matrix.MulPoint(p1), r.matrix.MulPoint(p2), lineStyle)
 }
 
 func (r RotCube) Bounds() (x, y, z Bounds) {
@@ -487,20 +491,11 @@ func (c *CanvasCube) DrawTriangle(p1, p2, p3 Vector3d, s1, s2 *Style) error {
 type line3d struct {
 	P1, P2    Vector3d
 	LineStyle *Style
-	Str       string
-	TextStyle *Style
 }
 
 func (l line3d) DrawTo(cube *CanvasCube) error {
 	p1 := cube.To2d(l.P1)
 	p2 := cube.To2d(l.P2)
-	if l.Str != "" {
-		o := orientationByDelta(p2.Sub(p1))
-		cube.canvas.DrawText(p2, l.Str, o, l.TextStyle, cube.canvas.Context().TextSize)
-	}
-	if l.LineStyle == nil {
-		return nil
-	}
 	return cube.canvas.DrawPath(NewPath(false).Add(p1).Add(p2), l.LineStyle)
 }
 
@@ -508,19 +503,21 @@ func (l line3d) dist() float64 {
 	return (l.P1.Y + l.P2.Y) / 2
 }
 
-func (c *CanvasCube) DrawLine(p1, p2 Vector3d, lineStyle *Style, s string, textStyle *Style) {
-	c.objects = append(c.objects, line3d{p1, p2, lineStyle, s, textStyle})
+func (c *CanvasCube) DrawLine(p1, p2 Vector3d, lineStyle *Style) {
+	c.objects = append(c.objects, line3d{p1, p2, lineStyle})
 }
 
 type text3d struct {
-	p           Vector3d
-	s           string
-	orientation Orientation
-	style       *Style
+	p, d  Vector3d
+	s     string
+	style *Style
 }
 
 func (t text3d) DrawTo(cube *CanvasCube) error {
-	cube.canvas.DrawText(cube.To2d(t.p), t.s, t.orientation, t.style, cube.canvas.Context().TextSize)
+	p1 := cube.To2d(t.p)
+	p2 := cube.To2d(t.d)
+	o := orientationByDelta(p2.Sub(p1))
+	cube.canvas.DrawText(p2, t.s, o, t.style, cube.canvas.Context().TextSize)
 	return nil
 }
 
@@ -528,8 +525,8 @@ func (t text3d) dist() float64 {
 	return t.p.Y
 }
 
-func (c *CanvasCube) DrawText(p Vector3d, s string, orientation Orientation, style *Style) {
-	c.objects = append(c.objects, text3d{p, s, orientation, style})
+func (c *CanvasCube) DrawText(p, d Vector3d, s string, style *Style) {
+	c.objects = append(c.objects, text3d{p, d, s, style})
 }
 
 func (c *CanvasCube) Bounds() (x, y, z Bounds) {
@@ -556,7 +553,7 @@ func (p *Plot3d) DrawTo(canvas Canvas) (err error) {
 	rot := NewRotCube(canvasCube, p.alpha, p.beta, p.gamma)
 
 	cubeColor := Gray
-	textColor := cubeColor.SetFill(cubeColor)
+	textColor := cubeColor.Text()
 	if !p.HideCube {
 		DrawLongLine(rot, Vector3d{100, 100, 100}, Vector3d{100, -100, 100}, cubeColor)
 		DrawLongLine(rot, Vector3d{100, 100, -100}, Vector3d{100, -100, -100}, cubeColor)
@@ -582,30 +579,33 @@ func (p *Plot3d) DrawTo(canvas Canvas) (err error) {
 			xp := cube.ax.Trans(tick.Position)
 			yp := -100.0
 			zp := -100.0
-			rot.DrawLine(Vector3d{xp, yp, zp}, Vector3d{xp, yp * facLongLabel, zp}, cubeColor, tick.Label, textColor)
+			rot.DrawLine(Vector3d{xp, yp, zp}, Vector3d{xp, yp * facLongLabel, zp}, cubeColor)
+			rot.DrawText(Vector3d{xp, yp, zp}, Vector3d{xp, yp * facLongLabel, zp}, tick.Label, textColor)
 		}
 		t := Vector3d{100 * facText, -100, -100}
-		rot.DrawLine(Vector3d{t.X, t.Y, t.Z}, Vector3d{t.X, t.Y * facLongLabel, t.Z}, nil, checkEmpty(p.X.Label, "x"), textColor)
+		rot.DrawText(Vector3d{t.X, t.Y, t.Z}, Vector3d{t.X, t.Y * facLongLabel, t.Z}, checkEmpty(p.X.Label, "x"), textColor)
 	}
 	if !p.Y.HideAxis {
 		for _, tick := range cube.ay.Ticks {
 			xp := -100.0
 			yp := cube.ay.Trans(tick.Position)
 			zp := -100.0
-			rot.DrawLine(Vector3d{xp, yp, zp}, Vector3d{xp * facShortLabel, yp, zp}, cubeColor, tick.Label, textColor)
+			rot.DrawLine(Vector3d{xp, yp, zp}, Vector3d{xp * facShortLabel, yp, zp}, cubeColor)
+			rot.DrawText(Vector3d{xp, yp, zp}, Vector3d{xp * facShortLabel, yp, zp}, tick.Label, textColor)
 		}
 		t := Vector3d{-100, 100 * facText, -100}
-		rot.DrawLine(Vector3d{t.X, t.Y, t.Z}, Vector3d{t.X * facLongLabel, t.Y, t.Z}, nil, checkEmpty(p.Y.Label, "y"), textColor)
+		rot.DrawText(Vector3d{t.X, t.Y, t.Z}, Vector3d{t.X * facLongLabel, t.Y, t.Z}, checkEmpty(p.Y.Label, "y"), textColor)
 	}
 	if !p.Z.HideAxis {
 		for _, tick := range cube.az.Ticks {
 			xp := -100.0
 			yp := -100.0
 			zp := cube.az.Trans(tick.Position)
-			rot.DrawLine(Vector3d{xp, yp, zp}, Vector3d{xp * facShortLabel, yp * facShortLabel, zp}, cubeColor, tick.Label, textColor)
+			rot.DrawLine(Vector3d{xp, yp, zp}, Vector3d{xp * facShortLabel, yp * facShortLabel, zp}, cubeColor)
+			rot.DrawText(Vector3d{xp, yp, zp}, Vector3d{xp * facShortLabel, yp * facShortLabel, zp}, tick.Label, textColor)
 		}
 		t := Vector3d{-100, -100, 100 * facText}
-		rot.DrawLine(Vector3d{t.X, t.Y, t.Z}, Vector3d{t.X * facLongLabel, t.Y * facLongLabel, t.Z}, nil, checkEmpty(p.Z.Label, "z"), textColor)
+		rot.DrawText(Vector3d{t.X, t.Y, t.Z}, Vector3d{t.X * facLongLabel, t.Y * facLongLabel, t.Z}, checkEmpty(p.Z.Label, "z"), textColor)
 	}
 	for _, c := range p.Contents {
 		err := c.DrawTo(p, cube)
@@ -624,7 +624,7 @@ func DrawLongLine(rot Cube, p1 Vector3d, p2 Vector3d, style *Style) {
 	d := p2.Sub(p1).Mul(1 / float64(n))
 	for i := 0; i < n; i++ {
 		p2 := p1.Add(d)
-		rot.DrawLine(p1, p2, style, "", nil)
+		rot.DrawLine(p1, p2, style)
 		p1 = p2
 	}
 }
@@ -892,30 +892,37 @@ type Arrow3d struct {
 	Plane    Vector3d
 	Style    *Style
 	Label    string
+	Mode     int
 }
 
 func (a Arrow3d) DrawTo(_ *Plot3d, cube Cube) error {
-	cube.DrawLine(a.From, a.To, a.Style, "", nil)
+	cube.DrawLine(a.From, a.To, a.Style)
 
 	const len = 0.2
-	d := a.To.Sub(a.From)
-	if d.Abs() > len {
-		d = d.Normalize()
-		plane := a.Plane
-		if plane.Zero() {
-			if d.X == 0 {
-				plane = Vector3d{0, 1, 0}
-			} else {
-				plane = Vector3d{-d.Y / d.X, 1, 0}.Normalize()
-			}
-		} else {
-			plane = d.Cross(plane).Normalize()
-		}
+	dist := a.To.Sub(a.From)
 
+	d := dist.Normalize()
+	plane := a.Plane
+	if plane.Zero() {
+		if d.X == 0 {
+			plane = Vector3d{0, 1, 0}
+		} else {
+			plane = Vector3d{-d.Y / d.X, 1, 0}.Normalize()
+		}
+	} else {
+		plane = d.Cross(plane).Normalize()
+	}
+
+	if d.Abs() > len {
 		d = d.Mul(len)
 		plane = plane.Mul(len / 2)
-		cube.DrawLine(a.To, a.To.Sub(d).Add(plane), a.Style, "", nil)
-		cube.DrawLine(a.To, a.To.Sub(d).Sub(plane), a.Style, "", nil)
+		cube.DrawLine(a.To, a.To.Sub(d).Add(plane), a.Style)
+		cube.DrawLine(a.To, a.To.Sub(d).Sub(plane), a.Style)
+	}
+	if a.Label != "" {
+		t1 := dist.Cross(plane).Normalize().Mul(len / 2)
+		p1 := a.To.Add(a.From).Mul(0.5)
+		cube.DrawText(p1, p1.Add(t1), a.Label, a.Style.Text())
 	}
 
 	return nil
