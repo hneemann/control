@@ -1626,6 +1626,7 @@ func Setup(fg *value.FunctionGenerator) {
 	}.SetDescription("data...", "Creates a dataSet which can be used to create dat or csv files. "+
 		"A list can be used to create the content by calling the data-Method."))
 	fg.ReplaceOp("*", true, true, createMul).
+		ReplaceOp("/", false, true, createDiv).
 		ReplaceOp("-", false, true, createSub).
 		ReplaceOp("+", false, true, createAdd).
 		ReplaceUnary("-", createNeg)
@@ -1722,6 +1723,23 @@ func createSub(old funcGen.OperatorImpl[value.Value]) funcGen.OperatorImpl[value
 		return nil, fmt.Errorf("vector sub requires a vector value")
 	}, func(a value.Value, b graph.Vector3d) (value.Value, error) {
 		return nil, fmt.Errorf("vector sub requires a vector value")
+	})
+	return vec
+}
+
+func createDiv(old funcGen.OperatorImpl[value.Value]) funcGen.OperatorImpl[value.Value] {
+	vec := TypeOperation(old, func(a, b graph.Vector3d) (value.Value, error) {
+		return nil, fmt.Errorf("vector div requires a vector and a float value")
+	}, func(a graph.Vector3d, b value.Value) (value.Value, error) {
+		if f, ok := b.ToFloat(); ok {
+			if f == 0 {
+				return nil, fmt.Errorf("division by zero")
+			}
+			return a.Mul(1 / f), nil
+		}
+		return nil, fmt.Errorf("vector div requires a vector and a float value")
+	}, func(a value.Value, b graph.Vector3d) (value.Value, error) {
+		return nil, fmt.Errorf("vector div requires a vector and a float value")
 	})
 	return vec
 }

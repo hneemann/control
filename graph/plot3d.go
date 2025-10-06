@@ -913,14 +913,14 @@ func (a Arrow3d) DrawTo(_ *Plot3d, cube Cube) error {
 		plane = d.Cross(plane).Normalize()
 	}
 
-	if d.Abs() > len {
-		d = d.Mul(len)
-		plane = plane.Mul(len / 2)
+	if dist.Abs() > len {
+		d := d.Mul(len)
+		plane := plane.Mul(len / 3)
 		cube.DrawLine(a.To, a.To.Sub(d).Add(plane), a.Style)
 		cube.DrawLine(a.To, a.To.Sub(d).Sub(plane), a.Style)
 	}
 	if a.Label != "" {
-		t1 := dist.Cross(plane).Normalize().Mul(len / 2)
+		t1 := dist.Cross(plane).Normalize().Mul(len / 3)
 		p1 := a.To.Add(a.From).Mul(0.5)
 		cube.DrawText(p1, p1.Add(t1), a.Label, a.Style.Text())
 	}
