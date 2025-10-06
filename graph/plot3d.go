@@ -389,19 +389,19 @@ type Object interface {
 	dist() float64
 }
 
-type Triangle3d struct {
-	P1, P2, P3     Vector3d
-	Style1, Style2 *Style
+type triangle3d struct {
+	p1, p2, p3     Vector3d
+	style1, style2 *Style
 }
 
-func (d Triangle3d) DrawTo(cube *CanvasCube) error {
-	s := d.Style1
-	if d.Style2 != nil {
+func (d triangle3d) DrawTo(cube *CanvasCube) error {
+	s := d.style1
+	if d.style2 != nil {
 		a := math.Abs(d.lightAngle())
-		c1 := shade(d.Style1, d.Style2, a)
+		c1 := shade(d.style1, d.style2, a)
 		s = &c1
 	}
-	return cube.canvas.DrawPath(cPath{p: NewPath3d(true).Add(d.P1).Add(d.P2).Add(d.P3), cc: cube}, s)
+	return cube.canvas.DrawPath(cPath{p: NewPath3d(true).Add(d.p1).Add(d.p2).Add(d.p3), cc: cube}, s)
 }
 
 func shade(s1, s2 *Style, a float64) Style {
@@ -416,12 +416,12 @@ func shade(s1, s2 *Style, a float64) Style {
 	return s
 }
 
-func (d Triangle3d) dist() float64 {
-	return (d.P1.Y + d.P2.Y + d.P3.Y) / 3
+func (d triangle3d) dist() float64 {
+	return (d.p1.Y + d.p2.Y + d.p3.Y) / 3
 }
 
-func (d Triangle3d) lightAngle() float64 {
-	n := d.P2.Sub(d.P1).Cross(d.P3.Sub(d.P1)).Normalize()
+func (d triangle3d) lightAngle() float64 {
+	n := d.p2.Sub(d.p1).Cross(d.p3.Sub(d.p1)).Normalize()
 	lightDir := Vector3d{X: 1, Y: 1, Z: 1}.Normalize()
 	return n.Scalar(lightDir)
 }
@@ -484,23 +484,23 @@ func (c *CanvasCube) DrawPath(p Path3d, style *Style) error {
 }
 
 func (c *CanvasCube) DrawTriangle(p1, p2, p3 Vector3d, s1, s2 *Style) error {
-	c.objects = append(c.objects, Triangle3d{p1, p2, p3, s1, s2})
+	c.objects = append(c.objects, triangle3d{p1, p2, p3, s1, s2})
 	return nil
 }
 
 type line3d struct {
-	P1, P2    Vector3d
-	LineStyle *Style
+	p1, p2 Vector3d
+	style  *Style
 }
 
 func (l line3d) DrawTo(cube *CanvasCube) error {
-	p1 := cube.To2d(l.P1)
-	p2 := cube.To2d(l.P2)
-	return cube.canvas.DrawPath(NewPath(false).Add(p1).Add(p2), l.LineStyle)
+	p1 := cube.To2d(l.p1)
+	p2 := cube.To2d(l.p2)
+	return cube.canvas.DrawPath(NewPath(false).Add(p1).Add(p2), l.style)
 }
 
 func (l line3d) dist() float64 {
-	return (l.P1.Y + l.P2.Y) / 2
+	return (l.p1.Y + l.p2.Y) / 2
 }
 
 func (c *CanvasCube) DrawLine(p1, p2 Vector3d, lineStyle *Style) {
