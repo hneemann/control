@@ -192,7 +192,7 @@ let ges=tpCascade(
 let beta =gui.slider("#beta" ,0.2,-pi,pi);
 
 func sor(u,v)
-  [u*sin(v),u*cos(v),u^2];
+  vec(u*sin(v),u*cos(v),u^2);
 
 plot3d(
   sor.solid3d()
