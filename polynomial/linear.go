@@ -1031,6 +1031,11 @@ func (b *BodePlot) Add(bpc BodePlotContent) {
 	b.phase.AddContent(bodePhase{&bpc})
 }
 
+func (b *BodePlot) ToLaTeX() {
+	b.amplitude.X.Label = "$\\omega$ [rad/s]"
+	b.phase.X.Label = "$\\omega$ [rad/s]"
+}
+
 func (bpc *BodePlotContent) generate(wMin, wMax float64) {
 	if bpc.wMin != wMin || bpc.wMax != wMax {
 		bpc.wMin = wMin

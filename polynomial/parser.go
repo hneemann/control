@@ -753,6 +753,10 @@ func bodeMethods() value.MethodMap {
 		"phase": value.MethodAtType(0, func(bode BodePlotValue, st funcGen.Stack[value.Value]) (value.Value, error) {
 			return grParser.NewPlotValue(bode.Value.phase), nil
 		}).SetMethodDescription("Returns the phase plot."),
+		"LaTeX": value.MethodAtType(0, func(bode BodePlotValue, st funcGen.Stack[value.Value]) (value.Value, error) {
+			bode.Value.ToLaTeX()
+			return bode, nil
+		}).SetMethodDescription("Replaces labels with LaTeX code."),
 	}
 }
 
