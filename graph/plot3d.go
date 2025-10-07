@@ -56,11 +56,11 @@ func (v Vector3d) Sub(p2 Vector3d) Vector3d {
 	}
 }
 
-func (v Vector3d) Cross(p2 Vector3d) Vector3d {
+func (v Vector3d) Cross(p Vector3d) Vector3d {
 	return Vector3d{
-		X: v.Y*p2.Z - v.Z*p2.Y,
-		Y: v.Z*p2.X - v.X*p2.Z,
-		Z: v.X*p2.Y - v.Y*p2.X,
+		X: v.Y*p.Z - v.Z*p.Y,
+		Y: v.Z*p.X - v.X*p.Z,
+		Z: v.X*p.Y - v.Y*p.X,
 	}
 }
 
