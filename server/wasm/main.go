@@ -7,6 +7,7 @@ import (
 	"github.com/hneemann/parser2/funcGen"
 	"github.com/hneemann/parser2/value"
 	"github.com/hneemann/parser2/value/export"
+	"html"
 	"html/template"
 	"syscall/js"
 )
@@ -46,7 +47,7 @@ func parserWrapper() js.Func {
 		}
 
 		if err != nil {
-			return "<pre>" + err.Error() + "</pre>"
+			return "<pre>" + html.EscapeString(err.Error()) + "</pre>"
 		}
 
 		return string(expHtml)
