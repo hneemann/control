@@ -1245,7 +1245,7 @@ func guiMethods() value.MethodMap {
 
 func plot3dMethods() value.MethodMap {
 	return value.MethodMap{
-		"addRotation": value.MethodAtType(1, func(plot3d grParser.Plot3dValue, st funcGen.Stack[value.Value]) (value.Value, error) {
+		"addSliderTo": value.MethodAtType(1, func(plot3d grParser.Plot3dValue, st funcGen.Stack[value.Value]) (value.Value, error) {
 			if gui, ok := st.Get(1).(*GuiElements); ok {
 				alphaVal := gui.newSlider("\u237a", 0.3, -math.Pi, math.Pi)
 				betaVal := gui.newSlider("\u03B2", 0.3, -math.Pi, math.Pi)
