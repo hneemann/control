@@ -185,6 +185,16 @@ func createPlot3dContentMethods() value.MethodMap {
 			}
 			return pc, nil
 		}).Pure(false).SetMethodDescription("color1", "color2", "Sets the color.").VarArgsMethod(1, 2),
+		"title": value.MethodAtType(1, func(pc Plot3dContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			if str, ok := stack.Get(1).(value.String); ok {
+				if ts, ok := pc.Value.(graph.TitleSetter); ok {
+					ts.SetTitle(string(str))
+					return pc, nil
+				}
+				return nil, fmt.Errorf("plot content does not support a title")
+			}
+			return nil, fmt.Errorf("title requires a string")
+		}).Pure(false).SetMethodDescription("title", "Sets the title of the 3d plot content."),
 	}
 }
 

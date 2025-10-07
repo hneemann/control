@@ -197,6 +197,10 @@ type VBoundsSetter interface {
 	SetVBounds(bounds Bounds) Plot3dContent
 }
 
+type TitleSetter interface {
+	SetTitle(title string) Plot3dContent
+}
+
 type Plot3d struct {
 	X, Y, Z     AxisDescription
 	Contents    []Plot3dContent
@@ -607,11 +611,21 @@ func (p *Plot3d) DrawTo(canvas Canvas) (err error) {
 		t := Vector3d{-100, -100, 100 * facText}
 		rot.DrawText(Vector3d{t.X, t.Y, t.Z}, Vector3d{t.X * facLongLabel, t.Y * facLongLabel, t.Z}, checkEmpty(p.Z.Label, "z"), textColor)
 	}
+	textSize := canvas.Context().TextSize
+	ypos := canvas.Rect().Max.Y - textSize
 	for _, c := range p.Contents {
 		err := c.DrawTo(p, cube)
 		if err != nil {
 			return err
 		}
+
+		leg := c.Legend()
+		if leg.Name != "" {
+			canvas.DrawText(Point{X: textSize * 2, Y: ypos}, leg.Name, Left|VCenter, textColor, textSize)
+			canvas.DrawPath(PointsFromSlice(Point{X: 0, Y: ypos}, Point{X: textSize * 2, Y: ypos}), leg.ShapeLineStyle.LineStyle)
+			ypos -= textSize * 1.5
+		}
+
 	}
 
 	return canvasCube.DrawObjects()
@@ -657,7 +671,7 @@ type Graph3d struct {
 	Style     *Style
 	Steps     int
 	StepsHigh int
-	Name      string
+	Title     string
 }
 
 func (g *Graph3d) SetUBounds(bounds Bounds) Plot3dContent {
@@ -672,6 +686,11 @@ func (g *Graph3d) SetVBounds(bounds Bounds) Plot3dContent {
 
 func (g *Graph3d) SetStyle(s *Style) Plot3dContent {
 	g.Style = s
+	return g
+}
+
+func (g *Graph3d) SetTitle(s string) Plot3dContent {
+	g.Title = s
 	return g
 }
 
@@ -732,7 +751,7 @@ func (g *Graph3d) DrawTo(_ *Plot3d, cube Cube) error {
 }
 
 func (g *Graph3d) Legend() Legend {
-	return Legend{Name: g.Name, ShapeLineStyle: ShapeLineStyle{LineStyle: g.Style}}
+	return Legend{Name: g.Title, ShapeLineStyle: ShapeLineStyle{LineStyle: g.Style}}
 }
 
 type Solid3d struct {
@@ -743,13 +762,18 @@ type Solid3d struct {
 	Style2 *Style
 	USteps int
 	VSteps int
-	Name   string
+	Title  string
 }
 
 var _ SecondaryStyle = (*Solid3d)(nil)
 
 func (g *Solid3d) SetStyle(s *Style) Plot3dContent {
 	g.Style1 = s
+	return g
+}
+
+func (g *Solid3d) SetTitle(s string) Plot3dContent {
+	g.Title = s
 	return g
 }
 
@@ -830,7 +854,7 @@ func (g *Solid3d) DrawTo(_ *Plot3d, cube Cube) (err error) {
 }
 
 func (g *Solid3d) Legend() Legend {
-	return Legend{Name: g.Name, ShapeLineStyle: ShapeLineStyle{LineStyle: g.Style1}}
+	return Legend{Name: g.Title, ShapeLineStyle: ShapeLineStyle{LineStyle: g.Style1}}
 }
 
 type Line3d struct {
@@ -838,7 +862,7 @@ type Line3d struct {
 	U     Bounds
 	Style *Style
 	Steps int
-	Name  string
+	Title string
 }
 
 func (g *Line3d) SetUBounds(bounds Bounds) Plot3dContent {
@@ -848,6 +872,10 @@ func (g *Line3d) SetUBounds(bounds Bounds) Plot3dContent {
 
 func (g *Line3d) SetStyle(s *Style) Plot3dContent {
 	g.Style = s
+	return g
+}
+func (g *Line3d) SetTitle(s string) Plot3dContent {
+	g.Title = s
 	return g
 }
 
@@ -884,7 +912,7 @@ func (g *Line3d) DrawTo(_ *Plot3d, cube Cube) error {
 }
 
 func (g *Line3d) Legend() Legend {
-	return Legend{Name: g.Name, ShapeLineStyle: ShapeLineStyle{LineStyle: g.Style}}
+	return Legend{Name: g.Title, ShapeLineStyle: ShapeLineStyle{LineStyle: g.Style}}
 }
 
 type Arrow3d struct {
