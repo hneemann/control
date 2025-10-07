@@ -1243,6 +1243,24 @@ func guiMethods() value.MethodMap {
 	}
 }
 
+func plot3dMethods() value.MethodMap {
+	return value.MethodMap{
+		"addRotation": value.MethodAtType(1, func(plot3d grParser.Plot3dValue, st funcGen.Stack[value.Value]) (value.Value, error) {
+			if gui, ok := st.Get(1).(*GuiElements); ok {
+				alphaVal := gui.newSlider("\u237a", 0.3, -math.Pi, math.Pi)
+				betaVal := gui.newSlider("\u03B2", 0.3, -math.Pi, math.Pi)
+
+				alpha, _ := alphaVal.ToFloat()
+				beta, _ := betaVal.ToFloat()
+				plot3d.Value.SetAngle(alpha, beta, 0)
+
+				return plot3d, nil
+			}
+			return nil, fmt.Errorf("addTo requires a gui element as argument")
+		}).SetMethodDescription("gui", "Adds gui elements to the 3d-plot to rotate the plot.").Pure(false),
+	}
+}
+
 var ParserFunctionGenerator *value.FunctionGenerator
 
 var Parser = value.New().
@@ -1269,6 +1287,7 @@ var Parser = value.New().
 	RegisterMethods(TwoPortValueType, twoPortMethods()).
 	RegisterMethods(GuiElementsType, guiMethods()).
 	Modify(grParser.Setup).
+	RegisterMethods(grParser.Plot3dType, plot3dMethods()).
 	AddConstant("_i", Complex(complex(0, 1))).
 	AddConstant("s", Polynomial{0, 1}).
 	AddStaticFunction("exp", funcGen.Function[value.Value]{
