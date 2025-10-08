@@ -1551,7 +1551,7 @@ func Setup(fg *value.FunctionGenerator) {
 						arrow.Style = styleVal.Value
 
 						if plane, ok := st.GetOptional(4, graph.Vector3d{}).(graph.Vector3d); ok {
-							arrow.Plane = plane
+							arrow.PlaneDefVec = plane
 						} else {
 							return nil, fmt.Errorf("arrow requires an int as fifth argument")
 						}
@@ -1571,10 +1571,10 @@ func Setup(fg *value.FunctionGenerator) {
 		Args:   6,
 		IsPure: true,
 	}.SetDescription("v1", "v2", "text", "color", "plane", "mode", "Creates an arrow plot3d content. "+
-		"If no plane is given, the two reverse tips of the arrow head have the same z-value. "+
-		"If a plane is given, the given plane vector is used to create the normal vector of the plane defined by "+
-		"the tips of the arrow head and the two reverse tips. "+
-		"The mode flag defines which arrow heads to draw: 0: none, 1: at the tip (default), 2: at the tail, 3: at both ends.").VarArgs(3, 6))
+		"If no plane vector is given, the arrow is oriented so that two reverse tips of the arrow head have the same z-value. "+
+		"If a plane vector is given, it's part perpendicular to the arrow is used as a normal vector to define the plane created by "+
+		"the tip of the arrow head and the two reverse tips. "+
+		"The mode flag defines which arrow heads to draw (0: none, 1: at the tip (default), 2: at the tail, 3: at both ends).").VarArgs(3, 6))
 	fg.AddStaticFunction("splitHorizontal", funcGen.Function[value.Value]{
 		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
 			if st.Size() < 2 {

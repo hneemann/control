@@ -916,11 +916,11 @@ func (g *Line3d) Legend() Legend {
 }
 
 type Arrow3d struct {
-	From, To Vector3d
-	Plane    Vector3d
-	Style    *Style
-	Label    string
-	Mode     int
+	From, To    Vector3d
+	PlaneDefVec Vector3d
+	Style       *Style
+	Label       string
+	Mode        int
 }
 
 func (a Arrow3d) DrawTo(_ *Plot3d, cube Cube) error {
@@ -930,24 +930,24 @@ func (a Arrow3d) DrawTo(_ *Plot3d, cube Cube) error {
 	dist := a.To.Sub(a.From)
 
 	d := dist.Normalize()
-	plane := a.Plane
-	if plane.Zero() {
+	inPlaneVec := d.Cross(a.PlaneDefVec).Neg()
+	if inPlaneVec.Zero() {
 		// if no plane is given, make the two reverse tips of the arrow head
 		// having the same z-value
 		if d.X == 0 {
-			plane = Vector3d{1, 0, 0}
+			inPlaneVec = Vector3d{1, 0, 0}
 		} else {
-			plane = Vector3d{-d.Y / d.X, 1, 0}.Normalize()
+			inPlaneVec = Vector3d{-d.Y / d.X, 1, 0}.Normalize()
 		}
 	} else {
 		// If a plane is given, the given plane is the normal vector of the plane
 		// created by the tips of the arrow head and the two reverse tips.
-		plane = d.Cross(plane).Neg().Normalize()
+		inPlaneVec = inPlaneVec.Normalize()
 	}
 
 	if dist.Abs() > len {
 		d := d.Mul(len)
-		plane := plane.Mul(len / 3)
+		plane := inPlaneVec.Mul(len / 3)
 		if a.Mode&1 != 0 {
 			cube.DrawLine(a.To, a.To.Sub(d).Add(plane), a.Style)
 			cube.DrawLine(a.To, a.To.Sub(d).Sub(plane), a.Style)
@@ -958,7 +958,7 @@ func (a Arrow3d) DrawTo(_ *Plot3d, cube Cube) error {
 		}
 	}
 	if a.Label != "" {
-		t1 := dist.Cross(plane).Normalize().Mul(len / 3)
+		t1 := dist.Cross(inPlaneVec).Normalize().Mul(len / 3)
 		p1 := a.To.Add(a.From).Mul(0.5)
 		cube.DrawText(p1, p1.Add(t1), a.Label, a.Style.Text())
 	}
