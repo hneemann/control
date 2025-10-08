@@ -188,9 +188,7 @@ let ges=tpCascade(
  ["Rin:",   ges.inputImp(15000)],
 ]</example>
     <example name="Rotationskörper" desc="Interaktiver Rotationskörper"
-             name-en="Solid of revolution" desc-en="interactive Solid of revolution">let alpha=gui.slider("#alpha",0.3,-pi,pi);
-let beta =gui.slider("#beta" ,0.2,-pi,pi);
-
+             name-en="Solid of Revolution" desc-en="interactive Solid of revolution">
 func sor(u,v)
   vec(u*sin(v),u*cos(v),u^2);
 
@@ -202,7 +200,7 @@ plot3d(
 ).xBounds(-3,3)
  .yBounds(-3,3)
  .zBounds(0,4)
- .angles(alpha,beta,0)
+ .addSliderTo(gui)
 </example>
 
 </Examples>
