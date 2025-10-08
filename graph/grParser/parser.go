@@ -1570,7 +1570,11 @@ func Setup(fg *value.FunctionGenerator) {
 		},
 		Args:   6,
 		IsPure: true,
-	}.SetDescription("v1", "v2", "text", "color", "plane", "mode", "Creates an arrow plot3d content.").VarArgs(3, 6))
+	}.SetDescription("v1", "v2", "text", "color", "plane", "mode", "Creates an arrow plot3d content. "+
+		"If no plane is given, the two reverse tips of the arrow head have the same z-value. "+
+		"If a plane is given, the given plane vector is used to create the normal vector of the plane defined by "+
+		"the tips of the arrow head and the two reverse tips. "+
+		"The mode flag defines which arrow heads to draw: 0: none, 1: at the tip (default), 2: at the tail, 3: at both ends.").VarArgs(3, 6))
 	fg.AddStaticFunction("splitHorizontal", funcGen.Function[value.Value]{
 		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
 			if st.Size() < 2 {

@@ -932,20 +932,30 @@ func (a Arrow3d) DrawTo(_ *Plot3d, cube Cube) error {
 	d := dist.Normalize()
 	plane := a.Plane
 	if plane.Zero() {
+		// if no plane is given, make the two reverse tips of the arrow head
+		// having the same z-value
 		if d.X == 0 {
 			plane = Vector3d{0, 1, 0}
 		} else {
 			plane = Vector3d{-d.Y / d.X, 1, 0}.Normalize()
 		}
 	} else {
+		// If a plane is given, the given plane is the normal vector of the plane
+		// created by the tips of the arrow head and the two reverse tips.
 		plane = d.Cross(plane).Normalize()
 	}
 
 	if dist.Abs() > len {
 		d := d.Mul(len)
 		plane := plane.Mul(len / 3)
-		cube.DrawLine(a.To, a.To.Sub(d).Add(plane), a.Style)
-		cube.DrawLine(a.To, a.To.Sub(d).Sub(plane), a.Style)
+		if a.Mode&1 != 0 {
+			cube.DrawLine(a.To, a.To.Sub(d).Add(plane), a.Style)
+			cube.DrawLine(a.To, a.To.Sub(d).Sub(plane), a.Style)
+		}
+		if a.Mode&2 != 0 {
+			cube.DrawLine(a.From, a.From.Add(d).Add(plane), a.Style)
+			cube.DrawLine(a.From, a.From.Add(d).Sub(plane), a.Style)
+		}
 	}
 	if a.Label != "" {
 		t1 := dist.Cross(plane).Normalize().Mul(len / 3)
