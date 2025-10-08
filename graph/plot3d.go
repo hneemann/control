@@ -104,7 +104,7 @@ func (v Vector3d) Zero() bool {
 	return v.X == 0 && v.Y == 0 && v.Z == 0
 }
 
-func (v Vector3d) Neg() value.Value {
+func (v Vector3d) Neg() Vector3d {
 	return Vector3d{-v.X, -v.Y, -v.Z}
 }
 
@@ -935,14 +935,14 @@ func (a Arrow3d) DrawTo(_ *Plot3d, cube Cube) error {
 		// if no plane is given, make the two reverse tips of the arrow head
 		// having the same z-value
 		if d.X == 0 {
-			plane = Vector3d{0, 1, 0}
+			plane = Vector3d{1, 0, 0}
 		} else {
 			plane = Vector3d{-d.Y / d.X, 1, 0}.Normalize()
 		}
 	} else {
 		// If a plane is given, the given plane is the normal vector of the plane
 		// created by the tips of the arrow head and the two reverse tips.
-		plane = d.Cross(plane).Normalize()
+		plane = d.Cross(plane).Neg().Normalize()
 	}
 
 	if dist.Abs() > len {
