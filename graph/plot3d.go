@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/hneemann/control/nErr"
 	"github.com/hneemann/parser2/funcGen"
-	"github.com/hneemann/parser2/listMap"
 	"github.com/hneemann/parser2/value"
 	"math"
 	"sort"
@@ -20,8 +19,21 @@ func (v Vector3d) ToList() (*value.List, bool) {
 	return nil, false
 }
 
+var vecMapFac = value.NewFuncMapFactory(func(v Vector3d, key string) (value.Value, bool) {
+	switch key {
+	case "x":
+		return value.Float(v.X), true
+	case "y":
+		return value.Float(v.Y), true
+	case "z":
+		return value.Float(v.Z), true
+	default:
+		return nil, false
+	}
+}, "x", "y", "z")
+
 func (v Vector3d) ToMap() (value.Map, bool) {
-	return value.NewMap(listMap.New[value.Value](3).Append("x", value.Float(v.X)).Append("y", value.Float(v.Y)).Append("z", value.Float(v.Z))), true
+	return vecMapFac.Create(v), true
 }
 
 func (v Vector3d) ToInt() (int, bool) {
