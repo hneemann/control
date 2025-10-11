@@ -192,7 +192,7 @@ let ges=tpCascade(
 func sor(u,v)
   vec(u*sin(v),u*cos(v),u^2);
 
-plot3d(
+plot(
   sor.solid3d()
      .uBounds(0,2)
      .vBounds(0,2*pi)

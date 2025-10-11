@@ -467,8 +467,8 @@ func linMethods() value.MethodMap {
 				if err != nil {
 					return nil, err
 				}
-				return value.NewListConvert(func(i graph.PlotContent) value.Value {
-					return grParser.NewPlotContentValue(i)
+				return value.NewListConvert(func(pc graph.PlotContent) value.Value {
+					return grParser.NewPlotContentValue(pc)
 				}, contentList), nil
 			}
 			return nil, fmt.Errorf("evans requires a float")
@@ -606,6 +606,14 @@ func createBodeMethod[T value.Value](convert func(T) *Linear) funcGen.Function[v
 type BodePlotValue struct {
 	grParser.Holder[*BodePlot]
 	context graph.Context
+}
+
+func (b BodePlotValue) Add(v value.Value) error {
+	if vp, ok := v.(BodePlotContentValue); ok {
+		b.Value.Add(vp.Value)
+		return nil
+	}
+	return fmt.Errorf("can only add bode plot content to bode plot")
 }
 
 func (b BodePlotValue) ToImage() graph.Image {
@@ -1463,27 +1471,36 @@ var Parser = value.New().
 			if stack.Size() == 0 {
 				return value.NIL, errors.New("plot requires at least one argument")
 			}
-			if _, ok := stack.Get(0).(BodePlotContentValue); ok {
-				b := NewBode(0.01, 100)
-				for i := 0; i < stack.Size(); i++ {
-					if bpc, ok := stack.Get(i).(BodePlotContentValue); ok {
-						b.Add(bpc.Value)
-					} else {
-						return nil, fmt.Errorf("bodePlot requires BodePlotContent values as arguments")
-					}
-				}
-				return BodePlotValue{Holder: grParser.Holder[*BodePlot]{Value: b}, context: graph.DefaultContext}, nil
-			} else {
-
-				p := grParser.NewPlotValue(&graph.Plot{})
-				for i := 0; i < stack.Size(); i++ {
-					err := p.Add(stack.Get(i))
-					if err != nil {
-						return nil, err
-					}
-				}
-				return p, nil
+			var add interface {
+				Add(value.Value) error
 			}
+			var res value.Value
+			for v, err := range value.FlattenStack(stack, 0) {
+				if add == nil {
+					switch v.(type) {
+					case grParser.PlotContentValue:
+						np := grParser.NewPlotValue(&graph.Plot{})
+						add = np
+						res = np
+					case grParser.Plot3dContentValue:
+						np := grParser.NewPlot3dValue(graph.NewPlot3d())
+						add = np
+						res = np
+					case BodePlotContentValue:
+						b := NewBode(0.01, 100)
+						np := BodePlotValue{Holder: grParser.Holder[*BodePlot]{Value: b}, context: graph.DefaultContext}
+						add = np
+						res = np
+					default:
+						return nil, fmt.Errorf("plot requires plot content, 3d-plot content or bode plot content as arguments")
+					}
+				}
+				err = add.Add(v)
+				if err != nil {
+					return nil, err
+				}
+			}
+			return res, nil
 		},
 		Args: -1,
 	}.SetDescription("content...", "Creates a plot.")).

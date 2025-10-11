@@ -223,10 +223,6 @@ func (p Plot3dValue) Add(pc value.Value) error {
 	if c, ok := pc.(Plot3dContentValue); ok {
 		p.Holder.Value.AddContent(c.Value)
 		return nil
-	} else if l, ok := pc.ToList(); ok {
-		return l.Iterate(funcGen.NewEmptyStack[value.Value](), func(v value.Value) error {
-			return p.Add(v)
-		})
 	}
 	return errors.New("value is not a plot3d content")
 }
@@ -277,10 +273,6 @@ func (p PlotValue) Add(pc value.Value) error {
 	if c, ok := pc.(PlotContentValue); ok {
 		p.Holder.Value.AddContent(c.Value)
 		return nil
-	} else if l, ok := pc.ToList(); ok {
-		return l.Iterate(funcGen.NewEmptyStack[value.Value](), func(v value.Value) error {
-			return p.Add(v)
-		})
 	}
 	return errors.New("value is not a plot content")
 }
@@ -356,8 +348,16 @@ func createStyleMethods() value.MethodMap {
 func createPlot3dMethods() value.MethodMap {
 	return value.MethodMap{
 		"add": value.MethodAtType(1, func(plot Plot3dValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
-			err := plot.Add(stack.Get(1))
-			return plot, err
+			for v, err := range value.Flatten(stack.Get(1)) {
+				if err != nil {
+					return nil, err
+				}
+				err = plot.Add(v)
+				if err != nil {
+					return nil, err
+				}
+			}
+			return plot, nil
 		}).SetMethodDescription("plotContent", "Adds a plot content to the plot."),
 		"angles": value.MethodAtType(3, func(plot Plot3dValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if alpha, ok := stack.Get(1).ToFloat(); ok {
@@ -468,8 +468,16 @@ func createPlotMethods() value.MethodMap {
 	return value.MethodMap{
 		"add": value.MethodAtType(1, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			plot = plot.Copy()
-			err := plot.Add(stack.Get(1))
-			return plot, err
+			for v, err := range value.Flatten(stack.Get(1)) {
+				if err != nil {
+					return nil, err
+				}
+				err = plot.Add(v)
+				if err != nil {
+					return nil, err
+				}
+			}
+			return plot, nil
 		}).SetMethodDescription("plotContent", "Adds a plot content to the plot."),
 		"addAtTop": value.MethodAtType(1, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if pc, ok := stack.Get(1).(PlotContentValue); ok {
@@ -1335,8 +1343,11 @@ func Setup(fg *value.FunctionGenerator) {
 	fg.AddStaticFunction("plot", funcGen.Function[value.Value]{
 		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
 			p := NewPlotValue(&graph.Plot{})
-			for i := 0; i < st.Size(); i++ {
-				err := p.Add(st.Get(i))
+			for v, err := range value.FlattenStack(st, 0) {
+				if err != nil {
+					return nil, err
+				}
+				err = p.Add(v)
 				if err != nil {
 					return nil, err
 				}
@@ -1349,8 +1360,11 @@ func Setup(fg *value.FunctionGenerator) {
 	fg.AddStaticFunction("plot3d", funcGen.Function[value.Value]{
 		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
 			p := NewPlot3dValue(graph.NewPlot3d())
-			for i := 0; i < st.Size(); i++ {
-				err := p.Add(st.Get(i))
+			for v, err := range value.FlattenStack(st, 0) {
+				if err != nil {
+					return nil, err
+				}
+				err = p.Add(v)
 				if err != nil {
 					return nil, err
 				}
