@@ -229,7 +229,7 @@ type Plot3d struct {
 func NewPlot3d() *Plot3d {
 	return &Plot3d{
 		alpha:       0.3,
-		beta:        0.2,
+		beta:        0.15,
 		gamma:       0,
 		Size:        0.98,
 		Perspective: 1,
@@ -490,7 +490,11 @@ func (c cPath) IsClosed() bool {
 }
 
 func (c *CanvasCube) To2d(p Vector3d) Point {
-	zFac := 1 + p.Y/800*c.perspective
+	py := p.Y * c.perspective
+	if py > 499 {
+		py = 499
+	}
+	zFac := 470 / (500 - py)
 	return Point{
 		X: p.X*c.fac*zFac + c.dx,
 		Y: c.dy + p.Z*c.fac*zFac,
@@ -990,26 +994,49 @@ func (a Arrow3d) SetStyle(s *Style) Plot3dContent {
 }
 
 type ListBasedLine3d struct {
-	Vectors   Vectors
-	LineStyle *Style
-	Title     string
+	Vectors           Vectors
+	LineStyle         *Style
+	Title             string
+	HiddenLineRemoval bool
+}
+
+type vecPath struct {
+	Vectors Vectors
+}
+
+func (v vecPath) Iter(yield func(PathElement3d, error) bool) {
+	mode := 'M'
+	for vec, err := range v.Vectors {
+		if !yield(PathElement3d{Mode: mode, Vector3d: vec}, err) {
+			return
+		}
+		mode = 'L'
+	}
+}
+
+func (v vecPath) IsClosed() bool {
+	return false
 }
 
 func (s ListBasedLine3d) DrawTo(_ *Plot3d, cube Cube) error {
-	isLast := false
-	var last Vector3d
-	for v, err := range s.Vectors {
-		if err != nil {
-			return err
+	if s.HiddenLineRemoval {
+		isLast := false
+		var last Vector3d
+		for v, err := range s.Vectors {
+			if err != nil {
+				return err
+			}
+			if isLast {
+				cube.DrawLine(last, v, s.LineStyle)
+			} else {
+				isLast = true
+			}
+			last = v
 		}
-		if isLast {
-			cube.DrawLine(last, v, s.LineStyle)
-		} else {
-			isLast = true
-		}
-		last = v
+		return nil
+	} else {
+		return cube.DrawPath(vecPath{s.Vectors}, s.LineStyle)
 	}
-	return nil
 }
 
 func (s ListBasedLine3d) Legend() Legend {

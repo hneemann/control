@@ -169,7 +169,7 @@ func createPlot3dContentMethods() value.MethodMap {
 			if err != nil {
 				return nil, err
 			}
-			pc.Value.SetStyle(style.Value)
+			pc.Value = pc.Value.SetStyle(style.Value)
 
 			if stack.Size() > 2 {
 				style2, err := GetStyle(stack, 2, graph.Black)
@@ -968,22 +968,15 @@ func listMethods() value.MethodMap {
 			"The two functions are called with the list elements and must return the x respectively y values. "+
 			"If the functions are omitted, the list elements themselves must be lists of the form [x,y].").VarArgsMethod(0, 2),
 		"graph3d": value.MethodAtType(1, func(list *value.List, st funcGen.Stack[value.Value]) (value.Value, error) {
-			switch st.Size() {
-			case 1:
-				s := graph.ListBasedLine3d{Vectors: listToVectors(list), LineStyle: graph.Black}
-				return Plot3dContentValue{Holder[graph.Plot3dContent]{s}}, nil
-			case 2:
-				if vc, ok := st.Get(1).ToClosure(); ok && vc.Args == 1 {
-					s := graph.ListBasedLine3d{Vectors: listFuncToVectors(list, vc), LineStyle: graph.Black}
-					return Plot3dContentValue{Holder[graph.Plot3dContent]{s}}, nil
-				}
-			default:
-				return nil, fmt.Errorf("graph requires either none or two arguments")
+			s := graph.ListBasedLine3d{Vectors: listToVectors(list), LineStyle: graph.Black}
+			if hide, ok := st.GetOptional(1, value.Bool(false)).ToBool(); ok {
+				s.HiddenLineRemoval = hide
+			} else {
+				return nil, fmt.Errorf("graph3d requires a bool as argument")
 			}
-			return nil, fmt.Errorf("graph requires a function as first and second argument")
-		}).SetMethodDescription("func(item) vec", "Creates a scatter plot content. "+
-			"The two functions are called with the list elements and must return the x respectively y values. "+
-			"If the functions are omitted, the list elements themselves must be lists of the form [x,y].").VarArgsMethod(0, 1),
+			return Plot3dContentValue{Holder[graph.Plot3dContent]{s}}, nil
+		}).SetMethodDescription("hiddenLineRemoval", "Creates a line connecting all the vectors in the list. "+
+			"If the argument is true, the \"painters algorithm\" is used to draw the line.").VarArgsMethod(0, 1),
 		"data": value.MethodAtType(4, func(list *value.List, st funcGen.Stack[value.Value]) (value.Value, error) {
 			if name, ok := st.Get(1).(value.String); ok {
 				if unit, ok := st.Get(2).(value.String); ok {
@@ -1899,29 +1892,6 @@ func listToVectors(list *value.List) graph.Vectors {
 				}
 			} else {
 				return fmt.Errorf("list must contain vectors")
-			}
-			return nil
-		})
-		if err != nil && err != iterator.SBC {
-			yield(graph.Vector3d{}, err)
-		}
-	}
-}
-
-func listFuncToVectors(list *value.List, vc funcGen.Function[value.Value]) graph.Vectors {
-	return func(yield func(graph.Vector3d, error) bool) {
-		st := funcGen.NewEmptyStack[value.Value]()
-		err := list.Iterate(st, func(v value.Value) error {
-			vecVal, err := vc.Eval(st, v)
-			if err != nil {
-				return err
-			}
-			if vec, ok := vecVal.(graph.Vector3d); ok {
-				if !yield(vec, nil) {
-					return iterator.SBC
-				}
-			} else {
-				return fmt.Errorf("function needs to return a vector")
 			}
 			return nil
 		})
