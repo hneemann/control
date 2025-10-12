@@ -15,6 +15,8 @@ type Vector3d struct {
 	X, Y, Z float64
 }
 
+type Vectors func(func(Vector3d, error) bool)
+
 func (v Vector3d) ToList() (*value.List, bool) {
 	return nil, false
 }
@@ -985,4 +987,39 @@ func (a Arrow3d) Legend() Legend {
 func (a Arrow3d) SetStyle(s *Style) Plot3dContent {
 	a.Style = s
 	return a
+}
+
+type ListBasedLine3d struct {
+	Vectors   Vectors
+	LineStyle *Style
+	Title     string
+}
+
+func (s ListBasedLine3d) DrawTo(_ *Plot3d, cube Cube) error {
+	isLast := false
+	var last Vector3d
+	for v, err := range s.Vectors {
+		if err != nil {
+			return err
+		}
+		if isLast {
+			cube.DrawLine(last, v, s.LineStyle)
+		} else {
+			isLast = true
+		}
+		last = v
+	}
+	return nil
+}
+
+func (s ListBasedLine3d) Legend() Legend {
+	return Legend{
+		ShapeLineStyle: ShapeLineStyle{LineStyle: s.LineStyle},
+		Name:           s.Title,
+	}
+}
+
+func (s ListBasedLine3d) SetStyle(style *Style) Plot3dContent {
+	s.LineStyle = style
+	return s
 }
