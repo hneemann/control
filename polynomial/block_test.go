@@ -22,7 +22,7 @@ func TestSimple(t *testing.T) {
 	err := s.Initialize()
 	assert.NoError(t, err)
 
-	data, err := s.Run(10)
+	data, err := s.Run(100, 0, 0)
 	assert.NoError(t, err)
 
 	p := graph.Plot{Y: graph.AxisDescription{Bounds: graph.NewBounds(-0.2, 2)}}

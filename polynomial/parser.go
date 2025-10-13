@@ -1627,14 +1627,27 @@ var Parser = value.New().
 		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
 			if def, ok := stack.Get(0).ToList(); ok {
 				if tMax, ok := stack.Get(1).ToFloat(); ok {
-					return SimulateBlock(stack, def, tMax)
+					dt := 0.0
+					if dtVal, ok := stack.GetOptional(2, value.Float(0)).ToFloat(); ok {
+						dt = dtVal
+					} else {
+						return nil, fmt.Errorf("the third argument of simulate requires a float value")
+					}
+					points := 0
+					if pointsVal, ok := stack.GetOptional(3, value.Int(0)).ToInt(); ok {
+						points = pointsVal
+					} else {
+						return nil, fmt.Errorf("the fourth argument of simulate requires an int value")
+					}
+
+					return SimulateBlock(stack, def, tMax, dt, points)
 				}
 			}
 			return nil, fmt.Errorf("simulate requires a list and a flost")
 		},
-		Args:   2,
+		Args:   4,
 		IsPure: true,
-	}.SetDescription("def", "tMax", "Simulates the given model.")).
+	}.SetDescription("def", "tMax", "dt", "pointsExported", "Simulates the given model.").VarArgs(2, 4)).
 	ReplaceOp("^", false, true, createExp).
 	ReplaceOp("*", true, true, createMul).
 	ReplaceOp("/", false, true, createDiv).

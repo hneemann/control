@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/hneemann/parser2/funcGen"
 	"github.com/hneemann/parser2/value"
+	"log"
 	"strings"
 	"unicode"
 )
@@ -84,6 +85,19 @@ func ClosureTime(c funcGen.Function[value.Value]) BlockFactory {
 		},
 		inputs: 0,
 		name:   "function of time",
+	}
+}
+func Mul() BlockFactory {
+	return BlockFactory{
+		creator: func(args []*float64) (BlockNextFunc, error) {
+			a := args[0]
+			b := args[1]
+			return func(_, _ float64) (float64, error) {
+				return *a * *b, nil
+			}, nil
+		},
+		inputs: 2,
+		name:   "Mul",
 	}
 }
 
@@ -341,12 +355,23 @@ func (s *System) Initialize() error {
 	return nil
 }
 
-func (s *System) Run(tMax float64) (*dataSet, error) {
-	const pointsExported = 1000
-	const pointsInternal = 100000
-	const skip = pointsInternal / pointsExported
+func (s *System) Run(tMax, dt float64, pointsExported int) (*dataSet, error) {
+	if pointsExported < 10 {
+		pointsExported = 1000
+	}
 
-	dt := tMax / pointsInternal
+	if dt == 0 {
+		dt = 1e-4
+	}
+
+	pointsCalculated := int(tMax / dt)
+	skip := pointsCalculated / pointsExported
+	if skip < 1 {
+		skip = 1
+	}
+
+	log.Println(pointsCalculated, skip)
+
 	t := 0.0
 
 	nextValues := make([]float64, len(s.values))
@@ -357,7 +382,6 @@ func (s *System) Run(tMax float64) (*dataSet, error) {
 	counter := 0
 	row := 0
 	for {
-
 		if counter == 0 || row < 10 {
 			counter = skip
 			resultData.set(row, 0, t)
@@ -385,7 +409,7 @@ func (s *System) Run(tMax float64) (*dataSet, error) {
 	return resultData, nil
 }
 
-func SimulateBlock(st funcGen.Stack[value.Value], def *value.List, tMax float64) (value.Value, error) {
+func SimulateBlock(st funcGen.Stack[value.Value], def *value.List, tMax, dt float64, pointsExported int) (value.Value, error) {
 	sys := NewSystem()
 	err := def.Iterate(st, func(v value.Value) error {
 		if m, ok := v.(value.Map); ok {
@@ -424,7 +448,7 @@ func SimulateBlock(st funcGen.Stack[value.Value], def *value.List, tMax float64)
 		return nil, err
 	}
 
-	resultData, err := sys.Run(tMax)
+	resultData, err := sys.Run(tMax, dt, pointsExported)
 	if err != nil {
 		return nil, err
 	}
@@ -454,6 +478,8 @@ func valueToBlock(blockValue value.Value, in []string) (BlockFactory, error) {
 			}
 		case "-":
 			return Sub(), nil
+		case "*":
+			return Mul(), nil
 		case "dif":
 			return Differentiate(), nil
 		case "int":
