@@ -1921,9 +1921,5 @@ func CreateSVG(p graph.Image, context *graph.Context, w *xmlWriter.XMLWriter) er
 	if err != nil {
 		return err
 	}
-	err = svg.Close()
-	if err != nil {
-		return err
-	}
-	return nil
+	return svg.Close()
 }
