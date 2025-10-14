@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/hneemann/parser2/funcGen"
 	"github.com/hneemann/parser2/value"
-	"log"
 	"strings"
 	"unicode"
 )
@@ -369,8 +368,6 @@ func (s *System) Run(tMax, dt float64, pointsExported int) (*dataSet, error) {
 	if skip < 1 {
 		skip = 1
 	}
-
-	log.Println(pointsCalculated, skip)
 
 	t := 0.0
 
