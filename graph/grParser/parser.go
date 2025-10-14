@@ -1530,25 +1530,27 @@ func Setup(fg *value.FunctionGenerator) {
 				if y1, ok := st.Get(1).ToFloat(); ok {
 					if x2, ok := st.Get(2).ToFloat(); ok {
 						if y2, ok := st.Get(3).ToFloat(); ok {
-							if text, ok := st.Get(4).(value.String); ok {
-								arrow := graph.Arrow{
-									From:  graph.Point{X: x1, Y: y1},
-									To:    graph.Point{X: x2, Y: y2},
-									Label: string(text),
-								}
-								styleVal, err := GetStyle(st, 5, graph.Black)
-								if err != nil {
-									return nil, fmt.Errorf("arrow: %w", err)
-								}
-								arrow.Style = styleVal.Value
-
-								if mode, ok := st.GetOptional(6, value.Int(3)).ToInt(); ok {
-									arrow.Mode = mode
-								} else {
-									return nil, fmt.Errorf("arrow requires an int as fifth argument")
-								}
-								return PlotContentValue{Holder: Holder[graph.PlotContent]{arrow}}, nil
+							arrow := graph.Arrow{
+								From: graph.Point{X: x1, Y: y1},
+								To:   graph.Point{X: x2, Y: y2},
 							}
+							if text, ok := st.GetOptional(4, value.String("")).(value.String); ok {
+								arrow.Label = string(text)
+							} else {
+								return nil, fmt.Errorf("arrow requires a string as fifth argument")
+							}
+							styleVal, err := GetStyle(st, 5, graph.Black)
+							if err != nil {
+								return nil, fmt.Errorf("arrow: %w", err)
+							}
+							arrow.Style = styleVal.Value
+
+							if mode, ok := st.GetOptional(6, value.Int(1)).ToInt(); ok {
+								arrow.Mode = mode
+							} else {
+								return nil, fmt.Errorf("arrow requires an int as fifth argument")
+							}
+							return PlotContentValue{Holder: Holder[graph.PlotContent]{arrow}}, nil
 						}
 					}
 				}
@@ -1557,7 +1559,8 @@ func Setup(fg *value.FunctionGenerator) {
 		},
 		Args:   7,
 		IsPure: true,
-	}.SetDescription("x1", "y1", "x2", "y2", "text", "marker", "color", "Creates an arrow plot content.").VarArgs(5, 7))
+	}.SetDescription("x1", "y1", "x2", "y2", "text", "color", "mode", "Creates an arrow plot content. "+
+		"The mode flag defines which arrow heads to draw (0: none, 1: at the tip (default), 2: at the tail, 3: at both ends).").VarArgs(4, 7))
 	fg.AddStaticFunction("arrow3d", funcGen.Function[value.Value]{
 		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
 			if v1, ok := st.Get(0).(graph.Vector3d); ok {
