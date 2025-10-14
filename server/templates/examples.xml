@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Examples>
     <example name="Daten-Plot"
-             name-en="Data-Plot" >let data = [
+             name-en="Data-Plot">let data = [
   [0, 0],
   [1, 1],
   [2, 4],
@@ -13,7 +13,7 @@ plot(
  data.graph()
 )</example>
     <example name="Daten-Plot 2"
-             name-en="Data-Plot 2" >let data = [
+             name-en="Data-Plot 2">let data = [
   { x:0, a: 0, b:4 },
   { x:1, a: 1, b:5 },
   { x:2, a: 4, b:6 },
@@ -44,7 +44,7 @@ plot(
   g.nyquist()
 )</example>
     <example name="Ortskurve 2" desc="Darstellung der Ortskurve"
-             name-en="Nyquist plot 2" desc-en="Nyquist plot" >let g = 3/((s+1)*(s+1.5)*(s+2));
+             name-en="Nyquist plot 2" desc-en="Nyquist plot">let g = 3/((s+1)*(s+1.5)*(s+2));
 
 func h(w)
   let c1 = g( _i*w );
@@ -121,9 +121,18 @@ let Tp = 0.05;
 
 let K = pid(kp,Ti,Td,Tp);
 
-// A Simulink-like model in the form of a netlist.
+// Simulation of a Simulink-like model in the form of a netlist.
 // The blocks are connected by the names of inputs
 // and outputs. The order of the blocks does not matter.
+// A block can be a constant, a transfer function, an operation
+// like "+", "-", "*", "dif" or "int" or a custom function.
+// If a function is used, and there is no 'in' field given, the
+// function has to have exactly one argument, which is the time.
+// If the function has an in-field, it has to have exactly as
+// many arguments as there are inputs and the output is the
+// function result.
+// There are also some functions, which create special blocks
+// like 'blockDelay', 'blockLimiter', 'blockGain' and 'blockPid'.
 let systemDescription = [
  {              block: 1,                 out:"w"    },
  {in:["w","y"], block: "-",               out:"e"    },
