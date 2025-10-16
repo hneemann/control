@@ -215,6 +215,10 @@ type TitleSetter interface {
 	SetTitle(title string) Plot3dContent
 }
 
+type IsCloseable3d interface {
+	Close() Plot3dContent
+}
+
 type Plot3d struct {
 	X, Y, Z     AxisDescription
 	Contents    []Plot3dContent
@@ -998,10 +1002,17 @@ type ListBasedLine3d struct {
 	LineStyle         *Style
 	Title             string
 	HiddenLineRemoval bool
+	closed            bool
+}
+
+func (s ListBasedLine3d) Close() Plot3dContent {
+	s.closed = true
+	return s
 }
 
 type vecPath struct {
 	Vectors Vectors
+	Closed  bool
 }
 
 func (v vecPath) Iter(yield func(PathElement3d, error) bool) {
@@ -1015,13 +1026,13 @@ func (v vecPath) Iter(yield func(PathElement3d, error) bool) {
 }
 
 func (v vecPath) IsClosed() bool {
-	return false
+	return v.Closed
 }
 
 func (s ListBasedLine3d) DrawTo(_ *Plot3d, cube Cube) error {
 	if s.HiddenLineRemoval {
 		isLast := false
-		var last Vector3d
+		var last, first Vector3d
 		for v, err := range s.Vectors {
 			if err != nil {
 				return err
@@ -1029,13 +1040,17 @@ func (s ListBasedLine3d) DrawTo(_ *Plot3d, cube Cube) error {
 			if isLast {
 				cube.DrawLine(last, v, s.LineStyle)
 			} else {
+				first = v
 				isLast = true
 			}
 			last = v
 		}
+		if s.closed && isLast {
+			cube.DrawLine(last, first, s.LineStyle)
+		}
 		return nil
 	} else {
-		return cube.DrawPath(vecPath{s.Vectors}, s.LineStyle)
+		return cube.DrawPath(vecPath{s.Vectors, s.closed}, s.LineStyle)
 	}
 }
 

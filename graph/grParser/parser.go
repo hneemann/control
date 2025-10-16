@@ -195,6 +195,15 @@ func createPlot3dContentMethods() value.MethodMap {
 			}
 			return nil, fmt.Errorf("title requires a string")
 		}).Pure(false).SetMethodDescription("title", "Sets the title of the 3d plot content."),
+		"close": value.MethodAtType(0, func(plot Plot3dContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			pc := plot.Value
+			if sc, ok := pc.(graph.IsCloseable3d); ok {
+				pc = sc.Close()
+			} else {
+				return nil, fmt.Errorf("Close can only be called an plot contents that can be closed.")
+			}
+			return Plot3dContentValue{Holder[graph.Plot3dContent]{pc}}, nil
+		}).Pure(false).SetMethodDescription("Closes a path."),
 	}
 }
 
@@ -779,6 +788,8 @@ func createPlotContentMethods() value.MethodMap {
 			var size float64 = defSize
 			if s, ok := stack.GetOptional(3, value.Float(defSize)).ToFloat(); ok {
 				size = s
+			} else {
+				return nil, fmt.Errorf("the size must be a float")
 			}
 
 			var marker graph.Shape
@@ -821,6 +832,8 @@ func createPlotContentMethods() value.MethodMap {
 							return nil, fmt.Errorf("a title can only be set for plots using a title")
 						}
 					}
+				} else {
+					return nil, fmt.Errorf("the title must be a string")
 				}
 				return PlotContentValue{Holder[graph.PlotContent]{pc}}, nil
 			} else {
