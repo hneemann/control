@@ -102,6 +102,14 @@ func (v Vector3d) Mul(f float64) Vector3d {
 	}
 }
 
+func (v Vector3d) Div(f float64) Vector3d {
+	return Vector3d{
+		X: v.X / f,
+		Y: v.Y / f,
+		Z: v.Z / f,
+	}
+}
+
 func (v Vector3d) Add(d Vector3d) Vector3d {
 	return Vector3d{
 		X: v.X + d.X,
@@ -657,7 +665,7 @@ func (p *Plot3d) DrawTo(canvas Canvas) (err error) {
 // to avoid issues with very long lines in 3D rendering.
 func DrawLongLine(rot Cube, p1 Vector3d, p2 Vector3d, style *Style) {
 	const n = 10
-	d := p2.Sub(p1).Mul(1 / float64(n))
+	d := p2.Sub(p1).Div(float64(n))
 	for i := 0; i < n; i++ {
 		p2 := p1.Add(d)
 		rot.DrawLine(p1, p2, style)
@@ -687,13 +695,13 @@ type SecondaryStyle interface {
 }
 
 type Graph3d struct {
-	Func      func(x, y float64) (Vector3d, error)
-	U         Bounds
-	V         Bounds
-	Style     *Style
-	Steps     int
-	StepsHigh int
-	Title     string
+	Func   func(x, y float64) (Vector3d, error)
+	U      Bounds
+	V      Bounds
+	Style  *Style
+	USteps int
+	VSteps int
+	Title  string
 }
 
 func (g *Graph3d) SetUBounds(bounds Bounds) Plot3dContent {
@@ -717,13 +725,13 @@ func (g *Graph3d) SetTitle(s string) Plot3dContent {
 }
 
 func (g *Graph3d) DrawTo(_ *Plot3d, cube Cube) error {
-	steps := g.Steps
-	if steps <= 0 {
-		steps = 31
+	uSteps := g.USteps
+	if uSteps <= 0 {
+		uSteps = 31
 	}
-	stepsHigh := g.StepsHigh
-	if stepsHigh <= 0 {
-		stepsHigh = steps * 3
+	vSteps := g.VSteps
+	if vSteps <= 0 {
+		vSteps = uSteps
 	}
 	style := g.Style
 	if style == nil {
@@ -741,29 +749,29 @@ func (g *Graph3d) DrawTo(_ *Plot3d, cube Cube) error {
 		vB = y
 	}
 
-	for xn := 0; xn <= steps; xn++ {
-		uv := uB.Min + float64(xn)*uB.Width()/float64(steps)
+	for xn := 0; xn <= uSteps; xn++ {
+		uv := uB.Min + float64(xn)*uB.Width()/float64(uSteps)
 		err := cube.DrawPath(LinePath3d{
 			Func: func(vv float64) (Vector3d, error) {
 				v, err := g.Func(uv, vv)
 				return Vector3d{X: x.Bind(v.X), Y: y.Bind(v.Y), Z: z.Bind(v.Z)}, err
 			},
 			Bounds: vB,
-			Steps:  stepsHigh,
+			Steps:  vSteps * 3,
 		}, style)
 		if err != nil {
 			return err
 		}
 	}
-	for yn := 0; yn <= steps; yn++ {
-		vv := vB.Min + float64(yn)*vB.Width()/float64(steps)
+	for yn := 0; yn <= vSteps; yn++ {
+		vv := vB.Min + float64(yn)*vB.Width()/float64(vSteps)
 		err := cube.DrawPath(LinePath3d{
 			Func: func(uv float64) (Vector3d, error) {
 				v, err := g.Func(uv, vv)
 				return Vector3d{X: x.Bind(v.X), Y: y.Bind(v.Y), Z: z.Bind(v.Z)}, err
 			},
 			Bounds: uB,
-			Steps:  stepsHigh,
+			Steps:  uSteps * 3,
 		}, style)
 		if err != nil {
 			return err

@@ -1195,9 +1195,9 @@ func closureMethods() value.MethodMap {
 			if err != nil {
 				return nil, err
 			}
-			gf := &graph.Graph3d{Func: f, Steps: uSteps, StepsHigh: vSteps}
+			gf := &graph.Graph3d{Func: f, USteps: uSteps, VSteps: vSteps}
 			return Plot3dContentValue{Holder[graph.Plot3dContent]{gf}}, nil
-		}).SetMethodDescription("steps", "stepsLine", "Creates a graph of a function (either ℝ²→ℝ³ or ℝ²→ℝ) to be used in the plot3d command. "+
+		}).SetMethodDescription("xSteps", "ySteps", "Creates a graph of a function (either ℝ²→ℝ³ or ℝ²→ℝ) to be used in the plot3d command. "+
 			"A wire mesh is drawn through which one can see.").VarArgsMethod(0, 2),
 
 		"solid3d": value.MethodAtType(2, func(cl value.Closure, st funcGen.Stack[value.Value]) (value.Value, error) {
@@ -1789,7 +1789,7 @@ func createDiv(old funcGen.OperatorImpl[value.Value]) funcGen.OperatorImpl[value
 			if f == 0 {
 				return nil, fmt.Errorf("division by zero")
 			}
-			return a.Mul(1 / f), nil
+			return a.Div(f), nil
 		}
 		return nil, fmt.Errorf("vector div requires a vector and a float value")
 	}, func(a value.Value, b graph.Vector3d) (value.Value, error) {

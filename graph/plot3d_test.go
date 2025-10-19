@@ -32,8 +32,8 @@ func TestPlot3d_DrawTo(t *testing.T) {
 					r := math.Sqrt(x*x + y*y)
 					return Vector3d{x, y, math.Cos(r)}, nil
 				},
-				Style: Black,
-				Steps: 40,
+				Style:  Black,
+				USteps: 40,
 			},
 		},
 	}
