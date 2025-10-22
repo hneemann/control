@@ -213,6 +213,9 @@ func twoPortMethods() value.MethodMap {
 		"getC": value.MethodAtType(0, func(tp *TwoPort, st funcGen.Stack[value.Value]) (value.Value, error) {
 			return tp.GetC()
 		}).SetMethodDescription("Returns the C-parameters."),
+		"det": value.MethodAtType(0, func(tp *TwoPort, st funcGen.Stack[value.Value]) (value.Value, error) {
+			return Complex(tp.det()), nil
+		}).SetMethodDescription("Returns the determinant of the two-port matrix."),
 		"string": value.MethodAtType(0, func(tp *TwoPort, st funcGen.Stack[value.Value]) (value.Value, error) {
 			return value.String(tp.String()), nil
 		}).SetMethodDescription("Returns a string representation of the two-port."),
