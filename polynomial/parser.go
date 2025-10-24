@@ -1328,6 +1328,7 @@ var Parser = value.New().
 		createDiv(fg)
 		createSub(fg)
 		createAdd(fg)
+		createNeg(fg)
 
 		ParserFunctionGenerator = fg
 
@@ -1694,7 +1695,6 @@ var Parser = value.New().
 		Args:   4,
 		IsPure: true,
 	}.SetDescription("def", "tMax", "dt", "pointsExported", "Simulates the given model.").VarArgs(2, 4)).
-	ReplaceUnary("-", createNeg).
 	Modify(func(f *funcGen.FunctionGenerator[value.Value]) {
 		p := f.GetParser()
 		p.SetStringConverter(parser2.StringConverterFunc[value.Value](func(s string) value.Value {
@@ -1720,18 +1720,17 @@ func dirac(e float64) value.Value {
 	})
 }
 
-func createNeg(orig funcGen.UnaryOperatorImpl[value.Value]) funcGen.UnaryOperatorImpl[value.Value] {
-	return func(a value.Value) (value.Value, error) {
-		switch aa := a.(type) {
-		case *Linear:
-			return aa.MulFloat(-1), nil
-		case Polynomial:
-			return aa.MulFloat(-1), nil
-		case Complex:
-			return -aa, nil
-		}
-		return orig(a)
-	}
+func createNeg(fg *value.FunctionGenerator) {
+	m := fg.GetUnaryList("-")
+	m.Register(ComplexValueType, func(a value.Value) (value.Value, error) {
+		return -a.(Complex), nil
+	})
+	m.Register(PolynomialValueType, func(a value.Value) (value.Value, error) {
+		return a.(Polynomial).MulFloat(-1), nil
+	})
+	m.Register(LinearValueType, func(a value.Value) (value.Value, error) {
+		return a.(*Linear).MulFloat(-1), nil
+	})
 }
 
 func createExp(fg *value.FunctionGenerator) {

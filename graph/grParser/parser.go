@@ -1676,18 +1676,14 @@ func Setup(fg *value.FunctionGenerator) {
 	createDiv(fg)
 	createSub(fg)
 	createAdd(fg)
-
-	fg.ReplaceUnary("-", createNeg)
-
+	createNeg(fg)
 }
 
-func createNeg(orig funcGen.UnaryOperatorImpl[value.Value]) funcGen.UnaryOperatorImpl[value.Value] {
-	return func(a value.Value) (value.Value, error) {
-		if aa, ok := a.(graph.Vector3d); ok {
-			return aa.Neg(), nil
-		}
-		return orig(a)
-	}
+func createNeg(fg *value.FunctionGenerator) {
+	m := fg.GetUnaryList("-")
+	m.Register(graph.Vector3dType, func(a value.Value) (value.Value, error) {
+		return a.(graph.Vector3d).Neg(), nil
+	})
 }
 
 func createAdd(fg *value.FunctionGenerator) {
