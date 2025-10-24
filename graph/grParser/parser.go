@@ -37,14 +37,6 @@ func (w Holder[T]) ToString(_ funcGen.Stack[value.Value]) (string, error) {
 	return fmt.Sprint(w.Value), nil
 }
 
-func (w Holder[T]) ToBool() (bool, bool) {
-	return false, false
-}
-
-func (w Holder[T]) ToClosure() (funcGen.Function[value.Value], bool) {
-	return funcGen.Function[value.Value]{}, false
-}
-
 func createVector3dMethods() value.MethodMap {
 	return value.MethodMap{
 		"cross": value.MethodAtType(1, func(v graph.Vector3d, stack funcGen.Stack[value.Value]) (value.Value, error) {
@@ -314,14 +306,14 @@ func createStyleMethods() value.MethodMap {
 			return value.Int(styleValue.Value.Color.A), nil
 		}).SetMethodDescription("Returns the alpha color value."),
 		"darker": value.MethodAtType(1, func(styleValue StyleValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
-			if p, ok := stack.Get(1).ToInt(); ok {
+			if p, ok := stack.Get(1).ToFloat(); ok {
 				style := styleValue.Value
 				return StyleValue{Holder[*graph.Style]{style.Darker(p)}}, nil
 			}
 			return nil, fmt.Errorf("darker requires a float")
 		}).SetMethodDescription("percent", "Makes the color darker."),
 		"brighter": value.MethodAtType(0, func(styleValue StyleValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
-			if p, ok := stack.Get(1).ToInt(); ok {
+			if p, ok := stack.Get(1).ToFloat(); ok {
 				style := styleValue.Value
 				return StyleValue{Holder[*graph.Style]{style.Brighter(p)}}, nil
 			}
@@ -793,7 +785,7 @@ func createPlotContentMethods() value.MethodMap {
 			}
 
 			var marker graph.Shape
-			if markerInt, ok := stack.GetOptional(1, value.Int(0)).ToInt(); ok {
+			if markerInt, ok := stack.GetOptional(1, value.Int(0)).(value.Int); ok {
 				switch markerInt % 5 {
 				case 1:
 					marker = graph.NewCircleMarker(size)
@@ -964,8 +956,8 @@ func listMethods() value.MethodMap {
 				}
 				return PlotContentValue{Holder[graph.PlotContent]{s}}, nil
 			case 3:
-				if xc, ok := st.Get(1).ToClosure(); ok && xc.Args == 1 {
-					if yc, ok := st.Get(2).ToClosure(); ok && yc.Args == 1 {
+				if xc, ok := st.Get(1).(value.Closure); ok && xc.Args == 1 {
+					if yc, ok := st.Get(2).(value.Closure); ok && yc.Args == 1 {
 						s := graph.Scatter{Points: listFuncToPoints(list, xc, yc)}
 						if size, ok := list.SizeIfKnown(); ok && size > 200 {
 							s.LineStyle = graph.Black
@@ -982,8 +974,8 @@ func listMethods() value.MethodMap {
 			"If the functions are omitted, the list elements themselves must be lists of the form [x,y].").VarArgsMethod(0, 2),
 		"graph3d": value.MethodAtType(1, func(list *value.List, st funcGen.Stack[value.Value]) (value.Value, error) {
 			s := graph.ListBasedLine3d{Vectors: listToVectors(list), LineStyle: graph.Black}
-			if hide, ok := st.GetOptional(1, value.Bool(false)).ToBool(); ok {
-				s.HiddenLineRemoval = hide
+			if hide, ok := st.GetOptional(1, value.Bool(false)).(value.Bool); ok {
+				s.HiddenLineRemoval = bool(hide)
 			} else {
 				return nil, fmt.Errorf("graph3d requires a bool as argument")
 			}
@@ -1002,8 +994,8 @@ func listMethods() value.MethodMap {
 						}
 						return DataContentValue{Holder[graph.DataContent]{content}}, nil
 					case 5:
-						if xc, ok := st.Get(3).ToClosure(); ok && xc.Args == 1 {
-							if yc, ok := st.Get(4).ToClosure(); ok && yc.Args == 1 {
+						if xc, ok := st.Get(3).(value.Closure); ok && xc.Args == 1 {
+							if yc, ok := st.Get(4).(value.Closure); ok && yc.Args == 1 {
 								content := graph.DataContent{
 									Points: listFuncToPoints(list, xc, yc),
 									Name:   string(name),
@@ -1073,8 +1065,8 @@ func closureMethods() value.MethodMap {
 						return nil, fmt.Errorf("pGraph requires a number as third argument")
 					}
 					isLog := false
-					if log, ok := st.GetOptional(4, value.Bool(false)).ToBool(); ok {
-						isLog = log
+					if log, ok := st.GetOptional(4, value.Bool(false)).(value.Bool); ok {
+						isLog = bool(log)
 					} else {
 						return nil, fmt.Errorf("pGraph requires a bool as fourth argument")
 					}
@@ -1323,16 +1315,16 @@ func Setup(fg *value.FunctionGenerator) {
 		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
 			switch st.Size() {
 			case 1:
-				if i, ok := st.Get(0).ToInt(); ok {
-					return StyleValue{Holder[*graph.Style]{graph.GetColor(i)}}, nil
+				if i, ok := st.Get(0).(value.Int); ok {
+					return StyleValue{Holder[*graph.Style]{graph.GetColor(int(i))}}, nil
 				}
 				return nil, fmt.Errorf("color requires an int")
 			case 3, 4:
-				if r, ok := st.Get(0).ToInt(); ok {
-					if g, ok := st.Get(1).ToInt(); ok {
-						if b, ok := st.Get(2).ToInt(); ok {
+				if r, ok := st.Get(0).(value.Int); ok {
+					if g, ok := st.Get(1).(value.Int); ok {
+						if b, ok := st.Get(2).(value.Int); ok {
 							if st.Size() == 4 {
-								if a, ok := st.Get(3).ToInt(); ok {
+								if a, ok := st.Get(3).(value.Int); ok {
 									return StyleValue{Holder[*graph.Style]{graph.NewStyleAlpha(uint8(r), uint8(g), uint8(b), uint8(a))}}, nil
 								}
 							} else {
@@ -1407,7 +1399,7 @@ func Setup(fg *value.FunctionGenerator) {
 			}
 
 			var f func(x float64) (float64, error)
-			if cl, ok := st.Get(0).ToClosure(); ok {
+			if cl, ok := st.Get(0).(value.Closure); ok {
 				if cl.Args != 1 {
 					return nil, fmt.Errorf("graph requires a function with one argument")
 				}
@@ -1558,8 +1550,8 @@ func Setup(fg *value.FunctionGenerator) {
 							}
 							arrow.Style = styleVal.Value
 
-							if mode, ok := st.GetOptional(6, value.Int(1)).ToInt(); ok {
-								arrow.Mode = mode
+							if mode, ok := st.GetOptional(6, value.Int(1)).(value.Int); ok {
+								arrow.Mode = int(mode)
 							} else {
 								return nil, fmt.Errorf("arrow requires an int as fifth argument")
 							}
@@ -1596,8 +1588,8 @@ func Setup(fg *value.FunctionGenerator) {
 							return nil, fmt.Errorf("arrow requires an int as fifth argument")
 						}
 
-						if mode, ok := st.GetOptional(5, value.Int(1)).ToInt(); ok {
-							arrow.Mode = mode
+						if mode, ok := st.GetOptional(5, value.Int(1)).(value.Int); ok {
+							arrow.Mode = int(mode)
 						} else {
 							return nil, fmt.Errorf("arrow requires an int as fifth argument")
 						}
@@ -1679,11 +1671,13 @@ func Setup(fg *value.FunctionGenerator) {
 		IsPure: true,
 	}.SetDescription("data...", "Creates a dataSet which can be used to create dat or csv files. "+
 		"A list can be used to create the content by calling the data-Method."))
-	fg.ReplaceOp("*", true, true, createMul).
-		ReplaceOp("/", false, true, createDiv).
-		ReplaceOp("-", false, true, createSub).
-		ReplaceOp("+", false, true, createAdd).
-		ReplaceUnary("-", createNeg)
+
+	createMul(fg)
+	createDiv(fg)
+	createSub(fg)
+	createAdd(fg)
+
+	fg.ReplaceUnary("-", createNeg)
 
 }
 
@@ -1696,106 +1690,47 @@ func createNeg(orig funcGen.UnaryOperatorImpl[value.Value]) funcGen.UnaryOperato
 	}
 }
 
-func TypeOperationCommutative[T value.Value](
-	orig funcGen.OperatorImpl[value.Value],
-	f func(a, b T) (value.Value, error),
-	fl func(a T, b value.Value) (value.Value, error)) funcGen.OperatorImpl[value.Value] {
-
-	return func(st funcGen.Stack[value.Value], a value.Value, b value.Value) (value.Value, error) {
-		if ae, ok := a.(T); ok {
-			if be, ok := b.(T); ok {
-				// both are of type T
-				return f(ae, be)
-			} else {
-				// a is of type T, b isn't
-				return fl(ae, b)
-			}
-		} else {
-			if be, ok := b.(T); ok {
-				// b is of type T, a isn't
-				return fl(be, a)
-			} else {
-				// no value of Type T at all
-				return orig(st, a, b)
-			}
-		}
-	}
-}
-
-func TypeOperation[T value.Value](
-	orig funcGen.OperatorImpl[value.Value],
-	f func(a, b T) (value.Value, error),
-	fl1 func(a T, b value.Value) (value.Value, error),
-	fl2 func(a value.Value, T T) (value.Value, error)) funcGen.OperatorImpl[value.Value] {
-
-	return func(st funcGen.Stack[value.Value], a value.Value, b value.Value) (value.Value, error) {
-		if ae, ok := a.(T); ok {
-			if be, ok := b.(T); ok {
-				// both are of type T
-				return f(ae, be)
-			} else {
-				// a is of type T, b isn't
-				return fl1(ae, b)
-			}
-		} else {
-			if be, ok := b.(T); ok {
-				// b is of type T, a isn't
-				return fl2(a, be)
-			} else {
-				// no value of Type T at all
-				return orig(st, a, b)
-			}
-		}
-	}
-}
-
-func createAdd(old funcGen.OperatorImpl[value.Value]) funcGen.OperatorImpl[value.Value] {
-	vec := TypeOperationCommutative(old, func(a, b graph.Vector3d) (value.Value, error) {
-		return a.Add(b), nil
-	}, func(a graph.Vector3d, b value.Value) (value.Value, error) {
-		return nil, fmt.Errorf("vector add requires a vector value")
+func createAdd(fg *value.FunctionGenerator) {
+	m := fg.GetOpMatrix("+")
+	m.Register(graph.Vector3dType, graph.Vector3dType, func(st funcGen.Stack[value.Value], a, b value.Value) (value.Value, error) {
+		return a.(graph.Vector3d).Add(b.(graph.Vector3d)), nil
 	})
-	return vec
 }
 
-func createMul(old funcGen.OperatorImpl[value.Value]) funcGen.OperatorImpl[value.Value] {
-	vec := TypeOperationCommutative(old, func(a, b graph.Vector3d) (value.Value, error) {
-		return value.Float(a.Scalar(b)), nil
-	}, func(a graph.Vector3d, b value.Value) (value.Value, error) {
-		if f, ok := b.ToFloat(); ok {
-			return a.Mul(f), nil
-		}
-		return nil, fmt.Errorf("vector mul requires a float value")
+func createMul(fg *value.FunctionGenerator) {
+	m := fg.GetOpMatrix("*")
+	m.Register(graph.Vector3dType, graph.Vector3dType, func(st funcGen.Stack[value.Value], a, b value.Value) (value.Value, error) {
+		return value.Float(a.(graph.Vector3d).Scalar(b.(graph.Vector3d))), nil
 	})
-	return vec
+	m.Register(graph.Vector3dType, value.FloatTypeId, func(st funcGen.Stack[value.Value], a, b value.Value) (value.Value, error) {
+		return a.(graph.Vector3d).Mul(float64(b.(value.Float))), nil
+	})
+	m.Register(graph.Vector3dType, value.IntTypeId, func(st funcGen.Stack[value.Value], a, b value.Value) (value.Value, error) {
+		return a.(graph.Vector3d).Mul(float64(b.(value.Int))), nil
+	})
+	m.Register(value.FloatTypeId, graph.Vector3dType, func(st funcGen.Stack[value.Value], a, b value.Value) (value.Value, error) {
+		return b.(graph.Vector3d).Mul(float64(a.(value.Float))), nil
+	})
+	m.Register(value.IntTypeId, graph.Vector3dType, func(st funcGen.Stack[value.Value], a, b value.Value) (value.Value, error) {
+		return b.(graph.Vector3d).Mul(float64(a.(value.Int))), nil
+	})
 }
 
-func createSub(old funcGen.OperatorImpl[value.Value]) funcGen.OperatorImpl[value.Value] {
-	vec := TypeOperation(old, func(a, b graph.Vector3d) (value.Value, error) {
-		return a.Sub(b), nil
-	}, func(a graph.Vector3d, b value.Value) (value.Value, error) {
-		return nil, fmt.Errorf("vector sub requires a vector value")
-	}, func(a value.Value, b graph.Vector3d) (value.Value, error) {
-		return nil, fmt.Errorf("vector sub requires a vector value")
+func createSub(fg *value.FunctionGenerator) {
+	m := fg.GetOpMatrix("-")
+	m.Register(graph.Vector3dType, graph.Vector3dType, func(st funcGen.Stack[value.Value], a, b value.Value) (value.Value, error) {
+		return a.(graph.Vector3d).Sub(b.(graph.Vector3d)), nil
 	})
-	return vec
 }
 
-func createDiv(old funcGen.OperatorImpl[value.Value]) funcGen.OperatorImpl[value.Value] {
-	vec := TypeOperation(old, func(a, b graph.Vector3d) (value.Value, error) {
-		return nil, fmt.Errorf("vector div requires a vector and a float value")
-	}, func(a graph.Vector3d, b value.Value) (value.Value, error) {
-		if f, ok := b.ToFloat(); ok {
-			if f == 0 {
-				return nil, fmt.Errorf("division by zero")
-			}
-			return a.Div(f), nil
-		}
-		return nil, fmt.Errorf("vector div requires a vector and a float value")
-	}, func(a value.Value, b graph.Vector3d) (value.Value, error) {
-		return nil, fmt.Errorf("vector div requires a vector and a float value")
+func createDiv(fg *value.FunctionGenerator) {
+	m := fg.GetOpMatrix("/")
+	m.Register(graph.Vector3dType, value.FloatTypeId, func(st funcGen.Stack[value.Value], a, b value.Value) (value.Value, error) {
+		return a.(graph.Vector3d).Div(float64(b.(value.Float))), nil
 	})
-	return vec
+	m.Register(graph.Vector3dType, value.IntTypeId, func(st funcGen.Stack[value.Value], a, b value.Value) (value.Value, error) {
+		return a.(graph.Vector3d).Div(float64(b.(value.Int))), nil
+	})
 }
 
 func GetStyle(st funcGen.Stack[value.Value], index int, defStyle *graph.Style) (StyleValue, error) {
@@ -1813,8 +1748,8 @@ func GetStyle(st funcGen.Stack[value.Value], index int, defStyle *graph.Style) (
 	if styleVal, ok := v.(StyleValue); ok {
 		return styleVal, nil
 	}
-	if colNum, ok := v.ToInt(); ok {
-		return StyleValue{Holder[*graph.Style]{graph.GetColor(colNum)}}, nil
+	if colNum, ok := v.(value.Int); ok {
+		return StyleValue{Holder[*graph.Style]{graph.GetColor(int(colNum))}}, nil
 	}
 	return StyleValue{}, fmt.Errorf("argument %d needs to be a style or a color number", index)
 }
@@ -1861,7 +1796,7 @@ func listToPoints(list *value.List) graph.Points {
 	}
 }
 
-func listFuncToPoints(list *value.List, xc funcGen.Function[value.Value], yc funcGen.Function[value.Value]) graph.Points {
+func listFuncToPoints(list *value.List, xc, yc value.Closure) graph.Points {
 	return func(yield func(graph.Point, error) bool) {
 		st := funcGen.NewEmptyStack[value.Value]()
 		err := list.Iterate(st, func(v value.Value) error {

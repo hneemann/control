@@ -24,6 +24,12 @@ func TestLinear(t *testing.T) {
 		{name: "poly5", exp: "let p=poly(1,0,1); string(p.roots())", res: value.String("[-0-1i, -0+1i]")},
 		{name: "poly6", exp: "let p=poly(-1,0,1); string(p.roots())", res: value.String("[-1, 1]")},
 		{name: "poly7", exp: "let p=poly(4,2)/2; string(p)", res: value.String("s+2")},
+		{name: "poly8", exp: "let p=poly(4,2)/2.0; string(p)", res: value.String("s+2")},
+
+		{name: "polyMul", exp: "let p=poly(2,1)*2; string(p)", res: value.String("2*s+4")},
+		{name: "polyMul", exp: "let p=poly(2,1)*2.0; string(p)", res: value.String("2*s+4")},
+		{name: "polyDiv", exp: "let p=2/poly(2,1); string(p)", res: value.String("2/(s+2)")},
+		{name: "polyDiv", exp: "let p=2.0/poly(2,1); string(p)", res: value.String("2/(s+2)")},
 
 		{name: "polyExp1", exp: "let p=poly(1,1)^2; string(p)", res: value.String("s^2+2*s+1")},
 		{name: "polyExp2", exp: "let p=poly(1,1)^(-2); string(p)", res: value.String("1/(s^2+2*s+1)")},
@@ -31,9 +37,21 @@ func TestLinear(t *testing.T) {
 		{name: "polySub1", exp: "let p=poly(4,2)-poly(1,1); string(p)", res: value.String("s+3")},
 		{name: "polySub2", exp: "let p=poly(4,2)-1; string(p)", res: value.String("2*s+3")},
 		{name: "polySub3", exp: "let p=1-poly(4,2); string(p)", res: value.String("-2*s-3")},
+		{name: "polySub2", exp: "let p=poly(4,2)-1.0; string(p)", res: value.String("2*s+3")},
+		{name: "polySub3", exp: "let p=1.0-poly(4,2); string(p)", res: value.String("-2*s-3")},
 
-		{name: "linDiv1", exp: "let l=(poly(4,2)/poly(1,1))/2; string(l)", res: value.String("(s+2)/(s+1)")},
+		{name: "polyAdd1", exp: "let p=1+poly(4,2); string(p)", res: value.String("2*s+5")},
+		{name: "polyAdd2", exp: "let p=1.0+poly(4,2); string(p)", res: value.String("2*s+5")},
+
+		{name: "linMul", exp: "let l=(poly(4,2)/poly(1,1))*poly(3,1); string(l)", res: value.String("(2*s^2+10*s+12)/(s+1)")},
+		{name: "linMul", exp: "let l=poly(3,1)*(poly(4,2)/poly(1,1)); string(l)", res: value.String("(2*s^2+10*s+12)/(s+1)")},
+		{name: "linMul2", exp: "let l=(poly(4,2)/poly(1,1))*2.0; string(l)", res: value.String("(4*s+8)/(s+1)")},
+		{name: "linMul3", exp: "let l=(poly(4,2)/poly(1,1))*2; string(l)", res: value.String("(4*s+8)/(s+1)")},
+
+		{name: "linDiv1", exp: "let l=(poly(4,2)/poly(1,1))/2; string(l)", res: value.String("(2*s+4)/(2*s+2)")},
+		{name: "linDiv1", exp: "let l=(poly(4,2)/poly(1,1))/2.0; string(l)", res: value.String("(2*s+4)/(2*s+2)")},
 		{name: "linDiv2", exp: "let l=2/(poly(4,2)/poly(1,1)); string(l)", res: value.String("(2*s+2)/(2*s+4)")},
+		{name: "linDiv3", exp: "let l=2.0/(poly(4,2)/poly(1,1)); string(l)", res: value.String("(2*s+2)/(2*s+4)")},
 
 		{name: "linDiv3", exp: "let l=(poly(4,2)/poly(1,1))/poly(2,1); string(l)", res: value.String("(2*s+4)/(s^2+3*s+2)")},
 		{name: "linDiv4", exp: "let l=poly(2,1)/(poly(4,2)/poly(1,1)); string(l)", res: value.String("(s^2+3*s+2)/(2*s+4)")},
@@ -43,7 +61,14 @@ func TestLinear(t *testing.T) {
 		{name: "linPoly", exp: "let n=poly(1,2); let d=poly(1,2,3);string((n/d))", res: value.String("(2*s+1)/(3*s^2+2*s+1)")},
 		{name: "linPoly2", exp: "let l=(poly(1,2)/poly(1,3)); let d=l*poly(1,4);string(d)", res: value.String("(8*s^2+6*s+1)/(3*s+1)")},
 
+		{name: "linAdd1", exp: "string((poly(2,2)/poly(2,1))+1)", res: value.String("(3*s+4)/(s+2)")},
+		{name: "linAdd1", exp: "string((poly(2,2)/poly(2,1))+1.0)", res: value.String("(3*s+4)/(s+2)")},
+		{name: "linAdd1", exp: "string(1+(poly(2,2)/poly(2,1)))", res: value.String("(3*s+4)/(s+2)")},
+		{name: "linAdd1", exp: "string(1.0+(poly(2,2)/poly(2,1)))", res: value.String("(3*s+4)/(s+2)")},
+
 		{name: "linAdd1", exp: "string((poly(2,2)/poly(2,1))+(poly(1,1)/poly(3,1)))", res: value.String("(3*s^2+11*s+8)/(s^2+5*s+6)")},
+		{name: "linAdd2", exp: "string((poly(2,2)/poly(2,1))+poly(1,1))", res: value.String("(s^2+5*s+4)/(s+2)")},
+		{name: "linAdd2", exp: "string(poly(1,1)+(poly(2,2)/poly(2,1)))", res: value.String("(s^2+5*s+4)/(s+2)")},
 
 		{name: "linSub1", exp: "string((poly(2,2)/poly(2,1))-(poly(1,1)/poly(3,1)))", res: value.String("(s^2+5*s+4)/(s^2+5*s+6)")},
 		{name: "linSub2", exp: "string((poly(2,2)/poly(2,1))-poly(1,1))", res: value.String("(-s^2-s)/(s+2)")},
@@ -51,6 +76,8 @@ func TestLinear(t *testing.T) {
 
 		{name: "linSub4", exp: "string(1-(poly(2,2)/poly(2,1)))", res: value.String("-s/(s+2)")},
 		{name: "linSub5", exp: "string((poly(2,2)/poly(2,1))-1)", res: value.String("s/(s+2)")},
+		{name: "linSub4", exp: "string(1.0-(poly(2,2)/poly(2,1)))", res: value.String("-s/(s+2)")},
+		{name: "linSub5", exp: "string((poly(2,2)/poly(2,1))-1.0)", res: value.String("s/(s+2)")},
 
 		{name: "linExp", exp: "string((poly(2,2)/poly(2,1))^2)", res: value.String("(4*s^2+8*s+4)/(s^2+4*s+4)")},
 		{name: "linExp2", exp: "string((poly(2,2)/poly(2,1))^(-2))", res: value.String("(s^2+4*s+4)/(4*s^2+8*s+4)")},
@@ -147,19 +174,29 @@ func TestComplex(t *testing.T) {
 		res  any
 	}{
 		{name: "add", exp: "2+_i*3", res: Complex(complex(2, 3))},
+		{name: "add3", exp: "2.0+_i*3", res: Complex(complex(2, 3))},
+		{name: "add", exp: "_i*3+2", res: Complex(complex(2, 3))},
+		{name: "add3", exp: "_i*3+2.0", res: Complex(complex(2, 3))},
 		{name: "add2", exp: "cmplx(1,2)+cmplx(3,4)", res: Complex(complex(4, 6))},
 		{name: "sub1", exp: "cmplx(1,2)-cmplx(3,4)", res: Complex(complex(-2, -2))},
 		{name: "sub2", exp: "2-_i*3", res: Complex(complex(2, -3))},
 		{name: "sub3", exp: "_i*3-2", res: Complex(complex(-2, 3))},
+		{name: "sub2", exp: "2.0-_i*3", res: Complex(complex(2, -3))},
+		{name: "sub3", exp: "_i*3-2.0", res: Complex(complex(-2, 3))},
 		{name: "mul", exp: "cmplx(1,2)*cmplx(3,4)", res: Complex(complex(-5, 10))},
+		{name: "mul", exp: "2.0*cmplx(3,4)", res: Complex(complex(6, 8))},
 		{name: "div", exp: "cmplx(1,2)/cmplx(3,4)", res: Complex(complex(11.0/25, 2.0/25))},
 		{name: "div2", exp: "25*cmplx(1,2)/cmplx(3,4)", res: Complex(complex(11, 2))},
 		{name: "div3", exp: "cmplx(1,2)/cmplx(3,4)*25", res: Complex(complex(11, 2))},
 		{name: "div4", exp: "1/cmplx(1,2)", res: Complex(complex(0.2, -0.4))},
+		{name: "div4", exp: "1.0/cmplx(1,2)", res: Complex(complex(0.2, -0.4))},
 		{name: "div5", exp: "cmplx(1,2)/2", res: Complex(complex(0.5, 1))},
+		{name: "div6", exp: "cmplx(1,2)/2.0", res: Complex(complex(0.5, 1))},
 		{name: "exp1", exp: "cmplx(1,2)^cmplx(3,4)", res: Complex(complex(0.1290095940, 0.03392409290))},
 		{name: "exp2", exp: "cmplx(1,2)^2", res: Complex(complex(-3, 4))},
+		{name: "exp2", exp: "cmplx(1,2)^2.0", res: Complex(complex(-3, 4))},
 		{name: "exp3", exp: "2^cmplx(1,2)", res: Complex(complex(0.3669139494, 1.966055480))},
+		{name: "exp3", exp: "2.0^cmplx(1,2)", res: Complex(complex(0.3669139494, 1.966055480))},
 		{name: "expf", exp: "exp(1)", res: value.Float(math.E)},
 		{name: "expf2", exp: "exp(1.0)", res: value.Float(math.E)},
 		{name: "expf3", exp: "exp(_i*pi)", res: Complex(complex(-1, 0))},

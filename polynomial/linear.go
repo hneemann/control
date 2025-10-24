@@ -324,6 +324,13 @@ func (l *Linear) MulFloat(f float64) *Linear {
 	}
 }
 
+func (l *Linear) DivFloat(f float64) *Linear {
+	return &Linear{
+		Numerator:   l.Numerator,
+		Denominator: l.Denominator.MulFloat(f),
+	}
+}
+
 func (l *Linear) MulPoly(p Polynomial) *Linear {
 	return &Linear{
 		Numerator:   l.Numerator.Mul(p),

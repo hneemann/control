@@ -43,7 +43,7 @@ func Const(c float64) BlockFactory {
 	}
 }
 
-func Closure(c funcGen.Function[value.Value]) BlockFactory {
+func Closure(c value.Closure) BlockFactory {
 	return BlockFactory{
 		creator: func(args []*float64) (BlockNextFunc, error) {
 			st := funcGen.NewEmptyStack[value.Value]()
@@ -67,7 +67,7 @@ func Closure(c funcGen.Function[value.Value]) BlockFactory {
 	}
 }
 
-func ClosureTime(c funcGen.Function[value.Value]) BlockFactory {
+func ClosureTime(c value.Closure) BlockFactory {
 	return BlockFactory{
 		creator: func(args []*float64) (BlockNextFunc, error) {
 			st := funcGen.NewEmptyStack[value.Value]()
@@ -487,7 +487,7 @@ func valueToBlock(blockValue value.Value, in []string) (BlockFactory, error) {
 		return Const(c), nil
 	}
 
-	if c, ok := blockValue.ToClosure(); ok {
+	if c, ok := blockValue.(value.Closure); ok {
 		if len(in) == 0 {
 			return ClosureTime(c), nil
 		} else {

@@ -139,21 +139,21 @@ func (c Color) ToGoColor() col.RGBA {
 	}
 }
 
-func (c Color) Darker(p int) Color {
+func (c Color) Darker(p float64) Color {
 	if p > 99 {
 		p = 99
 	} else if p < 0 {
 		p = 0
 	}
 	return Color{
-		R: colVal(int(c.R) * (100 - p) / 100),
-		G: colVal(int(c.G) * (100 - p) / 100),
-		B: colVal(int(c.B) * (100 - p) / 100),
+		R: colVal(float64(c.R) * (100 - p) / 100),
+		G: colVal(float64(c.G) * (100 - p) / 100),
+		B: colVal(float64(c.B) * (100 - p) / 100),
 		A: c.A,
 	}
 }
 
-func (c Color) Brighter(p int) Color {
+func (c Color) Brighter(p float64) Color {
 	r := int(c.R)
 	if r < 3 {
 		r = 3
@@ -175,14 +175,14 @@ func (c Color) Brighter(p int) Color {
 	}
 
 	return Color{
-		colVal(r * 100 / (100 - p)),
-		colVal(g * 100 / (100 - p)),
-		colVal(b * 100 / (100 - p)),
+		colVal(float64(r) * 100 / (100 - p)),
+		colVal(float64(g) * 100 / (100 - p)),
+		colVal(float64(b) * 100 / (100 - p)),
 		c.A,
 	}
 }
 
-func colVal(u int) uint8 {
+func colVal(u float64) uint8 {
 	if u < 0 {
 		return 0
 	} else if u > 255 {
@@ -265,7 +265,7 @@ func (s *Style) SetStrokeWidth(sw float64) *Style {
 func (s *Style) SetTrans(tr float64) *Style {
 	var style Style
 	style = *s
-	style.Color.A = colVal(int((1 - tr) * 255))
+	style.Color.A = colVal((1 - tr) * 255)
 	return &style
 }
 
@@ -276,14 +276,14 @@ func (s *Style) SetDash(d ...float64) *Style {
 	return &style
 }
 
-func (s *Style) Darker(p int) *Style {
+func (s *Style) Darker(p float64) *Style {
 	var style Style
 	style = *s
 	style.Color = s.Color.Darker(p)
 	return &style
 }
 
-func (s *Style) Brighter(p int) *Style {
+func (s *Style) Brighter(p float64) *Style {
 	var style Style
 	style = *s
 	style.Color = s.Color.Brighter(p)
