@@ -130,6 +130,13 @@ func (v Vector3d) Neg() Vector3d {
 	return Vector3d{-v.X, -v.Y, -v.Z}
 }
 
+func (v Vector3d) ToPoint() Point {
+	return Point{
+		X: v.X,
+		Y: v.Y,
+	}
+}
+
 type PathElement3d struct {
 	Mode rune
 	Vector3d

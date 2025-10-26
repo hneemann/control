@@ -1345,7 +1345,7 @@ func Setup(fg *value.FunctionGenerator) {
 		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
 			if x, ok := st.Get(0).ToFloat(); ok {
 				if y, ok := st.Get(1).ToFloat(); ok {
-					if z, ok := st.Get(2).ToFloat(); ok {
+					if z, ok := st.GetOptional(2, value.Float(0)).ToFloat(); ok {
 						return graph.Vector3d{x, y, z}, nil
 					}
 				}
@@ -1354,7 +1354,7 @@ func Setup(fg *value.FunctionGenerator) {
 		},
 		Args:   3,
 		IsPure: true,
-	}.SetDescription("x", "y", "z", "Creates a vector."))
+	}.SetDescription("x", "y", "z", "Creates a vector.").VarArgs(2, 3))
 	fg.AddStaticFunction("plot", funcGen.Function[value.Value]{
 		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
 			p := NewPlotValue(&graph.Plot{})
