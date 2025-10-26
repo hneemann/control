@@ -52,10 +52,7 @@ sufficient for simulating more complex systems.
 
 ## Bode Plot ##
 
-The script for the Bode plot looks like this. The `.ampModify` and 
-`.phaseModify` methods are used to add additional lines to the amplitude and
-phase plots. The `xConst` and `yConst` functions are used to add vertical
-and horizontal lines to the plots. 
+The script for the Bode plot looks like this: 
 
 ```
 let g  = 70/((s+1)*(s+2)*(s+2.5));
