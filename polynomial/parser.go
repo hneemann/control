@@ -233,25 +233,6 @@ func (p Polynomial) ToString(_ funcGen.Stack[value.Value]) (string, error) {
 	return p.String(), nil
 }
 
-func (p Polynomial) ToBool() (bool, bool) {
-	return false, false
-}
-
-func (p Polynomial) ToClosure() (funcGen.Function[value.Value], bool) {
-	return funcGen.Function[value.Value]{
-		Func: func(st funcGen.Stack[value.Value], _ []value.Value) (value.Value, error) {
-			if sc, ok := st.Get(0).(Complex); ok {
-				return Complex(p.EvalCplx(complex128(sc))), nil
-			} else if f, ok := st.Get(0).ToFloat(); ok {
-				return value.Float(p.Eval(f)), nil
-			}
-			return nil, fmt.Errorf("eval requires a complex or a float value")
-		},
-		Args:   1,
-		IsPure: true,
-	}, true
-}
-
 func (p Polynomial) GetType() value.Type {
 	return PolynomialValueType
 }
@@ -334,25 +315,6 @@ func (l *Linear) ToFloat() (float64, bool) {
 
 func (l *Linear) ToString(_ funcGen.Stack[value.Value]) (string, error) {
 	return l.String(), nil
-}
-
-func (l *Linear) ToBool() (bool, bool) {
-	return false, false
-}
-
-func (l *Linear) ToClosure() (funcGen.Function[value.Value], bool) {
-	return funcGen.Function[value.Value]{
-		Func: func(st funcGen.Stack[value.Value], _ []value.Value) (value.Value, error) {
-			if sc, ok := st.Get(0).(Complex); ok {
-				return Complex(l.EvalCplx(complex128(sc))), nil
-			} else if f, ok := st.Get(0).ToFloat(); ok {
-				return value.Float(l.Eval(f)), nil
-			}
-			return nil, fmt.Errorf("eval requires a complex or a float value")
-		},
-		Args:   1,
-		IsPure: true,
-	}, true
 }
 
 func (l *Linear) GetType() value.Type {
@@ -1088,14 +1050,6 @@ func (r *GuiElements) ToFloat() (float64, bool) {
 
 func (r *GuiElements) ToString(_ funcGen.Stack[value.Value]) (string, error) {
 	return "gui", nil
-}
-
-func (r *GuiElements) ToBool() (bool, bool) {
-	return false, false
-}
-
-func (r *GuiElements) ToClosure() (funcGen.Function[value.Value], bool) {
-	return funcGen.Function[value.Value]{}, false
 }
 
 func (r *GuiElements) GetType() value.Type {
