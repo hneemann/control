@@ -1230,40 +1230,40 @@ func (ch closureHandler) FromClosure(c funcGen.Function[value.Value]) value.Valu
 }
 
 func (ch closureHandler) ToClosure(v value.Value) (funcGen.Function[value.Value], bool) {
-	if cl, ok := v.(value.Closure); ok {
-		return funcGen.Function[value.Value](cl), true
-	}
-	if p, ok := v.(Polynomial); ok {
+	switch val := v.(type) {
+	case value.Closure:
+		return funcGen.Function[value.Value](val), true
+	case Polynomial:
 		return funcGen.Function[value.Value]{
 			Func: func(stack funcGen.Stack[value.Value], _ []value.Value) (value.Value, error) {
 				if s, ok := stack.Get(0).ToFloat(); ok {
-					return value.Float(p.Eval(s)), nil
+					return value.Float(val.Eval(s)), nil
 				}
 				if s, ok := stack.Get(0).(Complex); ok {
-					return Complex(p.EvalCplx(complex128(s))), nil
+					return Complex(val.EvalCplx(complex128(s))), nil
 				}
 				return nil, errors.New("polynomial requires a float as argument")
 			},
 			Args:   1,
 			IsPure: true,
 		}, true
-	}
-	if l, ok := v.(*Linear); ok {
+	case *Linear:
 		return funcGen.Function[value.Value]{
 			Func: func(stack funcGen.Stack[value.Value], _ []value.Value) (value.Value, error) {
 				if s, ok := stack.Get(0).ToFloat(); ok {
-					return value.Float(l.Eval(s)), nil
+					return value.Float(val.Eval(s)), nil
 				}
 				if s, ok := stack.Get(0).(Complex); ok {
-					return Complex(l.EvalCplx(complex128(s))), nil
+					return Complex(val.EvalCplx(complex128(s))), nil
 				}
 				return nil, errors.New("polynomial requires a float as argument")
 			},
 			Args:   1,
 			IsPure: true,
 		}, true
+	default:
+		return funcGen.Function[value.Value]{}, false
 	}
-	return funcGen.Function[value.Value]{}, false
 }
 
 var Parser = value.New().
