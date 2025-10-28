@@ -44,6 +44,7 @@ func TestLinear(t *testing.T) {
 		{name: "polyAdd2", exp: "let p=1.0+poly(4,2); string(p)", res: value.String("2*s+5")},
 
 		{name: "polyFunc", exp: "let p=poly(4,2); p(2)", res: value.Float(8)},
+		{name: "polyFunc", exp: "let p=poly(4,2); p(_i)", res: Complex(complex(4, 2))},
 
 		{name: "linMul", exp: "let l=(poly(4,2)/poly(1,1))*poly(3,1); string(l)", res: value.String("(2*s^2+10*s+12)/(s+1)")},
 		{name: "linMul", exp: "let l=poly(3,1)*(poly(4,2)/poly(1,1)); string(l)", res: value.String("(2*s^2+10*s+12)/(s+1)")},
@@ -64,6 +65,7 @@ func TestLinear(t *testing.T) {
 		{name: "linPoly2", exp: "let l=(poly(1,2)/poly(1,3)); let d=l*poly(1,4);string(d)", res: value.String("(8*s^2+6*s+1)/(3*s+1)")},
 
 		{name: "linFunc", exp: "let l=poly(3,1)/poly(1,1); l(1)", res: value.Float(2)},
+		{name: "linFunc", exp: "let l=poly(3,1)/poly(1,1); l(_i)", res: Complex(complex(2, -1))},
 
 		{name: "linAdd1", exp: "string((poly(2,2)/poly(2,1))+1)", res: value.String("(3*s+4)/(s+2)")},
 		{name: "linAdd1", exp: "string((poly(2,2)/poly(2,1))+1.0)", res: value.String("(3*s+4)/(s+2)")},
@@ -117,6 +119,11 @@ func TestLinear(t *testing.T) {
 					f, ok := res.ToFloat()
 					assert.True(t, ok)
 					assert.InDelta(t, float64(expected), f, 1e-6, test.exp)
+				case Complex:
+					c, ok := res.(Complex)
+					assert.True(t, ok)
+					assert.InDelta(t, real(expected), real(c), 1e-6, test.exp)
+					assert.InDelta(t, imag(expected), imag(c), 1e-6, test.exp)
 				case *Linear:
 					fmt.Println(res)
 				default:
