@@ -1,7 +1,6 @@
 package polynomial
 
 import (
-	"fmt"
 	"github.com/hneemann/parser2/funcGen"
 	"github.com/hneemann/parser2/value"
 	"github.com/hneemann/parser2/value/export"
@@ -124,8 +123,6 @@ func TestLinear(t *testing.T) {
 					assert.True(t, ok)
 					assert.InDelta(t, real(expected), real(c), 1e-6, test.exp)
 					assert.InDelta(t, imag(expected), imag(c), 1e-6, test.exp)
-				case *Linear:
-					fmt.Println(res)
 				default:
 					assert.Equal(t, test.res, res, test.exp)
 				}
