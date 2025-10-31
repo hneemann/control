@@ -73,8 +73,8 @@ type Points func(func(Point, error) bool)
 
 func (p Points) Iter(yield func(PathElement, error) bool) {
 	m := 'M'
-	for point := range p {
-		if !yield(PathElement{Mode: m, Point: point}, nil) {
+	for point, err := range p {
+		if !yield(PathElement{Mode: m, Point: point}, err) {
 			return
 		}
 		m = 'L'
