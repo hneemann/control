@@ -22,8 +22,8 @@ github.com/gorilla/securecookie v1.1.2 h1:YCIWL56dvtr73r6715mJs5ZvhtnY73hBvEF8kX
 github.com/gorilla/securecookie v1.1.2/go.mod h1:NfCASbcHqRSY+3a8tlWJwsQap2VX5pwzwo4h3eOamfo=
 github.com/hneemann/iterator v0.0.0-20240630073221-aab15310e28c h1:itki31EzEjJar/sQHUc1lXD9/vG0g72W8TPUx8wwC/M=
 github.com/hneemann/iterator v0.0.0-20240630073221-aab15310e28c/go.mod h1:Y4LjHwBja9p9vaWnjpEzDorwPp/9UcDmycAJPX6WBEI=
-github.com/hneemann/parser2 v0.0.0-20251030143427-ea6d6e80935f h1:hseZCVv2oc99rV5XmiBI5flMudOR1dYU62zI3HvHWiQ=
-github.com/hneemann/parser2 v0.0.0-20251030143427-ea6d6e80935f/go.mod h1:iU/lCRFAwZA9WUXPoaIx8qr6pfUBK49ds0Q9rz/Qb50=
+github.com/hneemann/parser2 v0.0.0-20251031110516-f12c24db95ee h1:O4qZZn541H33a2eCjwzA8s48if6srPD0nFNhlMelkIM=
+github.com/hneemann/parser2 v0.0.0-20251031110516-f12c24db95ee/go.mod h1:iU/lCRFAwZA9WUXPoaIx8qr6pfUBK49ds0Q9rz/Qb50=
 github.com/hneemann/session v0.0.0-20250917051702-4d7e0d523c75 h1:vfQNTAJhWRbpUeb1BGsqCVH08WNJymDjXe99FAThlag=
 github.com/hneemann/session v0.0.0-20250917051702-4d7e0d523c75/go.mod h1:3lxFYNIGHpgMb2X2fefxmaw6bTH2kmdtNuaWXxh83jQ=
 github.com/jeremija/gosubmit v0.2.8 h1:mmSITBz9JxVtu8eqbN+zmmwX7Ij2RidQxhcwRVI4wqA=
