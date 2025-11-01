@@ -82,6 +82,7 @@ func (a AxisDescription) MakeValid() AxisDescription {
 type Plot struct {
 	X, Y           AxisDescription
 	Square         bool
+	SquareYCenter  float64
 	LeftBorder     float64
 	RightBorder    float64
 	NoBorder       bool
@@ -193,9 +194,9 @@ func (p *Plot) DrawTo(canvas Canvas) (err error) {
 
 	if p.Square && p.xAxis.IsLinear {
 		yBoundsWidth := innerRect.Height() * p.xAxis.Bounds.Width() / innerRect.Width()
-		dif := (yBoundsWidth - yBoundsPre.Width()) / 2
-		yBoundsPre.Min -= dif
-		yBoundsPre.Max += dif
+		dif := yBoundsWidth / 2
+		yBoundsPre.Min = p.SquareYCenter - dif
+		yBoundsPre.Max = p.SquareYCenter + dif
 		yExp = 0
 	}
 

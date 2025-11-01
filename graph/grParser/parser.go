@@ -639,11 +639,16 @@ func createPlotMethods() value.MethodMap {
 			plot.Value.Cross = true
 			return plot, nil
 		}).SetMethodDescription("Draws a coordinate cross instead of a rectangle around the plot."),
-		"square": value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+		"ySquare": value.MethodAtType(1, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			plot = plot.Copy()
 			plot.Value.Square = true
+			if c, ok := stack.GetOptional(1, value.Float(0)).ToFloat(); ok {
+				plot.Value.SquareYCenter = c
+			} else {
+				return nil, errors.New("square requires a float value")
+			}
 			return plot, nil
-		}).SetMethodDescription("Sets the aspect ratio of the axis bounds to one by modifying the set Y bounds appropriately."),
+		}).SetMethodDescription("yCenter", "Sets the aspect ratio of the axis bounds to one by setting the Y bounds appropriately.").VarArgsMethod(0, 1),
 		"noBorders": value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			plot = plot.Copy()
 			plot.Value.NoBorder = true
