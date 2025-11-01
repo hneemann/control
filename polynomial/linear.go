@@ -1148,6 +1148,10 @@ func (b bodeAmplitude) Legend() graph.Legend {
 }
 
 func (l *Linear) NyquistPos(sMax float64) (*graph.ParameterFunc, error) {
+	if sMax == 0 {
+		sMax = l.findNyqustMax()
+	}
+
 	pfPos, err := graph.NewLogParameterFunc(0.001, sMax, 0)
 	if err != nil {
 		return nil, fmt.Errorf("error creating Nyquist positive frequency parameter function: %w", err)
@@ -1158,10 +1162,16 @@ func (l *Linear) NyquistPos(sMax float64) (*graph.ParameterFunc, error) {
 	}
 	pfPos.Style = posStyle
 	pfPos.Title = "ω>0"
+
+	l.completeNyquist(pfPos)
 	return pfPos, nil
 }
 
 func (l *Linear) NyquistNeg(sMax float64) (*graph.ParameterFunc, error) {
+	if sMax == 0 {
+		sMax = l.findNyqustMax()
+	}
+
 	pfNeg, err := graph.NewLogParameterFunc(0.001, sMax, 0)
 	if err != nil {
 		return nil, fmt.Errorf("error creating Nyquist negative frequency parameter function: %w", err)
@@ -1172,7 +1182,39 @@ func (l *Linear) NyquistNeg(sMax float64) (*graph.ParameterFunc, error) {
 	}
 	pfNeg.Style = negStyle
 	pfNeg.Title = "ω<0"
+
+	l.completeNyquist(pfNeg)
 	return pfNeg, nil
+}
+
+// completeNyquist adds the start and endpoint of the curve if they exist
+func (l *Linear) completeNyquist(pf *graph.ParameterFunc) {
+	start := l.EvalCplx(complex(0, 0))
+	addStart := !(cmplx.IsInf(start) || cmplx.IsNaN(start))
+	addEnd := false
+	var end complex128
+	if l.Numerator.Degree() < l.Denominator.Degree() {
+		addEnd = true
+	} else if l.Numerator.Degree() == l.Denominator.Degree() {
+		n := l.Numerator[len(l.Numerator)-1]
+		d := l.Denominator[len(l.Denominator)-1]
+		if d != 0 {
+			addEnd = true
+			end = complex(n/d, 0)
+		}
+	}
+
+	if addStart || addEnd {
+		pf.ModifyPath = func(path graph.Path) graph.Path {
+			if addStart {
+				path = graph.NewJoinPath(graph.NewPath(false).Add(graph.Point{X: real(start), Y: imag(start)}), path)
+			}
+			if addEnd {
+				path = graph.NewJoinPath(path, graph.NewPath(false).Add(graph.Point{X: real(end), Y: imag(end)}))
+			}
+			return path
+		}
+	}
 }
 
 var (
@@ -1181,6 +1223,10 @@ var (
 )
 
 func (l *Linear) Nyquist(sMax float64, alsoNeg bool) ([]graph.PlotContent, error) {
+	if sMax == 0 {
+		sMax = l.findNyqustMax()
+	}
+
 	cZero := l.EvalCplx(complex(0, 0))
 	isZero := !(math.IsNaN(real(cZero)) || math.IsNaN(imag(cZero)))
 
@@ -1206,6 +1252,19 @@ func (l *Linear) Nyquist(sMax float64, alsoNeg bool) ([]graph.PlotContent, error
 	cp = append(cp, graph.Cross{Style: graph.Gray})
 
 	return cp, nil
+}
+
+func (l *Linear) findNyqustMax() float64 {
+	w := 10.0
+	lastG := math.MaxFloat64
+	for {
+		g := cmplx.Abs(l.EvalCplx(complex(0, w)))
+		if g < 0.01 || g > lastG || w > 10000 {
+			return w
+		}
+		lastG = g
+		w = w * 10
+	}
 }
 
 type dataSet struct {

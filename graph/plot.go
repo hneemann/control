@@ -1054,13 +1054,14 @@ func (c Cross) Legend() Legend {
 }
 
 type ParameterFunc struct {
-	Func     func(t float64) (Point, error)
-	Points   int
-	InitialT float64
-	NextT    func(float64) float64
-	Style    *Style
-	Title    string
-	closed   bool
+	Func       func(t float64) (Point, error)
+	Points     int
+	InitialT   float64
+	NextT      func(float64) float64
+	Style      *Style
+	Title      string
+	ModifyPath func(Path) Path
+	closed     bool
 }
 
 func (p *ParameterFunc) SetTitle(title string) PlotContent {
@@ -1140,6 +1141,9 @@ func (p *ParameterFunc) DrawTo(plot *Plot, canvas Canvas) error {
 		pf:   p,
 		plot: plot,
 		r:    canvas.Rect(),
+	}
+	if p.ModifyPath != nil {
+		return canvas.DrawPath(canvas.Rect().IntersectPath(p.ModifyPath(&path)), p.Style)
 	}
 	return canvas.DrawPath(canvas.Rect().IntersectPath(&path), p.Style)
 }

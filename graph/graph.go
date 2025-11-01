@@ -459,6 +459,36 @@ func (p SlicePath) AddMode(mode rune, point Point) SlicePath {
 	return SlicePath{append(p.Elements, PathElement{Mode: mode, Point: point}), p.Closed}
 }
 
+func NewJoinPath(a, b Path) Path {
+	return joinPath{a, b}
+}
+
+type joinPath struct {
+	a, b Path
+}
+
+func (j joinPath) Iter(yield func(PathElement, error) bool) {
+	for pe, err := range j.a.Iter {
+		if !yield(pe, err) {
+			return
+		}
+	}
+	first := true
+	for pe, err := range j.b.Iter {
+		if first {
+			pe.Mode = 'L'
+			first = false
+		}
+		if !yield(pe, err) {
+			return
+		}
+	}
+}
+
+func (j joinPath) IsClosed() bool {
+	return false
+}
+
 type Shape interface {
 	DrawTo(Canvas, *Style) error
 }

@@ -433,7 +433,7 @@ func linMethods() value.MethodMap {
 			if !ok {
 				return nil, fmt.Errorf("nyquist requires a boolean as first argument")
 			}
-			sMax, ok := st.GetOptional(2, value.Float(1000)).ToFloat()
+			sMax, ok := st.GetOptional(2, value.Float(0)).ToFloat()
 			if !ok {
 				return nil, fmt.Errorf("nyquist requires a float as second argument")
 			}
@@ -447,7 +447,7 @@ func linMethods() value.MethodMap {
 		}).SetMethodDescription("neg", "wMax", "Creates a nyquist plot content. If neg is true also the range -∞<ω<0 is included. "+
 			"The value wMax gives the maximum value for ω. It defaults to 1000rad/s.").VarArgsMethod(0, 2),
 		"nyquistPos": value.MethodAtType(1, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
-			sMax, ok := st.GetOptional(1, value.Float(1000)).ToFloat()
+			sMax, ok := st.GetOptional(1, value.Float(0)).ToFloat()
 			if !ok {
 				return nil, fmt.Errorf("nyquistPos requires a float as first argument")
 			}
@@ -460,7 +460,7 @@ func linMethods() value.MethodMap {
 		}).SetMethodDescription("wMax", "Creates a nyquist plot content with positive ω. "+
 			"The value wMax gives the maximum value for ω. It defaults to 1000rad/s.").VarArgsMethod(0, 1),
 		"nyquistNeg": value.MethodAtType(1, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
-			sMax, ok := st.GetOptional(1, value.Float(1000)).ToFloat()
+			sMax, ok := st.GetOptional(1, value.Float(0)).ToFloat()
 			if !ok {
 				return nil, fmt.Errorf("nyquistPos requires a float as first argument")
 			}
