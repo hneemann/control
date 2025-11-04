@@ -312,13 +312,13 @@ func createStyleMethods() value.MethodMap {
 			}
 			return nil, fmt.Errorf("darker requires a float")
 		}).SetMethodDescription("percent", "Makes the color darker."),
-		"brighter": value.MethodAtType(0, func(styleValue StyleValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+		"brighter": value.MethodAtType(1, func(styleValue StyleValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if p, ok := stack.Get(1).ToFloat(); ok {
 				style := styleValue.Value
 				return StyleValue{Holder[*graph.Style]{style.Brighter(p)}}, nil
 			}
 			return nil, fmt.Errorf("brighter requires a float")
-		}).SetMethodDescription("Makes the color brighter."),
+		}).SetMethodDescription("percent", "Makes the color brighter."),
 		"stroke": value.MethodAtType(1, func(styleValue StyleValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			style := styleValue.Value
 			sw, ok := stack.Get(1).ToFloat()

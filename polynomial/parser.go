@@ -1303,22 +1303,42 @@ var Parser = value.New().
 	RegisterMethods(grParser.Plot3dType, plot3dMethods()).
 	AddConstant("_i", Complex(complex(0, 1))).
 	AddConstant("s", Polynomial{0, 1}).
-	AddStaticFunction("exp", funcGen.Function[value.Value]{
-		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
-			val := stack.Get(0)
-			if c, ok := val.(Complex); ok {
-				return Complex(cmplx.Exp(complex128(c))), nil
-			} else if f, ok := val.ToFloat(); ok {
-				return value.Float(math.Exp(f)), nil
-			} else if i, ok := val.(value.Int); ok {
-				return value.Float(math.Exp(float64(i))), nil
-			} else {
-				return nil, fmt.Errorf("exp requires a complex, float or int value")
-			}
-		},
-		Args:   1,
-		IsPure: true,
-	}.SetDescription("x", "The exp function.")).
+	EnhanceStaticFunction("exp", func(old funcGen.Function[value.Value]) funcGen.Function[value.Value] {
+		return funcGen.Function[value.Value]{
+			Func: func(st funcGen.Stack[value.Value], cs []value.Value) (value.Value, error) {
+				if c, ok := st.Get(0).(Complex); ok {
+					return Complex(cmplx.Exp(complex128(c))), nil
+				}
+				return old.Func(st, cs)
+			},
+			Args:   1,
+			IsPure: true,
+		}
+	}).
+	EnhanceStaticFunction("abs", func(old funcGen.Function[value.Value]) funcGen.Function[value.Value] {
+		return funcGen.Function[value.Value]{
+			Func: func(st funcGen.Stack[value.Value], cs []value.Value) (value.Value, error) {
+				if c, ok := st.Get(0).(Complex); ok {
+					return value.Float(cmplx.Abs(complex128(c))), nil
+				}
+				return old.Func(st, cs)
+			},
+			Args:   1,
+			IsPure: true,
+		}
+	}).
+	EnhanceStaticFunction("sqrt", func(old funcGen.Function[value.Value]) funcGen.Function[value.Value] {
+		return funcGen.Function[value.Value]{
+			Func: func(st funcGen.Stack[value.Value], cs []value.Value) (value.Value, error) {
+				if c, ok := st.Get(0).(Complex); ok {
+					return Complex(cmplx.Sqrt(complex128(c))), nil
+				}
+				return old.Func(st, cs)
+			},
+			Args:   1,
+			IsPure: true,
+		}
+	}).
 	AddStaticFunction("cmplx", funcGen.Function[value.Value]{
 		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
 			if re, ok := stack.Get(0).ToFloat(); ok {
@@ -1332,7 +1352,7 @@ var Parser = value.New().
 			}
 			if c, ok := stack.Get(0).(Complex); ok {
 				if stack.Size() == 2 {
-					return nil, errors.New("cmplx requires only one complex argument")
+					return nil, errors.New("cmplx allows only one complex argument")
 				}
 				return c, nil
 			}
