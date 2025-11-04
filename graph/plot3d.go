@@ -745,7 +745,7 @@ func (g *Graph3d) DrawTo(_ *Plot3d, cube Cube) error {
 		style = Black.SetStrokeWidth(0.5)
 	}
 
-	x, y, z := cube.Bounds()
+	x, y, _ := cube.Bounds()
 
 	uB := g.U
 	if !uB.isSet {
@@ -761,7 +761,7 @@ func (g *Graph3d) DrawTo(_ *Plot3d, cube Cube) error {
 		err := cube.DrawPath(LinePath3d{
 			Func: func(vv float64) (Vector3d, error) {
 				v, err := g.Func(uv, vv)
-				return Vector3d{X: x.Bind(v.X), Y: y.Bind(v.Y), Z: z.Bind(v.Z)}, err
+				return Vector3d{X: v.X, Y: v.Y, Z: v.Z}, err
 			},
 			Bounds: vB,
 			Steps:  vSteps * 3,
@@ -775,7 +775,7 @@ func (g *Graph3d) DrawTo(_ *Plot3d, cube Cube) error {
 		err := cube.DrawPath(LinePath3d{
 			Func: func(uv float64) (Vector3d, error) {
 				v, err := g.Func(uv, vv)
-				return Vector3d{X: x.Bind(v.X), Y: y.Bind(v.Y), Z: z.Bind(v.Z)}, err
+				return Vector3d{X: v.X, Y: v.Y, Z: v.Z}, err
 			},
 			Bounds: uB,
 			Steps:  uSteps * 3,
@@ -839,7 +839,11 @@ func (g *Solid3d) DrawTo(_ *Plot3d, cube Cube) (err error) {
 	}
 	vSteps := g.VSteps
 	if vSteps <= 0 {
-		vSteps = uSteps
+		if g.EvenOdd {
+			vSteps = int(float64(uSteps) / 2 * math.Sqrt(3))
+		} else {
+			vSteps = uSteps
+		}
 	}
 
 	style1 := g.Style1
@@ -853,7 +857,7 @@ func (g *Solid3d) DrawTo(_ *Plot3d, cube Cube) (err error) {
 		}
 	}
 
-	x, y, z := cube.Bounds()
+	x, y, _ := cube.Bounds()
 
 	uB := g.U
 	if !uB.isSet {
@@ -889,25 +893,25 @@ func (g *Solid3d) DrawTo(_ *Plot3d, cube Cube) (err error) {
 
 			if ofs1 == 0 {
 				nErr.Try(cube.DrawTriangle(
-					Vector3d{X: x.Bind(v00.X), Y: y.Bind(v00.Y), Z: z.Bind(v00.Z)},
-					Vector3d{X: x.Bind(v10.X), Y: y.Bind(v10.Y), Z: z.Bind(v10.Z)},
-					Vector3d{X: x.Bind(v11.X), Y: y.Bind(v11.Y), Z: z.Bind(v11.Z)},
+					Vector3d{X: v00.X, Y: v00.Y, Z: v00.Z},
+					Vector3d{X: v10.X, Y: v10.Y, Z: v10.Z},
+					Vector3d{X: v11.X, Y: v11.Y, Z: v11.Z},
 					style1, style2))
 				nErr.Try(cube.DrawTriangle(
-					Vector3d{X: x.Bind(v00.X), Y: y.Bind(v00.Y), Z: z.Bind(v00.Z)},
-					Vector3d{X: x.Bind(v11.X), Y: y.Bind(v11.Y), Z: z.Bind(v11.Z)},
-					Vector3d{X: x.Bind(v01.X), Y: y.Bind(v01.Y), Z: z.Bind(v01.Z)},
+					Vector3d{X: v00.X, Y: v00.Y, Z: v00.Z},
+					Vector3d{X: v11.X, Y: v11.Y, Z: v11.Z},
+					Vector3d{X: v01.X, Y: v01.Y, Z: v01.Z},
 					style1, style2))
 			} else {
 				nErr.Try(cube.DrawTriangle(
-					Vector3d{X: x.Bind(v10.X), Y: y.Bind(v10.Y), Z: z.Bind(v10.Z)},
-					Vector3d{X: x.Bind(v11.X), Y: y.Bind(v11.Y), Z: z.Bind(v11.Z)},
-					Vector3d{X: x.Bind(v01.X), Y: y.Bind(v01.Y), Z: z.Bind(v01.Z)},
+					Vector3d{X: v10.X, Y: v10.Y, Z: v10.Z},
+					Vector3d{X: v11.X, Y: v11.Y, Z: v11.Z},
+					Vector3d{X: v01.X, Y: v01.Y, Z: v01.Z},
 					style1, style2))
 				nErr.Try(cube.DrawTriangle(
-					Vector3d{X: x.Bind(v10.X), Y: y.Bind(v10.Y), Z: z.Bind(v10.Z)},
-					Vector3d{X: x.Bind(v01.X), Y: y.Bind(v01.Y), Z: z.Bind(v01.Z)},
-					Vector3d{X: x.Bind(v00.X), Y: y.Bind(v00.Y), Z: z.Bind(v00.Z)},
+					Vector3d{X: v10.X, Y: v10.Y, Z: v10.Z},
+					Vector3d{X: v01.X, Y: v01.Y, Z: v01.Z},
+					Vector3d{X: v00.X, Y: v00.Y, Z: v00.Z},
 					style1, style2))
 			}
 		}
@@ -951,8 +955,6 @@ func (g *Line3d) DrawTo(_ *Plot3d, cube Cube) error {
 		style = Black.SetStrokeWidth(0.5)
 	}
 
-	x, y, z := cube.Bounds()
-
 	uB := g.U
 	if !uB.isSet {
 		uB = NewBounds(0, 1)
@@ -961,7 +963,7 @@ func (g *Line3d) DrawTo(_ *Plot3d, cube Cube) error {
 	err := cube.DrawPath(LinePath3d{
 		Func: func(vv float64) (Vector3d, error) {
 			v, err := g.Func(vv)
-			return Vector3d{X: x.Bind(v.X), Y: y.Bind(v.Y), Z: z.Bind(v.Z)}, err
+			return Vector3d{X: v.X, Y: v.Y, Z: v.Z}, err
 		},
 		Bounds: uB,
 		Steps:  steps,

@@ -563,19 +563,6 @@ func (b *Bounds) Merge(p float64) {
 	}
 }
 
-func (b Bounds) Bind(v float64) float64 {
-	if !b.isSet {
-		return v
-	}
-	if v < b.Min {
-		return b.Min
-	}
-	if v > b.Max {
-		return b.Max
-	}
-	return v
-}
-
 // PlotContent is the interface that all plot contents must implement.
 // If the plot is created at first, all Bounds methods are called and the
 // returned bounds are merged. After that, the DependantBounds method
