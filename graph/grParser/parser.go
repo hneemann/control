@@ -1197,15 +1197,23 @@ func closureMethods() value.MethodMap {
 		}).SetMethodDescription("xSteps", "ySteps", "Creates a graph of a function (either ℝ²→ℝ³ or ℝ²→ℝ) to be used in the plot3d command. "+
 			"A wire mesh is drawn through which one can see.").VarArgsMethod(0, 2),
 
-		"solid3d": value.MethodAtType(2, func(cl value.Closure, st funcGen.Stack[value.Value]) (value.Value, error) {
+		"solid3d": value.MethodAtType(3, func(cl value.Closure, st funcGen.Stack[value.Value]) (value.Value, error) {
 			uSteps, vSteps, f, err := create3dFunc(cl, st)
 			if err != nil {
 				return nil, err
 			}
-			gf := &graph.Solid3d{Func: f, USteps: uSteps, VSteps: vSteps}
+
+			var eo bool
+			if b, ok := st.GetOptional(3, value.Bool(false)).(value.Bool); ok {
+				eo = bool(b)
+			} else {
+				return nil, fmt.Errorf("solid3d requires a boolean as third argument")
+			}
+
+			gf := &graph.Solid3d{Func: f, USteps: uSteps, VSteps: vSteps, EvenOdd: eo}
 			return Plot3dContentValue{Holder[graph.Plot3dContent]{gf}}, nil
-		}).SetMethodDescription("xSteps", "ySteps", "Creates a solid graph of a function (either ℝ²→ℝ³ or ℝ²→ℝ) to be used in the plot3d command. "+
-			"A solid surface is drawn.").VarArgsMethod(0, 2),
+		}).SetMethodDescription("xSteps", "ySteps", "evenOdd", "Creates a solid graph of a function (either ℝ²→ℝ³ or ℝ²→ℝ) to be used in the plot3d command. "+
+			"A solid surface is drawn.").VarArgsMethod(0, 3),
 
 		"line3d": value.MethodAtType(1, func(cl value.Closure, st funcGen.Stack[value.Value]) (value.Value, error) {
 			steps, f, err := create3dFuncLine(cl, st)

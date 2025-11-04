@@ -792,14 +792,15 @@ func (g *Graph3d) Legend() Legend {
 }
 
 type Solid3d struct {
-	Func   func(x, y float64) (Vector3d, error)
-	U      Bounds
-	V      Bounds
-	Style1 *Style
-	Style2 *Style
-	USteps int
-	VSteps int
-	Title  string
+	Func    func(x, y float64) (Vector3d, error)
+	U       Bounds
+	V       Bounds
+	Style1  *Style
+	Style2  *Style
+	USteps  int
+	VSteps  int
+	Title   string
+	EvenOdd bool
 }
 
 var _ SecondaryStyle = (*Solid3d)(nil)
@@ -864,27 +865,51 @@ func (g *Solid3d) DrawTo(_ *Plot3d, cube Cube) (err error) {
 	}
 
 	for xn := 0; xn < uSteps; xn++ {
+		var ofs0, ofs1 float64
+		if g.EvenOdd {
+			if xn&1 != 0 {
+				ofs0 = 0
+				ofs1 = 0.5
+			} else {
+				ofs0 = 0.5
+				ofs1 = 0
+			}
+		}
 		xv0 := uB.Min + float64(xn)*uB.Width()/float64(uSteps)
 		xv1 := uB.Min + float64(xn+1)*uB.Width()/float64(uSteps)
 		for yn := 0; yn < vSteps; yn++ {
-			yv0 := vB.Min + float64(yn)*vB.Width()/float64(vSteps)
-			yv1 := vB.Min + float64(yn+1)*vB.Width()/float64(vSteps)
-
+			yv0 := vB.Min + (float64(yn)+ofs0)*vB.Width()/float64(vSteps)
+			yv1 := vB.Min + (float64(yn+1)+ofs0)*vB.Width()/float64(vSteps)
 			v00 := nErr.TryArg(g.Func(xv0, yv0))
 			v01 := nErr.TryArg(g.Func(xv0, yv1))
+			yv0 = vB.Min + (float64(yn)+ofs1)*vB.Width()/float64(vSteps)
+			yv1 = vB.Min + (float64(yn+1)+ofs1)*vB.Width()/float64(vSteps)
 			v10 := nErr.TryArg(g.Func(xv1, yv0))
 			v11 := nErr.TryArg(g.Func(xv1, yv1))
 
-			nErr.Try(cube.DrawTriangle(
-				Vector3d{X: x.Bind(v00.X), Y: y.Bind(v00.Y), Z: z.Bind(v00.Z)},
-				Vector3d{X: x.Bind(v10.X), Y: y.Bind(v10.Y), Z: z.Bind(v10.Z)},
-				Vector3d{X: x.Bind(v11.X), Y: y.Bind(v11.Y), Z: z.Bind(v11.Z)},
-				style1, style2))
-			nErr.Try(cube.DrawTriangle(
-				Vector3d{X: x.Bind(v00.X), Y: y.Bind(v00.Y), Z: z.Bind(v00.Z)},
-				Vector3d{X: x.Bind(v11.X), Y: y.Bind(v11.Y), Z: z.Bind(v11.Z)},
-				Vector3d{X: x.Bind(v01.X), Y: y.Bind(v01.Y), Z: z.Bind(v01.Z)},
-				style1, style2))
+			if ofs1 == 0 {
+				nErr.Try(cube.DrawTriangle(
+					Vector3d{X: x.Bind(v00.X), Y: y.Bind(v00.Y), Z: z.Bind(v00.Z)},
+					Vector3d{X: x.Bind(v10.X), Y: y.Bind(v10.Y), Z: z.Bind(v10.Z)},
+					Vector3d{X: x.Bind(v11.X), Y: y.Bind(v11.Y), Z: z.Bind(v11.Z)},
+					style1, style2))
+				nErr.Try(cube.DrawTriangle(
+					Vector3d{X: x.Bind(v00.X), Y: y.Bind(v00.Y), Z: z.Bind(v00.Z)},
+					Vector3d{X: x.Bind(v11.X), Y: y.Bind(v11.Y), Z: z.Bind(v11.Z)},
+					Vector3d{X: x.Bind(v01.X), Y: y.Bind(v01.Y), Z: z.Bind(v01.Z)},
+					style1, style2))
+			} else {
+				nErr.Try(cube.DrawTriangle(
+					Vector3d{X: x.Bind(v10.X), Y: y.Bind(v10.Y), Z: z.Bind(v10.Z)},
+					Vector3d{X: x.Bind(v11.X), Y: y.Bind(v11.Y), Z: z.Bind(v11.Z)},
+					Vector3d{X: x.Bind(v01.X), Y: y.Bind(v01.Y), Z: z.Bind(v01.Z)},
+					style1, style2))
+				nErr.Try(cube.DrawTriangle(
+					Vector3d{X: x.Bind(v10.X), Y: y.Bind(v10.Y), Z: z.Bind(v10.Z)},
+					Vector3d{X: x.Bind(v01.X), Y: y.Bind(v01.Y), Z: z.Bind(v01.Z)},
+					Vector3d{X: x.Bind(v00.X), Y: y.Bind(v00.Y), Z: z.Bind(v00.Z)},
+					style1, style2))
+			}
 		}
 	}
 	return nil
