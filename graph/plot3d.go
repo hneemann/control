@@ -209,6 +209,7 @@ type Cube interface {
 	DrawPath(Path3d, *Style) error
 	DrawTriangle(Vector3d, Vector3d, Vector3d, *Style, *Style) error
 	DrawLine(Vector3d, Vector3d, *Style)
+	DrawShape(Vector3d, Shape, *Style, bool) error
 	DrawText(Vector3d, Vector3d, string, *Style)
 	Bounds() (x, y, z Bounds)
 }
@@ -232,6 +233,10 @@ type TitleSetter interface {
 
 type IsCloseable3d interface {
 	Close() Plot3dContent
+}
+
+type HasShape3d interface {
+	SetShape(Shape, *Style) Plot3dContent
 }
 
 type Plot3d struct {
@@ -275,11 +280,11 @@ func newUnityCube(parent Cube, x, y, z AxisDescription) *unityCube {
 	}
 }
 
-func (t *unityCube) transform(p Vector3d) Vector3d {
+func (uc *unityCube) transform(p Vector3d) Vector3d {
 	return Vector3d{
-		X: t.ax.Trans(p.X),
-		Y: t.ay.Trans(p.Y),
-		Z: t.az.Trans(p.Z),
+		X: uc.ax.Trans(p.X),
+		Y: uc.ay.Trans(p.Y),
+		Z: uc.az.Trans(p.Z),
 	}
 }
 
@@ -313,6 +318,10 @@ func (uc *unityCube) DrawTriangle(p1, p2, p3 Vector3d, s1, s2 *Style) error {
 
 func (uc *unityCube) DrawLine(p1, p2 Vector3d, lineStyle *Style) {
 	uc.parent.DrawLine(uc.transform(p1), uc.transform(p2), lineStyle)
+}
+
+func (uc *unityCube) DrawShape(p Vector3d, shape Shape, style *Style, hlr bool) error {
+	return uc.parent.DrawShape(uc.transform(p), shape, style, hlr)
 }
 
 func (uc *unityCube) DrawText(p, d Vector3d, s string, style *Style) {
@@ -349,6 +358,9 @@ func (r RotCube) DrawTriangle(p1, p2, p3 Vector3d, s1, s2 *Style) error {
 
 func (r RotCube) DrawLine(p1, p2 Vector3d, lineStyle *Style) {
 	r.parent.DrawLine(r.matrix.MulPoint(p1), r.matrix.MulPoint(p2), lineStyle)
+}
+func (r RotCube) DrawShape(p Vector3d, shape Shape, style *Style, hlr bool) error {
+	return r.parent.DrawShape(r.matrix.MulPoint(p), shape, style, hlr)
 }
 
 func (r RotCube) Bounds() (x, y, z Bounds) {
@@ -546,6 +558,29 @@ func (l line3d) dist() float64 {
 
 func (c *CanvasCube) DrawLine(p1, p2 Vector3d, lineStyle *Style) {
 	c.objects = append(c.objects, line3d{p1, p2, lineStyle})
+}
+
+type shape3d struct {
+	p     Vector3d
+	shape Shape
+	style *Style
+}
+
+func (s shape3d) DrawTo(cube *CanvasCube) error {
+	return cube.canvas.DrawShape(cube.To2d(s.p), s.shape, s.style)
+}
+
+func (s shape3d) dist() float64 {
+	return s.p.Y
+}
+
+func (c *CanvasCube) DrawShape(p Vector3d, shape Shape, style *Style, hlr bool) error {
+	if hlr {
+		c.objects = append(c.objects, shape3d{p, shape, style})
+		return nil
+	} else {
+		return c.canvas.DrawShape(c.To2d(p), shape, style)
+	}
 }
 
 type text3d struct {
@@ -990,18 +1025,19 @@ type Arrow3d struct {
 func (a Arrow3d) DrawTo(_ *Plot3d, cube Cube) error {
 	cube.DrawLine(a.From, a.To, a.Style)
 
-	const len = 0.2
+	const headLen = 0.2
+
 	dist := a.To.Sub(a.From)
 
-	d := dist.Normalize()
-	inPlaneVec := d.Cross(a.PlaneDefVec).Neg()
+	dNorm := dist.Normalize()
+	inPlaneVec := dNorm.Cross(a.PlaneDefVec).Neg()
 	if inPlaneVec.Zero() {
 		// if no plane is given, make the two reverse tips of the arrow head
 		// having the same z-value
-		if d.X == 0 {
+		if dNorm.X == 0 {
 			inPlaneVec = Vector3d{1, 0, 0}
 		} else {
-			inPlaneVec = Vector3d{-d.Y / d.X, 1, 0}.Normalize()
+			inPlaneVec = Vector3d{-dNorm.Y / dNorm.X, 1, 0}.Normalize()
 		}
 	} else {
 		// If a plane is given, the given plane is the normal vector of the plane
@@ -1009,9 +1045,9 @@ func (a Arrow3d) DrawTo(_ *Plot3d, cube Cube) error {
 		inPlaneVec = inPlaneVec.Normalize()
 	}
 
-	if dist.Abs() > len {
-		d := d.Mul(len)
-		plane := inPlaneVec.Mul(len / 3)
+	if dist.Abs() > headLen {
+		d := dNorm.Mul(headLen)
+		plane := inPlaneVec.Mul(headLen / 4)
 		if a.Mode&1 != 0 {
 			cube.DrawLine(a.To, a.To.Sub(d).Add(plane), a.Style)
 			cube.DrawLine(a.To, a.To.Sub(d).Sub(plane), a.Style)
@@ -1022,7 +1058,7 @@ func (a Arrow3d) DrawTo(_ *Plot3d, cube Cube) error {
 		}
 	}
 	if a.Label != "" {
-		t1 := dist.Cross(inPlaneVec).Normalize().Mul(len / 3)
+		t1 := dist.Cross(inPlaneVec).Normalize().Mul(headLen / 3)
 		p1 := a.To.Add(a.From).Mul(0.5)
 		cube.DrawText(p1, p1.Add(t1), a.Label, a.Style.Text())
 	}
@@ -1041,7 +1077,7 @@ func (a Arrow3d) SetStyle(s *Style) Plot3dContent {
 
 type ListBasedLine3d struct {
 	Vectors           Vectors
-	LineStyle         *Style
+	ShapeLineStyle    ShapeLineStyle
 	Title             string
 	HiddenLineRemoval bool
 	closed            bool
@@ -1072,38 +1108,61 @@ func (v vecPath) IsClosed() bool {
 }
 
 func (s ListBasedLine3d) DrawTo(_ *Plot3d, cube Cube) error {
-	if s.HiddenLineRemoval {
-		isLast := false
-		var last, first Vector3d
+	sls := s.ShapeLineStyle.EnsureSomethingIsVisible()
+	if sls.IsLine() {
+		if s.HiddenLineRemoval {
+			isLast := false
+			var last, first Vector3d
+			for v, err := range s.Vectors {
+				if err != nil {
+					return err
+				}
+				if isLast {
+					cube.DrawLine(last, v, sls.LineStyle)
+				} else {
+					first = v
+					isLast = true
+				}
+				last = v
+			}
+			if s.closed && isLast {
+				cube.DrawLine(last, first, sls.LineStyle)
+			}
+		} else {
+			err := cube.DrawPath(vecPath{s.Vectors, s.closed}, sls.LineStyle)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	if sls.IsShape() {
 		for v, err := range s.Vectors {
 			if err != nil {
 				return err
 			}
-			if isLast {
-				cube.DrawLine(last, v, s.LineStyle)
-			} else {
-				first = v
-				isLast = true
+			err = cube.DrawShape(v, sls.Shape, sls.ShapeStyle, s.HiddenLineRemoval)
+			if err != nil {
+				return err
 			}
-			last = v
 		}
-		if s.closed && isLast {
-			cube.DrawLine(last, first, s.LineStyle)
-		}
-		return nil
-	} else {
-		return cube.DrawPath(vecPath{s.Vectors, s.closed}, s.LineStyle)
 	}
+	return nil
 }
 
 func (s ListBasedLine3d) Legend() Legend {
 	return Legend{
-		ShapeLineStyle: ShapeLineStyle{LineStyle: s.LineStyle},
+		ShapeLineStyle: s.ShapeLineStyle.EnsureSomethingIsVisible(),
 		Name:           s.Title,
 	}
 }
 
 func (s ListBasedLine3d) SetStyle(style *Style) Plot3dContent {
-	s.LineStyle = style
+	s.ShapeLineStyle.LineStyle = style
+	return s
+}
+
+func (s ListBasedLine3d) SetShape(shape Shape, style *Style) Plot3dContent {
+	s.ShapeLineStyle.Shape = shape
+	s.ShapeLineStyle.ShapeStyle = style
 	return s
 }

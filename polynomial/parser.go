@@ -1497,6 +1497,9 @@ var Parser = value.New().
 			}
 			var res value.Value
 			for v, err := range value.FlattenStack(stack, 0) {
+				if err != nil {
+					return nil, err
+				}
 				if add == nil {
 					switch v.(type) {
 					case grParser.PlotContentValue:

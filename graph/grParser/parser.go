@@ -192,10 +192,47 @@ func createPlot3dContentMethods() value.MethodMap {
 			if sc, ok := pc.(graph.IsCloseable3d); ok {
 				pc = sc.Close()
 			} else {
-				return nil, fmt.Errorf("Close can only be called an plot contents that can be closed.")
+				return nil, fmt.Errorf("Close can only be called on plot contents that can be closed.")
 			}
 			return Plot3dContentValue{Holder[graph.Plot3dContent]{pc}}, nil
 		}).Pure(false).SetMethodDescription("Closes a path."),
+		"mark": value.MethodAtType(3, func(plot Plot3dContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			style, err := GetStyle(stack, 2, graph.Black)
+			if err != nil {
+				return nil, err
+			}
+
+			var size float64 = defSize
+			if s, ok := stack.GetOptional(3, value.Float(defSize)).ToFloat(); ok {
+				size = s
+			} else {
+				return nil, fmt.Errorf("the size must be a float")
+			}
+
+			var marker graph.Shape
+			if markerInt, ok := stack.GetOptional(1, value.Int(0)).(value.Int); ok {
+				switch markerInt % 5 {
+				case 1:
+					marker = graph.NewCircleMarker(size)
+				case 2:
+					marker = graph.NewSquareMarker(size)
+				case 3:
+					marker = graph.NewTriangleMarker(size)
+				case 4:
+					marker = graph.NewDiamondMarker(size)
+				default:
+					marker = graph.NewCrossMarker(size)
+				}
+			} else {
+				return nil, fmt.Errorf("the marker is defined by an int")
+			}
+
+			if sc, ok := plot.Value.(graph.HasShape3d); ok {
+				return Plot3dContentValue{Holder[graph.Plot3dContent]{sc.SetShape(marker, style.Value)}}, nil
+			} else {
+				return nil, fmt.Errorf("marker can only be set for plots using a marker")
+			}
+		}).Pure(false).SetMethodDescription("type", "color", "size", "Sets the marker type.").VarArgsMethod(1, 3),
 	}
 }
 
@@ -978,7 +1015,7 @@ func listMethods() value.MethodMap {
 			"The two functions are called with the list elements and must return the x respectively y values. "+
 			"If the functions are omitted, the list elements themselves must be lists of the form [x,y].").VarArgsMethod(0, 2),
 		"graph3d": value.MethodAtType(1, func(list *value.List, st funcGen.Stack[value.Value]) (value.Value, error) {
-			s := graph.ListBasedLine3d{Vectors: listToVectors(list), LineStyle: graph.Black}
+			s := graph.ListBasedLine3d{Vectors: listToVectors(list)}
 			if hide, ok := st.GetOptional(1, value.Bool(false)).(value.Bool); ok {
 				s.HiddenLineRemoval = bool(hide)
 			} else {
@@ -1583,32 +1620,36 @@ func Setup(fg *value.FunctionGenerator) {
 		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
 			if v1, ok := st.Get(0).(graph.Vector3d); ok {
 				if v2, ok := st.Get(1).(graph.Vector3d); ok {
-					if text, ok := st.Get(2).(value.String); ok {
-						arrow := graph.Arrow3d{
-							From:  v1,
-							To:    v2,
-							Label: string(text),
-						}
-						styleVal, err := GetStyle(st, 3, graph.Black)
-						if err != nil {
-							return nil, fmt.Errorf("arrow: %w", err)
-						}
-						arrow.Style = styleVal.Value
-
-						if plane, ok := st.GetOptional(4, graph.Vector3d{}).(graph.Vector3d); ok {
-							arrow.PlaneDefVec = plane
-						} else {
-							return nil, fmt.Errorf("arrow requires an int as fifth argument")
-						}
-
-						if mode, ok := st.GetOptional(5, value.Int(1)).(value.Int); ok {
-							arrow.Mode = int(mode)
-						} else {
-							return nil, fmt.Errorf("arrow requires an int as fifth argument")
-						}
-
-						return Plot3dContentValue{Holder: Holder[graph.Plot3dContent]{arrow}}, nil
+					var text string
+					if textVal, ok := st.GetOptional(2, value.String("")).(value.String); ok {
+						text = string(textVal)
+					} else {
+						return nil, fmt.Errorf("arrow3d requires a string as third argument")
 					}
+					arrow := graph.Arrow3d{
+						From:  v1,
+						To:    v2,
+						Label: text,
+					}
+					styleVal, err := GetStyle(st, 3, graph.Black)
+					if err != nil {
+						return nil, fmt.Errorf("arrow: %w", err)
+					}
+					arrow.Style = styleVal.Value
+
+					if plane, ok := st.GetOptional(4, graph.Vector3d{}).(graph.Vector3d); ok {
+						arrow.PlaneDefVec = plane
+					} else {
+						return nil, fmt.Errorf("arrow requires an int as fifth argument")
+					}
+
+					if mode, ok := st.GetOptional(5, value.Int(1)).(value.Int); ok {
+						arrow.Mode = int(mode)
+					} else {
+						return nil, fmt.Errorf("arrow requires an int as fifth argument")
+					}
+
+					return Plot3dContentValue{Holder: Holder[graph.Plot3dContent]{arrow}}, nil
 				}
 			}
 			return nil, fmt.Errorf("arrow requires four floats and a string")
@@ -1619,7 +1660,7 @@ func Setup(fg *value.FunctionGenerator) {
 		"If no plane vector is given, the arrow is oriented so that two reverse tips of the arrow head have the same z-value. "+
 		"If a plane vector is given, it's part perpendicular to the arrow is used as a normal vector to define the plane created by "+
 		"the tip of the arrow head and the two reverse tips. "+
-		"The mode flag defines which arrow heads to draw (0: none, 1: at the tip (default), 2: at the tail, 3: at both ends).").VarArgs(3, 6))
+		"The mode flag defines which arrow heads to draw (0: none, 1: at the tip (default), 2: at the tail, 3: at both ends).").VarArgs(2, 6))
 	fg.AddStaticFunction("splitHorizontal", funcGen.Function[value.Value]{
 		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
 			if st.Size() < 2 {
