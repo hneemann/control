@@ -35,6 +35,10 @@
     textarea.source {
         resize: none;
     }
+    div.fileDialog {
+        width: 30em;
+        margin-left: -15em;
+    }
 }
 
 @media (orientation: portrait) {
@@ -52,6 +56,10 @@
         display: grid;
         grid-template-columns: 1fr;
         grid-template-rows: min-content 1fr;
+    }
+    div.fileDialog {
+        width: 20em;
+        margin-left: -10em;
     }
     textarea.source {
         resize: vertical;
@@ -155,8 +163,6 @@ div.fileDialog {
     position: fixed;
     top: 20%;
     left: 50%;
-    width: 20em;
-    margin-left: -10em;
     z-index: 5;
 }
 
