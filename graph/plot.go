@@ -1324,12 +1324,22 @@ func (s ImageInset) Legend() Legend {
 type YConst struct {
 	Y     float64
 	Style *Style
+	Title string
 }
 
 func (yc YConst) SetLine(style *Style) PlotContent {
 	return YConst{
 		Y:     yc.Y,
+		Title: yc.Title,
 		Style: style,
+	}
+}
+
+func (yc YConst) SetTitle(t string) PlotContent {
+	return YConst{
+		Y:     yc.Y,
+		Title: t,
+		Style: yc.Style,
 	}
 }
 
@@ -1357,18 +1367,28 @@ func (yc YConst) DrawTo(_ *Plot, canvas Canvas) error {
 }
 
 func (yc YConst) Legend() Legend {
-	return Legend{}
+	return Legend{ShapeLineStyle{LineStyle: yc.Style}, yc.Title}
 }
 
 type XConst struct {
 	X     float64
 	Style *Style
+	Title string
 }
 
 func (xc XConst) SetLine(style *Style) PlotContent {
 	return XConst{
 		X:     xc.X,
 		Style: style,
+		Title: xc.Title,
+	}
+}
+
+func (xc XConst) SetTitle(t string) PlotContent {
+	return XConst{
+		X:     xc.X,
+		Title: t,
+		Style: xc.Style,
 	}
 }
 
@@ -1396,7 +1416,7 @@ func (xc XConst) DrawTo(_ *Plot, canvas Canvas) error {
 }
 
 func (xc XConst) Legend() Legend {
-	return Legend{}
+	return Legend{ShapeLineStyle{LineStyle: xc.Style}, xc.Title}
 }
 
 type Text struct {
