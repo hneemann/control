@@ -408,39 +408,38 @@ func (s *System) Run(tMax, dt float64, pointsExported int) (*dataSet, error) {
 
 func SimulateBlock(st funcGen.Stack[value.Value], def *value.List, tMax, dt float64, pointsExported int) (value.Value, error) {
 	sys := NewSystem()
-	err := def.Iterate(st, func(v value.Value) error {
+	for v, err := range def.Iterate(st) {
+		if err != nil {
+			return nil, err
+		}
 		if m, ok := v.(value.Map); ok {
 			in, err := getStringList(st, m, "in")
 			if err != nil {
-				return err
+				return nil, err
 			}
 			out, err := getStringList(st, m, "out")
 			if err != nil {
-				return err
+				return nil, err
 			}
 			if len(out) != 1 {
-				return fmt.Errorf("output must be a single value")
+				return nil, fmt.Errorf("output must be a single value")
 			}
 
 			blockValue, ok := m.Get("block")
 			if !ok {
-				return fmt.Errorf("block not found %w", err)
+				return nil, fmt.Errorf("block not found %w", err)
 			}
 			f, err := valueToBlock(blockValue, in)
 			if err != nil {
-				return fmt.Errorf("block not valid %w", err)
+				return nil, fmt.Errorf("block not valid %w", err)
 			}
 			sys.AddBlock(in, out[0], f)
 		} else {
-			return fmt.Errorf("invalid block definition %v", v)
+			return nil, fmt.Errorf("invalid block definition %v", v)
 		}
-		return nil
-	})
-	if err != nil {
-		return nil, err
 	}
 
-	err = sys.Initialize()
+	err := sys.Initialize()
 	if err != nil {
 		return nil, err
 	}
@@ -511,17 +510,19 @@ func getStringList(st funcGen.Stack[value.Value], m value.Map, key string) ([]st
 	}
 	if l, ok := v.(*value.List); ok {
 		var result []string
-		err := l.Iterate(st, func(v value.Value) error {
+		for v, err := range l.Iterate(st) {
+			if err != nil {
+				return nil, err
+			}
 			if s, ok := v.(value.String); ok {
 				if isIdent(string(s)) {
 					result = append(result, string(s))
-					return nil
+				} else {
+					return nil, fmt.Errorf("invalid signal name %v", v)
 				}
+			} else {
+				return nil, fmt.Errorf("not a string %v", v)
 			}
-			return fmt.Errorf("invalid signal name %v", v)
-		})
-		if err != nil {
-			return nil, err
 		}
 		return result, nil
 	}

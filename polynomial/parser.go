@@ -212,8 +212,8 @@ func twoPortMethods() value.MethodMap {
 }
 
 func (p Polynomial) ToList() (*value.List, bool) {
-	return value.NewListConvert(func(i float64) value.Value {
-		return value.Float(i)
+	return value.NewListConvert(func(i float64) (value.Value, error) {
+		return value.Float(i), nil
 	}, p), true
 }
 
@@ -421,8 +421,8 @@ func linMethods() value.MethodMap {
 				if err != nil {
 					return nil, err
 				}
-				return value.NewListConvert(func(pc graph.PlotContent) value.Value {
-					return grParser.NewPlotContentValue(pc)
+				return value.NewListConvert(func(pc graph.PlotContent) (value.Value, error) {
+					return grParser.NewPlotContentValue(pc), nil
 				}, contentList), nil
 			}
 			return nil, fmt.Errorf("evans requires a float")
@@ -441,8 +441,8 @@ func linMethods() value.MethodMap {
 			if err != nil {
 				return nil, err
 			}
-			return value.NewListConvert(func(i graph.PlotContent) value.Value {
-				return grParser.NewPlotContentValue(i)
+			return value.NewListConvert(func(i graph.PlotContent) (value.Value, error) {
+				return grParser.NewPlotContentValue(i), nil
 			}, contentList), nil
 		}).SetMethodDescription("neg", "wMax", "Creates a nyquist plot content. If neg is true also the range -∞<ω<0 is included. "+
 			"The value wMax gives the maximum value for ω. It defaults to 1000rad/s.").VarArgsMethod(0, 2),
@@ -1457,8 +1457,8 @@ var Parser = value.New().
 						if err != nil {
 							return nil, fmt.Errorf("rootLocus failed: %w", err)
 						}
-						return value.NewListConvert(func(i graph.PlotContent) value.Value {
-							return grParser.NewPlotContentValue(i)
+						return value.NewListConvert(func(i graph.PlotContent) (value.Value, error) {
+							return grParser.NewPlotContentValue(i), nil
 						}, contentList), nil
 					}
 				}
@@ -2076,7 +2076,7 @@ func NelderMead(fu value.Closure, initial *value.List, delta *value.List, iter i
 	}
 
 	m := make(map[string]value.Value)
-	m["vec"] = value.NewListConvert(func(i float64) value.Value { return value.Float(i) }, vec)
+	m["vec"] = value.NewListConvert(func(i float64) (value.Value, error) { return value.Float(i), nil }, vec)
 	m["min"] = value.Float(minVal)
 
 	return value.NewMap(value.RealMap(m)), nil

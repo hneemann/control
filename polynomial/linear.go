@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"github.com/hneemann/control/graph"
 	"github.com/hneemann/control/graph/grParser"
-	"github.com/hneemann/iterator"
 	"github.com/hneemann/parser2/funcGen"
+	"github.com/hneemann/parser2/iterator"
 	"github.com/hneemann/parser2/value"
 	"github.com/hneemann/parser2/value/export"
 	"github.com/hneemann/parser2/value/export/xmlWriter"
@@ -1304,17 +1304,18 @@ func (v dataSet) toPoints(i0, i1 int) graph.Points {
 }
 
 func (v dataSet) toPointList(i0, i1 int) *value.List {
-	return value.NewListFromSizedIterable(func(_ funcGen.Stack[value.Value], yield iterator.Consumer[value.Value]) error {
-		o := 0
-		for range v.rows {
-			x := value.Float(v.elements[o+i0])
-			y := value.Float(v.elements[o+i1])
-			if err := yield(value.NewList(x, y)); err != nil {
-				return err
+	return value.NewListFromSizedIterable(func(_ funcGen.Stack[value.Value]) iterator.Producer[value.Value] {
+		return func(yield iterator.Consumer[value.Value]) {
+			o := 0
+			for range v.rows {
+				x := v.elements[o+i0]
+				y := v.elements[o+i1]
+				if !yield(graph.Vector3d{X: x, Y: y}, nil) {
+					return
+				}
+				o += v.cols
 			}
-			o += v.cols
 		}
-		return nil
 	}, v.rows)
 }
 

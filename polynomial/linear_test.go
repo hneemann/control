@@ -491,7 +491,7 @@ func Benchmark_DataSet(b *testing.B) {
 	b.ResetTimer()
 	for range b.N {
 		sum := 0.0
-		d.toPointList(0, 1).Iterate(st, func(v value.Value) error {
+		for v, _ := range d.toPointList(0, 1).Iterate(st) {
 			if l, ok := v.ToList(); ok {
 				p, _ := l.ToSlice(st)
 				if x, ok := p[0].ToFloat(); ok {
@@ -500,8 +500,7 @@ func Benchmark_DataSet(b *testing.B) {
 					}
 				}
 			}
-			return nil
-		})
+		}
 		ss += sum
 	}
 	fmt.Println(ss)

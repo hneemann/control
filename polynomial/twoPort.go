@@ -47,23 +47,22 @@ func (tp *TwoPort) Get(key string) (value.Value, bool) {
 	return nil, false
 }
 
-func (tp *TwoPort) Iter(yield func(key string, v value.Value) bool) bool {
+func (tp *TwoPort) Iter(yield func(key string, v value.Value) bool) {
 	if !yield("m11", Complex(tp.m11)) {
-		return false
+		return
 	}
 	if !yield("m12", Complex(tp.m12)) {
-		return false
+		return
 	}
 	if !yield("m21", Complex(tp.m21)) {
-		return false
+		return
 	}
 	if !yield("m22", Complex(tp.m22)) {
-		return false
+		return
 	}
 	if !yield("type", value.String(tp.typ)) {
-		return false
+		return
 	}
-	return true
 }
 
 func (tp *TwoPort) Size() int {
