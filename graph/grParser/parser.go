@@ -399,14 +399,14 @@ func createPlot3dMethods() value.MethodMap {
 		"angles": value.MethodAtType(3, func(plot Plot3dValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if alpha, ok := stack.Get(1).ToFloat(); ok {
 				if beta, ok := stack.Get(2).ToFloat(); ok {
-					if gamma, ok := stack.Get(3).ToFloat(); ok {
+					if gamma, ok := stack.GetOptional(3, value.Float(0)).ToFloat(); ok {
 						plot.Value.SetAngle(alpha, beta, gamma)
 						return plot, nil
 					}
 				}
 			}
 			return Plot3dValue{}, fmt.Errorf("angle requires three float values")
-		}).SetMethodDescription("alpha", "beta", "gamma", "Sets the projection angles."),
+		}).SetMethodDescription("alpha", "beta", "gamma", "Sets the projection angles.").VarArgsMethod(2, 3),
 		"size": value.MethodAtType(1, func(plot Plot3dValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if size, ok := stack.Get(1).ToFloat(); ok {
 				plot.Value.Size = size
@@ -452,6 +452,10 @@ func createPlot3dMethods() value.MethodMap {
 			plot.Value.Z.HideAxis = true
 			return plot, nil
 		}).SetMethodDescription("Hides the z-axis."),
+		"hideCube": value.MethodAtType(0, func(plot Plot3dValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			plot.Value.HideCube = true
+			return plot, nil
+		}).SetMethodDescription("Hides the cube."),
 		"xBounds": value.MethodAtType(2, func(plot Plot3dValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if vMin, ok := stack.Get(1).ToFloat(); ok {
 				if vMax, ok := stack.Get(2).ToFloat(); ok {

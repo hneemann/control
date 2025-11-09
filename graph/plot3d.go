@@ -666,6 +666,9 @@ func (p *Plot3d) DrawTo(canvas Canvas) (err error) {
 		}
 		t := Vector3d{100 * facText, -100, -100}
 		rot.DrawText(Vector3d{t.X, t.Y, t.Z}, Vector3d{t.X, t.Y * facLongLabel, t.Z}, checkEmpty(p.X.Label, "x"), textColor)
+		if p.HideCube {
+			DrawLongLine(rot, Vector3d{-100, -100, -100}, Vector3d{100, -100, -100}, cubeColor)
+		}
 	}
 	if !p.Y.HideAxis {
 		for _, tick := range cube.ay.Ticks {
@@ -677,6 +680,9 @@ func (p *Plot3d) DrawTo(canvas Canvas) (err error) {
 		}
 		t := Vector3d{-100, 100 * facText, -100}
 		rot.DrawText(Vector3d{t.X, t.Y, t.Z}, Vector3d{t.X * facLongLabel, t.Y, t.Z}, checkEmpty(p.Y.Label, "y"), textColor)
+		if p.HideCube {
+			DrawLongLine(rot, Vector3d{-100, -100, -100}, Vector3d{-100, 100, -100}, cubeColor)
+		}
 	}
 	if !p.Z.HideAxis {
 		for _, tick := range cube.az.Ticks {
@@ -688,6 +694,9 @@ func (p *Plot3d) DrawTo(canvas Canvas) (err error) {
 		}
 		t := Vector3d{-100, -100, 100 * facText}
 		rot.DrawText(Vector3d{t.X, t.Y, t.Z}, Vector3d{t.X * facLongLabel, t.Y * facLongLabel, t.Z}, checkEmpty(p.Z.Label, "z"), textColor)
+		if p.HideCube {
+			DrawLongLine(rot, Vector3d{-100, -100, -100}, Vector3d{-100, -100, 100}, cubeColor)
+		}
 	}
 	textSize := canvas.Context().TextSize
 	ypos := canvas.Rect().Max.Y - textSize
