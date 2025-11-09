@@ -250,12 +250,18 @@ type Plot3d struct {
 	Perspective float64
 }
 
+const (
+	DefAlpha = 0.177
+	DefBeta  = 0.4
+	pFac     = 800
+)
+
 func NewPlot3d() *Plot3d {
 	return &Plot3d{
-		alpha:       0.3,
-		beta:        0.15,
+		alpha:       DefAlpha,
+		beta:        DefBeta,
 		gamma:       0,
-		Size:        0.98,
+		Size:        1,
 		Perspective: 1,
 	}
 }
@@ -522,10 +528,10 @@ func (c cPath) IsClosed() bool {
 
 func (c *CanvasCube) To2d(p Vector3d) Point {
 	py := p.Y * c.perspective
-	if py > 499 {
-		py = 499
+	if py >= pFac {
+		py = pFac - 1
 	}
-	zFac := 470 / (500 - py)
+	zFac := pFac / (pFac - py)
 	return Point{
 		X: p.X*c.fac*zFac + c.dx,
 		Y: c.dy + p.Z*c.fac*zFac,

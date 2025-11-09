@@ -1205,8 +1205,8 @@ func plot3dMethods() value.MethodMap {
 	return value.MethodMap{
 		"addSliderTo": value.MethodAtType(1, func(plot3d grParser.Plot3dValue, st funcGen.Stack[value.Value]) (value.Value, error) {
 			if gui, ok := st.Get(1).(*GuiElements); ok {
-				alphaVal := gui.newSlider("\u237a", 0.3, -math.Pi, math.Pi)
-				betaVal := gui.newSlider("\u03B2", 0.15, -math.Pi, math.Pi)
+				alphaVal := gui.newSlider("\u237a", graph.DefAlpha, -math.Pi, math.Pi)
+				betaVal := gui.newSlider("\u03B2", graph.DefBeta, -math.Pi, math.Pi)
 
 				alpha, _ := alphaVal.ToFloat()
 				beta, _ := betaVal.ToFloat()
