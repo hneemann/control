@@ -899,7 +899,10 @@ func (ec *evansCurves) DrawTo(plot *graph.Plot, canvas graph.Canvas) error {
 
 	r := canvas.Rect()
 	for i := 0; i < ec.poleCount; i++ {
-		canvas.DrawPath(r.IntersectPath(ec.evPoints.getPoints(i)), graph.GetColor(i).SetStrokeWidth(2))
+		err = canvas.DrawPath(r.IntersectPath(ec.evPoints.getPoints(i)), graph.GetColor(i).SetStrokeWidth(2))
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
