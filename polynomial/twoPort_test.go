@@ -152,18 +152,18 @@ func TestFormatComplex(t *testing.T) {
 	}{
 		{name: "real", c: complex(1, 0), want: "1"},
 		{name: "realNeg", c: complex(-1, 0), want: "-1"},
-		{name: "imag", c: complex(0, 1), want: "i"},
-		{name: "imag", c: complex(0, -1), want: "-i"},
-		{name: "imag", c: complex(0, 2), want: "2⋅i"},
-		{name: "imagNeg", c: complex(0, -2), want: "-2⋅i"},
-		{name: "both1", c: complex(2, 2), want: "2+2⋅i"},
-		{name: "both2", c: complex(2, -2), want: "2-2⋅i"},
-		{name: "both3", c: complex(-2, 2), want: "-2+2⋅i"},
-		{name: "both4", c: complex(-2, -2), want: "-2-2⋅i"},
-		{name: "both5", c: complex(-2, 1), want: "-2+i"},
-		{name: "both6", c: complex(-2, -1), want: "-2-i"},
-		{name: "small", c: complex(1e-6, 1e-6), want: "10⁻⁶+10⁻⁶⋅i"},
-		{name: "small2", c: complex(2e-6, 2e-6), want: "2⋅10⁻⁶+2⋅10⁻⁶⋅i"},
+		{name: "imag", c: complex(0, 1), want: "j"},
+		{name: "imag", c: complex(0, -1), want: "-j"},
+		{name: "imag", c: complex(0, 2), want: "2⋅j"},
+		{name: "imagNeg", c: complex(0, -2), want: "-2⋅j"},
+		{name: "both1", c: complex(2, 2), want: "2+2⋅j"},
+		{name: "both2", c: complex(2, -2), want: "2-2⋅j"},
+		{name: "both3", c: complex(-2, 2), want: "-2+2⋅j"},
+		{name: "both4", c: complex(-2, -2), want: "-2-2⋅j"},
+		{name: "both5", c: complex(-2, 1), want: "-2+j"},
+		{name: "both6", c: complex(-2, -1), want: "-2-j"},
+		{name: "small", c: complex(1e-6, 1e-6), want: "10⁻⁶+10⁻⁶⋅j"},
+		{name: "small2", c: complex(2e-6, 2e-6), want: "2⋅10⁻⁶+2⋅10⁻⁶⋅j"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -179,15 +179,15 @@ func TestComplex2MathMl(t *testing.T) {
 		want string
 	}{
 		{name: "real", c: complex(1, 0), want: "<mn>1</mn>"},
-		{name: "cplx1", c: complex(0, 1), want: "<mi>i</mi>"},
-		{name: "cplx2", c: complex(0, 2), want: "<mn>2</mn><mo>&middot;</mo><mi>i</mi>"},
-		{name: "both1", c: complex(1, 1), want: "<mn>1</mn><mo>+</mo><mi>i</mi>"},
-		{name: "both2", c: complex(2, 2), want: "<mn>2</mn><mo>+</mo><mn>2</mn><mo>&middot;</mo><mi>i</mi>"},
-		{name: "small1", c: complex(1e-7, 1e-7), want: "<msup><mn>10</mn><mn>-7</mn></msup><mo>+</mo><msup><mn>10</mn><mn>-7</mn></msup><mo>&middot;</mo><mi>i</mi>"},
-		{name: "small2", c: complex(2e-7, 2e-7), want: "<mn>2</mn><mo>&middot;</mo><msup><mn>10</mn><mn>-7</mn></msup><mo>+</mo><mn>2</mn><mo>&middot;</mo><msup><mn>10</mn><mn>-7</mn></msup><mo>&middot;</mo><mi>i</mi>"},
-		{name: "bothNeg", c: complex(-1, -1), want: "<mn>-1</mn><mo>-</mo><mi>i</mi>"},
-		{name: "cplxNeg1", c: complex(0, -1), want: "<mo>-</mo><mi>i</mi>"},
-		{name: "cplxNeg2", c: complex(0, -2), want: "<mn>-2</mn><mo>&middot;</mo><mi>i</mi>"},
+		{name: "cplx1", c: complex(0, 1), want: "<mi>j</mi>"},
+		{name: "cplx2", c: complex(0, 2), want: "<mn>2</mn><mo>&middot;</mo><mi>j</mi>"},
+		{name: "both1", c: complex(1, 1), want: "<mn>1</mn><mo>+</mo><mi>j</mi>"},
+		{name: "both2", c: complex(2, 2), want: "<mn>2</mn><mo>+</mo><mn>2</mn><mo>&middot;</mo><mi>j</mi>"},
+		{name: "small1", c: complex(1e-7, 1e-7), want: "<msup><mn>10</mn><mn>-7</mn></msup><mo>+</mo><msup><mn>10</mn><mn>-7</mn></msup><mo>&middot;</mo><mi>j</mi>"},
+		{name: "small2", c: complex(2e-7, 2e-7), want: "<mn>2</mn><mo>&middot;</mo><msup><mn>10</mn><mn>-7</mn></msup><mo>+</mo><mn>2</mn><mo>&middot;</mo><msup><mn>10</mn><mn>-7</mn></msup><mo>&middot;</mo><mi>j</mi>"},
+		{name: "bothNeg", c: complex(-1, -1), want: "<mn>-1</mn><mo>-</mo><mi>j</mi>"},
+		{name: "cplxNeg1", c: complex(0, -1), want: "<mo>-</mo><mi>j</mi>"},
+		{name: "cplxNeg2", c: complex(0, -2), want: "<mn>-2</mn><mo>&middot;</mo><mi>j</mi>"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

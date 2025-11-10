@@ -74,9 +74,9 @@ func (c Complex) String() string {
 	}
 	im := strconv.FormatFloat(float64(imag(c)), 'g', -1, 64)
 	if imag(c) < 0 {
-		return re + im + "i"
+		return re + im + "j"
 	} else {
-		return re + "+" + im + "i"
+		return re + "+" + im + "j"
 	}
 }
 
@@ -1301,7 +1301,7 @@ var Parser = value.New().
 	RegisterMethods(GuiElementsType, guiMethods()).
 	Modify(grParser.Setup).
 	RegisterMethods(grParser.Plot3dType, plot3dMethods()).
-	AddConstant("_i", Complex(complex(0, 1))).
+	AddConstant("j", Complex(complex(0, 1))).
 	AddConstant("s", Polynomial{0, 1}).
 	EnhanceStaticFunction("exp", func(old funcGen.Function[value.Value]) funcGen.Function[value.Value] {
 		return funcGen.Function[value.Value]{

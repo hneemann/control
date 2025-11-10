@@ -20,7 +20,7 @@ func TestLinear(t *testing.T) {
 		{name: "poly2", exp: "let p=poly(1,2,3); string(p.derivative())", res: value.String("6*s+2")},
 		{name: "poly3", exp: "let p=poly(1,2,3); p(1)", res: value.Float(6)},
 		{name: "poly4", exp: "let p1=poly(1,2,3);let p2=poly(1,3); string(p1*p2)", res: value.String("9*s^3+9*s^2+5*s+1")},
-		{name: "poly5", exp: "let p=poly(1,0,1); string(p.roots())", res: value.String("[-0-1i, -0+1i]")},
+		{name: "poly5", exp: "let p=poly(1,0,1); string(p.roots())", res: value.String("[-0-1j, -0+1j]")},
 		{name: "poly6", exp: "let p=poly(-1,0,1); string(p.roots())", res: value.String("[-1, 1]")},
 		{name: "poly7", exp: "let p=poly(4,2)/2; string(p)", res: value.String("s+2")},
 		{name: "poly8", exp: "let p=poly(4,2)/2.0; string(p)", res: value.String("s+2")},
@@ -43,7 +43,7 @@ func TestLinear(t *testing.T) {
 		{name: "polyAdd2", exp: "let p=1.0+poly(4,2); string(p)", res: value.String("2*s+5")},
 
 		{name: "polyFunc", exp: "let p=poly(4,2); p(2)", res: value.Float(8)},
-		{name: "polyFunc", exp: "let p=poly(4,2); p(_i)", res: Complex(complex(4, 2))},
+		{name: "polyFunc", exp: "let p=poly(4,2); p(j)", res: Complex(complex(4, 2))},
 
 		{name: "linMul", exp: "let l=(poly(4,2)/poly(1,1))*poly(3,1); string(l)", res: value.String("(2*s^2+10*s+12)/(s+1)")},
 		{name: "linMul", exp: "let l=poly(3,1)*(poly(4,2)/poly(1,1)); string(l)", res: value.String("(2*s^2+10*s+12)/(s+1)")},
@@ -64,7 +64,7 @@ func TestLinear(t *testing.T) {
 		{name: "linPoly2", exp: "let l=(poly(1,2)/poly(1,3)); let d=l*poly(1,4);string(d)", res: value.String("(8*s^2+6*s+1)/(3*s+1)")},
 
 		{name: "linFunc", exp: "let l=poly(3,1)/poly(1,1); l(1)", res: value.Float(2)},
-		{name: "linFunc", exp: "let l=poly(3,1)/poly(1,1); l(_i)", res: Complex(complex(2, -1))},
+		{name: "linFunc", exp: "let l=poly(3,1)/poly(1,1); l(j)", res: Complex(complex(2, -1))},
 
 		{name: "linAdd1", exp: "string((poly(2,2)/poly(2,1))+1)", res: value.String("(3*s+4)/(s+2)")},
 		{name: "linAdd1", exp: "string((poly(2,2)/poly(2,1))+1.0)", res: value.String("(3*s+4)/(s+2)")},
@@ -181,16 +181,16 @@ func TestComplex(t *testing.T) {
 		exp  string
 		res  any
 	}{
-		{name: "add", exp: "2+_i*3", res: Complex(complex(2, 3))},
-		{name: "add3", exp: "2.0+_i*3", res: Complex(complex(2, 3))},
-		{name: "add", exp: "_i*3+2", res: Complex(complex(2, 3))},
-		{name: "add3", exp: "_i*3+2.0", res: Complex(complex(2, 3))},
+		{name: "add", exp: "2+j*3", res: Complex(complex(2, 3))},
+		{name: "add3", exp: "2.0+j*3", res: Complex(complex(2, 3))},
+		{name: "add", exp: "j*3+2", res: Complex(complex(2, 3))},
+		{name: "add3", exp: "j*3+2.0", res: Complex(complex(2, 3))},
 		{name: "add2", exp: "cmplx(1,2)+cmplx(3,4)", res: Complex(complex(4, 6))},
 		{name: "sub1", exp: "cmplx(1,2)-cmplx(3,4)", res: Complex(complex(-2, -2))},
-		{name: "sub2", exp: "2-_i*3", res: Complex(complex(2, -3))},
-		{name: "sub3", exp: "_i*3-2", res: Complex(complex(-2, 3))},
-		{name: "sub2", exp: "2.0-_i*3", res: Complex(complex(2, -3))},
-		{name: "sub3", exp: "_i*3-2.0", res: Complex(complex(-2, 3))},
+		{name: "sub2", exp: "2-j*3", res: Complex(complex(2, -3))},
+		{name: "sub3", exp: "j*3-2", res: Complex(complex(-2, 3))},
+		{name: "sub2", exp: "2.0-j*3", res: Complex(complex(2, -3))},
+		{name: "sub3", exp: "j*3-2.0", res: Complex(complex(-2, 3))},
 		{name: "mul", exp: "cmplx(1,2)*cmplx(3,4)", res: Complex(complex(-5, 10))},
 		{name: "mul", exp: "2.0*cmplx(3,4)", res: Complex(complex(6, 8))},
 		{name: "div", exp: "cmplx(1,2)/cmplx(3,4)", res: Complex(complex(11.0/25, 2.0/25))},
@@ -207,8 +207,8 @@ func TestComplex(t *testing.T) {
 		{name: "exp3", exp: "2.0^cmplx(1,2)", res: Complex(complex(0.3669139494, 1.966055480))},
 		{name: "expf", exp: "exp(1)", res: value.Float(math.E)},
 		{name: "expf2", exp: "exp(1.0)", res: value.Float(math.E)},
-		{name: "expf3", exp: "exp(_i*pi)", res: Complex(complex(-1, 0))},
-		{name: "expf4", exp: "exp(_i*pi/2)", res: Complex(complex(0, 1))},
+		{name: "expf3", exp: "exp(j*pi)", res: Complex(complex(-1, 0))},
+		{name: "expf4", exp: "exp(j*pi/2)", res: Complex(complex(0, 1))},
 	}
 	for _, test := range tests {
 		test := test

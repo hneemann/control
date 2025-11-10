@@ -47,8 +47,8 @@ plot(
              name-en="Nyquist plot 2" desc-en="Nyquist plot">let g = 3/((s+1)*(s+1.5)*(s+2));
 
 func h(w)
-  let c1 = g( _i*w );
-  let c2 = g( _i*w*0.99 );
+  let c1 = g( j*w );
+  let c2 = g( j*w*0.99 );
   hintDir(c1.real(),c1.imag(),c2.real(),c2.imag(),"#omega="+w);
 
 plot(
@@ -163,7 +163,7 @@ let omega = 2*pi*50;
 let transformer =
   tpCascade (
     tpSeries(Rin),
-    tpShunt(_i*omega*Lh),
+    tpShunt(j*omega*Lh),
     tpH(   0  , ueber,
         -ueber,   0  ),
     tpSeries(Rout),

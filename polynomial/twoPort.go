@@ -121,9 +121,9 @@ func FormatComplex(c complex128, prec int) string {
 		return export.NewFormattedFloat(real(c), prec).Unicode()
 	}
 	if im == "1" {
-		im = "i"
+		im = "j"
 	} else {
-		im += "⋅i"
+		im += "⋅j"
 	}
 	re := export.NewFormattedFloat(real(c), prec).Unicode()
 	if re == "0" {
@@ -156,7 +156,7 @@ func Complex2MathMl(c complex128, prec int, w *xmlWriter.XMLWriter) {
 			if imag(c) < 0 {
 				w.Open("mo").Write("-").Close()
 			}
-			w.Open("mi").Write("i").Close()
+			w.Open("mi").Write("j").Close()
 			return
 		}
 		if imag(c) < 0 {
@@ -171,13 +171,13 @@ func Complex2MathMl(c complex128, prec int, w *xmlWriter.XMLWriter) {
 			w.Open("mo").Write("+").Close()
 		}
 		if im.IsOne() {
-			w.Open("mi").Write("i").Close()
+			w.Open("mi").Write("j").Close()
 			return
 		}
 		im.MathMl(w)
 	}
 	w.Open("mo").WriteHTML("&middot;").Close()
-	w.Open("mi").WriteHTML("i").Close()
+	w.Open("mi").WriteHTML("j").Close()
 }
 
 func (tp *TwoPort) ToList() (*value.List, bool) {
