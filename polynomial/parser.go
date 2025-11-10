@@ -779,40 +779,41 @@ type directAccess struct {
 	items []value.Value
 }
 
-func (d directAccess) getSlice(st funcGen.Stack[value.Value], i int) ([]value.Value, error) {
-	if p, ok := d.items[i].(*value.List); ok {
-		s, err := p.ToSlice(st)
+func (d directAccess) getSlice(st funcGen.Stack[value.Value], i int) (float64, float64, error) {
+	switch item := d.items[i].(type) {
+	case *value.List:
+		s, err := item.ToSlice(st)
 		if err != nil {
-			return nil, err
+			return 0, 0, err
 		}
 		if len(s) < 2 {
-			return nil, fmt.Errorf("list must contain at least two items to get time and value")
+			return 0, 0, fmt.Errorf("list must contain at least two items to get time and value")
 		}
-		return s, nil
+		t, ok := s[0].ToFloat()
+		if !ok {
+			return 0, 0, fmt.Errorf("time value must be a float")
+		}
+		y, ok := s[1].ToFloat()
+		if !ok {
+			return 0, 0, fmt.Errorf("y value must be a float")
+		}
+		return t, y, nil
+	case grParser.ToPoint:
+		p := item.ToPoint()
+		return p.X, p.Y, nil
+	default:
+		return 0, 0, fmt.Errorf("direct access requires a list as items")
 	}
-	return nil, fmt.Errorf("direct access requires a list as items")
 }
 
 func (d directAccess) getT(st funcGen.Stack[value.Value], i int) (float64, error) {
-	sl, err := d.getSlice(st, i)
-	if err != nil {
-		return 0, err
-	}
-	if t, ok := sl[0].ToFloat(); ok {
-		return t, nil
-	}
-	return 0, fmt.Errorf("first item of the list must be a float to get time")
+	t, _, err := d.getSlice(st, i)
+	return t, err
 }
 
 func (d directAccess) getY(st funcGen.Stack[value.Value], i int) (float64, error) {
-	sl, err := d.getSlice(st, i)
-	if err != nil {
-		return 0, err
-	}
-	if y, ok := sl[1].ToFloat(); ok {
-		return y, nil
-	}
-	return 0, fmt.Errorf("second item of the list must be a float to get a value")
+	_, y, err := d.getSlice(st, i)
+	return y, err
 }
 
 func listMethods() value.MethodMap {
