@@ -942,27 +942,11 @@ func (g *Solid3d) DrawTo(_ *Plot3d, cube Cube) (err error) {
 			v11 := nErr.TryArg(g.Func(xv1, yv1))
 
 			if ofs1 == 0 {
-				nErr.Try(cube.DrawTriangle(
-					Vector3d{X: v00.X, Y: v00.Y, Z: v00.Z},
-					Vector3d{X: v10.X, Y: v10.Y, Z: v10.Z},
-					Vector3d{X: v11.X, Y: v11.Y, Z: v11.Z},
-					style1, style2))
-				nErr.Try(cube.DrawTriangle(
-					Vector3d{X: v00.X, Y: v00.Y, Z: v00.Z},
-					Vector3d{X: v11.X, Y: v11.Y, Z: v11.Z},
-					Vector3d{X: v01.X, Y: v01.Y, Z: v01.Z},
-					style1, style2))
+				nErr.Try(cube.DrawTriangle(v00, v10, v11, style1, style2))
+				nErr.Try(cube.DrawTriangle(v00, v11, v01, style1, style2))
 			} else {
-				nErr.Try(cube.DrawTriangle(
-					Vector3d{X: v10.X, Y: v10.Y, Z: v10.Z},
-					Vector3d{X: v11.X, Y: v11.Y, Z: v11.Z},
-					Vector3d{X: v01.X, Y: v01.Y, Z: v01.Z},
-					style1, style2))
-				nErr.Try(cube.DrawTriangle(
-					Vector3d{X: v10.X, Y: v10.Y, Z: v10.Z},
-					Vector3d{X: v01.X, Y: v01.Y, Z: v01.Z},
-					Vector3d{X: v00.X, Y: v00.Y, Z: v00.Z},
-					style1, style2))
+				nErr.Try(cube.DrawTriangle(v10, v11, v01, style1, style2))
+				nErr.Try(cube.DrawTriangle(v10, v01, v00, style1, style2))
 			}
 		}
 	}
