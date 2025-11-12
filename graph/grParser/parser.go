@@ -1243,16 +1243,16 @@ func closureMethods() value.MethodMap {
 				return nil, err
 			}
 
-			var eo bool
+			var hexagonal bool
 			if b, ok := st.GetOptional(3, value.Bool(false)).(value.Bool); ok {
-				eo = bool(b)
+				hexagonal = bool(b)
 			} else {
 				return nil, fmt.Errorf("solid3d requires a boolean as third argument")
 			}
 
-			gf := &graph.Solid3d{Func: f, USteps: uSteps, VSteps: vSteps, EvenOdd: eo}
+			gf := &graph.Solid3d{Func: f, USteps: uSteps, VSteps: vSteps, Hexagonal: hexagonal}
 			return Plot3dContentValue{Holder[graph.Plot3dContent]{gf}}, nil
-		}).SetMethodDescription("xSteps", "ySteps", "evenOdd", "Creates a solid graph of a function (either ℝ²→ℝ³ or ℝ²→ℝ) to be used in the plot3d command. "+
+		}).SetMethodDescription("xSteps", "ySteps", "hexagonal", "Creates a solid graph of a function (either ℝ²→ℝ³ or ℝ²→ℝ) to be used in the plot3d command. "+
 			"A solid surface is drawn.").VarArgsMethod(0, 3),
 
 		"line3d": value.MethodAtType(1, func(cl value.Closure, st funcGen.Stack[value.Value]) (value.Value, error) {

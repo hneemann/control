@@ -842,15 +842,15 @@ func (g *Graph3d) Legend() Legend {
 }
 
 type Solid3d struct {
-	Func    func(x, y float64) (Vector3d, error)
-	U       Bounds
-	V       Bounds
-	Style1  *Style
-	Style2  *Style
-	USteps  int
-	VSteps  int
-	Title   string
-	EvenOdd bool
+	Func      func(x, y float64) (Vector3d, error)
+	U         Bounds
+	V         Bounds
+	Style1    *Style
+	Style2    *Style
+	USteps    int
+	VSteps    int
+	Title     string
+	Hexagonal bool
 }
 
 var _ SecondaryStyle = (*Solid3d)(nil)
@@ -889,7 +889,7 @@ func (g *Solid3d) DrawTo(_ *Plot3d, cube Cube) (err error) {
 	}
 	vSteps := g.VSteps
 	if vSteps <= 0 {
-		if g.EvenOdd {
+		if g.Hexagonal {
 			vSteps = int(float64(uSteps) / 2 * math.Sqrt(3))
 		} else {
 			vSteps = uSteps
@@ -921,7 +921,7 @@ func (g *Solid3d) DrawTo(_ *Plot3d, cube Cube) (err error) {
 	matrix := make([][]Vector3d, uSteps+1)
 	for xn := 0; xn <= uSteps; xn++ {
 		var ofs float64
-		if g.EvenOdd && xn&1 != 0 {
+		if g.Hexagonal && xn&1 != 0 {
 			ofs = 0.5
 		}
 		matrix[xn] = make([]Vector3d, vSteps+1)
@@ -932,7 +932,7 @@ func (g *Solid3d) DrawTo(_ *Plot3d, cube Cube) (err error) {
 		}
 	}
 
-	if g.EvenOdd {
+	if g.Hexagonal {
 		for xn := 0; xn < uSteps; xn++ {
 			if xn&1 == 0 {
 				for yn := 0; yn < vSteps; yn++ {
