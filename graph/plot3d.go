@@ -918,35 +918,39 @@ func (g *Solid3d) DrawTo(_ *Plot3d, cube Cube) (err error) {
 		vB = y
 	}
 
-	for xn := 0; xn < uSteps; xn++ {
-		var ofs0, ofs1 float64
-		if g.EvenOdd {
-			if xn&1 != 0 {
-				ofs0 = 0
-				ofs1 = 0.5
+	matrix := make([][]Vector3d, uSteps+1)
+	for xn := 0; xn <= uSteps; xn++ {
+		var ofs float64
+		if g.EvenOdd && xn&1 != 0 {
+			ofs = 0.5
+		}
+		matrix[xn] = make([]Vector3d, vSteps+1)
+		xv := uB.Min + float64(xn)*uB.Width()/float64(uSteps)
+		for yn := 0; yn <= vSteps; yn++ {
+			yv := vB.Min + (float64(yn)+ofs)*vB.Width()/float64(vSteps)
+			matrix[xn][yn] = nErr.TryArg(g.Func(xv, yv))
+		}
+	}
+
+	if g.EvenOdd {
+		for xn := 0; xn < uSteps; xn++ {
+			if xn&1 == 0 {
+				for yn := 0; yn < vSteps; yn++ {
+					nErr.Try(cube.DrawTriangle(matrix[xn][yn], matrix[xn+1][yn], matrix[xn][yn+1], style1, style2))
+					nErr.Try(cube.DrawTriangle(matrix[xn+1][yn], matrix[xn+1][yn+1], matrix[xn][yn+1], style1, style2))
+				}
 			} else {
-				ofs0 = 0.5
-				ofs1 = 0
+				for yn := 0; yn < vSteps; yn++ {
+					nErr.Try(cube.DrawTriangle(matrix[xn][yn], matrix[xn+1][yn], matrix[xn+1][yn+1], style1, style2))
+					nErr.Try(cube.DrawTriangle(matrix[xn][yn], matrix[xn+1][yn+1], matrix[xn][yn+1], style1, style2))
+				}
 			}
 		}
-		xv0 := uB.Min + float64(xn)*uB.Width()/float64(uSteps)
-		xv1 := uB.Min + float64(xn+1)*uB.Width()/float64(uSteps)
-		for yn := 0; yn < vSteps; yn++ {
-			yv0 := vB.Min + (float64(yn)+ofs0)*vB.Width()/float64(vSteps)
-			yv1 := vB.Min + (float64(yn+1)+ofs0)*vB.Width()/float64(vSteps)
-			v00 := nErr.TryArg(g.Func(xv0, yv0))
-			v01 := nErr.TryArg(g.Func(xv0, yv1))
-			yv0 = vB.Min + (float64(yn)+ofs1)*vB.Width()/float64(vSteps)
-			yv1 = vB.Min + (float64(yn+1)+ofs1)*vB.Width()/float64(vSteps)
-			v10 := nErr.TryArg(g.Func(xv1, yv0))
-			v11 := nErr.TryArg(g.Func(xv1, yv1))
-
-			if ofs1 == 0 {
-				nErr.Try(cube.DrawTriangle(v00, v10, v11, style1, style2))
-				nErr.Try(cube.DrawTriangle(v00, v11, v01, style1, style2))
-			} else {
-				nErr.Try(cube.DrawTriangle(v10, v11, v01, style1, style2))
-				nErr.Try(cube.DrawTriangle(v10, v01, v00, style1, style2))
+	} else {
+		for xn := 0; xn < uSteps; xn++ {
+			for yn := 0; yn < vSteps; yn++ {
+				nErr.Try(cube.DrawTriangle(matrix[xn][yn], matrix[xn+1][yn], matrix[xn][yn+1], style1, style2))
+				nErr.Try(cube.DrawTriangle(matrix[xn+1][yn], matrix[xn+1][yn+1], matrix[xn][yn+1], style1, style2))
 			}
 		}
 	}
