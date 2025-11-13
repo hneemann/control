@@ -46,7 +46,7 @@ func (v Vector3d) ToFloat() (float64, bool) {
 	return 0, false
 }
 
-func (v Vector3d) ToString(st funcGen.Stack[value.Value]) (string, error) {
+func (v Vector3d) ToString(_ funcGen.Stack[value.Value]) (string, error) {
 	return fmt.Sprintf("(%g,%g,%g)", v.X, v.Y, v.Z), nil
 }
 
@@ -699,7 +699,7 @@ func (p *Plot3d) DrawTo(canvas Canvas) (err error) {
 		}
 	}
 	textSize := canvas.Context().TextSize
-	ypos := canvas.Rect().Max.Y - textSize
+	yPos := canvas.Rect().Max.Y - textSize
 	for _, c := range p.Contents {
 		err := c.DrawTo(p, cube)
 		if err != nil {
@@ -708,9 +708,9 @@ func (p *Plot3d) DrawTo(canvas Canvas) (err error) {
 
 		leg := c.Legend()
 		if leg.Name != "" {
-			canvas.DrawText(Point{X: textSize * 2, Y: ypos}, leg.Name, Left|VCenter, textColor, textSize)
-			canvas.DrawPath(PointsFromSlice(Point{X: 0, Y: ypos}, Point{X: textSize * 2, Y: ypos}), leg.ShapeLineStyle.LineStyle)
-			ypos -= textSize * 1.5
+			canvas.DrawText(Point{X: textSize * 2, Y: yPos}, leg.Name, Left|VCenter, textColor, textSize)
+			nErr.Try(canvas.DrawPath(PointsFromSlice(Point{X: 0, Y: yPos}, Point{X: textSize * 2, Y: yPos}), leg.ShapeLineStyle.LineStyle))
+			yPos -= textSize * 1.5
 		}
 
 	}
