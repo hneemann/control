@@ -810,8 +810,7 @@ func (g *Graph3d) DrawTo(_ *Plot3d, cube Cube) error {
 		uv := uB.Min + float64(xn)*uB.Width()/float64(uSteps)
 		err := cube.DrawPath(LinePath3d{
 			Func: func(vv float64) (Vector3d, error) {
-				v, err := g.Func(uv, vv)
-				return Vector3d{X: v.X, Y: v.Y, Z: v.Z}, err
+				return g.Func(uv, vv)
 			},
 			Bounds: vB,
 			Steps:  vSteps * 3,
@@ -824,8 +823,7 @@ func (g *Graph3d) DrawTo(_ *Plot3d, cube Cube) error {
 		vv := vB.Min + float64(yn)*vB.Width()/float64(vSteps)
 		err := cube.DrawPath(LinePath3d{
 			Func: func(uv float64) (Vector3d, error) {
-				v, err := g.Func(uv, vv)
-				return Vector3d{X: v.X, Y: v.Y, Z: v.Z}, err
+				return g.Func(uv, vv)
 			},
 			Bounds: uB,
 			Steps:  uSteps * 3,
