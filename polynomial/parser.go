@@ -1289,6 +1289,7 @@ var Parser = value.New().
 
 		fg.SetClosureHandler(closureHandler{fg})
 
+		export.AddFileHelpers(fg)
 	}).
 	RegisterMethods(LinearValueType, linMethods()).
 	RegisterMethods(PolynomialValueType, polyMethods()).

@@ -9,7 +9,6 @@ import (
 	"github.com/hneemann/parser2/value"
 	"github.com/hneemann/parser2/value/export"
 	"github.com/hneemann/parser2/value/export/xmlWriter"
-	"strings"
 )
 
 type Holder[T any] struct {
@@ -58,8 +57,6 @@ var (
 	PlotContentType   value.Type
 	StyleType         value.Type
 	ImageType         value.Type
-	DataContentType   value.Type
-	DataType          value.Type
 	Plot3dType        value.Type
 	Plot3dContentType value.Type
 )
@@ -909,87 +906,6 @@ func (p StyleValue) GetType() value.Type {
 	return StyleType
 }
 
-type DataContentValue struct {
-	Holder[graph.DataContent]
-}
-
-func (d DataContentValue) GetType() value.Type {
-	return DataContentType
-}
-
-type DataValue struct {
-	Holder[*graph.Data]
-}
-
-func (d DataValue) GetType() value.Type {
-	return DataType
-}
-
-func createDataMethods() value.MethodMap {
-	return value.MethodMap{
-		"timeUnit": value.MethodAtType(1, func(dataValue DataValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
-			if unit, ok := stack.Get(1).(value.String); ok {
-				data := dataValue.Value
-				data.TimeUnit = string(unit)
-				return DataValue{Holder[*graph.Data]{data}}, nil
-			}
-			return nil, fmt.Errorf("timeUnit requires a string as argument")
-		}).Pure(false).SetMethodDescription("unit", "Sets the time name and unit."),
-		"format": value.MethodAtType(2, func(dataValue DataValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
-			if df, ok := stack.Get(1).(value.String); ok {
-				if tf, ok := stack.Get(2).(value.String); ok {
-					data := dataValue.Value
-					data.TimeFormat = string(tf)
-					data.DateFormat = string(df)
-					return DataValue{Holder[*graph.Data]{data}}, nil
-				}
-			}
-			return nil, fmt.Errorf("format requires two strings as arguments")
-		}).Pure(false).SetMethodDescription("date-format", "time-format", "Sets the date and time csv-format."),
-		"date": value.MethodAtType(0, func(dataValue DataValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
-			data := dataValue.Value
-			data.TimeIsDate = true
-			return DataValue{Holder[*graph.Data]{data}}, nil
-		}).Pure(false).SetMethodDescription("If called the time/x axis is treated as a date axis."),
-		"dat": value.MethodAtType(1, func(dataValue DataValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
-			if nameVal, ok := stack.Get(1).(value.String); ok {
-				b, err := dataValue.Value.DatFile()
-				if err != nil {
-					return nil, fmt.Errorf("dat: %w", err)
-				}
-				name := string(nameVal)
-				if !strings.ContainsRune(name, '.') {
-					name += ".dat"
-				}
-				return export.File{
-					Name:     name,
-					MimeType: "text/text",
-					Data:     b,
-				}, nil
-			}
-			return nil, fmt.Errorf("dat requires a string as argument")
-		}).Pure(false).SetMethodDescription("name", "Creates a gnuplot-dat file."),
-		"csv": value.MethodAtType(1, func(dataValue DataValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
-			if nameVal, ok := stack.Get(1).(value.String); ok {
-				b, err := dataValue.Value.CsvFile()
-				if err != nil {
-					return nil, fmt.Errorf("csv: %w", err)
-				}
-				name := string(nameVal)
-				if !strings.ContainsRune(name, '.') {
-					name += ".csv"
-				}
-				return export.File{
-					Name:     name,
-					MimeType: "text/csv",
-					Data:     b,
-				}, nil
-			}
-			return nil, fmt.Errorf("csv requires a string as argument")
-		}).Pure(false).SetMethodDescription("name", "Creates a csv file."),
-	}
-}
-
 func listMethods() value.MethodMap {
 	return value.MethodMap{
 		"graph": value.MethodAtType(2, func(list *value.List, st funcGen.Stack[value.Value]) (value.Value, error) {
@@ -1027,38 +943,6 @@ func listMethods() value.MethodMap {
 			return Plot3dContentValue{Holder[graph.Plot3dContent]{s}}, nil
 		}).SetMethodDescription("hiddenLineRemoval", "Creates a line connecting all the vectors in the list. "+
 			"If the argument is true, the \"painters algorithm\" is used to draw the line.").VarArgsMethod(0, 1),
-		"data": value.MethodAtType(4, func(list *value.List, st funcGen.Stack[value.Value]) (value.Value, error) {
-			if name, ok := st.Get(1).(value.String); ok {
-				if unit, ok := st.Get(2).(value.String); ok {
-					switch st.Size() {
-					case 3:
-						content := graph.DataContent{
-							Points: listToPoints(list),
-							Name:   string(name),
-							Unit:   string(unit),
-						}
-						return DataContentValue{Holder[graph.DataContent]{content}}, nil
-					case 5:
-						if xc, ok := st.Get(3).(value.Closure); ok && xc.Args == 1 {
-							if yc, ok := st.Get(4).(value.Closure); ok && yc.Args == 1 {
-								content := graph.DataContent{
-									Points: listFuncToPoints(list, xc, yc),
-									Name:   string(name),
-									Unit:   string(unit),
-								}
-								return DataContentValue{Holder[graph.DataContent]{content}}, nil
-							}
-						}
-					default:
-						return nil, fmt.Errorf("data requires either two or four arguments")
-					}
-				}
-			}
-			return nil, fmt.Errorf("data requires two strings and two functions as arguments")
-		}).SetMethodDescription("name", "unit", "func(item) x", "func(item) y", "Creates a data set. "+
-			"The two functions are called with the list elements and must return the x respectively y values. "+
-			"If the functions are omitted, the list elements themselves must be lists of the form [x,y]. "+
-			"The result is intended to be added to a dataSet function call.").VarArgsMethod(2, 4),
 	}
 }
 
@@ -1336,8 +1220,6 @@ func Setup(fg *value.FunctionGenerator) {
 	PlotContentType = fg.RegisterType("plotContent")
 	StyleType = fg.RegisterType("style")
 	ImageType = fg.RegisterType("image")
-	DataContentType = fg.RegisterType("dataContent")
-	DataType = fg.RegisterType("data")
 	Plot3dType = fg.RegisterType("plot3d")
 	Plot3dContentType = fg.RegisterType("plot3dContent")
 	graph.Vector3dType = fg.RegisterType("vector")
@@ -1346,13 +1228,11 @@ func Setup(fg *value.FunctionGenerator) {
 	fg.RegisterMethods(PlotContentType, createPlotContentMethods())
 	fg.RegisterMethods(StyleType, createStyleMethods())
 	fg.RegisterMethods(ImageType, createImageMethods())
-	fg.RegisterMethods(DataType, createDataMethods())
 	fg.RegisterMethods(value.ListTypeId, listMethods())
 	fg.RegisterMethods(value.ClosureTypeId, closureMethods())
 	fg.RegisterMethods(Plot3dType, createPlot3dMethods())
 	fg.RegisterMethods(Plot3dContentType, createPlot3dContentMethods())
 	fg.RegisterMethods(graph.Vector3dType, createVector3dMethods())
-	export.AddZipHelpers(fg)
 	export.AddHTMLStylingHelpers(fg)
 	fg.AddConstant("black", StyleValue{Holder[*graph.Style]{graph.Black}})
 	fg.AddConstant("green", StyleValue{Holder[*graph.Style]{graph.Green}})
@@ -1708,26 +1588,6 @@ func Setup(fg *value.FunctionGenerator) {
 		Args:   -1,
 		IsPure: true,
 	}.SetDescription("image...", "Plots images side by side."))
-	fg.AddStaticFunction("dataSet", funcGen.Function[value.Value]{
-		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
-			var content []graph.DataContent
-			for i := 0; i < st.Size(); i++ {
-				if dc, ok := st.Get(i).(DataContentValue); ok {
-					content = append(content, dc.Value)
-				} else {
-					return nil, fmt.Errorf("dataSet requires DataContent as arguments")
-				}
-			}
-			dc := &graph.Data{
-				TimeUnit:    "s",
-				DataContent: content,
-			}
-			return DataValue{Holder: Holder[*graph.Data]{Value: dc}}, nil
-		},
-		Args:   -1,
-		IsPure: true,
-	}.SetDescription("data...", "Creates a dataSet which can be used to create dat or csv files. "+
-		"A list can be used to create the content by calling the data-Method."))
 
 	createMul(fg)
 	createDiv(fg)
