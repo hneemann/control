@@ -1,3 +1,5 @@
+let lastUpdateTime=0;
+
 function updateByGui(n) {
     let slValues=""
     for (let i = 0; i < n; i++) {
@@ -19,10 +21,37 @@ function updateByGui(n) {
     formData.append('data', source.value);
     formData.append('gui', slValues);
 
-    fetchHelperForm("/execute/", formData, a => {
-        result.innerHTML = a;
+    fetchHelperFormTimed("/execute/", formData, (a,t) => {
+        if (t>lastUpdateTime) {
+            lastUpdateTime = t;
+            result.innerHTML = a;
+        }
     });
 }
+
+function fetchHelperFormTimed(url, formData, target) {
+    let time = -1
+    formData.append('time', Date.now().toString());
+    fetch(url, {body: formData, method: "post", signal: AbortSignal.timeout(10000)})
+        .then(function (response) {
+            if (response.status !== 200) {
+                window.location.reload();
+                return;
+            }
+            time=parseInt(response.headers.get("requestTime"));
+            return response.text();
+        })
+        .catch(function (error) {
+            showPopUpById("networkError");
+            target = null
+        })
+        .then(function (html) {
+            if (target != null) {
+                target(html, time);
+            }
+        })
+}
+
 
 function runSource() {
     let source = document.getElementById('source');

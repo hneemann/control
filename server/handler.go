@@ -120,9 +120,8 @@ func CreateExamples(examples []Example) http.HandlerFunc {
 
 func Execute(writer http.ResponseWriter, request *http.Request) {
 	src := strings.TrimSpace(request.FormValue("data"))
-
 	guiDef := strings.TrimSpace(request.FormValue("gui"))
-
+	time := strings.TrimSpace(request.FormValue("time"))
 	var resHtml template.HTML
 	if src != "" {
 		//start := time.Now()
@@ -148,6 +147,9 @@ func Execute(writer http.ResponseWriter, request *http.Request) {
 	}
 
 	writer.Header().Set("Content-Type", "text/html; charset=utf-8")
+	if time != "" {
+		writer.Header().Set("requestTime", time)
+	}
 	writer.Write([]byte(resHtml))
 }
 
