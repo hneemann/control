@@ -1109,7 +1109,7 @@ func closureMethods() value.MethodMap {
 			return nil, fmt.Errorf("heat requires two floats as first arguments")
 		}).SetMethodDescription("zMin", "zMax", "listOfColors", "steps", "Creates a heat plot of the function. "+
 			"The function needs to have two arguments (x,y) and has to return a float (z). "+
-			"The z-value is used to calculate a color, which is used to color square located at the coordinate (x,y).").VarArgsMethod(2, 4),
+			"The z-value is used to calculate a color, which is used to color a square located at the coordinate (x,y).").VarArgsMethod(2, 4),
 
 		"graph3d": value.MethodAtType(2, func(cl value.Closure, st funcGen.Stack[value.Value]) (value.Value, error) {
 			uSteps, vSteps, f, err := create3dFunc(cl, st)
