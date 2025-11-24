@@ -35,6 +35,10 @@ func (w Holder[T]) ToString(_ funcGen.Stack[value.Value]) (string, error) {
 	return fmt.Sprint(w.Value), nil
 }
 
+func (w Holder[T]) String() string {
+	return fmt.Sprint(w.Value)
+}
+
 func createVector3dMethods() value.MethodMap {
 	return value.MethodMap{
 		"cross": value.MethodAtType(1, func(v graph.Vector3d, stack funcGen.Stack[value.Value]) (value.Value, error) {

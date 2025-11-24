@@ -1510,9 +1510,8 @@ func (h Heat) DrawTo(plot *Plot, canvas Canvas) error {
 		close(lines)
 	}()
 	wg := sync.WaitGroup{}
-	n := runtime.NumCPU()
 	results := make(chan pixLine)
-	for range n {
+	for range runtime.NumCPU() {
 		wg.Add(1)
 		f := h.FuncFac()
 		go func() {

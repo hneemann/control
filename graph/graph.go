@@ -309,6 +309,18 @@ func (s *Style) SetFill(other *Style) *Style {
 	return &style
 }
 
+func (s *Style) String() string {
+	var buf bytes.Buffer
+	buf.WriteString(fmt.Sprintf("color(%v,%v,%v)", s.Color.R, s.Color.G, s.Color.B))
+	if s.Fill {
+		buf.WriteString(fmt.Sprintf(".fill(color(%v,%v,%v))", s.FillColor.R, s.FillColor.G, s.FillColor.B))
+	}
+	if s.Stroke && s.StrokeWidth != 1 {
+		buf.WriteString(fmt.Sprintf(".stroke(%v)", s.StrokeWidth))
+	}
+	return buf.String()
+}
+
 type Orientation int
 
 const (
