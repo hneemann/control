@@ -296,19 +296,19 @@ func (p *Plot) DrawTo(canvas Canvas) (err error) {
 		}
 	}
 
-	if p.X.Label != "" || p.xAxis.Unit != "" {
+	if lab := p.xAxis.LabelFormat(p.X.Label); lab != "" {
 		yp := innerRect.Min.Y
 		if cross {
 			yp = p.yAxis.Trans(0)
 		}
-		canvas.DrawText(Point{innerRect.Max.X - small, yp + small}, p.X.Label+" "+p.xAxis.Unit, Bottom|Right, textStyle, p.textSize)
+		canvas.DrawText(Point{innerRect.Max.X - small, yp + small}, lab, Bottom|Right, textStyle, p.textSize)
 	}
-	if p.Y.Label != "" || p.yAxis.Unit != "" {
+	if lab := p.yAxis.LabelFormat(p.Y.Label); lab != "" {
 		xp := innerRect.Min.X
 		if cross {
 			xp = p.xAxis.Trans(0)
 		}
-		canvas.DrawText(Point{xp + small, innerRect.Max.Y - small}, p.Y.Label+" "+p.yAxis.Unit, Top|Left, textStyle, p.textSize)
+		canvas.DrawText(Point{xp + small, innerRect.Max.Y - small}, lab, Top|Left, textStyle, p.textSize)
 	}
 	if p.Title != "" {
 		canvas.DrawText(Point{innerRect.Max.X - small, innerRect.Max.Y - small}, p.Title, Top|Right, textStyle, p.textSize)

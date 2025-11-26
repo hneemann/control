@@ -45,11 +45,15 @@ type Axis struct {
 	// They may be expanded beyond the data bounds to ensure that the axis labels are
 	// not too close to the ends of the coordinate space.
 	Bounds Bounds
-	// Unit is the unit of the axis.
-	// It is used to deal with special units like dB.
-	Unit string
+	// LabelFormat is used to format the label of the axis.
+	// It is used to deal with special units added by the scaling like dB.
+	LabelFormat func(label string) string
 	// IsLinear is true if the axis is linear.
 	IsLinear bool
+}
+
+func noLabelFormat(label string) string {
+	return label
 }
 
 // AxisFactory is a function that takes the parent coordinate space and the bounds of the axis and returns a function
@@ -79,9 +83,10 @@ func LinearAxis(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth,
 		Reverse: func(v float64) float64 {
 			return (v-minParent)/(maxParent-minParent)*(eMax-eMin) + eMin
 		},
-		Ticks:    l.ticks(minParent, maxParent, ctw),
-		Bounds:   Bounds{bounds.isSet, eMin, eMax},
-		IsLinear: true,
+		Ticks:       l.ticks(minParent, maxParent, ctw),
+		Bounds:      Bounds{bounds.isSet, eMin, eMax},
+		IsLinear:    true,
+		LabelFormat: noLabelFormat,
 	}
 }
 
@@ -193,7 +198,9 @@ func LogAxis(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth, ex
 	}
 
 	if logMax-logMin < 1 {
-		return LinearAxis(minParent, maxParent, bounds, ctw, expand)
+		// drawing log axis marks makes little sense for less than one decade
+		// fall back to plot logarithmic values on a linear axis
+		return LogAxisSimple(minParent, maxParent, bounds, ctw, expand)
 	}
 
 	delta := (logMax - logMin) * expand
@@ -208,10 +215,11 @@ func LogAxis(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth, ex
 		return math.Pow(10, (v-minParent)*(logMax-logMin)/(maxParent-minParent)+logMin)
 	}
 	return Axis{
-		Trans:   tr,
-		Reverse: rv,
-		Ticks:   createLogTicks(logMin, minParent, maxParent, tr),
-		Bounds:  Bounds{bounds.isSet, math.Pow(10, logMin), math.Pow(10, logMax)},
+		Trans:       tr,
+		Reverse:     rv,
+		Ticks:       createLogTicks(logMin, minParent, maxParent, tr),
+		Bounds:      Bounds{bounds.isSet, math.Pow(10, logMin), math.Pow(10, logMax)},
+		LabelFormat: noLabelFormat,
 	}
 }
 
@@ -237,6 +245,37 @@ func createLogTicks(logMin, parentMin, parentMax float64, tr func(v float64) flo
 		}
 		m++
 	}
+}
+
+// LogAxisSimple creates a simple logarithmic axis.
+// It maps the logarithm of the values to a linear axis.
+// It does not try to create logarithmic tick marks.
+// If the bounds are less than or equal to zero, it falls back to a linear axis.
+func LogAxisSimple(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth, expand float64) Axis {
+	if bounds.Min <= 0 {
+		return LinearAxis(minParent, maxParent, bounds, ctw, expand)
+	}
+
+	la := LinearAxis(minParent, maxParent, NewBounds(math.Log10(bounds.Min), math.Log10(bounds.Max)), ctw, expand)
+	la.Bounds = bounds
+	tr := la.Trans
+	la.Trans = func(v float64) float64 {
+		return tr(math.Log10(v))
+	}
+	rev := la.Reverse
+	la.Reverse = func(v float64) float64 {
+		return math.Pow(10, rev(v))
+	}
+	la.LabelFormat = func(label string) string {
+		if label != "" {
+			return "log(" + label + ")"
+		}
+		return "log"
+	}
+	for i, t := range la.Ticks {
+		la.Ticks[i].Position = math.Pow(10, t.Position)
+	}
+	return la
 }
 
 // CreateFixedStepAxis creates an axis with a fixed step size.
@@ -282,20 +321,18 @@ func CreateFixedStepAxis(step float64) AxisFactory {
 		}
 
 		return Axis{
-			Trans:    linearDef.Trans,
-			Reverse:  linearDef.Reverse,
-			Ticks:    ticks,
-			Bounds:   linearDef.Bounds,
-			Unit:     linearDef.Unit,
-			IsLinear: true,
+			Trans:       linearDef.Trans,
+			Reverse:     linearDef.Reverse,
+			Ticks:       ticks,
+			Bounds:      linearDef.Bounds,
+			LabelFormat: linearDef.LabelFormat,
+			IsLinear:    true,
 		}
 	}
 }
 
 // DBAxis creates a dB axis.
-// To draw the ticks in bB scale, it uses a linear axis.
-// It uses a common linear axis if the bounds are less than 20 dB apart.
-// Otherwise, it uses a linear axis with a fixed step size of 20 dB.
+// To draw the ticks in dB scale, it uses a linear axis.
 func DBAxis(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth, expand float64) Axis {
 	if bounds.Min <= 0 {
 		return LinearAxis(minParent, maxParent, bounds, ctw, expand)
@@ -310,20 +347,16 @@ func DBAxis(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth, exp
 		dBMin = dBMax - 60
 	}
 
-	if dBMax-dBMin < 20 {
-		return LinearAxis(minParent, maxParent, bounds, ctw, expand)
-	}
-
 	fixedAxis := CreateFixedStepAxis(20)(minParent, maxParent, Bounds{bounds.isSet, dBMin, dBMax}, ctw, expand)
 	var ticks Ticks
 	for _, t := range fixedAxis.Ticks {
 		ticks = append(ticks, Tick{Position: math.Pow(10, t.Position/20), Label: t.Label})
 	}
-	unit := ""
-	if fixedAxis.Unit == "" {
-		unit = "[dB]"
-	} else {
-		unit = "[" + fixedAxis.Unit + " in dB]"
+	labelFormat := func(label string) string {
+		if label != "" {
+			return label + " in dB"
+		}
+		return "dB"
 	}
 	return Axis{
 		Trans: func(v float64) float64 {
@@ -338,7 +371,7 @@ func DBAxis(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth, exp
 			Min:   math.Pow(10, fixedAxis.Bounds.Min/20),
 			Max:   math.Pow(10, fixedAxis.Bounds.Max/20),
 		},
-		Unit: unit,
+		LabelFormat: labelFormat,
 	}
 }
 
@@ -408,11 +441,12 @@ func CreateDateAxis(formatDate, formatMin string) AxisFactory {
 		}
 
 		return Axis{
-			Trans:    tr,
-			Reverse:  rv,
-			Ticks:    ticks,
-			Bounds:   Bounds{bounds.isSet, eMin, eMax},
-			IsLinear: true,
+			Trans:       tr,
+			Reverse:     rv,
+			Ticks:       ticks,
+			Bounds:      Bounds{bounds.isSet, eMin, eMax},
+			IsLinear:    true,
+			LabelFormat: noLabelFormat,
 		}
 	}
 }

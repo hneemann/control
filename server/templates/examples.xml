@@ -77,12 +77,6 @@ plot(
   k.bode(blue,  "K"),
   g0.bode(black, "G#0")
 )</example>
-    <!--example name="PID" desc="Die pid-Funktion"
-             name-en="PID" desc-en="The pid function">[
- ["pid(2,2)",        "=", pid(2,2)  ],
- ["pid(2,3,1)",      "=", pid(2,3,1)],
- ["pid(2,3,1,0.01)", "=", pid(2,3,1,0.01)]
-]</example-->
     <example name="WOK" desc="Darstellung einer Wurzelortskurve"
              name-en="Root locus analysis" desc-en="Root locus analysis">let g = 3/((s+1)*(s+2));
 let k = 1+1/(0.9*s);
@@ -109,7 +103,7 @@ plot(
   (k1*g).loop().simStep(10).graph().line(blue,  "phasenanhebendes Korrekturglied"),
   (k2*g).loop().simStep(10).graph().line(black, "PI"),
   (k3*g).loop().simStep(10).graph().line(green, "PID")
-).labels("t [s]","h(t)").legendPos(5,0.87)</example>
+).labels("t / s","h(t)").legendPos(5,0.87)</example>
 
 <example name="Simulation nicht linear" desc="Simulation eines nicht linearen Systems"
          name-en="Simulation non linear" desc-en="Simulation of a non linear system">let G = 70/((s+1)*(s+2)*(s+2.5));
@@ -150,7 +144,7 @@ plot(
   simLimited.uLim.graph().line(blue,  "u limited"),
   simLimited.y.graph().   line(black, "y (u limited)")
 ).legendPos(2,0.7)
- .labels("t [s]", "h(t)")
+ .labels("t / s", "h(t)")
  .title("Effect of a Limiter")</example>
     <example name="Zweitor Travo" desc="Berechnung realer Travo"
              name-en="Two-Port Transformer" desc-en="Two-Port real transformer">let Rin   = 2000;

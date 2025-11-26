@@ -44,6 +44,8 @@ github.com/hneemann/parser2 v0.0.0-20251123190602-66973c781f96 h1:MUTy2mJXp+0RM9
 github.com/hneemann/parser2 v0.0.0-20251123190602-66973c781f96/go.mod h1:7TzXHQvyJ7ZWcRTiAp03vN09yz55Qgbf2hTXS0b6vvE=
 github.com/hneemann/parser2 v0.0.0-20251124095248-e027938e5e7d h1:Hk0YnKcYMk0gme/hD17BbWlkyv5cmyrJQO8ucjwCUwU=
 github.com/hneemann/parser2 v0.0.0-20251124095248-e027938e5e7d/go.mod h1:7TzXHQvyJ7ZWcRTiAp03vN09yz55Qgbf2hTXS0b6vvE=
+github.com/hneemann/parser2 v0.0.0-20251125205354-0e210c0799f8 h1:pCc91PHc5G72ROoh4gzVz9rqhjNiaoCdNCXCRGTDxlA=
+github.com/hneemann/parser2 v0.0.0-20251125205354-0e210c0799f8/go.mod h1:7TzXHQvyJ7ZWcRTiAp03vN09yz55Qgbf2hTXS0b6vvE=
 github.com/hneemann/session v0.0.0-20250917051702-4d7e0d523c75 h1:vfQNTAJhWRbpUeb1BGsqCVH08WNJymDjXe99FAThlag=
 github.com/hneemann/session v0.0.0-20250917051702-4d7e0d523c75/go.mod h1:3lxFYNIGHpgMb2X2fefxmaw6bTH2kmdtNuaWXxh83jQ=
 github.com/jeremija/gosubmit v0.2.8 h1:mmSITBz9JxVtu8eqbN+zmmwX7Ij2RidQxhcwRVI4wqA=
