@@ -184,7 +184,7 @@ func exp10(log int) float64 {
 }
 
 func LogAxis(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth, expand float64) Axis {
-	if bounds.Min <= 0 {
+	if bounds.Min <= 0 || bounds.Max <= bounds.Min {
 		return LinearAxis(minParent, maxParent, bounds, ctw, expand)
 	}
 
@@ -197,7 +197,7 @@ func LogAxis(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth, ex
 		logMin = logMax * 1e-3
 	}
 
-	if logMax-logMin < 1.2 {
+	if logMax-logMin < 1 {
 		// drawing log axis marks makes little sense for less than one decade
 		// fall back to plot logarithmic values on a linear axis
 		return LogAxisSimple(minParent, maxParent, bounds, ctw, expand)
@@ -217,15 +217,40 @@ func LogAxis(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth, ex
 	return Axis{
 		Trans:       tr,
 		Reverse:     rv,
-		Ticks:       createLogTicks(logMin, minParent, maxParent, tr),
+		Ticks:       createLogTicks(logMin, logMax, minParent, maxParent, tr, ctw),
 		Bounds:      Bounds{bounds.isSet, math.Pow(10, logMin), math.Pow(10, logMax)},
 		LabelFormat: noLabelFormat,
 	}
 }
 
-func createLogTicks(logMin, parentMin, parentMax float64, tr func(v float64) float64) []Tick {
+func createLogTicks(logMin, logMax, parentMin, parentMax float64, tr func(v float64) float64, ctw CheckTextWidth) []Tick {
 	m := int(math.Floor(logMin))
+	mMax := int(math.Ceil(logMax))
 	var ticks []Tick
+
+	maxDigits := 0
+	for n := m; n < mMax; n++ {
+		var digits int
+		if n < 0 {
+			digits = -n + 2 // "0."
+		} else {
+			digits = n + 1 // "10", "100", ...
+		}
+		if digits > maxDigits {
+			maxDigits = digits
+		}
+	}
+
+	three := true
+	two := true
+	f := exp10(m)
+	if !ctw(tr(f*3)-tr(f), maxDigits) { // check if space for "3" label is available
+		three = false
+		two = false
+	} else if !ctw(tr(f*3)-tr(f*2), maxDigits) { // check if space for "2" label is available
+		two = false
+	}
+
 	for {
 		f := exp10(m)
 		for i := 1; i < 10; i++ {
@@ -236,9 +261,10 @@ func createLogTicks(logMin, parentMin, parentMax float64, tr func(v float64) flo
 			if tv > parentMax {
 				return ticks
 			}
+
 			if tv >= parentMin {
-				if i == 1 {
-					t.Label = export.NewFormattedFloat(f, 6).Unicode()
+				if i == 1 || (three && i == 3) || (two && (i == 2 || i == 5)) {
+					t.Label = export.NewFormattedFloat(f*float64(i), 6).Unicode()
 				}
 				ticks = append(ticks, t)
 			}
@@ -261,17 +287,14 @@ func LogAxisSimple(minParent, maxParent float64, bounds Bounds, ctw CheckTextWid
 	logMin -= delta
 	logMax += delta
 
-	var la Axis
-	if logMax-logMin < 0.2 {
-		// so small, almost linear
-		la = LinearAxis(minParent, maxParent, bounds, ctw, expand)
-	} else {
-		// give a bit more space for the labels
-		mctw := func(width float64, digits int) bool {
+	tw := ctw
+	if logMax-logMin > 0.2 {
+		// for more than 0.2 decades, we need more space for the labels
+		tw = func(width float64, digits int) bool {
 			return ctw(width, digits+2)
 		}
-		la = LinearAxis(minParent, maxParent, bounds, mctw, expand)
 	}
+	la := LinearAxis(minParent, maxParent, bounds, tw, expand)
 	la.Trans = func(v float64) float64 {
 		f := (math.Log10(v) - logMin) / (logMax - logMin)
 		return f*(maxParent-minParent) + minParent
