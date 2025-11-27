@@ -197,7 +197,7 @@ func LogAxis(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth, ex
 		logMin = logMax * 1e-3
 	}
 
-	if logMax-logMin < 1 {
+	if logMax-logMin < 1.2 {
 		// drawing log axis marks makes little sense for less than one decade
 		// fall back to plot logarithmic values on a linear axis
 		return LogAxisSimple(minParent, maxParent, bounds, ctw, expand)
@@ -248,33 +248,48 @@ func createLogTicks(logMin, parentMin, parentMax float64, tr func(v float64) flo
 }
 
 // LogAxisSimple creates a simple logarithmic axis.
-// It maps the logarithm of the values to a linear axis.
-// It does not try to create logarithmic tick marks.
+// Uses the linear scaling algorithm to create the ticks.
 // If the bounds are less than or equal to zero, it falls back to a linear axis.
 func LogAxisSimple(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth, expand float64) Axis {
 	if bounds.Min <= 0 {
 		return LinearAxis(minParent, maxParent, bounds, ctw, expand)
 	}
+	logMin := math.Log10(bounds.Min)
+	logMax := math.Log10(bounds.Max)
 
-	la := LinearAxis(minParent, maxParent, NewBounds(math.Log10(bounds.Min), math.Log10(bounds.Max)), ctw, expand)
-	la.Bounds = bounds
-	tr := la.Trans
-	la.Trans = func(v float64) float64 {
-		return tr(math.Log10(v))
-	}
-	rev := la.Reverse
-	la.Reverse = func(v float64) float64 {
-		return math.Pow(10, rev(v))
-	}
-	la.LabelFormat = func(label string) string {
-		if label != "" {
-			return "log(" + label + ")"
+	delta := (logMax - logMin) * expand
+	logMin -= delta
+	logMax += delta
+
+	var la Axis
+	if logMax-logMin < 0.2 {
+		// so small, almost linear
+		la = LinearAxis(minParent, maxParent, bounds, ctw, expand)
+	} else {
+		// give a bit more space for the labels
+		mctw := func(width float64, digits int) bool {
+			return ctw(width, digits+2)
 		}
-		return "log"
+		la = LinearAxis(minParent, maxParent, bounds, mctw, expand)
 	}
-	for i, t := range la.Ticks {
-		la.Ticks[i].Position = math.Pow(10, t.Position)
+	la.Trans = func(v float64) float64 {
+		f := (math.Log10(v) - logMin) / (logMax - logMin)
+		return f*(maxParent-minParent) + minParent
 	}
+	la.Reverse = func(v float64) float64 {
+		return math.Pow(10, (v-minParent)*(logMax-logMin)/(maxParent-minParent)+logMin)
+	}
+
+	n := len(la.Ticks) - 2
+	for n > 0 {
+		d := la.Trans(la.Ticks[n+1].Position) - la.Trans(la.Ticks[n].Position)
+		if ctw(d, len(la.Ticks[n].Label)) {
+			break
+		}
+		la.Ticks[n].Label = ""
+		n -= 2
+	}
+
 	return la
 }
 
