@@ -68,11 +68,11 @@ func (c Complex) ToFloat() (float64, bool) {
 }
 
 func (c Complex) String() string {
-	re := strconv.FormatFloat(float64(real(c)), 'g', -1, 64)
+	re := strconv.FormatFloat(real(c), 'g', -1, 64)
 	if imag(c) == 0 {
 		return re
 	}
-	im := strconv.FormatFloat(float64(imag(c)), 'g', -1, 64)
+	im := strconv.FormatFloat(imag(c), 'g', -1, 64)
 	if imag(c) < 0 {
 		return re + im + "j"
 	} else {
@@ -721,7 +721,7 @@ func bodeMethods() value.MethodMap {
 		}).SetMethodDescription("Replaces labels with LaTeX code."),
 		"addSliderTo": value.MethodAtType(1, func(bode BodePlotValue, st funcGen.Stack[value.Value]) (value.Value, error) {
 			if gui, ok := st.Get(1).(*GuiElements); ok {
-				centerVal := gui.newSlider("\u03C9₀", 0, -2, 2)
+				centerVal := gui.newSlider("\u03C9₀", 0, -2, 4)
 				widthVal := gui.newSlider("\u03C9ᵥ", 2, 0.1, 5)
 
 				if center, ok := centerVal.ToFloat(); ok {
@@ -1181,9 +1181,9 @@ func guiMethods() value.MethodMap {
 					if st.Size() < 5 {
 						return r.newSlider(string(name), def, 0, def*2), nil
 					}
-					if min, ok := st.Get(3).ToFloat(); ok {
-						if max, ok := st.Get(4).ToFloat(); ok {
-							return r.newSlider(string(name), def, min, max), nil
+					if sMin, ok := st.Get(3).ToFloat(); ok {
+						if sMax, ok := st.Get(4).ToFloat(); ok {
+							return r.newSlider(string(name), def, sMin, sMax), nil
 						}
 					}
 				}
