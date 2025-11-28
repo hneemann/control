@@ -1117,9 +1117,9 @@ func (b bodePhase) DependantBounds(xGiven, _ graph.Bounds) (x, y graph.Bounds, e
 	return graph.Bounds{}, bounds, nil
 }
 
-func (b bodePhase) DrawTo(plot *graph.Plot, canvas graph.Canvas) error {
-	b.bodeContent.generate(plot.X.Bounds.Min, plot.X.Bounds.Max)
+func (b bodePhase) DrawTo(_ *graph.Plot, canvas graph.Canvas) error {
 	r := canvas.Rect()
+	b.bodeContent.generate(r.Min.X, r.Max.X)
 	path := graph.PointsFromSlice(b.bodeContent.phase...)
 	return canvas.DrawPath(r.IntersectPath(path), b.bodeContent.Style)
 }
@@ -1145,9 +1145,9 @@ func (b bodeAmplitude) DependantBounds(xGiven, _ graph.Bounds) (x, y graph.Bound
 	return graph.Bounds{}, bounds, nil
 }
 
-func (b bodeAmplitude) DrawTo(plot *graph.Plot, canvas graph.Canvas) error {
-	b.bodeContent.generate(plot.X.Bounds.Min, plot.X.Bounds.Max)
+func (b bodeAmplitude) DrawTo(_ *graph.Plot, canvas graph.Canvas) error {
 	r := canvas.Rect()
+	b.bodeContent.generate(r.Min.X, r.Max.X)
 	path := graph.PointsFromSlice(b.bodeContent.amplitude...)
 	return canvas.DrawPath(r.IntersectPath(path), b.bodeContent.Style)
 }
