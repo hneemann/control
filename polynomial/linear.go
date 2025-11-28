@@ -1046,6 +1046,19 @@ func (b *BodePlot) ToLaTeX() {
 	b.phase.X.Label = "$\\omega$ [rad/s]"
 }
 
+func (bpc *BodePlotContent) generateExp(wMin, wMax, exp float64) {
+	// compensate expansion of x-axis to make the graphs fill the complete x-range
+	// required to avoid calculating values twice
+	logMin := math.Log10(wMin)
+	logMax := math.Log10(wMax)
+	delta := (logMax - logMin) * exp
+	logMin -= delta
+	logMax += delta
+	wMin = math.Pow(10, logMin)
+	wMax = math.Pow(10, logMax)
+	bpc.generate(wMin, wMax)
+}
+
 func (bpc *BodePlotContent) generate(wMin, wMax float64) {
 	if wMin <= 0 {
 		wMin = 0.001
@@ -1056,15 +1069,6 @@ func (bpc *BodePlotContent) generate(wMin, wMax float64) {
 	if bpc.wMin != wMin || bpc.wMax != wMax {
 		bpc.wMin = wMin
 		bpc.wMax = wMax
-
-		// compensate expansion of x-axis to make the graphs fill the complete x-range
-		logMin := math.Log10(wMin)
-		logMax := math.Log10(wMax)
-		delta := (logMax - logMin) * 0.02
-		logMin -= delta
-		logMax += delta
-		wMin = math.Pow(10, logMin)
-		wMax = math.Pow(10, logMax)
 
 		l := bpc.Linear
 		cZero := l.EvalCplx(complex(0, 0))
@@ -1109,7 +1113,7 @@ func (b bodePhase) Bounds() (x, y graph.Bounds, err error) {
 }
 
 func (b bodePhase) DependantBounds(xGiven, _ graph.Bounds) (x, y graph.Bounds, err error) {
-	b.bodeContent.generate(xGiven.Min, xGiven.Max)
+	b.bodeContent.generateExp(xGiven.Min, xGiven.Max, 0.02)
 	var bounds graph.Bounds
 	for _, p := range b.bodeContent.phase {
 		bounds.Merge(p.Y)
@@ -1137,7 +1141,7 @@ func (b bodeAmplitude) Bounds() (x, y graph.Bounds, err error) {
 }
 
 func (b bodeAmplitude) DependantBounds(xGiven, _ graph.Bounds) (x, y graph.Bounds, err error) {
-	b.bodeContent.generate(xGiven.Min, xGiven.Max)
+	b.bodeContent.generateExp(xGiven.Min, xGiven.Max, 0.02)
 	var bounds graph.Bounds
 	for _, p := range b.bodeContent.amplitude {
 		bounds.Merge(p.Y)
