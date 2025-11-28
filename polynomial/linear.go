@@ -1047,6 +1047,12 @@ func (b *BodePlot) ToLaTeX() {
 }
 
 func (bpc *BodePlotContent) generate(wMin, wMax float64) {
+	if wMin <= 0 {
+		wMin = 0.001
+	}
+	if wMax <= wMin {
+		wMax = wMin * 1000
+	}
 	if bpc.wMin != wMin || bpc.wMax != wMax {
 		bpc.wMin = wMin
 		bpc.wMax = wMax
