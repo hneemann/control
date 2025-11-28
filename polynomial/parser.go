@@ -719,6 +719,23 @@ func bodeMethods() value.MethodMap {
 			bode.Value.ToLaTeX()
 			return bode, nil
 		}).SetMethodDescription("Replaces labels with LaTeX code."),
+		"addSliderTo": value.MethodAtType(1, func(bode BodePlotValue, st funcGen.Stack[value.Value]) (value.Value, error) {
+			if gui, ok := st.Get(1).(*GuiElements); ok {
+				centerVal := gui.newSlider("\u03C9₀", 0, -2, 2)
+				widthVal := gui.newSlider("\u03C9ᵥ", 2, 0.1, 5)
+
+				if center, ok := centerVal.ToFloat(); ok {
+					if width, ok := widthVal.ToFloat(); ok {
+						center = math.Pow(10, center)
+						width = math.Pow(10, width)
+						bode.Value.SetFrequencyBounds(center/width, center*width)
+						return bode, nil
+					}
+				}
+				return nil, fmt.Errorf("failed to create sliders")
+			}
+			return nil, fmt.Errorf("addTo requires a gui element as argument")
+		}).SetMethodDescription("gui", "Adds gui elements to the bode-plot to zoom and pan.").Pure(false),
 	}
 }
 

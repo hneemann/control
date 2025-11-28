@@ -247,7 +247,7 @@ func createLogTicks(logMin, logMax, parentMin, parentMax float64, tr func(v floa
 	if !ctw(tr(f*3)-tr(f), maxDigits) { // check if space for "3" label is available
 		three = false
 		two = false
-	} else if !ctw(tr(f*3)-tr(f*2), maxDigits) { // check if space for "2" label is available
+	} else if !ctw(tr(f*3)-tr(f*2), maxDigits) { // check if space for "2" and "5" label is available
 		two = false
 	}
 
