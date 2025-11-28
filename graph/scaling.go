@@ -241,14 +241,22 @@ func createLogTicks(logMin, logMax, parentMin, parentMax float64, tr func(v floa
 		}
 	}
 
+	all := false
+	four := true
 	three := true
 	two := true
 	f := exp10(m)
 	if !ctw(tr(f*3)-tr(f), maxDigits) { // check if space for "3" label is available
+		four = false
 		three = false
 		two = false
 	} else if !ctw(tr(f*3)-tr(f*2), maxDigits) { // check if space for "2" and "5" label is available
+		four = false
 		two = false
+	} else if !ctw(tr(f*5)-tr(f*4), maxDigits) { // check if space for "4" and "7" label is available
+		four = false
+	} else if ctw(tr(f*10)-tr(f*9), maxDigits) { // if there is space for the "9" label, show all labels
+		all = true
 	}
 
 	for {
@@ -263,7 +271,7 @@ func createLogTicks(logMin, logMax, parentMin, parentMax float64, tr func(v floa
 			}
 
 			if tv >= parentMin {
-				if i == 1 || (three && i == 3) || (two && (i == 2 || i == 5)) {
+				if i == 1 || all || (three && i == 3) || (two && (i == 2 || i == 5)) || (four && (i == 4 || i == 7)) {
 					t.Label = export.NewFormattedFloat(f*float64(i), 6).Unicode()
 				}
 				ticks = append(ticks, t)
@@ -294,7 +302,8 @@ func LogAxisSimple(minParent, maxParent float64, bounds Bounds, ctw CheckTextWid
 			return ctw(width, digits+2)
 		}
 	}
-	la := LinearAxis(minParent, maxParent, bounds, tw, expand)
+	lBounds := NewBounds(math.Pow(10, logMin), math.Pow(10, logMax))
+	la := LinearAxis(minParent, maxParent, lBounds, tw, 0)
 	la.Trans = func(v float64) float64 {
 		f := (math.Log10(v) - logMin) / (logMax - logMin)
 		return f*(maxParent-minParent) + minParent
