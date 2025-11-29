@@ -246,6 +246,11 @@ func polyMethods() value.MethodMap {
 			gf := graph.Function{Function: f}
 			return grParser.PlotContentValue{Holder: grParser.Holder[graph.PlotContent]{Value: gf}}, nil
 		}).SetMethodDescription("Returns the graph of the polynomial."),
+		"coef": value.MethodAtType(0, func(pol Polynomial, st funcGen.Stack[value.Value]) (value.Value, error) {
+			return value.NewListConvert(func(f float64) (value.Value, error) {
+				return value.Float(f), nil
+			}, pol), nil
+		}).SetMethodDescription("Returns the coefficients of the polynomial as a list."),
 		"degree": value.MethodAtType(0, func(pol Polynomial, st funcGen.Stack[value.Value]) (value.Value, error) {
 			if len(pol) == 0 {
 				return value.Int(0), errors.New("degree of empty polynomial is undefined")
