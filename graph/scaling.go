@@ -66,6 +66,8 @@ func LinearAxis(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth,
 	delta := bounds.Width() * expand
 	if delta > max {
 		delta = max
+	} else if bounds.Width() < 1e-6 {
+		delta = 1 + 2*expand
 	}
 	eMin := bounds.Min - delta
 	if eMin < -max {
@@ -285,7 +287,7 @@ func createLogTicks(logMin, logMax, parentMin, parentMax float64, tr func(v floa
 // Uses the linear scaling algorithm to create the ticks.
 // If the bounds are less than or equal to zero, it falls back to a linear axis.
 func LogAxisSimple(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth, expand float64) Axis {
-	if bounds.Min <= 0 {
+	if bounds.Min <= 0 || bounds.Max <= bounds.Min {
 		return LinearAxis(minParent, maxParent, bounds, ctw, expand)
 	}
 	logMin := math.Log10(bounds.Min)
@@ -381,17 +383,20 @@ func CreateFixedStepAxis(step float64) AxisFactory {
 // DBAxis creates a dB axis.
 // To draw the ticks in dB scale, it uses a linear axis.
 func DBAxis(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth, expand float64) Axis {
-	if bounds.Min <= 0 {
+	if bounds.Min <= 0 || bounds.Max <= bounds.Min {
 		return LinearAxis(minParent, maxParent, bounds, ctw, expand)
 	}
 
 	dBMax := 20 * math.Log10(bounds.Max)
-	if dBMax > 400 {
-		dBMax = 400
+	if dBMax > 1000 {
+		dBMax = 1000
 	}
 	dBMin := 20 * math.Log10(bounds.Min)
 	if dBMin > dBMax {
 		dBMin = dBMax - 60
+	}
+	if dBMin < -1000 {
+		dBMin = -1000
 	}
 
 	fixedAxis := CreateFixedStepAxis(20)(minParent, maxParent, Bounds{bounds.isSet, dBMin, dBMax}, ctw, expand)
@@ -413,11 +418,10 @@ func DBAxis(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth, exp
 			return math.Pow(10, fixedAxis.Reverse(v)/20)
 		},
 		Ticks: ticks,
-		Bounds: Bounds{
-			isSet: true,
-			Min:   math.Pow(10, fixedAxis.Bounds.Min/20),
-			Max:   math.Pow(10, fixedAxis.Bounds.Max/20),
-		},
+		Bounds: NewBounds(
+			math.Pow(10, fixedAxis.Bounds.Min/20),
+			math.Pow(10, fixedAxis.Bounds.Max/20),
+		),
 		LabelFormat: labelFormat,
 	}
 }

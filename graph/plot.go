@@ -71,12 +71,12 @@ type AxisDescription struct {
 	HideAxis bool
 }
 
-func (a AxisDescription) MakeValid() AxisDescription {
-	a.Bounds = a.Bounds.makeValid()
+// GetFactory returns the AxisFactory, or LinearAxis if none is set.
+func (a AxisDescription) GetFactory() AxisFactory {
 	if a.Factory == nil {
-		a.Factory = LinearAxis
+		return LinearAxis
 	}
-	return a
+	return a.Factory
 }
 
 type Plot struct {
@@ -134,25 +134,17 @@ func (p *Plot) DrawTo(canvas Canvas) (err error) {
 		xBoundsPre, yBoundsPre = p.BoundsModifier(xBoundsPre, yBoundsPre, p, canvas)
 	}
 
-	cross := p.Cross && xBoundsPre.Min < 0 && xBoundsPre.Max > 0 && yBoundsPre.Min < 0 && yBoundsPre.Max > 0
-
-	xAxisFactory := p.X.Factory
-	if xAxisFactory == nil {
-		xAxisFactory = LinearAxis
-	}
-	yAxisFactory := p.Y.Factory
-	if yAxisFactory == nil {
-		yAxisFactory = LinearAxis
-	}
+	cross := p.Cross && xBoundsPre.Min <= 0 && xBoundsPre.Max >= 0 && yBoundsPre.Min <= 0 && yBoundsPre.Max >= 0
 
 	large := p.textSize / 2
 	small := p.textSize / 4
 
 	thinLine := p.Frame.SetStrokeWidth(p.Frame.StrokeWidth / 2)
 
+	nonCrossInner := p.calculateInnerRect(rect)
 	innerRect := rect
 	if !cross {
-		innerRect = p.calculateInnerRect(rect)
+		innerRect = nonCrossInner
 	}
 	p.innerRect = innerRect
 
@@ -173,7 +165,7 @@ func (p *Plot) DrawTo(canvas Canvas) (err error) {
 	if p.X.NoExpand {
 		xExp = 0
 	}
-	p.xAxis = xAxisFactory(innerRect.Min.X, innerRect.Max.X, xBoundsPre,
+	p.xAxis = p.X.GetFactory()(innerRect.Min.X, innerRect.Max.X, xBoundsPre,
 		func(width float64, digits int) bool {
 			return width > p.textSize*(float64(digits)+1+xTickSep)*0.5
 		}, xExp)
@@ -200,7 +192,7 @@ func (p *Plot) DrawTo(canvas Canvas) (err error) {
 		yExp = 0
 	}
 
-	p.yAxis = yAxisFactory(innerRect.Min.Y, innerRect.Max.Y, yBoundsPre,
+	p.yAxis = p.Y.GetFactory()(innerRect.Min.Y, innerRect.Max.Y, yBoundsPre,
 		func(width float64, _ int) bool {
 			return width > p.textSize*(1+yTickSep)
 		}, yExp)
@@ -223,9 +215,15 @@ func (p *Plot) DrawTo(canvas Canvas) (err error) {
 	}
 
 	if !p.X.HideAxis {
+		topBottom := 1.0
+		orient := Top | HCenter
 		yp := innerRect.Min.Y
 		if cross {
 			yp = p.yAxis.Trans(0)
+			if yp < nonCrossInner.Min.Y {
+				topBottom = -1
+				orient = Bottom | HCenter
+			}
 		}
 		for _, tick := range p.xAxis.Ticks {
 			if !cross || math.Abs(tick.Position) > 1e-8 {
@@ -234,19 +232,25 @@ func (p *Plot) DrawTo(canvas Canvas) (err error) {
 					nErr.Try(canvas.DrawPath(PointsFromSlice(Point{xp, innerRect.Min.Y}, Point{xp, innerRect.Max.Y}), p.Grid))
 				}
 				if tick.Label == "" {
-					nErr.Try(canvas.DrawPath(PointsFromSlice(Point{xp, yp - small}, Point{xp, yp}), thinLine))
+					nErr.Try(canvas.DrawPath(PointsFromSlice(Point{xp, yp - small*topBottom}, Point{xp, yp}), thinLine))
 				} else {
-					canvas.DrawText(Point{xp, yp - large - small}, tick.Label, Top|HCenter, textStyle, p.textSize)
-					nErr.Try(canvas.DrawPath(PointsFromSlice(Point{xp, yp - large}, Point{xp, yp}), p.Frame))
+					canvas.DrawText(Point{xp, yp - (large+small)*topBottom}, tick.Label, orient, textStyle, p.textSize)
+					nErr.Try(canvas.DrawPath(PointsFromSlice(Point{xp, yp - large*topBottom}, Point{xp, yp}), p.Frame))
 				}
 			}
 		}
 	}
 
 	if !p.Y.HideAxis {
+		rightLeft := 1.0
+		orient := Right | VCenter
 		xp := innerRect.Min.X
 		if cross {
 			xp = p.xAxis.Trans(0)
+			if xp < nonCrossInner.Min.X {
+				rightLeft = -1
+				orient = Left | VCenter
+			}
 		}
 		for _, tick := range p.yAxis.Ticks {
 			if !cross || math.Abs(tick.Position) > 1e-8 {
@@ -255,10 +259,10 @@ func (p *Plot) DrawTo(canvas Canvas) (err error) {
 					nErr.Try(canvas.DrawPath(PointsFromSlice(Point{innerRect.Min.X, yp}, Point{innerRect.Max.X, yp}), p.Grid))
 				}
 				if tick.Label == "" {
-					nErr.Try(canvas.DrawPath(PointsFromSlice(Point{xp - small, yp}, Point{xp, yp}), thinLine))
+					nErr.Try(canvas.DrawPath(PointsFromSlice(Point{xp - small*rightLeft, yp}, Point{xp, yp}), thinLine))
 				} else {
-					canvas.DrawText(Point{xp - large, yp}, tick.Label, Right|VCenter, textStyle, p.textSize)
-					nErr.Try(canvas.DrawPath(PointsFromSlice(Point{xp - large, yp}, Point{xp, yp}), p.Frame))
+					canvas.DrawText(Point{xp - large*rightLeft, yp}, tick.Label, orient, textStyle, p.textSize)
+					nErr.Try(canvas.DrawPath(PointsFromSlice(Point{xp - large*rightLeft, yp}, Point{xp, yp}), p.Frame))
 				}
 			}
 		}
@@ -392,7 +396,7 @@ func (p *Plot) calcBounds() (Bounds, Bounds, error) {
 		}
 	}
 
-	return xBounds.makeValid(), yBounds.makeValid(), nil
+	return xBounds, yBounds, nil
 }
 
 func (p *Plot) calculateInnerRect(rect Rect) Rect {
@@ -518,13 +522,6 @@ func NewBounds(min, max float64) Bounds {
 
 func (b Bounds) Width() float64 {
 	return b.Max - b.Min
-}
-
-func (b Bounds) makeValid() Bounds {
-	if b.isSet && b.Width() > 1e-6 {
-		return b
-	}
-	return Bounds{isSet: true, Min: b.Min - 1, Max: b.Max + 1}
 }
 
 func (b *Bounds) MergeBounds(other Bounds) {

@@ -276,9 +276,9 @@ func newUnityCube(parent Cube, x, y, z AxisDescription) *unityCube {
 	ctw := func(width float64, digits int) bool {
 		return width > float64(digits)*10
 	}
-	ax := x.Factory(-100, 100, x.Bounds, ctw, 0.02)
-	ay := y.Factory(-100, 100, y.Bounds, ctw, 0.02)
-	az := z.Factory(-100, 100, z.Bounds, ctw, 0.02)
+	ax := x.GetFactory()(-100, 100, x.Bounds, ctw, 0.02)
+	ay := y.GetFactory()(-100, 100, y.Bounds, ctw, 0.02)
+	az := z.GetFactory()(-100, 100, z.Bounds, ctw, 0.02)
 	return &unityCube{
 		parent: parent,
 		X:      x.Bounds, Y: y.Bounds, Z: z.Bounds,
@@ -649,7 +649,7 @@ func (p *Plot3d) DrawTo(canvas Canvas) (err error) {
 		DrawLongLine(rot, Vector3d{-100, 100, -100}, Vector3d{-100, 100, 100}, cubeColor)
 		DrawLongLine(rot, Vector3d{100, -100, -100}, Vector3d{100, -100, 100}, cubeColor)
 	}
-	cube := newUnityCube(rot, p.X.MakeValid(), p.Y.MakeValid(), p.Z.MakeValid())
+	cube := newUnityCube(rot, p.X, p.Y, p.Z)
 	const facShortLabel = 1.02
 	const facLongLabel = 1.04
 	const facText = 1.1
