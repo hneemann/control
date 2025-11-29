@@ -1071,37 +1071,59 @@ func (bpc *BodePlotContent) generate(wMin, wMax float64) {
 		bpc.wMax = wMax
 
 		l := bpc.Linear
-		cZero := l.EvalCplx(complex(0, 0))
-		lastAngle := 0.0
-		if real(cZero) < 0 {
-			lastAngle = -180
-		}
-
+		phaseOffset, lastPhase := calculateCompletePhase(l, wMin)
 		wMult := math.Pow(wMax/wMin, 1/float64(bpc.Steps))
 		var amplitude []graph.Point
 		var phase []graph.Point
-		angleOffset := 0.0
 		w := wMin
 		latFactor := bpc.Latency / math.Pi * 180
 		for i := 0; i <= bpc.Steps; i++ {
 			c := l.EvalCplx(complex(0, w))
 			amp := cmplx.Abs(c)
-			angle := cmplx.Phase(c) / math.Pi * 180
-			if lastAngle-angle > 180 {
-				angleOffset += 360
+			pha := cmplx.Phase(c) / math.Pi * 180
+			if lastPhase-pha > 180 {
+				phaseOffset += 360
 			}
-			if lastAngle-angle < -180 {
-				angleOffset -= 360
+			if lastPhase-pha < -180 {
+				phaseOffset -= 360
 			}
 
-			lastAngle = angle
+			lastPhase = pha
 			amplitude = append(amplitude, graph.Point{X: w, Y: amp})
-			phase = append(phase, graph.Point{X: w, Y: angle + angleOffset - latFactor*w})
+			phase = append(phase, graph.Point{X: w, Y: pha + phaseOffset - latFactor*w})
 			w *= wMult
 		}
 		bpc.amplitude = amplitude
 		bpc.phase = phase
 	}
+}
+
+// calculateCompletePhase calculates the complete phase including all phase rotations
+// by integrating the phase changes from the given frequency down to zero.
+func calculateCompletePhase(l *Linear, w float64) (offset float64, start float64) {
+	phase := 0.0
+	if real(l.EvalCplx(complex(0, 0))) < 0 {
+		phase = -180
+	}
+	initialDirect := cmplx.Phase(l.EvalCplx(complex(0, w))) / math.Pi * 180
+	lastDirect := initialDirect
+	for w > 0.01 {
+		c := l.EvalCplx(complex(0, w))
+		direct := cmplx.Phase(c) / math.Pi * 180
+		dPhase := lastDirect - direct
+		if dPhase > 180 {
+			dPhase -= 360
+		}
+		if dPhase < -180 {
+			dPhase += 360
+		}
+		phase += dPhase
+
+		lastDirect = direct
+		w = w / 2
+	}
+	fullCircles := math.Round((phase - initialDirect) / 360)
+	return fullCircles * 360, initialDirect
 }
 
 type bodePhase struct {

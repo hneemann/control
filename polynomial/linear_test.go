@@ -585,3 +585,32 @@ func TestLinear_PMargin(t *testing.T) {
 		})
 	}
 }
+
+func Test_calculateStartPhase(t *testing.T) {
+	l := &Linear{
+		Numerator:   Polynomial{10},
+		Denominator: Polynomial{1.44, 29.04, 148.81, 24.2, 1},
+	}
+	l2 := &Linear{
+		Numerator:   Polynomial{1000},
+		Denominator: Polynomial{362.88, 1026.58, 1172.7, 723.68, 269.325, 63.273, 9.45, 0.87, 0.045, 0.001},
+	}
+	tests := []struct {
+		name       string
+		l          *Linear
+		wStart     float64
+		wantOffset float64
+	}{
+		{"def", l, 0.01, 0},
+		{"simple", l, 0.1, 0},
+		{"round", l, 1.0983784410778725, -360},
+		{"round2", l, 2802, -360},
+		{"2rounds", l2, 100, -720},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotOffset, _ := calculateCompletePhase(tt.l, tt.wStart)
+			assert.EqualValues(t, tt.wantOffset, gotOffset, "offset")
+		})
+	}
+}
