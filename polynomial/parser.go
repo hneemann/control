@@ -433,7 +433,7 @@ func linMethods() value.MethodMap {
 			return nil, fmt.Errorf("evans requires a float")
 		}).SetMethodDescription("k_min", "k_max", "Creates an evans plot content. If only one argument is given, "+
 			"this argument is used as k_max and kMin is set to 0.").VarArgsMethod(1, 2),
-		"nyquist": value.MethodAtType(2, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
+		"nyquist": value.MethodAtType(4, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
 			neg, ok := st.GetOptional(1, value.Bool(false)).(value.Bool)
 			if !ok {
 				return nil, fmt.Errorf("nyquist requires a boolean as first argument")
@@ -442,41 +442,65 @@ func linMethods() value.MethodMap {
 			if !ok {
 				return nil, fmt.Errorf("nyquist requires a float as second argument")
 			}
-			contentList, err := lin.Nyquist(sMax, bool(neg))
+			sMin, ok := st.GetOptional(3, value.Float(0)).ToFloat()
+			if !ok {
+				return nil, fmt.Errorf("nyquist requires a float as third argument")
+			}
+			steps, ok := st.GetOptional(4, value.Int(0)).ToFloat()
+			if !ok {
+				return nil, fmt.Errorf("nyquist requires a float as fourth argument")
+			}
+			contentList, err := lin.Nyquist(sMin, sMax, bool(neg), int(steps))
 			if err != nil {
 				return nil, err
 			}
 			return value.NewListConvert(func(i graph.PlotContent) (value.Value, error) {
 				return grParser.NewPlotContentValue(i), nil
 			}, contentList), nil
-		}).SetMethodDescription("neg", "wMax", "Creates a nyquist plot content. If neg is true also the range -∞<ω<0 is included. "+
-			"The value wMax gives the maximum value for ω. It defaults to 1000rad/s.").VarArgsMethod(0, 2),
-		"nyquistPos": value.MethodAtType(1, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
+		}).SetMethodDescription("neg", "wMax", "wMin", "steps", "Creates a nyquist plot content. If neg is true also the range -∞<ω<0 is included. "+
+			"The value wMax gives the maximum value for ω. It defaults to 1000rad/s.").VarArgsMethod(0, 4),
+		"nyquistPos": value.MethodAtType(3, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
 			sMax, ok := st.GetOptional(1, value.Float(0)).ToFloat()
 			if !ok {
 				return nil, fmt.Errorf("nyquistPos requires a float as first argument")
 			}
-			plotContent, err := lin.NyquistPos(sMax)
+			sMin, ok := st.GetOptional(2, value.Float(0)).ToFloat()
+			if !ok {
+				return nil, fmt.Errorf("nyquistPos requires a float as second argument")
+			}
+			steps, ok := st.GetOptional(3, value.Int(0)).ToFloat()
+			if !ok {
+				return nil, fmt.Errorf("nyquistPos requires a float as third argument")
+			}
+			plotContent, err := lin.NyquistPos(sMin, sMax, int(steps))
 			if err != nil {
 				return nil, err
 			}
 			contentValue := grParser.NewPlotContentValue(plotContent)
 			return contentValue, nil
-		}).SetMethodDescription("wMax", "Creates a nyquist plot content with positive ω. "+
-			"The value wMax gives the maximum value for ω. It defaults to 1000rad/s.").VarArgsMethod(0, 1),
-		"nyquistNeg": value.MethodAtType(1, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
+		}).SetMethodDescription("wMax", "wMin", "steps", "Creates a nyquist plot content with positive ω. "+
+			"The value wMax gives the maximum value for ω. It defaults to 1000rad/s.").VarArgsMethod(0, 3),
+		"nyquistNeg": value.MethodAtType(3, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
 			sMax, ok := st.GetOptional(1, value.Float(0)).ToFloat()
 			if !ok {
 				return nil, fmt.Errorf("nyquistPos requires a float as first argument")
 			}
-			plotContent, err := lin.NyquistNeg(sMax)
+			sMin, ok := st.GetOptional(2, value.Float(0)).ToFloat()
+			if !ok {
+				return nil, fmt.Errorf("nyquistNeg requires a float as second argument")
+			}
+			steps, ok := st.GetOptional(3, value.Int(0)).ToFloat()
+			if !ok {
+				return nil, fmt.Errorf("nyquistNeg requires a float as third argument")
+			}
+			plotContent, err := lin.NyquistNeg(sMin, sMax, int(steps))
 			if err != nil {
 				return nil, err
 			}
 			contentValue := grParser.NewPlotContentValue(plotContent)
 			return contentValue, nil
-		}).SetMethodDescription("wMax", "Creates a nyquist plot content with negative ω. "+
-			"The value wMax gives the maximum value for ω. It defaults to 1000rad/s.").VarArgsMethod(0, 1),
+		}).SetMethodDescription("wMax", "wMin", "steps", "Creates a nyquist plot content with negative ω. "+
+			"The value wMax gives the maximum value for ω. It defaults to 1000rad/s.").VarArgsMethod(0, 3),
 		"pMargin": value.MethodAtType(0, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
 			w0, margin, err := lin.PMargin()
 			return value.NewMap(value.RealMap{
@@ -722,8 +746,9 @@ func bodeMethods() value.MethodMap {
 		}).SetMethodDescription("Returns the phase plot."),
 		"LaTeX": value.MethodAtType(0, func(bode BodePlotValue, st funcGen.Stack[value.Value]) (value.Value, error) {
 			bode.Value.ToLaTeX()
+			bode.context.TextSize = grParser.LaTeXTextSize
 			return bode, nil
-		}).SetMethodDescription("Replaces labels with LaTeX code."),
+		}).SetMethodDescription(fmt.Sprintf("Replaces labels with LaTeX code and sets the text size to %d.", grParser.LaTeXTextSize)),
 		"addSliderTo": value.MethodAtType(1, func(bode BodePlotValue, st funcGen.Stack[value.Value]) (value.Value, error) {
 			if gui, ok := st.Get(1).(*GuiElements); ok {
 				centerVal := gui.newSlider("\u03C9₀", 0, -2, 4)

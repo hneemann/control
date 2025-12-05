@@ -11,6 +11,8 @@ import (
 	"github.com/hneemann/parser2/value/export/xmlWriter"
 )
 
+const LaTeXTextSize = 20
+
 type Holder[T any] struct {
 	Value T
 }
@@ -107,6 +109,10 @@ func createImageMethods() value.MethodMap {
 			}
 			return nil, fmt.Errorf("textSize requires a float values")
 		}).SetMethodDescription("size", "Sets the text size."),
+		"LaTeX": value.MethodAtType(0, func(im ImageValue, st funcGen.Stack[value.Value]) (value.Value, error) {
+			im.context.TextSize = LaTeXTextSize
+			return im, nil
+		}).SetMethodDescription(fmt.Sprintf("Sets the text size to %d.", LaTeXTextSize)),
 		"outputSize": value.MethodAtType(2, func(im ImageValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if width, ok := stack.Get(1).ToFloat(); ok {
 				if height, ok := stack.Get(2).ToFloat(); ok {
@@ -746,6 +752,10 @@ func createPlotMethods() value.MethodMap {
 			}
 			return nil, fmt.Errorf("textSize requires a float values")
 		}).SetMethodDescription("size", "Sets the text size."),
+		"LaTeX": value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			plot.context.TextSize = LaTeXTextSize
+			return plot, nil
+		}).SetMethodDescription(fmt.Sprintf("Sets the text size to %d.", LaTeXTextSize)),
 		"outputSize": value.MethodAtType(2, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if width, ok := stack.Get(1).ToFloat(); ok {
 				if height, ok := stack.Get(2).ToFloat(); ok {

@@ -1182,12 +1182,15 @@ func (b bodeAmplitude) Legend() graph.Legend {
 	return graph.Legend{ShapeLineStyle: graph.ShapeLineStyle{LineStyle: b.bodeContent.Style}, Name: b.bodeContent.Title}
 }
 
-func (l *Linear) NyquistPos(sMax float64) (*graph.ParameterFunc, error) {
+func (l *Linear) NyquistPos(sMin, sMax float64, steps int) (*graph.ParameterFunc, error) {
 	if sMax == 0 {
 		sMax = l.findNyqustMax()
 	}
+	if sMin == 0 {
+		sMin = sMax * 1e-6
+	}
 
-	pfPos, err := graph.NewLogParameterFunc(0.001, sMax, 0)
+	pfPos, err := graph.NewLogParameterFunc(sMin, sMax, steps)
 	if err != nil {
 		return nil, fmt.Errorf("error creating Nyquist positive frequency parameter function: %w", err)
 	}
@@ -1202,12 +1205,15 @@ func (l *Linear) NyquistPos(sMax float64) (*graph.ParameterFunc, error) {
 	return pfPos, nil
 }
 
-func (l *Linear) NyquistNeg(sMax float64) (*graph.ParameterFunc, error) {
+func (l *Linear) NyquistNeg(sMin, sMax float64, steps int) (*graph.ParameterFunc, error) {
 	if sMax == 0 {
 		sMax = l.findNyqustMax()
 	}
+	if sMin == 0 {
+		sMin = sMax * 1e-6
+	}
 
-	pfNeg, err := graph.NewLogParameterFunc(0.001, sMax, 0)
+	pfNeg, err := graph.NewLogParameterFunc(sMin, sMax, steps)
 	if err != nil {
 		return nil, fmt.Errorf("error creating Nyquist negative frequency parameter function: %w", err)
 	}
@@ -1257,9 +1263,12 @@ var (
 	negStyle = graph.Black.SetDash(4, 4).SetStrokeWidth(2)
 )
 
-func (l *Linear) Nyquist(sMax float64, alsoNeg bool) ([]graph.PlotContent, error) {
+func (l *Linear) Nyquist(sMin, sMax float64, alsoNeg bool, steps int) ([]graph.PlotContent, error) {
 	if sMax == 0 {
 		sMax = l.findNyqustMax()
+	}
+	if sMin == 0 {
+		sMin = sMax * 1e-6
 	}
 
 	cZero := l.EvalCplx(complex(0, 0))
@@ -1268,7 +1277,7 @@ func (l *Linear) Nyquist(sMax float64, alsoNeg bool) ([]graph.PlotContent, error
 	var cp []graph.PlotContent
 	cp = append(cp, NewImReLabels())
 	if alsoNeg {
-		neg, err := l.NyquistNeg(sMax)
+		neg, err := l.NyquistNeg(sMin, sMax, steps)
 		if err != nil {
 			return nil, err
 		}
@@ -1279,7 +1288,7 @@ func (l *Linear) Nyquist(sMax float64, alsoNeg bool) ([]graph.PlotContent, error
 		zeroMarker := graph.NewCircleMarker(4)
 		cp = append(cp, graph.Scatter{Points: graph.PointsFromPoint(graph.Point{X: real(cZero), Y: imag(cZero)}), ShapeLineStyle: graph.ShapeLineStyle{Shape: zeroMarker, ShapeStyle: graph.Black}, Title: "ω=0"})
 	}
-	pos, err := l.NyquistPos(sMax)
+	pos, err := l.NyquistPos(sMin, sMax, steps)
 	if err != nil {
 		return nil, err
 	}
@@ -1291,13 +1300,11 @@ func (l *Linear) Nyquist(sMax float64, alsoNeg bool) ([]graph.PlotContent, error
 
 func (l *Linear) findNyqustMax() float64 {
 	w := 10.0
-	lastG := math.MaxFloat64
 	for {
 		g := cmplx.Abs(l.EvalCplx(complex(0, w)))
-		if g < 0.01 || g > lastG || w > 10000 {
+		if g < 0.01 || w > 10000 {
 			return w
 		}
-		lastG = g
 		w = w * 10
 	}
 }
