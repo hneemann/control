@@ -1373,7 +1373,7 @@ func (l *Linear) Simulate(tMax, dt float64, u func(float64) (float64, error)) (*
 	const pointsExported = 1000
 	skip := int(tMax/dt) / pointsExported
 	if skip < 1 {
-		return nil, fmt.Errorf("step width (dt=%v) is too small for a meaningful simulation", dt)
+		return nil, fmt.Errorf("step width (dt=%v) is too large for a meaningful simulation", dt)
 	}
 
 	t := 0.0
