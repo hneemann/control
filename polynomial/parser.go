@@ -1575,7 +1575,8 @@ var Parser = value.New().
 			}
 			return res, nil
 		},
-		Args: -1,
+		Args:   -1,
+		IsPure: true,
 	}.SetDescription("content...", "Creates a plot.")).
 	AddStaticFunction("nelderMead", funcGen.Function[value.Value]{
 		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
