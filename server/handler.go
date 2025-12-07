@@ -124,8 +124,17 @@ func Execute(writer http.ResponseWriter, request *http.Request) {
 	time := strings.TrimSpace(request.FormValue("time"))
 	var resHtml template.HTML
 	if src != "" {
-		//start := time.Now()
-		fu, err := polynomial.Parser.Generate(src, "gui")
+
+		var err error
+		userData := session.GetData[data.UserData](request)
+		fu := userData.GetLastFu(src)
+		if fu == nil {
+			fu, err = polynomial.Parser.Generate(src, "gui")
+			if err == nil {
+				userData.SetLastFu(src, fu)
+			}
+		}
+
 		if err == nil {
 			var res value.Value
 			gui := polynomial.NewGuiElements(guiDef)
@@ -137,7 +146,6 @@ func Execute(writer http.ResponseWriter, request *http.Request) {
 				}
 			}
 		}
-		//log.Println("calculation on server took", time.Since(start))
 		if err != nil {
 			log.Println("error in calculation:", err)
 			resHtml = template.HTML("<pre>" + html.EscapeString(err.Error()) + "</pre>")

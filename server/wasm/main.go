@@ -16,6 +16,9 @@ import (
 
 func parserWrapper() js.Func {
 
+	var lastSource string
+	var lastFunc funcGen.Func[value.Value]
+
 	jsonFunc := js.FuncOf(func(this js.Value, args []js.Value) any {
 
 		if len(args) < 1 {
@@ -31,8 +34,19 @@ func parserWrapper() js.Func {
 			guiValues = args[1].String()
 		}
 
+		var err error
+		var fu funcGen.Func[value.Value]
+		if source == lastSource && lastFunc != nil {
+			fu = lastFunc
+		} else {
+			fu, err = polynomial.Parser.Generate(source, "gui")
+			if err == nil {
+				lastSource = source
+				lastFunc = fu
+			}
+		}
+
 		var expHtml template.HTML
-		fu, err := polynomial.Parser.Generate(source, "gui")
 		if fu != nil {
 			// call the source
 			gui := polynomial.NewGuiElements(guiValues)

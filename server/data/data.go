@@ -2,6 +2,8 @@ package data
 
 import (
 	"encoding/json"
+	"github.com/hneemann/parser2/funcGen"
+	"github.com/hneemann/parser2/value"
 	"io"
 	"sort"
 	"strings"
@@ -33,7 +35,9 @@ func (s Scripts) Swap(i, j int) {
 }
 
 type UserData struct {
-	Scripts Scripts
+	Scripts    Scripts
+	lastScript string
+	lastFunc   funcGen.Func[value.Value]
 }
 
 func (d *UserData) Save(w io.Writer) error {
@@ -71,6 +75,18 @@ func (d *UserData) Delete(name string) bool {
 		}
 	}
 	return false
+}
+
+func (d *UserData) GetLastFu(src string) funcGen.Func[value.Value] {
+	if d.lastScript == src {
+		return d.lastFunc
+	}
+	return nil
+}
+
+func (d *UserData) SetLastFu(src string, fu funcGen.Func[value.Value]) {
+	d.lastScript = src
+	d.lastFunc = fu
 }
 
 func Load(r io.Reader) (*UserData, error) {
