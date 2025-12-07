@@ -147,7 +147,7 @@ func createPlot3dContentMethods() value.MethodMap {
 					return pc, nil
 				}
 			}
-			return nil, fmt.Errorf("xBounds requires two float values")
+			return nil, fmt.Errorf("uBounds requires two float values")
 		}).SetMethodDescription("uMin", "uMax", "Sets the parameter u-bounds."),
 		"vBounds": value.MethodAtType(2, func(pc Plot3dContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if vMin, ok := stack.Get(1).ToFloat(); ok {
