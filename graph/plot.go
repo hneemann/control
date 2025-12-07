@@ -179,7 +179,7 @@ func (p *Plot) DrawTo(canvas Canvas) (err error) {
 		} else {
 			yExp = 0.02
 		}
-		if p.ProtectLabels && yAutoScale && !cross && (p.X.Label != "" || p.Y.Label != "") {
+		if p.ProtectLabels && yAutoScale && !cross && (p.X.Label != "" || p.Y.Label != "" || p.Title != "") {
 			yExp = 1.8 * p.textSize / innerRect.Height()
 		}
 	}
