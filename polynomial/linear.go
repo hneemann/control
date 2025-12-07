@@ -967,21 +967,25 @@ type BodePlot struct {
 	phase     *graph.Plot
 }
 
-func (b *BodePlot) DrawTo(canvas graph.Canvas) error {
+func (b BodePlot) String() string {
+	return "Bode " + b.amplitude.String()
+}
+
+func (b BodePlot) DrawTo(canvas graph.Canvas) error {
 	bode := graph.SplitHorizontal{b.amplitude, b.phase}
 	return bode.DrawTo(canvas)
 }
 
-func (b *BodePlot) SetFrequencyBounds(min, max float64) {
+func (b BodePlot) SetFrequencyBounds(min, max float64) {
 	b.amplitude.X.Bounds = graph.NewBounds(min, max)
 	b.phase.X.Bounds = graph.NewBounds(min, max)
 }
 
-func (b *BodePlot) SetAmplitudeBounds(min, max float64) {
+func (b BodePlot) SetAmplitudeBounds(min, max float64) {
 	b.amplitude.Y.Bounds = graph.NewBounds(min, max)
 }
 
-func (b *BodePlot) SetPhaseBounds(min, max float64) {
+func (b BodePlot) SetPhaseBounds(min, max float64) {
 	b.phase.Y.Bounds = graph.NewBounds(min, max)
 }
 
@@ -1001,7 +1005,7 @@ func (l *Linear) CreateBode(style *graph.Style, title string, steps int) BodePlo
 	}
 }
 
-func NewBode(wMin, wMax float64) *BodePlot {
+func NewBode(wMin, wMax float64) BodePlot {
 	amplitude := &graph.Plot{
 		X: graph.AxisDescription{
 			Bounds:  graph.NewBounds(wMin, wMax),
@@ -1033,15 +1037,15 @@ func NewBode(wMin, wMax float64) *BodePlot {
 		amplitude: amplitude,
 		phase:     phase,
 	}
-	return &b
+	return b
 }
 
-func (b *BodePlot) Add(bpc BodePlotContent) {
+func (b BodePlot) Add(bpc BodePlotContent) {
 	b.amplitude.AddContent(bodeAmplitude{&bpc})
 	b.phase.AddContent(bodePhase{&bpc})
 }
 
-func (b *BodePlot) ToLaTeX() {
+func (b BodePlot) ToLaTeX() {
 	b.amplitude.X.Label = "$\\omega$ [rad/s]"
 	b.phase.X.Label = "$\\omega$ [rad/s]"
 }
@@ -1156,6 +1160,10 @@ func (b bodePhase) Legend() graph.Legend {
 
 type bodeAmplitude struct {
 	bodeContent *BodePlotContent
+}
+
+func (b bodeAmplitude) String() string {
+	return b.bodeContent.String()
 }
 
 func (b bodeAmplitude) Bounds() (x, y graph.Bounds, err error) {

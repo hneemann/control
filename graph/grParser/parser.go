@@ -140,7 +140,7 @@ func createPlot3dContentMethods() value.MethodMap {
 			if vMin, ok := stack.Get(1).ToFloat(); ok {
 				if vMax, ok := stack.Get(2).ToFloat(); ok {
 					if vbs, ok := pc.Value.(graph.UBoundsSetter); ok {
-						vbs.SetUBounds(graph.NewBounds(vMin, vMax))
+						pc.Value = vbs.SetUBounds(graph.NewBounds(vMin, vMax))
 					} else {
 						return nil, errors.New("the plot3d content does not support u-bounds")
 					}
@@ -153,7 +153,7 @@ func createPlot3dContentMethods() value.MethodMap {
 			if vMin, ok := stack.Get(1).ToFloat(); ok {
 				if vMax, ok := stack.Get(2).ToFloat(); ok {
 					if vbs, ok := pc.Value.(graph.VBoundsSetter); ok {
-						vbs.SetVBounds(graph.NewBounds(vMin, vMax))
+						pc.Value = vbs.SetVBounds(graph.NewBounds(vMin, vMax))
 					} else {
 						return nil, errors.New("the plot3d content does not support v-bounds")
 					}
@@ -175,24 +175,24 @@ func createPlot3dContentMethods() value.MethodMap {
 					return nil, err
 				} else {
 					if ss, ok := pc.Value.(graph.SecondaryStyle); ok {
-						ss.SetSecondaryStyle(style2.Value)
+						pc.Value = ss.SetSecondaryStyle(style2.Value)
 					} else {
 						return nil, errors.New("the plot3d content does not support a secondary style")
 					}
 				}
 			}
 			return pc, nil
-		}).Pure(false).SetMethodDescription("color1", "color2", "Sets the color.").VarArgsMethod(1, 2),
+		}).SetMethodDescription("color1", "color2", "Sets the color.").VarArgsMethod(1, 2),
 		"title": value.MethodAtType(1, func(pc Plot3dContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if str, ok := stack.Get(1).(value.String); ok {
 				if ts, ok := pc.Value.(graph.TitleSetter); ok {
-					ts.SetTitle(string(str))
+					pc.Value = ts.SetTitle(string(str))
 					return pc, nil
 				}
 				return nil, fmt.Errorf("plot content does not support a title")
 			}
 			return nil, fmt.Errorf("title requires a string")
-		}).Pure(false).SetMethodDescription("title", "Sets the title of the 3d plot content."),
+		}).SetMethodDescription("title", "Sets the title of the 3d plot content."),
 		"close": value.MethodAtType(0, func(plot Plot3dContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			pc := plot.Value
 			if sc, ok := pc.(graph.IsCloseable3d); ok {
@@ -826,7 +826,7 @@ func createPlotContentMethods() value.MethodMap {
 			} else {
 				return nil, fmt.Errorf("title requires a string")
 			}
-		}).Pure(false).SetMethodDescription("str", "Sets a string to show as title in the legend."),
+		}).SetMethodDescription("str", "Sets a string to show as title in the legend."),
 		"mark": value.MethodAtType(3, func(plot PlotContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			style, err := GetStyle(stack, 2, graph.Black)
 			if err != nil {
@@ -863,7 +863,7 @@ func createPlotContentMethods() value.MethodMap {
 			} else {
 				return nil, fmt.Errorf("marker can only be set for plots using a marker")
 			}
-		}).Pure(false).SetMethodDescription("type", "color", "size", "Sets the marker type.").VarArgsMethod(1, 3),
+		}).SetMethodDescription("type", "color", "size", "Sets the marker type.").VarArgsMethod(1, 3),
 		"line": value.MethodAtType(2, func(plot PlotContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if style, err := GetStyle(stack, 1, nil); err == nil {
 				pc := plot.Value
@@ -887,7 +887,7 @@ func createPlotContentMethods() value.MethodMap {
 			} else {
 				return nil, fmt.Errorf("line requires a style: %w", err)
 			}
-		}).Pure(false).SetMethodDescription("color", "title", "Sets the line style and title.").VarArgsMethod(1, 2),
+		}).SetMethodDescription("color", "title", "Sets the line style and title.").VarArgsMethod(1, 2),
 		"close": value.MethodAtType(0, func(plot PlotContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			pc := plot.Value
 			if sc, ok := pc.(graph.IsCloseable); ok {
@@ -896,7 +896,7 @@ func createPlotContentMethods() value.MethodMap {
 				return nil, fmt.Errorf("Close can only be called an plot contents that can be closed.")
 			}
 			return PlotContentValue{Holder[graph.PlotContent]{pc}}, nil
-		}).Pure(false).SetMethodDescription("Closes a path."),
+		}).SetMethodDescription("Closes a path."),
 	}
 }
 
@@ -1554,7 +1554,7 @@ func Setup(fg *value.FunctionGenerator) {
 		Args:   6,
 		IsPure: true,
 	}.SetDescription("v1", "v2", "text", "color", "plane", "mode", "Creates an arrow plot3d content. "+
-		"If no plane vector is given, the arrow is oriented so that two reverse tips of the arrow head have the same z-value. "+
+		"If no plane vector is given, the arrow is oriented so that the two reverse tips of the arrow head have the same z-value. "+
 		"If a plane vector is given, it's part perpendicular to the arrow is used as a normal vector to define the plane created by "+
 		"the tip of the arrow head and the two reverse tips. "+
 		"The mode flag defines which arrow heads to draw (0: none, 1: at the tip (default), 2: at the tail, 3: at both ends).").VarArgs(2, 6))

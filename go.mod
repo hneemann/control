@@ -6,7 +6,7 @@ toolchain go1.25.2
 
 require (
 	github.com/hneemann/iterator v0.0.0-20251109064800-e5580abbfb13
-	github.com/hneemann/parser2 v0.0.0-20251125205354-0e210c0799f8
+	github.com/hneemann/parser2 v0.0.0-20251207120826-086764b7e430
 	github.com/hneemann/session v0.0.0-20250917051702-4d7e0d523c75
 	github.com/stretchr/testify v1.11.1
 )
@@ -23,7 +23,7 @@ require (
 	github.com/sigurn/crc16 v0.0.0-20240131213347-83fcde1e29d1 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/zitadel/logging v0.6.2 // indirect
-	github.com/zitadel/oidc/v3 v3.45.0 // indirect
+	github.com/zitadel/oidc/v3 v3.45.1 // indirect
 	github.com/zitadel/schema v1.3.1 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/otel v1.38.0 // indirect

@@ -587,7 +587,7 @@ func createBodeMethod[T value.Value](convert func(T) *Linear) funcGen.Function[v
 }
 
 type BodePlotValue struct {
-	grParser.Holder[*BodePlot]
+	grParser.Holder[BodePlot]
 	context graph.Context
 }
 
@@ -706,8 +706,8 @@ func bodeMethods() value.MethodMap {
 				}
 				if aplot, ok := a.(grParser.PlotValue); ok {
 					return BodePlotValue{
-						Holder: grParser.Holder[*BodePlot]{
-							Value: &BodePlot{
+						Holder: grParser.Holder[BodePlot]{
+							Value: BodePlot{
 								amplitude: aplot.Value,
 								phase:     bode.Value.phase,
 							},
@@ -726,8 +726,8 @@ func bodeMethods() value.MethodMap {
 				}
 				if aplot, ok := a.(grParser.PlotValue); ok {
 					return BodePlotValue{
-						Holder: grParser.Holder[*BodePlot]{
-							Value: &BodePlot{
+						Holder: grParser.Holder[BodePlot]{
+							Value: BodePlot{
 								amplitude: bode.Value.amplitude,
 								phase:     aplot.Value,
 							},
@@ -765,7 +765,8 @@ func bodeMethods() value.MethodMap {
 				return nil, fmt.Errorf("failed to create sliders")
 			}
 			return nil, fmt.Errorf("addTo requires a gui element as argument")
-		}).SetMethodDescription("gui", "Adds gui elements to the bode-plot to zoom and pan.").Pure(false),
+		}).SetMethodDescription("gui", "Adds gui elements to the bode-plot to zoom and pan. "+
+			"The return value of the method is the bode-plot with the ω-axis bounds set to the current slider positions.").Pure(false),
 	}
 }
 
@@ -1263,7 +1264,8 @@ func plot3dMethods() value.MethodMap {
 				return plot3d, nil
 			}
 			return nil, fmt.Errorf("addTo requires a gui element as argument")
-		}).SetMethodDescription("gui", "Adds gui elements to the 3d-plot to rotate the plot.").Pure(false),
+		}).SetMethodDescription("gui", "Adds gui elements to the 3d-plot to rotate the plot. "+
+			"The return value of the method is the 3d-plot, with the viewing angles set to the current slider positions.").Pure(false),
 	}
 }
 
@@ -1561,7 +1563,7 @@ var Parser = value.New().
 						res = np
 					case BodePlotContentValue:
 						b := NewBode(0.01, 100)
-						np := BodePlotValue{Holder: grParser.Holder[*BodePlot]{Value: b}, context: graph.DefaultContext}
+						np := BodePlotValue{Holder: grParser.Holder[BodePlot]{Value: b}, context: graph.DefaultContext}
 						add = np
 						res = np
 					default:

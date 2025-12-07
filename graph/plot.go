@@ -1050,18 +1050,21 @@ type ParameterFunc struct {
 }
 
 func (p *ParameterFunc) SetTitle(title string) PlotContent {
-	p.Title = title
-	return p
+	np := *p
+	np.Title = title
+	return &np
 }
 
 func (p *ParameterFunc) SetLine(style *Style) PlotContent {
-	p.Style = style
-	return p
+	np := *p
+	np.Style = style
+	return &np
 }
 
 func (p *ParameterFunc) Close() PlotContent {
-	p.closed = true
-	return p
+	np := *p
+	np.closed = true
+	return &np
 }
 
 func NewLinearParameterFunc(tMin, tMax float64, steps int) (*ParameterFunc, error) {

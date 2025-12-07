@@ -1,6 +1,7 @@
 package graph
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/hneemann/control/nErr"
 	"github.com/hneemann/parser2/funcGen"
@@ -46,8 +47,12 @@ func (v Vector3d) ToFloat() (float64, bool) {
 	return 0, false
 }
 
+func (v Vector3d) String() string {
+	return fmt.Sprintf("(%g,%g,%g)", v.X, v.Y, v.Z)
+}
+
 func (v Vector3d) ToString(_ funcGen.Stack[value.Value]) (string, error) {
-	return fmt.Sprintf("(%g,%g,%g)", v.X, v.Y, v.Z), nil
+	return v.String(), nil
 }
 
 func (v Vector3d) ToBool() (bool, bool) {
@@ -627,6 +632,17 @@ func (c *CanvasCube) DrawObjects() error {
 	}
 	return nil
 }
+func (p *Plot3d) String() string {
+	bu := bytes.Buffer{}
+	bu.WriteString("Plot3d: ")
+	for i, content := range p.Contents {
+		if i > 0 {
+			bu.WriteString(", ")
+		}
+		bu.WriteString(fmt.Sprint(content))
+	}
+	return bu.String()
+}
 
 func (p *Plot3d) DrawTo(canvas Canvas) (err error) {
 	defer nErr.CatchErr(&err)
@@ -759,24 +775,32 @@ type Graph3d struct {
 	Title  string
 }
 
+func (g *Graph3d) String() string {
+	return "Graph3d"
+}
+
 func (g *Graph3d) SetUBounds(bounds Bounds) Plot3dContent {
-	g.U = bounds
-	return g
+	ng := *g
+	ng.U = bounds
+	return &ng
 }
 
 func (g *Graph3d) SetVBounds(bounds Bounds) Plot3dContent {
-	g.V = bounds
-	return g
+	ng := *g
+	ng.V = bounds
+	return &ng
 }
 
 func (g *Graph3d) SetStyle(s *Style) Plot3dContent {
-	g.Style = s
-	return g
+	ng := *g
+	ng.Style = s
+	return &ng
 }
 
 func (g *Graph3d) SetTitle(s string) Plot3dContent {
-	g.Title = s
-	return g
+	ng := *g
+	ng.Title = s
+	return &ng
 }
 
 func (g *Graph3d) DrawTo(_ *Plot3d, cube Cube) error {
@@ -851,29 +875,38 @@ type Solid3d struct {
 
 var _ SecondaryStyle = (*Solid3d)(nil)
 
+func (g *Solid3d) String() string {
+	return "Solid3d"
+}
+
 func (g *Solid3d) SetStyle(s *Style) Plot3dContent {
-	g.Style1 = s
-	return g
+	ng := *g
+	ng.Style1 = s
+	return &ng
 }
 
 func (g *Solid3d) SetTitle(s string) Plot3dContent {
-	g.Title = s
-	return g
+	ng := *g
+	ng.Title = s
+	return &ng
 }
 
 func (g *Solid3d) SetUBounds(bounds Bounds) Plot3dContent {
-	g.U = bounds
-	return g
+	ng := *g
+	ng.U = bounds
+	return &ng
 }
 
 func (g *Solid3d) SetVBounds(bounds Bounds) Plot3dContent {
-	g.V = bounds
-	return g
+	ng := *g
+	ng.V = bounds
+	return &ng
 }
 
 func (g *Solid3d) SetSecondaryStyle(s *Style) Plot3dContent {
-	g.Style2 = s
-	return g
+	ng := *g
+	ng.Style2 = s
+	return &ng
 }
 
 func (g *Solid3d) DrawTo(_ *Plot3d, cube Cube) (err error) {
@@ -965,18 +998,25 @@ type Line3d struct {
 	Title string
 }
 
+func (g *Line3d) String() string {
+	return "Line3d"
+}
+
 func (g *Line3d) SetUBounds(bounds Bounds) Plot3dContent {
-	g.U = bounds
-	return g
+	ng := *g
+	ng.U = bounds
+	return &ng
 }
 
 func (g *Line3d) SetStyle(s *Style) Plot3dContent {
-	g.Style = s
-	return g
+	ng := *g
+	ng.Style = s
+	return &ng
 }
 func (g *Line3d) SetTitle(s string) Plot3dContent {
-	g.Title = s
-	return g
+	ng := *g
+	ng.Title = s
+	return &ng
 }
 
 func (g *Line3d) DrawTo(_ *Plot3d, cube Cube) error {
@@ -1019,6 +1059,10 @@ type Arrow3d struct {
 	Style       *Style
 	Label       string
 	Mode        int
+}
+
+func (a Arrow3d) String() string {
+	return fmt.Sprintf("Arrow3d(From=%v, To=%v)", a.From, a.To)
 }
 
 func (a Arrow3d) DrawTo(_ *Plot3d, cube Cube) error {
@@ -1080,6 +1124,10 @@ type ListBasedLine3d struct {
 	Title             string
 	HiddenLineRemoval bool
 	closed            bool
+}
+
+func (s ListBasedLine3d) String() string {
+	return "ListBasedLine3d"
 }
 
 func (s ListBasedLine3d) Close() Plot3dContent {

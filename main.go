@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"flag"
+	"github.com/hneemann/control/polynomial"
 	"github.com/hneemann/control/server"
 	"github.com/hneemann/control/server/data"
 	"github.com/hneemann/session"
@@ -96,6 +97,10 @@ func main() {
 	} else {
 		mux.HandleFunc("/login", sc.LoginHandler(server.Templates.Lookup("login.html")))
 		mux.HandleFunc("/register", sc.RegisterHandler(server.Templates.Lookup("register.html")))
+	}
+
+	if *debug {
+		polynomial.Parser.GetParser().Debug(true)
 	}
 
 	examples := server.ReadExamples()
