@@ -976,17 +976,34 @@ func (b BodePlot) DrawTo(canvas graph.Canvas) error {
 	return bode.DrawTo(canvas)
 }
 
-func (b BodePlot) SetFrequencyBounds(min, max float64) {
-	b.amplitude.X.Bounds = graph.NewBounds(min, max)
-	b.phase.X.Bounds = graph.NewBounds(min, max)
+func (b BodePlot) SetFrequencyBounds(min, max float64) BodePlot {
+	bounds := graph.NewBounds(min, max)
+	a := *b.amplitude
+	a.X.Bounds = bounds
+	p := *b.phase
+	p.X.Bounds = bounds
+	return BodePlot{
+		amplitude: &a,
+		phase:     &p,
+	}
 }
 
-func (b BodePlot) SetAmplitudeBounds(min, max float64) {
-	b.amplitude.Y.Bounds = graph.NewBounds(min, max)
+func (b BodePlot) SetAmplitudeBounds(min, max float64) BodePlot {
+	a := *b.amplitude
+	a.Y.Bounds = graph.NewBounds(min, max)
+	return BodePlot{
+		amplitude: &a,
+		phase:     b.phase,
+	}
 }
 
-func (b BodePlot) SetPhaseBounds(min, max float64) {
-	b.phase.Y.Bounds = graph.NewBounds(min, max)
+func (b BodePlot) SetPhaseBounds(min, max float64) BodePlot {
+	p := *b.phase
+	p.Y.Bounds = graph.NewBounds(min, max)
+	return BodePlot{
+		amplitude: b.amplitude,
+		phase:     &p,
+	}
 }
 
 func (l *Linear) CreateBode(style *graph.Style, title string, steps int) BodePlotContent {
