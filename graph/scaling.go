@@ -328,18 +328,23 @@ func LogAxisSimple(minParent, maxParent float64, bounds Bounds, ctw CheckTextWid
 }
 
 // CreateFixedStepAxis creates an axis with a fixed step size.
-// If there are less than two or more than 20 tick marks in the available space,
-// it falls back to a linear axis.
-func CreateFixedStepAxis(step float64) AxisFactory {
+// If fewer than two or more than 20 markers fit in the available space,
+// a linear axis is used.
+// If between two and four markers fit in the available space, the
+// sub-markers are also drawn.
+// Used, for example, for angular scales where the step width is set to 45°
+// and the sub step width to 15°.
+func CreateFixedStepAxis(stepWidth, subStepWidth float64) AxisFactory {
 	return func(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth, expand float64) Axis {
 		linearDef := LinearAxis(minParent, maxParent, bounds, ctw, expand)
 
 		width := linearDef.Bounds.Width()
-		if width < step*2 || width > step*20 {
+		if width < stepWidth*2 || width > stepWidth*20 {
 			return linearDef
 		}
 
-		delta := step
+		showSubSteps := width < stepWidth*4
+		delta := stepWidth
 		var start float64
 		for {
 			start = math.Floor(linearDef.Bounds.Min/delta) * delta
@@ -350,9 +355,14 @@ func CreateFixedStepAxis(step float64) AxisFactory {
 				break
 			}
 			delta *= 2
+			showSubSteps = false
+		}
+		s := stepWidth
+		if showSubSteps {
+			s = subStepWidth
 		}
 
-		pos := math.Ceil(linearDef.Bounds.Min/step) * step
+		pos := math.Ceil(linearDef.Bounds.Min/s) * s
 
 		for pos > start {
 			start += delta
@@ -366,7 +376,7 @@ func CreateFixedStepAxis(step float64) AxisFactory {
 			} else {
 				ticks = append(ticks, Tick{Position: pos})
 			}
-			pos += step
+			pos += s
 		}
 
 		return Axis{
@@ -399,7 +409,7 @@ func DBAxis(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth, exp
 		dBMin = -1000
 	}
 
-	fixedAxis := CreateFixedStepAxis(20)(minParent, maxParent, Bounds{bounds.isSet, dBMin, dBMax}, ctw, expand)
+	fixedAxis := CreateFixedStepAxis(20, 10)(minParent, maxParent, Bounds{bounds.isSet, dBMin, dBMax}, ctw, expand)
 	var ticks Ticks
 	for _, t := range fixedAxis.Ticks {
 		ticks = append(ticks, Tick{Position: math.Pow(10, t.Position/20), Label: t.Label})

@@ -1043,7 +1043,7 @@ func NewBode(wMin, wMax float64) BodePlot {
 			Label:   "ω [rad/s]",
 		},
 		Y: graph.AxisDescription{
-			Factory: graph.CreateFixedStepAxis(45),
+			Factory: graph.CreateFixedStepAxis(45, 15),
 			Label:   "Phase [°]",
 		},
 		Grid:          grParser.GridStyle,
