@@ -976,37 +976,35 @@ func (b BodePlot) DrawTo(canvas graph.Canvas) error {
 	return bode.DrawTo(canvas)
 }
 
-func (b BodePlot) SetFrequencyBounds(min, max float64) BodePlot {
-	bounds := graph.NewBounds(min, max)
+func (b BodePlot) ModifyBoth(m func(ampl, phase *graph.Plot)) BodePlot {
 	a := *b.amplitude
-	a.X.Bounds = bounds
 	p := *b.phase
-	p.X.Bounds = bounds
+	m(&a, &p)
 	return BodePlot{
 		amplitude: &a,
 		phase:     &p,
 	}
 }
 
-func (b BodePlot) SetAmplitudeBounds(min, max float64) BodePlot {
+func (b BodePlot) ModifyAmplitude(m func(ampl *graph.Plot)) BodePlot {
 	a := *b.amplitude
-	a.Y.Bounds = graph.NewBounds(min, max)
+	m(&a)
 	return BodePlot{
 		amplitude: &a,
 		phase:     b.phase,
 	}
 }
 
-func (b BodePlot) SetPhaseBounds(min, max float64) BodePlot {
+func (b BodePlot) ModifyPhase(m func(phase *graph.Plot)) BodePlot {
 	p := *b.phase
-	p.Y.Bounds = graph.NewBounds(min, max)
+	m(&p)
 	return BodePlot{
 		amplitude: b.amplitude,
 		phase:     &p,
 	}
 }
 
-func (l *Linear) CreateBode(style *graph.Style, title string, steps int) BodePlotContent {
+func (l *Linear) CreateBodeContent(style *graph.Style, title string, steps int) BodePlotContent {
 	if steps == 0 {
 		steps = 200
 	} else if steps < 100 {

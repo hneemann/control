@@ -358,7 +358,7 @@ func CreateFixedStepAxis(stepWidth, subStepWidth float64) AxisFactory {
 			showSubSteps = false
 		}
 		s := stepWidth
-		if showSubSteps {
+		if showSubSteps && subStepWidth > 0 {
 			s = subStepWidth
 		}
 

@@ -98,7 +98,7 @@ func Test_dBAxisInf(t *testing.T) {
 
 func Test_FixedStepIsInf(t *testing.T) {
 	bounds := NewBounds(1, math.Inf(1))
-	ax := CreateFixedStepAxis(100)
+	ax := CreateFixedStepAxis(100, 0)
 	ad := ax(0, 60, bounds,
 		func(width float64, _ int) bool {
 			return width > 25
