@@ -201,7 +201,7 @@ func createPlot3dContentMethods() value.MethodMap {
 				return nil, fmt.Errorf("Close can only be called on plot contents that can be closed.")
 			}
 			return Plot3dContentValue{Holder[graph.Plot3dContent]{pc}}, nil
-		}).Pure(false).SetMethodDescription("Closes a path."),
+		}).SetMethodDescription("Closes a path."),
 		"mark": value.MethodAtType(3, func(plot Plot3dContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			style, err := GetStyle(stack, 2, graph.Black)
 			if err != nil {
@@ -238,7 +238,7 @@ func createPlot3dContentMethods() value.MethodMap {
 			} else {
 				return nil, fmt.Errorf("marker can only be set for plots using a marker")
 			}
-		}).Pure(false).SetMethodDescription("type", "color", "size", "Sets the marker type.").VarArgsMethod(1, 3),
+		}).SetMethodDescription("type", "color", "size", "Sets the marker type.").VarArgsMethod(1, 3),
 	}
 }
 
