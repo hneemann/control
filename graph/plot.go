@@ -1246,14 +1246,17 @@ type ImageInset struct {
 	Location    Rect
 	Image       Image
 	VisualGuide *Style
+	Relative    bool
 }
 
 func (s ImageInset) Bounds() (Bounds, Bounds, error) {
 	var x, y Bounds
-	x.Merge(s.Location.Min.X)
-	x.Merge(s.Location.Max.X)
-	y.Merge(s.Location.Min.Y)
-	y.Merge(s.Location.Max.Y)
+	if !s.Relative {
+		x.Merge(s.Location.Min.X)
+		x.Merge(s.Location.Max.X)
+		y.Merge(s.Location.Min.Y)
+		y.Merge(s.Location.Max.Y)
+	}
 	return x, y, nil
 }
 
@@ -1264,8 +1267,18 @@ func (s ImageInset) DependantBounds(_, _ Bounds) (Bounds, Bounds, error) {
 func (s ImageInset) DrawTo(p *Plot, _ Canvas) (cErr error) {
 	defer nErr.CatchErr(&cErr)
 
-	minPos := p.trans(s.Location.Min).Add(Point{1, 1})
-	maxPos := p.trans(s.Location.Max).Sub(Point{1, 1})
+	var minPos, maxPos Point
+	if s.Relative {
+		xMin := p.innerRect.Min.X + p.innerRect.Width()*s.Location.Min.X/100
+		yMin := p.innerRect.Min.Y + p.innerRect.Height()*s.Location.Min.Y/100
+		xMax := p.innerRect.Min.X + p.innerRect.Width()*s.Location.Max.X/100
+		yMax := p.innerRect.Min.Y + p.innerRect.Height()*s.Location.Max.Y/100
+		minPos = Point{X: xMin, Y: yMin}
+		maxPos = Point{X: xMax, Y: yMax}
+	} else {
+		minPos = p.trans(s.Location.Min).Add(Point{1, 1})
+		maxPos = p.trans(s.Location.Max).Sub(Point{1, 1})
+	}
 	inner := ResizeCanvas{
 		parent: p.canvas,
 		size: Rect{

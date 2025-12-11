@@ -782,36 +782,66 @@ func createPlotMethods() value.MethodMap {
 			}
 			return nil, fmt.Errorf("zoom requires three float values")
 		}).SetMethodDescription("x", "y", "factor", "Zoom at the given point by the given factor."),
-		"inset": value.MethodAtType(5, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
-			if xMin, ok := stack.Get(1).ToFloat(); ok {
-				if xMax, ok := stack.Get(2).ToFloat(); ok {
-					if yMin, ok := stack.Get(3).ToFloat(); ok {
-						if yMax, ok := stack.Get(4).ToFloat(); ok {
-							r := graph.NewRect(xMin, xMax, yMin, yMax)
-							plot.Value.FillBackground = true
+		"inset": value.MethodAtType(5, createInsetMethod(false)).SetMethodDescription("xMin", "xMax", "yMin", "yMax", "visualGuideColor", "Converts the plot into an inset that can be added to another plot. "+
+			"If a Visual Guide Color is given, it is assumed that the inset is a part of the large plot, and a visual guide is drawn.").VarArgsMethod(4, 5),
+		"insetRel": value.MethodAtType(5, createInsetMethod(true)).SetMethodDescription("xMin", "xMax", "yMin", "yMax", "visualGuideColor", "Converts the plot into an inset that can be added to another plot. "+
+			"In contrast to inset, the given coordinates are relative (0% to 100%). "+
+			"If a Visual Guide Color is given, it is assumed that the inset is a part of the large plot, and a visual guide is drawn.").VarArgsMethod(4, 5),
+	}
+}
 
-							var visualGuide *graph.Style
-							if stack.Size() > 5 {
-								vsv, err := GetStyle(stack, 5, graph.Black)
-								if err != nil {
-									return nil, fmt.Errorf("inset requires a color as fifth argument: %w", err)
-								}
-								visualGuide = vsv.Value
-							}
-
-							return NewPlotContentValue(graph.ImageInset{
-								Location:    r,
-								Image:       plot.Value,
-								VisualGuide: visualGuide,
-							}), nil
+func createInsetMethod(relative bool) func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+	return func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+		if xMin, ok := stack.Get(1).ToFloat(); ok {
+			if xMax, ok := stack.Get(2).ToFloat(); ok {
+				if yMin, ok := stack.Get(3).ToFloat(); ok {
+					if yMax, ok := stack.Get(4).ToFloat(); ok {
+						if relative {
+							xMin = checkBounds(xMin, 0, 100)
+							xMax = checkBounds(xMax, 0, 100)
+							yMin = checkBounds(yMin, 0, 100)
+							yMax = checkBounds(yMax, 0, 100)
 						}
+						if xMax < xMin {
+							xMax, xMin = xMin, xMax
+						}
+						if yMax < yMin {
+							yMax, yMin = yMin, yMax
+						}
+						r := graph.NewRect(xMin, xMax, yMin, yMax)
+						plot.Value.FillBackground = true
+
+						var visualGuide *graph.Style
+						if stack.Size() > 5 {
+							vsv, err := GetStyle(stack, 5, graph.Black)
+							if err != nil {
+								return nil, fmt.Errorf("inset requires a color as fifth argument: %w", err)
+							}
+							visualGuide = vsv.Value
+						}
+
+						return NewPlotContentValue(graph.ImageInset{
+							Location:    r,
+							Image:       plot.Value,
+							VisualGuide: visualGuide,
+							Relative:    relative,
+						}), nil
 					}
 				}
 			}
-			return nil, fmt.Errorf("inset requires floats as arguments")
-		}).SetMethodDescription("xMin", "xMax", "yMin", "yMax", "visualGuideColor", "Converts the plot into an inset that can be added to another plot. "+
-			"If a Visual Guide Color is given, it is assumed that the inset is a part of the large plot, and a visual guide is drawn.").VarArgsMethod(4, 5),
+		}
+		return nil, fmt.Errorf("inset requires floats as arguments")
 	}
+}
+
+func checkBounds(x, min, max float64) float64 {
+	if x < min {
+		return min
+	}
+	if x > max {
+		return max
+	}
+	return x
 }
 
 func createPlotContentMethods() value.MethodMap {
