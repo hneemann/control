@@ -1200,6 +1200,9 @@ func (r *GuiElements) Wrap(html template.HTML, src string) template.HTML {
 		return html
 	}
 	sb := strings.Builder{}
+	sb.WriteString(`<div id="gui-inner">`)
+	sb.WriteString(string(html))
+	sb.WriteString(`</div>`)
 	sb.WriteString(`<div class="gui-container">`)
 	for i, el := range r.elements {
 		if i < len(r.values) {
@@ -1208,8 +1211,6 @@ func (r *GuiElements) Wrap(html template.HTML, src string) template.HTML {
 			sb.WriteString(el.Html("", len(r.elements), i))
 		}
 	}
-	sb.WriteString(`</div><div id="gui-inner">`)
-	sb.WriteString(string(html))
 	sb.WriteString(`</div>`)
 	sb.WriteString(`<textarea id="gui-source" style="display:none">`)
 	sb.WriteString(template.HTMLEscapeString(src))

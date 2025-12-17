@@ -23,6 +23,7 @@ function runSource() {
     let result = document.getElementById('result');
 
     result.innerHTML = generateOutput(source.value);
+    result.scrollTop = result.scrollHeight;
     source.focus();
 }
 

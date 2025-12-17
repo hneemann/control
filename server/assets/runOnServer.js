@@ -59,6 +59,7 @@ function runSource() {
 
     fetchHelper("/execute/", source.value, a => {
         result.innerHTML = a;
+        result.scrollTop = result.scrollHeight;
         source.focus();
     });
 }
