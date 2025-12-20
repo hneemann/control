@@ -452,6 +452,28 @@ type Object interface {
 type triangle3d struct {
 	p1, p2, p3     Vector3d
 	style1, style2 *Style
+	d              float64
+}
+
+func newTriangle3d(p1, p2, p3 Vector3d, s1, s2 *Style) triangle3d {
+	d := 0.0
+	n := 0
+	if !math.IsNaN(p1.Y) {
+		d += p1.Y
+		n++
+	}
+	if !math.IsNaN(p2.Y) {
+		d += p2.Y
+		n++
+	}
+	if !math.IsNaN(p3.Y) {
+		d += p3.Y
+		n++
+	}
+	if n > 0 {
+		d = d / float64(n)
+	}
+	return triangle3d{p1: p1, p2: p2, p3: p3, style1: s1, style2: s2, d: d}
 }
 
 func (d triangle3d) DrawTo(cube *CanvasCube) error {
@@ -477,7 +499,7 @@ func shade(s1, s2 *Style, a float64) Style {
 }
 
 func (d triangle3d) dist() float64 {
-	return (d.p1.Y + d.p2.Y + d.p3.Y) / 3
+	return d.d
 }
 
 func (d triangle3d) lightAngle() float64 {
@@ -548,7 +570,7 @@ func (c *CanvasCube) DrawPath(p Path3d, style *Style) error {
 }
 
 func (c *CanvasCube) DrawTriangle(p1, p2, p3 Vector3d, s1, s2 *Style) error {
-	c.objects = append(c.objects, triangle3d{p1, p2, p3, s1, s2})
+	c.objects = append(c.objects, newTriangle3d(p1, p2, p3, s1, s2))
 	return nil
 }
 
