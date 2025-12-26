@@ -51,7 +51,7 @@ func (s *SVG) DrawPath(path Path, style *Style) error {
 		}
 		buf.WriteRune(pe.Mode)
 		buf.WriteRune(' ')
-		buf.WriteString(fmt.Sprintf("%.3f,%.3f ", pe.Point.X, s.rect.Max.Y-pe.Point.Y))
+		buf.WriteString(fmt.Sprintf("%0.2f,%0.2f ", pe.Point.X, s.rect.Max.Y-pe.Point.Y))
 	}
 	if buf.Len() > 0 {
 		if path.IsClosed() {
@@ -67,7 +67,7 @@ func (s *SVG) DrawPath(path Path, style *Style) error {
 
 func (s *SVG) DrawTriangle(p1, p2, p3 Point, style *Style) error {
 	s.w.Open("polygon").
-		Attr("points", fmt.Sprintf("%.3f,%.3f %.3f,%.3f %.3f,%.3f",
+		Attr("points", fmt.Sprintf("%0.2f,%0.2f %0.2f,%0.2f %0.2f,%0.2f",
 			p1.X, s.rect.Max.Y-p1.Y,
 			p2.X, s.rect.Max.Y-p2.Y,
 			p3.X, s.rect.Max.Y-p3.Y)).
@@ -155,7 +155,7 @@ func (s *SVG) DrawImage(a Point, b Point, img img.Image) error {
 }
 
 func (s *SVG) DrawText(a Point, text string, orientation Orientation, style *Style, textSize float64) {
-	st := fmt.Sprintf(";font-size:%0.1fpx", textSize)
+	st := fmt.Sprintf(";font-size:%0.2fpx", textSize)
 	switch orientation & 3 {
 	case 0:
 		a.X += textSize / 4
