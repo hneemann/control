@@ -451,39 +451,42 @@ type Object interface {
 
 type triangle3d struct {
 	p1, p2, p3     Vector3d
+	area           Vector3d
 	style1, style2 *Style
 	d              float64
 }
 
-func newTriangle3d(p1, p2, p3 Vector3d, s1, s2 *Style) triangle3d {
-	d := 0.0
-	n := 0
-	if !math.IsNaN(p1.Y) {
-		d += p1.Y
-		n++
+func newTriangle3d(p1, p2, p3 Vector3d, s1, s2 *Style) (triangle3d, bool) {
+	if math.IsNaN(p1.Y) || math.IsNaN(p2.Y) || math.IsNaN(p3.Y) {
+		return triangle3d{}, false
 	}
-	if !math.IsNaN(p2.Y) {
-		d += p2.Y
-		n++
+
+	area := p2.Sub(p1).Cross(p3.Sub(p1))
+	if area.Abs() < 1e-6 {
+		// invisible because the area is zero
+		return triangle3d{}, false
 	}
-	if !math.IsNaN(p3.Y) {
-		d += p3.Y
-		n++
-	}
-	if n > 0 {
-		d = d / float64(n)
-	}
-	return triangle3d{p1: p1, p2: p2, p3: p3, style1: s1, style2: s2, d: d}
+
+	d := (p1.Y + p2.Y + p3.Y) / 3
+	return triangle3d{p1: p1, p2: p2, p3: p3, area: area, style1: s1, style2: s2, d: d}, true
 }
+
+var lightDir = Vector3d{X: 1, Y: 1, Z: 1}.Normalize()
 
 func (d triangle3d) DrawTo(cube *CanvasCube) error {
 	s := d.style1
 	if d.style2 != nil {
-		a := math.Abs(d.lightAngle())
+		a := math.Abs(d.area.Normalize().Scalar(lightDir))
 		c1 := shade(d.style1, d.style2, a)
 		s = &c1
 	}
-	return cube.canvas.DrawPath(cPath{p: NewPath3d(true).Add(d.p1).Add(d.p2).Add(d.p3), cc: cube}, s)
+	if !s.Stroke {
+		//make sure to fill the gaps in between triangles
+		s.Stroke = true
+		s.Color = s.FillColor
+		s.StrokeWidth = 1
+	}
+	return cube.canvas.DrawTriangle(cube.To2d(d.p1), cube.To2d(d.p2), cube.To2d(d.p3), s)
 }
 
 func shade(s1, s2 *Style, a float64) Style {
@@ -500,12 +503,6 @@ func shade(s1, s2 *Style, a float64) Style {
 
 func (d triangle3d) dist() float64 {
 	return d.d
-}
-
-func (d triangle3d) lightAngle() float64 {
-	n := d.p2.Sub(d.p1).Cross(d.p3.Sub(d.p1)).Normalize()
-	lightDir := Vector3d{X: 1, Y: 1, Z: 1}.Normalize()
-	return n.Scalar(lightDir)
 }
 
 type CanvasCube struct {
@@ -570,7 +567,9 @@ func (c *CanvasCube) DrawPath(p Path3d, style *Style) error {
 }
 
 func (c *CanvasCube) DrawTriangle(p1, p2, p3 Vector3d, s1, s2 *Style) error {
-	c.objects = append(c.objects, newTriangle3d(p1, p2, p3, s1, s2))
+	if tr, ok := newTriangle3d(p1, p2, p3, s1, s2); ok {
+		c.objects = append(c.objects, tr)
+	}
 	return nil
 }
 

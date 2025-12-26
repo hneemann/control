@@ -65,6 +65,17 @@ func (s *SVG) DrawPath(path Path, style *Style) error {
 	return nil
 }
 
+func (s *SVG) DrawTriangle(p1, p2, p3 Point, style *Style) error {
+	s.w.Open("polygon").
+		Attr("points", fmt.Sprintf("%.3f,%.3f %.3f,%.3f %.3f,%.3f",
+			p1.X, s.rect.Max.Y-p1.Y,
+			p2.X, s.rect.Max.Y-p2.Y,
+			p3.X, s.rect.Max.Y-p3.Y)).
+		Attr("style", styleString(style)).
+		Close()
+	return nil
+}
+
 func (s *SVG) DrawShape(a Point, shape Shape, style *Style) error {
 	return shape.DrawTo(TransformCanvas{transform: Translate(a), parent: s, size: s.rect}, style)
 }
@@ -77,8 +88,10 @@ func styleString(style *Style) string {
 	if style.Stroke {
 		buf.WriteString("stroke:")
 		buf.WriteString(style.Color.Color())
-		buf.WriteString(";stroke-opacity:")
-		buf.WriteString(style.Color.Opacity())
+		if style.Color.A < 255 {
+			buf.WriteString(";stroke-opacity:")
+			buf.WriteString(style.Color.Opacity())
+		}
 		buf.WriteString(";stroke-width:")
 		buf.WriteString(fmt.Sprintf("%0.2g", style.StrokeWidth))
 		buf.WriteString(";stroke-linejoin:round")
@@ -97,9 +110,10 @@ func styleString(style *Style) string {
 	if style.Fill {
 		buf.WriteString(";fill:")
 		buf.WriteString(style.FillColor.Color())
-		buf.WriteString(";fill-opacity:")
-		buf.WriteString(style.FillColor.Opacity())
-		buf.WriteString(";fill-rule:evenodd")
+		if style.FillColor.A < 255 {
+			buf.WriteString(";fill-opacity:")
+			buf.WriteString(style.FillColor.Opacity())
+		}
 	} else {
 		buf.WriteString(";fill:none")
 	}

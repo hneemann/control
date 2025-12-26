@@ -351,6 +351,7 @@ type Image interface {
 
 type Canvas interface {
 	DrawPath(Path, *Style) error
+	DrawTriangle(Point, Point, Point, *Style) error
 	DrawCircle(Point, Point, *Style)
 	DrawText(Point, string, Orientation, *Style, float64)
 	DrawShape(Point, Shape, *Style) error
@@ -543,6 +544,10 @@ func (t TransformCanvas) DrawPath(polygon Path, style *Style) error {
 	}, style)
 }
 
+func (t TransformCanvas) DrawTriangle(p1, p2, p3 Point, style *Style) error {
+	return t.parent.DrawTriangle(t.transform(p1), t.transform(p2), t.transform(p3), style)
+}
+
 func (t TransformCanvas) DrawShape(point Point, shape Shape, style *Style) error {
 	return t.parent.DrawShape(t.transform(point), shape, style)
 }
@@ -578,6 +583,10 @@ type ResizeCanvas struct {
 
 func (r ResizeCanvas) DrawPath(polygon Path, style *Style) error {
 	return r.parent.DrawPath(polygon, style)
+}
+
+func (r ResizeCanvas) DrawTriangle(p1, p2, p3 Point, style *Style) error {
+	return r.parent.DrawTriangle(p1, p2, p3, style)
 }
 
 func (r ResizeCanvas) DrawShape(point Point, shape Shape, style *Style) error {
