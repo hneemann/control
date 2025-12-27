@@ -789,6 +789,10 @@ func bodeMethods() value.MethodMap {
 
 func floatMethods() value.MethodMap {
 	return value.MethodMap{
+		"unitPrefix": value.MethodAtType(0, func(f value.Float, st funcGen.Stack[value.Value]) (value.Value, error) {
+			return value.String(addPrefix(float64(f))), nil
+		}).SetMethodDescription("Returns a string with the float value and the unit prefix attached. " +
+			"So 1.5e-6 becomes '1.5μ', 2200 becomes '2.2k', etc."),
 		"bode": createBodeMethod(func(f value.Float) *Linear { return NewConst(float64(f)) }),
 		"imag": value.MethodAtType(0, func(f value.Float, st funcGen.Stack[value.Value]) (value.Value, error) {
 			return value.Float(0), nil
@@ -797,6 +801,23 @@ func floatMethods() value.MethodMap {
 			return f, nil
 		}).SetMethodDescription("Returns the float unchanged. Exists just for convenience."),
 	}
+}
+
+var unitPrefixes = []string{"a", "f", "p", "n", "\u03BC", "m", "", "k", "M", "G", "T", "P", "E"}
+
+func addPrefix(f float64) string {
+	index := int(math.Round((math.Log10(f)-1)/3)) + 6
+	if index < 0 {
+		if index < -1 {
+			return fmt.Sprintf("%.3g", f)
+		}
+		index = 0
+	} else if index >= len(unitPrefixes) {
+		return fmt.Sprintf("%.3g", f)
+	}
+	prefix := unitPrefixes[index]
+	v := f / math.Pow(10, float64((index-6)*3))
+	return fmt.Sprintf("%.3g%s", v, prefix)
 }
 
 func intMethods() value.MethodMap {
