@@ -448,12 +448,15 @@ func Test_addPrefix(t *testing.T) {
 		{name: "kilo2", arg: 20e3, want: "20k"},
 		{name: "kilo3", arg: 200e3, want: "200k"},
 		{name: "kilo4", arg: 2200, want: "2.2k"},
+		{name: "kilo5", arg: 470000, want: "470k"},
+		{name: "kilo6", arg: 680000, want: "680k"},
+		{name: "kilo7", arg: 680123, want: "680.1k"},
 		{name: "mega", arg: 2e6, want: "2M"},
 		{name: "giga", arg: 2e9, want: "2G"},
 		{name: "tera", arg: 2e12, want: "2T"},
 
-		{name: "s1", arg: 1e-19, want: "0.1a"},
-		{name: "s2", arg: 1e-20, want: "0.01a"},
+		{name: "s1", arg: 1e-18, want: "1a"},
+		{name: "s2", arg: 1e-19, want: "1e-19"},
 		{name: "s3", arg: 1e-26, want: "1e-26"},
 
 		{name: "l1", arg: 1e18, want: "1E"},

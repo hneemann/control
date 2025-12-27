@@ -803,21 +803,34 @@ func floatMethods() value.MethodMap {
 	}
 }
 
-var unitPrefixes = []string{"a", "f", "p", "n", "\u03BC", "m", "", "k", "M", "G", "T", "P", "E"}
+type unitDef = struct {
+	name   string
+	factor float64
+}
+
+var unitPrefixes = []unitDef{
+	{"a", 1e-18},
+	{"f", 1e-15},
+	{"p", 1e-12},
+	{"n", 1e-9},
+	{"μ", 1e-6},
+	{"m", 1e-3},
+	{"", 1},
+	{"k", 1e3},
+	{"M", 1e6},
+	{"G", 1e9},
+	{"T", 1e12},
+	{"P", 1e15},
+	{"E", 1e18},
+}
 
 func addPrefix(f float64) string {
-	index := int(math.Round((math.Log10(f)-1)/3)) + 6
-	if index < 0 {
-		if index < -1 {
-			return fmt.Sprintf("%.3g", f)
-		}
-		index = 0
-	} else if index >= len(unitPrefixes) {
-		return fmt.Sprintf("%.3g", f)
+	index := int(math.Round((math.Log10(f)-1.4)/3)) + 6
+	if index < 0 || index >= len(unitPrefixes) {
+		return fmt.Sprintf("%.4g", f)
 	}
 	prefix := unitPrefixes[index]
-	v := f / math.Pow(10, float64((index-6)*3))
-	return fmt.Sprintf("%.3g%s", v, prefix)
+	return fmt.Sprintf("%.4g%s", f/prefix.factor, prefix.name)
 }
 
 func intMethods() value.MethodMap {
