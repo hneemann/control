@@ -827,10 +827,10 @@ var unitPrefixes = []unitDef{
 func addPrefix(f float64) string {
 	index := int(math.Round((math.Log10(f)-1.4)/3)) + 6
 	if index < 0 || index >= len(unitPrefixes) {
-		return fmt.Sprintf("%.4g", f)
+		return fmt.Sprintf("%.4g\u2009", f)
 	}
 	prefix := unitPrefixes[index]
-	return fmt.Sprintf("%.4g%s", f/prefix.factor, prefix.name)
+	return fmt.Sprintf("%.4g\u2009%s", f/prefix.factor, prefix.name)
 }
 
 func intMethods() value.MethodMap {
