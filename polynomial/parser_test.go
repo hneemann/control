@@ -463,6 +463,9 @@ func Test_addPrefix(t *testing.T) {
 		{name: "l2", arg: 1e19, want: "10 E"},
 		{name: "l3", arg: 1e20, want: "100 E"},
 		{name: "l4", arg: 1e21, want: "1e+21 "},
+
+		{name: "b1", arg: 1000, want: "1 k"},
+		{name: "b2", arg: 999, want: "999 "},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

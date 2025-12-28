@@ -825,7 +825,7 @@ var unitPrefixes = []unitDef{
 }
 
 func addPrefix(f float64) string {
-	index := int(math.Round((math.Log10(f)-1.4)/3)) + 6
+	index := int(math.Floor(math.Log10(f)/3)) + 6
 	if index < 0 || index >= len(unitPrefixes) {
 		return fmt.Sprintf("%.4g\u2009", f)
 	}
