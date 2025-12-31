@@ -1550,7 +1550,7 @@ var Parser = value.New().
 							return Polynomial{}, fmt.Errorf("the function needs to return a polynomial or a linear system")
 						}
 						var parName string
-						if parNameVal, ok := st.GetOptional(3, value.String("par")).(value.String); ok {
+						if parNameVal, ok := st.GetOptional(3, value.String("")).(value.String); ok {
 							parName = string(parNameVal)
 						} else {
 							return nil, fmt.Errorf("rootLocus requires a string as fourth argument")

@@ -927,23 +927,27 @@ func RootLocus(cpp PolynomialProvider, kMin, kMax float64, parName string) ([]gr
 		}
 	}
 
-	minMarker := graph.Scatter{
-		Points: graph.PointsFromSlice(ecs.evPoints[0].points...),
-		ShapeLineStyle: graph.ShapeLineStyle{
-			Shape:      graph.NewSquareMarker(4),
-			ShapeStyle: graph.Black.SetStrokeWidth(2),
-		},
-		Title: fmt.Sprintf("%s = %g", parName, kMin),
+	if parName != "" {
+		minMarker := graph.Scatter{
+			Points: graph.PointsFromSlice(ecs.evPoints[0].points...),
+			ShapeLineStyle: graph.ShapeLineStyle{
+				Shape:      graph.NewSquareMarker(4),
+				ShapeStyle: graph.Black.SetStrokeWidth(2),
+			},
+			Title: fmt.Sprintf("%s = %g", parName, kMin),
+		}
+		maxMarker := graph.Scatter{
+			Points: graph.PointsFromSlice(ecs.evPoints[len(ecs.evPoints)-1].points...),
+			ShapeLineStyle: graph.ShapeLineStyle{
+				Shape:      graph.NewCircleMarker(4),
+				ShapeStyle: graph.Black.SetStrokeWidth(2),
+			},
+			Title: fmt.Sprintf("%s = %g", parName, kMax),
+		}
+		return []graph.PlotContent{minMarker, maxMarker, &ecs, Polar{}}, nil
+	} else {
+		return []graph.PlotContent{&ecs, Polar{}}, nil
 	}
-	maxMarker := graph.Scatter{
-		Points: graph.PointsFromSlice(ecs.evPoints[len(ecs.evPoints)-1].points...),
-		ShapeLineStyle: graph.ShapeLineStyle{
-			Shape:      graph.NewCircleMarker(4),
-			ShapeStyle: graph.Black.SetStrokeWidth(2),
-		},
-		Title: fmt.Sprintf("%s = %g", parName, kMax),
-	}
-	return []graph.PlotContent{minMarker, maxMarker, &ecs, Polar{}}, nil
 }
 
 type BodePlotContent struct {
