@@ -203,6 +203,13 @@ func (l *Linear) Inv() *Linear {
 }
 
 func (l *Linear) Div(b *Linear) *Linear {
+	if l.Denominator.Equals(b.Denominator) {
+		return &Linear{
+			Numerator:   l.Numerator,
+			Denominator: b.Numerator,
+		}
+	}
+
 	var n Polynomial
 	var z Roots
 	if l.zerosCalculated() && b.polesCalculated() {
@@ -230,6 +237,13 @@ func (l *Linear) Div(b *Linear) *Linear {
 }
 
 func (l *Linear) Add(b *Linear) (*Linear, error) {
+	if l.Denominator.Equals(b.Denominator) {
+		return &Linear{
+			Numerator:   l.Numerator.Add(b.Numerator),
+			Denominator: l.Denominator,
+		}, nil
+	}
+
 	n := l.Numerator.Mul(b.Denominator).Add(b.Numerator.Mul(l.Denominator))
 	if l.polesCalculated() && b.polesCalculated() {
 		adr, _ := l.Poles()
