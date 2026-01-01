@@ -1789,7 +1789,7 @@ func dirac(e float64) value.Value {
 		Func: func(st funcGen.Stack[value.Value], _ []value.Value) (value.Value, error) {
 			xv := st.Get(0)
 			if x, ok := xv.ToFloat(); ok {
-				if x > 0 && x < e {
+				if x >= 0 && x < e {
 					return value.Float(1 / e), nil
 				}
 				return value.Float(0), nil
