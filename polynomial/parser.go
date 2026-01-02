@@ -403,6 +403,9 @@ func linMethods() value.MethodMap {
 			}
 			return rootsAsValueList(poles), nil
 		}).SetMethodDescription("Returns the poles of the transfer function."),
+		"pzForm": value.MethodAtType(0, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
+			return lin.PZForm()
+		}).SetMethodDescription("Returns the pole-zero form of the linear system."),
 		"reduce": value.MethodAtType(0, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
 			return lin.Reduce()
 		}).SetMethodDescription("Reduces the linear system."),

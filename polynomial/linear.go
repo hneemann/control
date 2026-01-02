@@ -21,6 +21,7 @@ type Linear struct {
 	Denominator Polynomial
 	zeros       Roots
 	poles       Roots
+	pzForm      bool
 }
 
 var _ export.ToHtmlInterface = &Linear{}
@@ -33,6 +34,20 @@ func (l *Linear) EvalCplx(s complex128) complex128 {
 func (l *Linear) Eval(s float64) float64 {
 	c := l.Numerator.Eval(s) / l.Denominator.Eval(s)
 	return c
+}
+
+func (l *Linear) PZForm() (*Linear, error) {
+	pz := *l
+	pz.pzForm = true
+	_, err := pz.Zeros()
+	if err != nil {
+		return &pz, err
+	}
+	_, err = pz.Poles()
+	if err != nil {
+		return &pz, err
+	}
+	return &pz, nil
 }
 
 func (l *Linear) Equals(b *Linear) bool {
@@ -76,8 +91,13 @@ func (l *Linear) ToHtml(_ funcGen.Stack[value.Value], w *xmlWriter.XMLWriter) er
 
 	w.Open("mfrac")
 
-	l.Numerator.ToMathML(w)
-	l.Denominator.ToMathML(w)
+	if l.pzForm && l.zeros.Valid() && l.poles.Valid() {
+		l.zeros.ToMathML(w)
+		l.poles.ToMathML(w)
+	} else {
+		l.Numerator.ToMathML(w)
+		l.Denominator.ToMathML(w)
+	}
 
 	w.Close()
 	w.Close()

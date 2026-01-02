@@ -617,7 +617,7 @@ func (r Roots) Complex(a, b, c float64) (Roots, error) {
 
 func (r Roots) String() string {
 	var b strings.Builder
-	if math.Abs(1-r.factor) > eps {
+	if math.Abs(1-r.factor) > eps || len(r.roots) == 0 {
 		b.WriteString(strconv.FormatFloat(r.factor, 'g', -1, 64))
 	}
 	for _, root := range r.roots {
@@ -634,6 +634,25 @@ func (r Roots) String() string {
 		}
 	}
 	return b.String()
+}
+
+func (r Roots) ToMathML(w *xmlWriter.XMLWriter) {
+	w.Open("mrow")
+	if math.Abs(1-r.factor) > eps || len(r.roots) == 0 {
+		export.NewFormattedFloat(r.factor, 6).MathMl(w)
+	}
+	for _, root := range r.roots {
+		if cmplx.Abs(root) < eps {
+			w.Open("mi").Write("s").Close()
+		} else {
+			w.Open("mrow")
+			w.Open("mo").Write("(").Close()
+			FromRoot(root).ToMathML(w)
+			w.Open("mo").Write(")").Close()
+			w.Close()
+		}
+	}
+	w.Close()
 }
 
 func (r Roots) Mul(b Roots) Roots {

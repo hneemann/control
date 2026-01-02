@@ -377,3 +377,23 @@ func BenchmarkPolynomial_RootsAberth(b *testing.B) {
 		p.rootsAberth()
 	}
 }
+
+func TestRoots_String(t *testing.T) {
+	tests := []struct {
+		name  string
+		roots Roots
+		want  string
+	}{
+		{"const", Roots{factor: 1}, "1"},
+		{"one", Roots{factor: 1, roots: []complex128{complex(1, 0)}}, "(s-1)"},
+		{"one2", Roots{factor: 2, roots: []complex128{complex(1, 0)}}, "2*(s-1)"},
+		{"two", Roots{factor: 1, roots: []complex128{complex(1, 0), complex(2, 0)}}, "(s-1)*(s-2)"},
+		{"cmplx", Roots{factor: 1, roots: []complex128{complex(1, 0), complex(0, 1)}}, "(s-1)*(s^2+1)"},
+		{"cmplx2", Roots{factor: 1, roots: []complex128{complex(1, 0), complex(1, 1)}}, "(s-1)*(s^2-2*s+2)"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equalf(t, tt.want, tt.roots.String(), "String()")
+		})
+	}
+}
