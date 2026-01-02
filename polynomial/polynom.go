@@ -655,6 +655,21 @@ func (r Roots) ToMathML(w *xmlWriter.XMLWriter) {
 	w.Close()
 }
 
+func (r Roots) ToLaTeX(w *bytes.Buffer) {
+	if math.Abs(1-r.factor) > eps || len(r.roots) == 0 {
+		w.WriteString(export.NewFormattedFloat(r.factor, 6).LaTeX())
+	}
+	for _, root := range r.roots {
+		if cmplx.Abs(root) < eps {
+			w.WriteString("s")
+		} else {
+			w.WriteString("(")
+			FromRoot(root).ToLaTeX(w)
+			w.WriteString(")")
+		}
+	}
+}
+
 func (r Roots) Mul(b Roots) Roots {
 	return Roots{
 		roots:  append(r.roots, b.roots...),

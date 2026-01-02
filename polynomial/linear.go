@@ -107,9 +107,17 @@ func (l *Linear) ToHtml(_ funcGen.Stack[value.Value], w *xmlWriter.XMLWriter) er
 
 func (l *Linear) ToLaTeX(w *bytes.Buffer) {
 	w.WriteString("\\frac{")
-	l.Numerator.ToLaTeX(w)
+	if l.pzForm && l.zeros.Valid() {
+		l.zeros.ToLaTeX(w)
+	} else {
+		l.Numerator.ToLaTeX(w)
+	}
 	w.WriteString("}{")
-	l.Denominator.ToLaTeX(w)
+	if l.pzForm && l.poles.Valid() {
+		l.poles.ToLaTeX(w)
+	} else {
+		l.Denominator.ToLaTeX(w)
+	}
 	w.WriteString("}")
 }
 
