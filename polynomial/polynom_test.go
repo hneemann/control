@@ -408,7 +408,7 @@ func TestRoots_ToLaTeX(t *testing.T) {
 	}{
 		{"const", Roots{factor: 1}, "1"},
 		{"zero", Roots{factor: 1, roots: []complex128{complex(0, 0)}}, "s"},
-		{"one", Roots{factor: 1, roots: []complex128{complex(1, 0)}}, "(s-1)"},
+		{"one", Roots{factor: 1, roots: []complex128{complex(1, 0)}}, "s-1"},
 		{"one2", Roots{factor: 2, roots: []complex128{complex(1, 0)}}, "2(s-1)"},
 		{"two", Roots{factor: 1, roots: []complex128{complex(1, 0), complex(2, 0)}}, "(s-1)(s-2)"},
 		{"cmplx", Roots{factor: 1, roots: []complex128{complex(1, 0), complex(0, 1)}}, "(s-1)(s^{2}+1)"},

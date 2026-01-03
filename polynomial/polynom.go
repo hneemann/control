@@ -638,17 +638,23 @@ func (r Roots) String() string {
 
 func (r Roots) ToMathML(w *xmlWriter.XMLWriter) {
 	w.Open("mrow")
+	parenthesize := len(r.roots) > 1
 	if math.Abs(1-r.factor) > eps || len(r.roots) == 0 {
 		export.NewFormattedFloat(r.factor, 6).MathMl(w)
+		parenthesize = true
 	}
 	for _, root := range r.roots {
 		if cmplx.Abs(root) < eps {
 			w.Open("mi").Write("s").Close()
 		} else {
 			w.Open("mrow")
-			w.Open("mo").Write("(").Close()
+			if parenthesize {
+				w.Open("mo").Write("(").Close()
+			}
 			FromRoot(root).ToMathML(w)
-			w.Open("mo").Write(")").Close()
+			if parenthesize {
+				w.Open("mo").Write(")").Close()
+			}
 			w.Close()
 		}
 	}
@@ -656,16 +662,22 @@ func (r Roots) ToMathML(w *xmlWriter.XMLWriter) {
 }
 
 func (r Roots) ToLaTeX(w *bytes.Buffer) {
+	parenthesize := len(r.roots) > 1
 	if math.Abs(1-r.factor) > eps || len(r.roots) == 0 {
 		w.WriteString(export.NewFormattedFloat(r.factor, 6).LaTeX())
+		parenthesize = true
 	}
 	for _, root := range r.roots {
 		if cmplx.Abs(root) < eps {
 			w.WriteString("s")
 		} else {
-			w.WriteString("(")
+			if parenthesize {
+				w.WriteString("(")
+			}
 			FromRoot(root).ToLaTeX(w)
-			w.WriteString(")")
+			if parenthesize {
+				w.WriteString(")")
+			}
 		}
 	}
 }
