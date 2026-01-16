@@ -532,6 +532,47 @@ func TestLinear_ToLaTeX(t *testing.T) {
 	}
 }
 
+func TestLinear_ToUnicode(t *testing.T) {
+	tests := []struct {
+		name     string
+		lin      *Linear
+		want, pz string
+	}{
+		{
+			name: "Simple",
+			lin:  &Linear{Numerator: Polynomial{1, 2}, Denominator: Polynomial{1, 2, 3}},
+			want: "(2s+1)/(3s²+2s+1)",
+			pz:   "2(s+0.5)/(3(s²+0.666667s+0.333333))",
+		},
+		{
+			name: "Exp",
+			lin:  &Linear{Numerator: Polynomial{1e-5, 2}, Denominator: Polynomial{1, 2e-5, 3}},
+			want: "(2s+10⁻⁵)/(3s²+2⋅10⁻⁵s+1)",
+			pz:   "2(s+5⋅10⁻⁶)/(3(s²+6.66667⋅10⁻⁶s+0.333333))",
+		},
+		{
+			name: "Simple2",
+			lin:  &Linear{Numerator: Polynomial{1, 2}, Denominator: Polynomial{2, 3, 1}},
+			want: "(2s+1)/(s²+3s+2)",
+			pz:   "2(s+0.5)/((s+1)(s+2))",
+		},
+		{
+			name: "Simple3",
+			lin:  &Linear{Numerator: Polynomial{1, 1}, Denominator: Polynomial{0, 4}},
+			want: "(s+1)/(4s)",
+			pz:   "(s+1)/(4s)",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, tt.lin.ToUnicode())
+			pz, err := tt.lin.PZForm()
+			assert.NoError(t, err)
+			assert.Equal(t, tt.pz, pz.ToUnicode())
+		})
+	}
+}
+
 func TestLinear_GMargin(t *testing.T) {
 	tests := []struct {
 		name string

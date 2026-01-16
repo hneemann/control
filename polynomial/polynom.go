@@ -682,6 +682,35 @@ func (r Roots) ToLaTeX(w *bytes.Buffer) {
 	}
 }
 
+func (r Roots) parenthesize() bool {
+	parenthesize := len(r.roots) > 1
+	if math.Abs(1-r.factor) > eps || len(r.roots) == 0 {
+		parenthesize = true
+	}
+	return parenthesize
+}
+
+func (r Roots) ToUnicode(w *bytes.Buffer) {
+	parenthesize := len(r.roots) > 1
+	if math.Abs(1-r.factor) > eps || len(r.roots) == 0 {
+		w.WriteString(export.NewFormattedFloat(r.factor, 6).LaTeX())
+		parenthesize = true
+	}
+	for _, root := range r.roots {
+		if cmplx.Abs(root) < eps {
+			w.WriteString("s")
+		} else {
+			if parenthesize {
+				w.WriteString("(")
+			}
+			w.WriteString(FromRoot(root).ToUnicode())
+			if parenthesize {
+				w.WriteString(")")
+			}
+		}
+	}
+}
+
 func (r Roots) Mul(b Roots) Roots {
 	return Roots{
 		roots:  append(r.roots, b.roots...),

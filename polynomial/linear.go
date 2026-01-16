@@ -123,15 +123,29 @@ func (l *Linear) ToLaTeX(w *bytes.Buffer) {
 
 func (l *Linear) ToUnicode() string {
 	var w bytes.Buffer
-	if l.Numerator.Degree() > 0 {
-		w.WriteString("(")
-		w.WriteString(l.Numerator.ToUnicode())
-		w.WriteString(")")
+	if l.pzForm && l.zeros.Valid() {
+		if l.zeros.parenthesize() {
+			l.zeros.ToUnicode(&w)
+		} else {
+			w.WriteString("(")
+			l.zeros.ToUnicode(&w)
+			w.WriteString(")")
+		}
 	} else {
-		w.WriteString(l.Numerator.ToUnicode())
+		if l.Numerator.Degree() > 0 {
+			w.WriteString("(")
+			w.WriteString(l.Numerator.ToUnicode())
+			w.WriteString(")")
+		} else {
+			w.WriteString(l.Numerator.ToUnicode())
+		}
 	}
 	w.WriteString("/(")
-	w.WriteString(l.Denominator.ToUnicode())
+	if l.pzForm && l.poles.Valid() {
+		l.poles.ToUnicode(&w)
+	} else {
+		w.WriteString(l.Denominator.ToUnicode())
+	}
 	w.WriteString(")")
 	return w.String()
 }
