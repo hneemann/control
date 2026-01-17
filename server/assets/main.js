@@ -26,22 +26,33 @@ function showPopUpById(id, callOnHide) {
     })
 }
 
-document.addEventListener("click", (evt) => {
-    if (elementVisible != null) {
-        let targetEl = evt.target; // clicked element
-        do {
-            if (targetEl === elementVisible) {
-                // This is a click inside, does nothing, just return.
-                return;
-            }
-            // Go up the DOM
-            targetEl = targetEl.parentNode;
-        } while (targetEl);
-        // This is a click outside.
-        hidePopUp()
-        evt.preventDefault()
+function sourceKeyHandler(event) {
+    if (event.code === "F9") {
+        runSource();
+        event.preventDefault();
     }
-});
+}
+
+function init() {
+    document.addEventListener("click", (evt) => {
+        if (elementVisible != null) {
+            let targetEl = evt.target; // clicked element
+            do {
+                if (targetEl === elementVisible) {
+                    // This is a click inside, does nothing, just return.
+                    return;
+                }
+                // Go up the DOM
+                targetEl = targetEl.parentNode;
+            } while (targetEl);
+            // This is a click outside.
+            hidePopUp()
+            evt.preventDefault()
+        }
+    });
+
+    document.getElementById("source").addEventListener("keydown", sourceKeyHandler)
+}
 
 function hidePopUp() {
     if (elementVisible != null) {

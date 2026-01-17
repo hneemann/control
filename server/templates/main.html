@@ -16,7 +16,7 @@
   <script type="text/javascript" src="/assets/main.js"></script>
   <script type="text/javascript" src="/js/execute.js"></script>
 </head>
-<body>
+<body onload="init();">
 <div class="main">
   <div id="result"></div>
   <div class="window">
@@ -28,7 +28,7 @@
         <button id="load" onclick="showLoad();" title="Öffnen"><img class="icon" src="/assets/open.svg"/></button>
         <button id="save" onclick="save();" title="Speichern"><img class="icon" src="/assets/save.svg"/></button>
         <button id="saveAs" onclick="showSaveAs();" title="Speichern unter"><img class="icon" src="/assets/save-as.svg"/></button>
-        <button id="run" onclick="runSource();" title="Ausführen und Ausgabe aktualisieren"><img class="icon" src="/assets/refresh.svg"/></button>
+        <button id="run" onclick="runSource();" title="Ausführen und Ausgabe aktualisieren (F9)"><img class="icon" src="/assets/refresh.svg"/></button>
         <button id="runInWindow" onclick="runSourceInWindow();" title="Ausführen und Ausgabe in Fenster aktualisieren" style="margin-left:1em;"><img class="icon" src="/assets/refreshWindow.svg"/></button>
         <button id="example" style="margin-left:auto" onclick="showPopUpById('examples');" title="Beispiele"><img class="icon" src="/assets/help.svg"/></button>
     </div>
