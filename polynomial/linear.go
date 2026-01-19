@@ -1460,11 +1460,12 @@ func (l *Linear) Simulate(tMax, dt float64, u func(float64) (float64, error)) (*
 		dt = 1e-5
 	}
 
-	const pointsExported = 1000
-	skip := int(tMax/dt) / pointsExported
+	const shouldPointsExported = 1000
+	skip := int(tMax/dt) / shouldPointsExported
 	if skip < 1 {
 		return nil, fmt.Errorf("step width (dt=%v) is too large for a meaningful simulation", dt)
 	}
+	pointsExported := int(tMax / (dt * float64(skip)))
 
 	t := 0.0
 	n := lin.Denominator.Degree()
