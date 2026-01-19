@@ -1526,6 +1526,31 @@ var Parser = value.New().
 		Args:   -1,
 		IsPure: true,
 	}.SetDescription("eps", "Returns the rectangular approximation of the dirac function: f(x)=1/eps if 0<x<eps and zero otherwise.")).
+	AddStaticFunction("rectangular", funcGen.Function[value.Value]{
+		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
+			switch stack.Size() {
+			case 0:
+				return rectangle(1, 1, -1), nil
+			case 1:
+				if period, ok := stack.Get(0).ToFloat(); ok {
+					return rectangle(period, 1, -1), nil
+				}
+				return nil, fmt.Errorf("rectangle function requires a float value as argument")
+			case 3:
+				if period, ok := stack.Get(0).ToFloat(); ok {
+					if v1, ok := stack.Get(1).ToFloat(); ok {
+						if v2, ok := stack.Get(2).ToFloat(); ok {
+							return rectangle(period, v1, v2), nil
+						}
+					}
+				}
+				return nil, fmt.Errorf("rectangle function requires float values as arguments")
+			}
+			return nil, fmt.Errorf("rectangle function requires zero, one or three float value as arguments")
+		},
+		Args:   -1,
+		IsPure: true,
+	}.SetDescription("period", "value1", "value2", "Returns the rectangular function.")).
 	AddStaticFunction("polar", funcGen.Function[value.Value]{
 		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
 			return grParser.NewPlotContentValue(Polar{}), nil
@@ -1798,6 +1823,25 @@ func dirac(e float64) value.Value {
 				return value.Float(0), nil
 			}
 			return nil, fmt.Errorf("the dirac function requires a float value as argument")
+		},
+		Args:   1,
+		IsPure: true,
+	})
+}
+
+func rectangle(period, val1, val2 float64) value.Value {
+	return value.Closure(funcGen.Function[value.Value]{
+		Func: func(st funcGen.Stack[value.Value], _ []value.Value) (value.Value, error) {
+			xv := st.Get(0)
+			if x, ok := xv.ToFloat(); ok {
+				v := x / period
+				fr := v - math.Floor(v)
+				if fr < 0.5 {
+					return value.Float(val1), nil
+				}
+				return value.Float(val2), nil
+			}
+			return nil, fmt.Errorf("the rectangle function requires a float value as argument")
 		},
 		Args:   1,
 		IsPure: true,
