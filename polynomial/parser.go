@@ -245,7 +245,7 @@ func polyMethods() value.MethodMap {
 			}
 			gf := graph.Function{Function: f}
 			return grParser.PlotContentValue{Holder: grParser.Holder[graph.PlotContent]{Value: gf}}, nil
-		}).SetMethodDescription("Returns the graph of the polynomial."),
+		}).SetMethodDescription("Returns the graph (ℝ→ℝ) of the polynomial."),
 		"coef": value.MethodAtType(0, func(pol Polynomial, st funcGen.Stack[value.Value]) (value.Value, error) {
 			return value.NewListConvert(func(f float64) (value.Value, error) {
 				return value.Float(f), nil
@@ -376,7 +376,7 @@ func linMethods() value.MethodMap {
 			}
 			gf := graph.Function{Function: f}
 			return grParser.PlotContentValue{Holder: grParser.Holder[graph.PlotContent]{Value: gf}}, nil
-		}).SetMethodDescription("Returns the graph of the linear system."),
+		}).SetMethodDescription("Returns the graph (ℝ→ℝ) of the linear system."),
 		"loop": value.MethodAtType(0, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
 			return lin.Loop(), nil
 		}).SetMethodDescription("Closes the loop. Calculates the closed loop transfer function G/(G+1)=N/(N+D)."),
@@ -434,8 +434,10 @@ func linMethods() value.MethodMap {
 				}, contentList), nil
 			}
 			return nil, fmt.Errorf("evans requires a float")
-		}).SetMethodDescription("k_min", "k_max", "Creates an evans plot content. If only one argument is given, "+
-			"this argument is used as k_max and kMin is set to 0.").VarArgsMethod(1, 2),
+		}).SetMethodDescription("kMin", "kMax", "Creates an evans plot content. This is the root locus curve "+
+			"which shows the location of the poles of the closed loop of a linear system with the gain k of the "+
+			"open chain as its parameter. If only one argument is given, "+
+			"this argument is used as kMax and kMin is set to 0.").VarArgsMethod(1, 2),
 		"nyquist": value.MethodAtType(4, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
 			neg, ok := st.GetOptional(1, value.Bool(false)).(value.Bool)
 			if !ok {
@@ -1598,7 +1600,7 @@ var Parser = value.New().
 		},
 		Args:   4,
 		IsPure: true,
-	}.SetDescription("func(k) value", "k_min", "k_max", "parName", "Creates a root locus plot content. "+
+	}.SetDescription("func(k) value", "kMin", "kMax", "parName", "Creates a root locus plot content. "+
 		"If the function returns a polynomial for the given k, the roots of that polynomial are calculated. "+
 		"If a linear system is returned, the poles are calculated.").VarArgs(3, 4)).
 	AddStaticFunction("pid", funcGen.Function[value.Value]{
