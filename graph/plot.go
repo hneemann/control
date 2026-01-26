@@ -79,6 +79,14 @@ func (a AxisDescription) GetFactory() AxisFactory {
 	return a.Factory
 }
 
+type PosMode int
+
+const (
+	NoPos PosMode = iota
+	AbsPos
+	RelPos
+)
+
 type Plot struct {
 	X, Y           AxisDescription
 	Square         bool
@@ -97,7 +105,7 @@ type Plot struct {
 	xAxis          Axis
 	yAxis          Axis
 	HideLegend     bool
-	legendPosGiven bool
+	legendPosGiven PosMode
 	legendPos      Point
 	trans          Transform
 	canvas         Canvas
@@ -340,10 +348,16 @@ func (p *Plot) DrawTo(canvas Canvas) (err error) {
 
 	if len(legends) > 0 {
 		var lp Point
-		if p.legendPosGiven {
-			lp = p.trans(p.legendPos)
-		} else {
+		switch p.legendPosGiven {
+		case NoPos:
 			lp = Point{innerRect.Min.X + p.textSize*3, innerRect.Min.Y + p.textSize*(float64(len(legends))*1.5-0.5)}
+		case AbsPos:
+			lp = p.trans(p.legendPos)
+		case RelPos:
+			lp = Point{
+				innerRect.Min.X + p.legendPos.X*(innerRect.Max.X-innerRect.Min.X)/100,
+				innerRect.Min.Y + p.legendPos.Y*(innerRect.Max.Y-innerRect.Min.Y)/100,
+			}
 		}
 		for _, leg := range slices.Backward(legends) {
 			canvas.DrawText(lp, leg.Name, Left|VCenter, textStyle, p.textSize)
@@ -487,8 +501,12 @@ func (p *Plot) AddContentAtTop(content PlotContent) {
 	p.Content = append([]PlotContent{content}, p.Content...)
 }
 
-func (p *Plot) SetLegendPosition(pos Point) {
-	p.legendPosGiven = true
+func (p *Plot) SetLegendPosition(pos Point, rel bool) {
+	if rel {
+		p.legendPosGiven = RelPos
+	} else {
+		p.legendPosGiven = AbsPos
+	}
 	p.legendPos = pos
 }
 

@@ -726,12 +726,22 @@ func createPlotMethods() value.MethodMap {
 			if x, ok := stack.Get(1).ToFloat(); ok {
 				if y, ok := stack.Get(2).ToFloat(); ok {
 					plot = plot.Copy()
-					plot.Value.SetLegendPosition(graph.Point{X: x, Y: y})
+					plot.Value.SetLegendPosition(graph.Point{X: x, Y: y}, false)
 					return plot, nil
 				}
 			}
 			return nil, fmt.Errorf("legendPos requires two float values")
 		}).SetMethodDescription("x", "y", "Sets the position of the legend."),
+		"legendRelPos": value.MethodAtType(2, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			if x, ok := stack.Get(1).ToFloat(); ok {
+				if y, ok := stack.Get(2).ToFloat(); ok {
+					plot = plot.Copy()
+					plot.Value.SetLegendPosition(graph.Point{X: x, Y: y}, true)
+					return plot, nil
+				}
+			}
+			return nil, fmt.Errorf("legendRelPos requires two float values")
+		}).SetMethodDescription("x", "y", "Sets the relative position of the legend. The x- and y-coordinate are given in percent."),
 		"noLegend": value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			plot.Value.HideLegend = true
 			return plot, nil
@@ -785,7 +795,7 @@ func createPlotMethods() value.MethodMap {
 		"inset": value.MethodAtType(5, createInsetMethod(false)).SetMethodDescription("xMin", "xMax", "yMin", "yMax", "visualGuideColor", "Converts the plot into an inset that can be added to another plot. "+
 			"If a Visual Guide Color is given, it is assumed that the inset is a part of the large plot, and a visual guide is drawn.").VarArgsMethod(4, 5),
 		"insetRel": value.MethodAtType(5, createInsetMethod(true)).SetMethodDescription("xMin", "xMax", "yMin", "yMax", "visualGuideColor", "Converts the plot into an inset that can be added to another plot. "+
-			"In contrast to inset, the given coordinates are relative (0% to 100%). "+
+			"In contrast to inset, the coordinates are given in percent. "+
 			"If a Visual Guide Color is given, it is assumed that the inset is a part of the large plot, and a visual guide is drawn.").VarArgsMethod(4, 5),
 	}
 }
