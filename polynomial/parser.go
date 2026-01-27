@@ -789,7 +789,17 @@ func bodeMethods() value.MethodMap {
 			return nil, fmt.Errorf("addTo requires a gui element as argument")
 		}).SetMethodDescription("gui", "Adds gui elements to the bode-plot to zoom and pan. "+
 			"The return value of the method is the bode-plot with the ω-axis bounds set to the current slider positions."),
+		"inset": value.MethodAtType(5, grParser.CreateInsetMethod(false, bodePlotValueToImage)).SetMethodDescription("xMin", "xMax", "yMin", "yMax", "visualGuideColor", "Converts the plot into an inset that can be added to another plot.").VarArgsMethod(4, 5),
+		"insetRel": value.MethodAtType(5, grParser.CreateInsetMethod(true, bodePlotValueToImage)).SetMethodDescription("xMin", "xMax", "yMin", "yMax", "visualGuideColor", "Converts the plot into an inset that can be added to another plot."+
+			"In contrast to inset, the coordinates are given in percent. ").VarArgsMethod(4, 5),
 	}
+}
+
+func bodePlotValueToImage(bode BodePlotValue) graph.Image {
+	b := bode.Value
+	b.phase.FillBackground = true
+	b.amplitude.FillBackground = true
+	return b
 }
 
 func floatMethods() value.MethodMap {
