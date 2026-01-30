@@ -6,7 +6,7 @@ toolchain go1.25.2
 
 require (
 	github.com/hneemann/iterator v0.0.0-20251109064800-e5580abbfb13
-	github.com/hneemann/parser2 v0.0.0-20251217063906-d3b016e77f54
+	github.com/hneemann/parser2 v0.0.0-20260130075050-612cf78d59ac
 	github.com/hneemann/session v0.0.0-20250917051702-4d7e0d523c75
 	github.com/stretchr/testify v1.11.1
 )
@@ -30,9 +30,9 @@ require (
 	go.opentelemetry.io/otel v1.39.0 // indirect
 	go.opentelemetry.io/otel/metric v1.39.0 // indirect
 	go.opentelemetry.io/otel/trace v1.39.0 // indirect
-	golang.org/x/crypto v0.46.0 // indirect
+	golang.org/x/crypto v0.47.0 // indirect
 	golang.org/x/oauth2 v0.34.0 // indirect
-	golang.org/x/sys v0.39.0 // indirect
-	golang.org/x/text v0.32.0 // indirect
+	golang.org/x/sys v0.40.0 // indirect
+	golang.org/x/text v0.33.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
