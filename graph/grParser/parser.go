@@ -55,6 +55,24 @@ func createVector3dMethods() value.MethodMap {
 		"abs": value.MethodAtType(0, func(v graph.Vector3d, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			return value.Float(v.Abs()), nil
 		}).SetMethodDescription("Calculates the length of the vector."),
+		"rotX": value.MethodAtType(1, func(v graph.Vector3d, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			if alpha, ok := stack.Get(1).ToFloat(); ok {
+				return v.RotX(alpha), nil
+			}
+			return nil, errors.New("rotX requires a float value")
+		}).SetMethodDescription("alpha", "Rotates the vector around the x-axis by the given angle."),
+		"rotY": value.MethodAtType(1, func(v graph.Vector3d, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			if alpha, ok := stack.Get(1).ToFloat(); ok {
+				return v.RotY(alpha), nil
+			}
+			return nil, errors.New("rotY requires a float value")
+		}).SetMethodDescription("alpha", "Rotates the vector around the y-axis by the given angle."),
+		"rotZ": value.MethodAtType(1, func(v graph.Vector3d, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			if alpha, ok := stack.Get(1).ToFloat(); ok {
+				return v.RotZ(alpha), nil
+			}
+			return nil, errors.New("rotZ requires a float value")
+		}).SetMethodDescription("alpha", "Rotates the vector around the z-axis by the given angle."),
 	}
 }
 
@@ -1581,13 +1599,13 @@ func Setup(fg *value.FunctionGenerator) {
 					if plane, ok := st.GetOptional(4, graph.Vector3d{}).(graph.Vector3d); ok {
 						arrow.PlaneDefVec = plane
 					} else {
-						return nil, fmt.Errorf("arrow requires an int as fifth argument")
+						return nil, fmt.Errorf("arrow requires a vector as fifth argument")
 					}
 
 					if mode, ok := st.GetOptional(5, value.Int(1)).(value.Int); ok {
 						arrow.Mode = int(mode)
 					} else {
-						return nil, fmt.Errorf("arrow requires an int as fifth argument")
+						return nil, fmt.Errorf("arrow requires an int as sixth argument")
 					}
 
 					return Plot3dContentValue{Holder: Holder[graph.Plot3dContent]{arrow}}, nil

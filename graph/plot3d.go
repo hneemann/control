@@ -135,6 +135,24 @@ func (v Vector3d) Neg() Vector3d {
 	return Vector3d{-v.X, -v.Y, -v.Z}
 }
 
+func (v Vector3d) RotX(alpha float64) Vector3d {
+	cos := math.Cos(alpha)
+	sin := math.Sin(alpha)
+	return Vector3d{X: v.X, Y: v.Y*cos - v.Z*sin, Z: v.Y*sin + v.Z*cos}
+}
+
+func (v Vector3d) RotY(beta float64) Vector3d {
+	cos := math.Cos(beta)
+	sin := math.Sin(beta)
+	return Vector3d{X: v.X*cos + v.Z*sin, Y: v.Y, Z: -v.X*sin + v.Z*cos}
+}
+
+func (v Vector3d) RotZ(gamma float64) Vector3d {
+	cos := math.Cos(gamma)
+	sin := math.Sin(gamma)
+	return Vector3d{X: v.X*cos - v.Y*sin, Y: v.X*sin + v.Y*cos, Z: v.Z}
+}
+
 func (v Vector3d) ToPoint() Point {
 	return Point{
 		X: v.X,
