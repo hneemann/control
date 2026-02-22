@@ -1188,14 +1188,29 @@ func closureMethods() value.MethodMap {
 			"The z-value is used to calculate a color, which is used to color a square located at the coordinate (x,y).").VarArgsMethod(2, 4),
 
 		"graph3d": value.MethodAtType(2, func(cl value.Closure, st funcGen.Stack[value.Value]) (value.Value, error) {
-			uSteps, vSteps, f, err := create3dFunc(cl, st)
-			if err != nil {
-				return nil, err
+			switch cl.Args {
+			case 1:
+				if st.Size() > 2 {
+					return nil, fmt.Errorf("graph3d requires at most one argument if the function has one argument")
+				}
+				steps, f, err := create3dFuncLine(cl, st)
+				if err != nil {
+					return nil, err
+				}
+				gf := &graph.Line3d{Func: f, Steps: steps}
+				return Plot3dContentValue{Holder[graph.Plot3dContent]{gf}}, nil
+			case 2:
+				uSteps, vSteps, f, err := create3dFunc(cl, st)
+				if err != nil {
+					return nil, err
+				}
+				gf := &graph.Graph3d{Func: f, USteps: uSteps, VSteps: vSteps}
+				return Plot3dContentValue{Holder[graph.Plot3dContent]{gf}}, nil
+			default:
+				return nil, fmt.Errorf("the function passed to graph3d requires either one or two arguments")
 			}
-			gf := &graph.Graph3d{Func: f, USteps: uSteps, VSteps: vSteps}
-			return Plot3dContentValue{Holder[graph.Plot3dContent]{gf}}, nil
-		}).SetMethodDescription("xSteps", "ySteps", "Creates a graph of a function (either ℝ²→ℝ³ or ℝ²→ℝ) to be used in the plot3d command. "+
-			"A wire mesh is drawn through which one can see.").VarArgsMethod(0, 2),
+		}).SetMethodDescription("xSteps", "ySteps", "Creates a graph of a function (either ℝ→ℝ³, ℝ²→ℝ³ or ℝ²→ℝ) to be used in the plot3d command. "+
+			"If the function has one argument a line is drawn, if the function has two arguments a wire mesh is drawn.").VarArgsMethod(0, 2),
 
 		"solid3d": value.MethodAtType(3, func(cl value.Closure, st funcGen.Stack[value.Value]) (value.Value, error) {
 			uSteps, vSteps, f, err := create3dFunc(cl, st)
@@ -1214,15 +1229,6 @@ func closureMethods() value.MethodMap {
 			return Plot3dContentValue{Holder[graph.Plot3dContent]{gf}}, nil
 		}).SetMethodDescription("xSteps", "ySteps", "hexagonal", "Creates a solid graph of a function (either ℝ²→ℝ³ or ℝ²→ℝ) to be used in the plot3d command. "+
 			"A solid surface is drawn.").VarArgsMethod(0, 3),
-
-		"line3d": value.MethodAtType(1, func(cl value.Closure, st funcGen.Stack[value.Value]) (value.Value, error) {
-			steps, f, err := create3dFuncLine(cl, st)
-			if err != nil {
-				return nil, err
-			}
-			gf := &graph.Line3d{Func: f, Steps: steps}
-			return Plot3dContentValue{Holder[graph.Plot3dContent]{gf}}, nil
-		}).SetMethodDescription("steps", "Creates a graph of a function ℝ→ℝ³ to be used in the plot3d command.").VarArgsMethod(0, 1),
 	}
 }
 
