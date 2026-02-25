@@ -1058,7 +1058,7 @@ func closureMethods() value.MethodMap {
 			}
 			gf := graph.Function{Function: f, Steps: steps}
 			return PlotContentValue{Holder[graph.PlotContent]{gf}}, nil
-		}).SetMethodDescription("steps", "Creates a graph of the function to be used in the plot command.").VarArgsMethod(0, 1),
+		}).SetMethodDescription("steps", "Creates a graph of the function (ℝ→ℝ) to be used in the plot command.").VarArgsMethod(0, 1),
 
 		"pGraph": value.MethodAtType(4, func(cl value.Closure, st funcGen.Stack[value.Value]) (value.Value, error) {
 			if tMin, ok := st.Get(1).ToFloat(); ok {
@@ -1122,7 +1122,7 @@ func closureMethods() value.MethodMap {
 				}
 			}
 			return nil, fmt.Errorf("pGraph requires two floats as first arguments")
-		}).SetMethodDescription("tMin", "tMax", "steps", "log", "Creates a parametric graph of the function to be used in the plot command.").VarArgsMethod(2, 4),
+		}).SetMethodDescription("tMin", "tMax", "steps", "log", "Creates a parametric graph of the function (ℝ→ℝ²) to be used in the plot command.").VarArgsMethod(2, 4),
 		"heat": value.MethodAtType(4, func(cl value.Closure, st funcGen.Stack[value.Value]) (value.Value, error) {
 			if tMin, ok := st.Get(1).ToFloat(); ok {
 				if tMax, ok := st.Get(2).ToFloat(); ok {
