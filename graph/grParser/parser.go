@@ -339,6 +339,14 @@ func (p PlotValue) Add(pc value.Value) error {
 	return errors.New("value is not a plot content")
 }
 
+func (p PlotValue) AddAtTop(pc value.Value) error {
+	if c, ok := pc.(PlotContentValue); ok {
+		p.Holder.Value.AddContentAtTop(c.Value)
+		return nil
+	}
+	return errors.New("value is not a plot content")
+}
+
 func createStyleMethods() value.MethodMap {
 	return value.MethodMap{
 		"dash": value.MethodAtType(6, func(styleValue StyleValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
@@ -409,8 +417,8 @@ func createStyleMethods() value.MethodMap {
 
 func createPlot3dMethods() value.MethodMap {
 	return value.MethodMap{
-		"add": value.MethodAtType(1, func(plot Plot3dValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
-			for v, err := range value.Flatten(stack.Get(1)) {
+		"add": value.MethodAtType(-1, func(plot Plot3dValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			for v, err := range value.FlattenStack(stack, 1) {
 				if err != nil {
 					return nil, err
 				}
@@ -532,9 +540,9 @@ var GridStyle = graph.Gray.SetDash(5, 5).SetStrokeWidth(1)
 
 func createPlotMethods() value.MethodMap {
 	return value.MethodMap{
-		"add": value.MethodAtType(1, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+		"add": value.MethodAtType(-1, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			plot = plot.Copy()
-			for v, err := range value.Flatten(stack.Get(1)) {
+			for v, err := range value.FlattenStack(stack, 1) {
 				if err != nil {
 					return nil, err
 				}
@@ -545,12 +553,16 @@ func createPlotMethods() value.MethodMap {
 			}
 			return plot, nil
 		}).SetMethodDescription("plotContent", "Adds a plot content to the plot."),
-		"addAtTop": value.MethodAtType(1, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
-			if pc, ok := stack.Get(1).(PlotContentValue); ok {
-				plot = plot.Copy()
-				plot.Value.AddContentAtTop(pc.Value)
-			} else {
-				return nil, fmt.Errorf("add requires a plot content")
+		"addAtTop": value.MethodAtType(-1, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			plot = plot.Copy()
+			for v, err := range value.FlattenStack(stack, 1) {
+				if err != nil {
+					return nil, err
+				}
+				err = plot.AddAtTop(v)
+				if err != nil {
+					return nil, err
+				}
 			}
 			return plot, nil
 		}).SetMethodDescription("plotContent", "Adds a plot content to the plot at the top."),
