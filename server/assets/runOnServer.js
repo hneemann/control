@@ -57,6 +57,8 @@ function runSource() {
     let source = document.getElementById('source');
     let result = document.getElementById('result');
 
+    checkSource(source);
+
     fetchHelper("/execute/", source.value, a => {
         result.innerHTML = a;
         result.scrollTop = result.scrollHeight;

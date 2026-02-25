@@ -22,6 +22,8 @@ function runSource() {
     let source = document.getElementById('source');
     let result = document.getElementById('result');
 
+    checkSource(source);
+
     result.innerHTML = generateOutput(source.value);
     result.scrollTop = result.scrollHeight;
     source.focus();

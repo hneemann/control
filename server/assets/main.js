@@ -79,6 +79,20 @@ function cleanString(str) {
     return str.replace(/\r\n/g, "\n").trim();
 }
 
+function checkSource(html) {
+    let code = html.value;
+    if (code.length > 0 && code[0] === "%") {
+        var separateLines = code.split(/\r?\n|\r|\n/g);
+        for (let i = 0; i < separateLines.length; i++) {
+            if (separateLines[i].startsWith("%")) {
+                separateLines[i] = separateLines[i].substring(1);
+            }
+        }
+        code = separateLines.join("\n");
+        html.value = code;
+    }
+}
+
 function setSource(name, code) {
     let source = document.getElementById('source');
     source.value = code;
@@ -135,7 +149,7 @@ function bytesToBase64(bytes) {
 function sourceLink() {
     hidePopUp();
     let source = document.getElementById('source').value;
-    let b64=bytesToBase64(new TextEncoder().encode(source))
+    let b64 = bytesToBase64(new TextEncoder().encode(source))
     window.open("/?c=" + b64, "_blank");
 }
 
@@ -261,7 +275,7 @@ function fetchHelperForm(url, formData, target) {
         })
         .catch(function (error) {
             showPopUpById("networkError");
-            target=null
+            target = null
         })
         .then(function (html) {
             if (target != null) {
