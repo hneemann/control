@@ -60,6 +60,7 @@ func main() {
 	cert := flag.String("cert", "", "certificate")
 	key := flag.String("key", "", "certificate")
 	port := flag.Int("port", 8080, "port")
+	lifeTime := flag.Int("lifeTime", 0, "deletes user data older than the given number of days. 0 means no deletion")
 	debug := flag.Bool("debug", false, "debug mode. In this mode, the server does not enable browser caching. Also, user 'admin' with password 'admin' is created with a fixed session token. This does not work if OIDC is used!")
 	onServer := flag.Bool("onServer", false, "execution on server, otherwise in browser")
 	oidc := flag.Bool("oidc", false, "oidc mode")
@@ -75,7 +76,8 @@ func main() {
 	if *oidc {
 		dm = myOidc.NewOidcDataManager[data.UserData](dm)
 	}
-	sc := session.NewSessionCache[data.UserData](dm, 4*time.Hour, time.Hour)
+	sc := session.NewSessionCache[data.UserData](dm, 4*time.Hour, time.Hour).
+		SetUserLifeTime(*lifeTime)
 	if *debug && !*oidc {
 		err := sc.CreateDebugSession("admin", "admin", "debugTokenForAdmin")
 		if err != nil {

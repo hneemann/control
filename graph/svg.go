@@ -29,6 +29,7 @@ func NewSVG(context *Context, w *xmlWriter.XMLWriter) *SVG {
 
 	w.Open("svg").
 		Attr("class", "svg").
+		Attr("style", "stroke-linejoin:round;stroke-linecap:round").
 		Attr("xmlns:svg", "http://www.w3.org/2000/svg").
 		Attr("xmlns", "http://www.w3.org/2000/svg").
 		Attr("width", fmt.Sprintf("%g", width)).
@@ -94,7 +95,6 @@ func styleString(style *Style) string {
 		}
 		buf.WriteString(";stroke-width:")
 		buf.WriteString(fmt.Sprintf("%0.2g", style.StrokeWidth))
-		buf.WriteString(";stroke-linejoin:round")
 		if len(style.Dash) > 0 {
 			buf.WriteString(";stroke-dasharray:")
 			for i, d := range style.Dash {

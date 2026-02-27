@@ -533,6 +533,13 @@ func createPlot3dMethods() value.MethodMap {
 			}
 			return nil, fmt.Errorf("outputSize requires two float values")
 		}).SetMethodDescription("width", "height", "Sets the svg-output size."),
+		"hlr": value.MethodAtType(1, func(im Plot3dValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			if on, ok := stack.Get(1).(value.Bool); ok {
+				im.Value = im.Value.EnableHLR(bool(on))
+				return im, nil
+			}
+			return nil, fmt.Errorf("hlr requires a bool value")
+		}).SetMethodDescription("hlr", "If set true a hidden line removal algorithm is enabled."),
 	}
 }
 
@@ -1021,16 +1028,10 @@ func listMethods() value.MethodMap {
 		}).SetMethodDescription("func(item) x", "func(item) y", "Creates a scatter plot content. "+
 			"The two functions are called with the list elements and must return the x respectively y values. "+
 			"If the functions are omitted, the list elements themselves must be lists of the form [x,y].").VarArgsMethod(0, 2),
-		"graph3d": value.MethodAtType(1, func(list *value.List, st funcGen.Stack[value.Value]) (value.Value, error) {
+		"graph3d": value.MethodAtType(0, func(list *value.List, st funcGen.Stack[value.Value]) (value.Value, error) {
 			s := graph.ListBasedLine3d{Vectors: listToVectors(list)}
-			if hide, ok := st.GetOptional(1, value.Bool(false)).(value.Bool); ok {
-				s.HiddenLineRemoval = bool(hide)
-			} else {
-				return nil, fmt.Errorf("graph3d requires a bool as argument")
-			}
 			return Plot3dContentValue{Holder[graph.Plot3dContent]{s}}, nil
-		}).SetMethodDescription("hiddenLineRemoval", "Creates a line connecting all the vectors in the list. "+
-			"If the argument is true, the \"painters algorithm\" is used to draw the line.").VarArgsMethod(0, 1),
+		}).SetMethodDescription("Creates a line connecting all the vectors in the list."),
 	}
 }
 

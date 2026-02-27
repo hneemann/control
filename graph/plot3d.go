@@ -7,7 +7,6 @@ import (
 	"github.com/hneemann/parser2/funcGen"
 	"github.com/hneemann/parser2/value"
 	"math"
-	"sort"
 )
 
 var Vector3dType value.Type
@@ -175,10 +174,6 @@ type SlicePath3d struct {
 	Closed   bool
 }
 
-func NewPath3d(closed bool) SlicePath3d {
-	return SlicePath3d{Closed: closed}
-}
-
 func (p SlicePath3d) Iter(yield func(PathElement3d, error) bool) {
 	for _, e := range p.Elements {
 		if !yield(e, nil) {
@@ -228,19 +223,11 @@ func (l LinePath3d) IsClosed() bool {
 	return false
 }
 
-type Cube interface {
-	DrawPath(Path3d, *Style) error
-	DrawTriangle(Vector3d, Vector3d, Vector3d, *Style, *Style) error
-	DrawLine(Vector3d, Vector3d, *Style)
-	DrawShape(Vector3d, Shape, *Style, bool) error
-	DrawText(Vector3d, Vector3d, string, *Style)
-	Bounds() (x, y, z Bounds)
-}
-
 type Plot3dContent interface {
 	DrawTo(*Plot3d, Cube) error
 	Legend() Legend
 	SetStyle(s *Style) Plot3dContent
+	RequiresHiddenLineRemoval() bool
 }
 type UBoundsSetter interface {
 	SetUBounds(bounds Bounds) Plot3dContent
@@ -262,6 +249,14 @@ type HasShape3d interface {
 	SetShape(Shape, *Style) Plot3dContent
 }
 
+type hlrMode int
+
+const (
+	hlrAuto hlrMode = iota
+	hlrOn
+	hlrOff
+)
+
 type Plot3d struct {
 	X, Y, Z     AxisDescription
 	Contents    []Plot3dContent
@@ -271,6 +266,7 @@ type Plot3d struct {
 	HideCube    bool
 	Size        float64
 	Perspective float64
+	hlrMode     hlrMode
 }
 
 const (
@@ -345,12 +341,12 @@ func (uc *unityCube) DrawTriangle(p1, p2, p3 Vector3d, s1, s2 *Style) error {
 	return uc.parent.DrawTriangle(uc.transform(p1), uc.transform(p2), uc.transform(p3), s1, s2)
 }
 
-func (uc *unityCube) DrawLine(p1, p2 Vector3d, lineStyle *Style) {
-	uc.parent.DrawLine(uc.transform(p1), uc.transform(p2), lineStyle)
+func (uc *unityCube) DrawLine(p1, p2 Vector3d, lineStyle *Style) error {
+	return uc.parent.DrawLine(uc.transform(p1), uc.transform(p2), lineStyle)
 }
 
-func (uc *unityCube) DrawShape(p Vector3d, shape Shape, style *Style, hlr bool) error {
-	return uc.parent.DrawShape(uc.transform(p), shape, style, hlr)
+func (uc *unityCube) DrawShape(p Vector3d, shape Shape, style *Style) error {
+	return uc.parent.DrawShape(uc.transform(p), shape, style)
 }
 
 func (uc *unityCube) DrawText(p, d Vector3d, s string, style *Style) {
@@ -385,11 +381,11 @@ func (r RotCube) DrawTriangle(p1, p2, p3 Vector3d, s1, s2 *Style) error {
 	return r.parent.DrawTriangle(r.matrix.MulPoint(p1), r.matrix.MulPoint(p2), r.matrix.MulPoint(p3), s1, s2)
 }
 
-func (r RotCube) DrawLine(p1, p2 Vector3d, lineStyle *Style) {
-	r.parent.DrawLine(r.matrix.MulPoint(p1), r.matrix.MulPoint(p2), lineStyle)
+func (r RotCube) DrawLine(p1, p2 Vector3d, lineStyle *Style) error {
+	return r.parent.DrawLine(r.matrix.MulPoint(p1), r.matrix.MulPoint(p2), lineStyle)
 }
-func (r RotCube) DrawShape(p Vector3d, shape Shape, style *Style, hlr bool) error {
-	return r.parent.DrawShape(r.matrix.MulPoint(p), shape, style, hlr)
+func (r RotCube) DrawShape(p Vector3d, shape Shape, style *Style) error {
+	return r.parent.DrawShape(r.matrix.MulPoint(p), shape, style)
 }
 
 func (r RotCube) Bounds() (x, y, z Bounds) {
@@ -462,215 +458,6 @@ func (t *rotPath3d) IsClosed() bool {
 	return t.p.IsClosed()
 }
 
-type Object interface {
-	DrawTo(cube *CanvasCube) error
-	dist() float64
-}
-
-type triangle3d struct {
-	p1, p2, p3     Vector3d
-	area           Vector3d
-	style1, style2 *Style
-	d              float64
-}
-
-func newTriangle3d(p1, p2, p3 Vector3d, s1, s2 *Style) (triangle3d, bool) {
-	if math.IsNaN(p1.Y) || math.IsNaN(p2.Y) || math.IsNaN(p3.Y) {
-		return triangle3d{}, false
-	}
-
-	area := p2.Sub(p1).Cross(p3.Sub(p1))
-	if area.Abs() < 1e-6 {
-		// invisible because the area is zero
-		return triangle3d{}, false
-	}
-
-	d := (p1.Y + p2.Y + p3.Y) / 3
-	return triangle3d{p1: p1, p2: p2, p3: p3, area: area, style1: s1, style2: s2, d: d}, true
-}
-
-var lightDir = Vector3d{X: 1, Y: 1, Z: 1}.Normalize()
-
-func (d triangle3d) DrawTo(cube *CanvasCube) error {
-	s := d.style1
-	if d.style2 != nil {
-		a := math.Abs(d.area.Normalize().Scalar(lightDir))
-		c1 := shade(d.style1, d.style2, a)
-		s = &c1
-	}
-	if !s.Stroke {
-		//make sure to fill the gaps in between triangles
-		s.Stroke = true
-		s.Color = s.FillColor
-		s.StrokeWidth = 1
-	}
-	return cube.canvas.DrawTriangle(cube.To2d(d.p1), cube.To2d(d.p2), cube.To2d(d.p3), s)
-}
-
-func shade(s1, s2 *Style, a float64) Style {
-	col := Color{
-		R: uint8(float64(s1.FillColor.R)*(1-a) + float64(s2.Color.R)*a),
-		G: uint8(float64(s1.FillColor.G)*(1-a) + float64(s2.Color.G)*a),
-		B: uint8(float64(s1.FillColor.B)*(1-a) + float64(s2.Color.B)*a),
-		A: 255,
-	}
-	s := *s1
-	s.FillColor = col
-	return s
-}
-
-func (d triangle3d) dist() float64 {
-	return d.d
-}
-
-type CanvasCube struct {
-	canvas      Canvas
-	textSize    float64
-	dx, dy      float64
-	fac         float64
-	perspective float64
-
-	objects []Object
-}
-
-func newCanvasCube(canvas Canvas, size, perspective float64) *CanvasCube {
-	rect := canvas.Rect()
-
-	fac := size * math.Min(rect.Width(), rect.Height()) / math.Sqrt(2) / 200
-
-	return &CanvasCube{
-		canvas:      canvas,
-		textSize:    canvas.Context().TextSize,
-		dx:          rect.Min.X + rect.Width()/2,
-		dy:          rect.Min.Y + rect.Height()/2,
-		fac:         fac,
-		perspective: perspective,
-	}
-}
-
-type cPath struct {
-	p  Path3d
-	cc *CanvasCube
-}
-
-func (c cPath) Iter(yield func(PathElement, error) bool) {
-	for pe, err := range c.p.Iter {
-		if !yield(PathElement{Mode: pe.Mode, Point: c.cc.To2d(pe.Vector3d)}, err) {
-			return
-		}
-		if err != nil {
-			return
-		}
-	}
-}
-
-func (c cPath) IsClosed() bool {
-	return c.p.IsClosed()
-}
-
-func (c *CanvasCube) To2d(p Vector3d) Point {
-	py := p.Y * c.perspective
-	if py >= pFac {
-		py = pFac - 1
-	}
-	zFac := pFac / (pFac - py)
-	return Point{
-		X: p.X*c.fac*zFac + c.dx,
-		Y: c.dy + p.Z*c.fac*zFac,
-	}
-}
-
-func (c *CanvasCube) DrawPath(p Path3d, style *Style) error {
-	return c.canvas.DrawPath(cPath{p: p, cc: c}, style)
-}
-
-func (c *CanvasCube) DrawTriangle(p1, p2, p3 Vector3d, s1, s2 *Style) error {
-	if tr, ok := newTriangle3d(p1, p2, p3, s1, s2); ok {
-		c.objects = append(c.objects, tr)
-	}
-	return nil
-}
-
-type line3d struct {
-	p1, p2 Vector3d
-	style  *Style
-}
-
-func (l line3d) DrawTo(cube *CanvasCube) error {
-	p1 := cube.To2d(l.p1)
-	p2 := cube.To2d(l.p2)
-	return cube.canvas.DrawPath(NewPath(false).Add(p1).Add(p2), l.style)
-}
-
-func (l line3d) dist() float64 {
-	return (l.p1.Y + l.p2.Y) / 2
-}
-
-func (c *CanvasCube) DrawLine(p1, p2 Vector3d, lineStyle *Style) {
-	c.objects = append(c.objects, line3d{p1, p2, lineStyle})
-}
-
-type shape3d struct {
-	p     Vector3d
-	shape Shape
-	style *Style
-}
-
-func (s shape3d) DrawTo(cube *CanvasCube) error {
-	return cube.canvas.DrawShape(cube.To2d(s.p), s.shape, s.style)
-}
-
-func (s shape3d) dist() float64 {
-	return s.p.Y
-}
-
-func (c *CanvasCube) DrawShape(p Vector3d, shape Shape, style *Style, hlr bool) error {
-	if hlr {
-		c.objects = append(c.objects, shape3d{p, shape, style})
-		return nil
-	} else {
-		return c.canvas.DrawShape(c.To2d(p), shape, style)
-	}
-}
-
-type text3d struct {
-	p, d  Vector3d
-	s     string
-	style *Style
-}
-
-func (t text3d) DrawTo(cube *CanvasCube) error {
-	p1 := cube.To2d(t.p)
-	p2 := cube.To2d(t.d)
-	o := orientationByDelta(p2.Sub(p1))
-	cube.canvas.DrawText(p2, t.s, o, t.style, cube.canvas.Context().TextSize)
-	return nil
-}
-
-func (t text3d) dist() float64 {
-	return t.p.Y
-}
-
-func (c *CanvasCube) DrawText(p, d Vector3d, s string, style *Style) {
-	c.objects = append(c.objects, text3d{p, d, s, style})
-}
-
-func (c *CanvasCube) Bounds() (x, y, z Bounds) {
-	return NewBounds(-100, 100), NewBounds(-100, 100), NewBounds(-100, 100)
-}
-
-func (c *CanvasCube) DrawObjects() error {
-	sort.Slice(c.objects, func(i, j int) bool {
-		return c.objects[i].dist() < c.objects[j].dist()
-	})
-	for _, o := range c.objects {
-		err := o.DrawTo(c)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
 func (p *Plot3d) String() string {
 	bu := bytes.Buffer{}
 	bu.WriteString("Plot3d: ")
@@ -686,23 +473,39 @@ func (p *Plot3d) String() string {
 func (p *Plot3d) DrawTo(canvas Canvas) (err error) {
 	defer nErr.CatchErr(&err)
 
-	canvasCube := newCanvasCube(canvas, p.Size, p.Perspective)
+	var requiresHiddenLineRemoval bool
+	switch p.hlrMode {
+	case hlrOn:
+		requiresHiddenLineRemoval = true
+	case hlrOff:
+		requiresHiddenLineRemoval = false
+	default:
+		requiresHiddenLineRemoval = false
+		for _, content := range p.Contents {
+			if content.RequiresHiddenLineRemoval() {
+				requiresHiddenLineRemoval = true
+				break
+			}
+		}
+	}
+
+	canvasCube := newCanvasCube(canvas, p.Size, p.Perspective, requiresHiddenLineRemoval)
 	rot := NewRotCube(canvasCube, p.alpha, p.beta, p.gamma)
 
 	cubeColor := Gray
 	textColor := cubeColor.Text()
 	if !p.HideCube {
-		DrawLongLine(rot, Vector3d{100, 100, 100}, Vector3d{100, -100, 100}, cubeColor)
-		DrawLongLine(rot, Vector3d{100, 100, -100}, Vector3d{100, -100, -100}, cubeColor)
-		DrawLongLine(rot, Vector3d{-100, 100, 100}, Vector3d{-100, -100, 100}, cubeColor)
+		nErr.Try(rot.DrawLine(Vector3d{100, 100, 100}, Vector3d{100, -100, 100}, cubeColor))
+		nErr.Try(rot.DrawLine(Vector3d{100, 100, -100}, Vector3d{100, -100, -100}, cubeColor))
+		nErr.Try(rot.DrawLine(Vector3d{-100, 100, 100}, Vector3d{-100, -100, 100}, cubeColor))
 
-		DrawLongLine(rot, Vector3d{100, 100, 100}, Vector3d{-100, 100, 100}, cubeColor)
-		DrawLongLine(rot, Vector3d{100, 100, -100}, Vector3d{-100, 100, -100}, cubeColor)
-		DrawLongLine(rot, Vector3d{100, -100, 100}, Vector3d{-100, -100, 100}, cubeColor)
+		nErr.Try(rot.DrawLine(Vector3d{100, 100, 100}, Vector3d{-100, 100, 100}, cubeColor))
+		nErr.Try(rot.DrawLine(Vector3d{100, 100, -100}, Vector3d{-100, 100, -100}, cubeColor))
+		nErr.Try(rot.DrawLine(Vector3d{100, -100, 100}, Vector3d{-100, -100, 100}, cubeColor))
 
-		DrawLongLine(rot, Vector3d{100, 100, -100}, Vector3d{100, 100, 100}, cubeColor)
-		DrawLongLine(rot, Vector3d{-100, 100, -100}, Vector3d{-100, 100, 100}, cubeColor)
-		DrawLongLine(rot, Vector3d{100, -100, -100}, Vector3d{100, -100, 100}, cubeColor)
+		nErr.Try(rot.DrawLine(Vector3d{100, 100, -100}, Vector3d{100, 100, 100}, cubeColor))
+		nErr.Try(rot.DrawLine(Vector3d{-100, 100, -100}, Vector3d{-100, 100, 100}, cubeColor))
+		nErr.Try(rot.DrawLine(Vector3d{100, -100, -100}, Vector3d{100, -100, 100}, cubeColor))
 	}
 	cube := newUnityCube(rot, p.X, p.Y, p.Z)
 	const facShortLabel = 1.02
@@ -713,42 +516,42 @@ func (p *Plot3d) DrawTo(canvas Canvas) (err error) {
 			xp := cube.ax.Trans(tick.Position)
 			yp := -100.0
 			zp := -100.0
-			rot.DrawLine(Vector3d{xp, yp, zp}, Vector3d{xp, yp * facLongLabel, zp}, cubeColor)
+			nErr.Try(rot.DrawLine(Vector3d{xp, yp, zp}, Vector3d{xp, yp * facLongLabel, zp}, cubeColor))
 			rot.DrawText(Vector3d{xp, yp, zp}, Vector3d{xp, yp * facLongLabel, zp}, tick.Label, textColor)
 		}
 		t := Vector3d{100 * facText, -100, -100}
 		rot.DrawText(Vector3d{t.X, t.Y, t.Z}, Vector3d{t.X, t.Y * facLongLabel, t.Z}, checkEmpty(p.X.Label, "x"), textColor)
-		DrawLongLine(rot, Vector3d{-100, -100, -100}, Vector3d{100 * facText, -100, -100}, cubeColor)
-		rot.DrawLine(Vector3d{102, -100, -102}, Vector3d{100 * facText, -100, -100}, cubeColor)
-		rot.DrawLine(Vector3d{102, -100, -98}, Vector3d{100 * facText, -100, -100}, cubeColor)
+		nErr.Try(rot.DrawLine(Vector3d{-100, -100, -100}, Vector3d{100 * facText, -100, -100}, cubeColor))
+		nErr.Try(rot.DrawLine(Vector3d{102, -100, -102}, Vector3d{100 * facText, -100, -100}, cubeColor))
+		nErr.Try(rot.DrawLine(Vector3d{102, -100, -98}, Vector3d{100 * facText, -100, -100}, cubeColor))
 	}
 	if !p.Y.HideAxis {
 		for _, tick := range cube.ay.Ticks {
 			xp := -100.0
 			yp := cube.ay.Trans(tick.Position)
 			zp := -100.0
-			rot.DrawLine(Vector3d{xp, yp, zp}, Vector3d{xp * facShortLabel, yp, zp}, cubeColor)
+			nErr.Try(rot.DrawLine(Vector3d{xp, yp, zp}, Vector3d{xp * facShortLabel, yp, zp}, cubeColor))
 			rot.DrawText(Vector3d{xp, yp, zp}, Vector3d{xp * facShortLabel, yp, zp}, tick.Label, textColor)
 		}
 		t := Vector3d{-100, 100 * facText, -100}
 		rot.DrawText(Vector3d{t.X, t.Y, t.Z}, Vector3d{t.X * facLongLabel, t.Y, t.Z}, checkEmpty(p.Y.Label, "y"), textColor)
-		DrawLongLine(rot, Vector3d{-100, -100, -100}, Vector3d{-100, 100 * facText, -100}, cubeColor)
-		rot.DrawLine(Vector3d{-102, 102, -100}, Vector3d{-100, 100 * facText, -100}, cubeColor)
-		rot.DrawLine(Vector3d{-98, 102, -100}, Vector3d{-100, 100 * facText, -100}, cubeColor)
+		nErr.Try(rot.DrawLine(Vector3d{-100, -100, -100}, Vector3d{-100, 100 * facText, -100}, cubeColor))
+		nErr.Try(rot.DrawLine(Vector3d{-102, 102, -100}, Vector3d{-100, 100 * facText, -100}, cubeColor))
+		nErr.Try(rot.DrawLine(Vector3d{-98, 102, -100}, Vector3d{-100, 100 * facText, -100}, cubeColor))
 	}
 	if !p.Z.HideAxis {
 		for _, tick := range cube.az.Ticks {
 			xp := -100.0
 			yp := -100.0
 			zp := cube.az.Trans(tick.Position)
-			rot.DrawLine(Vector3d{xp, yp, zp}, Vector3d{xp * facShortLabel, yp * facShortLabel, zp}, cubeColor)
+			nErr.Try(rot.DrawLine(Vector3d{xp, yp, zp}, Vector3d{xp * facShortLabel, yp * facShortLabel, zp}, cubeColor))
 			rot.DrawText(Vector3d{xp, yp, zp}, Vector3d{xp * facShortLabel, yp * facShortLabel, zp}, tick.Label, textColor)
 		}
 		t := Vector3d{-100, -100, 100 * facText}
 		rot.DrawText(Vector3d{t.X, t.Y, t.Z}, Vector3d{t.X * facLongLabel, t.Y * facLongLabel, t.Z}, checkEmpty(p.Z.Label, "z"), textColor)
-		DrawLongLine(rot, Vector3d{-100, -100, -100}, Vector3d{-100, -100, 100 * facText}, cubeColor)
-		rot.DrawLine(Vector3d{-102, -100, 102}, Vector3d{-100, -100, 100 * facText}, cubeColor)
-		rot.DrawLine(Vector3d{-98, -100, 102}, Vector3d{-100, -100, 100 * facText}, cubeColor)
+		nErr.Try(rot.DrawLine(Vector3d{-100, -100, -100}, Vector3d{-100, -100, 100 * facText}, cubeColor))
+		nErr.Try(rot.DrawLine(Vector3d{-102, -100, 102}, Vector3d{-100, -100, 100 * facText}, cubeColor))
+		nErr.Try(rot.DrawLine(Vector3d{-98, -100, 102}, Vector3d{-100, -100, 100 * facText}, cubeColor))
 	}
 
 	textSize := canvas.Context().TextSize
@@ -771,18 +574,6 @@ func (p *Plot3d) DrawTo(canvas Canvas) (err error) {
 	return canvasCube.DrawObjects()
 }
 
-// DrawLongLine draws a long line from p1 to p2 by splitting it into n segments
-// to avoid issues with very long lines in 3D rendering.
-func DrawLongLine(rot Cube, p1 Vector3d, p2 Vector3d, style *Style) {
-	const n = 10
-	d := p2.Sub(p1).Div(float64(n))
-	for i := 0; i < n; i++ {
-		p2 := p1.Add(d)
-		rot.DrawLine(p1, p2, style)
-		p1 = p2
-	}
-}
-
 func checkEmpty(str string, def string) string {
 	if str == "" {
 		return def
@@ -800,6 +591,16 @@ func (p *Plot3d) SetAngle(alpha float64, beta float64, gamma float64) {
 	p.gamma = gamma
 }
 
+func (p *Plot3d) EnableHLR(b bool) *Plot3d {
+	np := *p
+	if b {
+		np.hlrMode = hlrOn
+	} else {
+		np.hlrMode = hlrOff
+	}
+	return &np
+}
+
 type SecondaryStyle interface {
 	SetSecondaryStyle(s *Style) Plot3dContent
 }
@@ -812,6 +613,10 @@ type Graph3d struct {
 	USteps int
 	VSteps int
 	Title  string
+}
+
+func (g *Graph3d) RequiresHiddenLineRemoval() bool {
+	return false
 }
 
 func (g *Graph3d) String() string {
@@ -913,6 +718,10 @@ type Solid3d struct {
 }
 
 var _ SecondaryStyle = (*Solid3d)(nil)
+
+func (g *Solid3d) RequiresHiddenLineRemoval() bool {
+	return true
+}
 
 func (g *Solid3d) String() string {
 	return "Solid3d"
@@ -1037,6 +846,10 @@ type Line3d struct {
 	Title string
 }
 
+func (g *Line3d) RequiresHiddenLineRemoval() bool {
+	return false
+}
+
 func (g *Line3d) String() string {
 	return "Line3d"
 }
@@ -1100,12 +913,17 @@ type Arrow3d struct {
 	Mode        int
 }
 
+func (g Arrow3d) RequiresHiddenLineRemoval() bool {
+	return false
+}
+
 func (a Arrow3d) String() string {
 	return fmt.Sprintf("Arrow3d(From=%v, To=%v)", a.From, a.To)
 }
 
-func (a Arrow3d) DrawTo(_ *Plot3d, cube Cube) error {
-	cube.DrawLine(a.From, a.To, a.Style)
+func (a Arrow3d) DrawTo(_ *Plot3d, cube Cube) (e error) {
+	defer nErr.CatchErr(&e)
+	nErr.Try(cube.DrawLine(a.From, a.To, a.Style))
 
 	const headLen = 0.2
 
@@ -1131,12 +949,12 @@ func (a Arrow3d) DrawTo(_ *Plot3d, cube Cube) error {
 		d := dNorm.Mul(headLen)
 		plane := inPlaneVec.Mul(headLen / 4)
 		if a.Mode&1 != 0 {
-			cube.DrawLine(a.To, a.To.Sub(d).Add(plane), a.Style)
-			cube.DrawLine(a.To, a.To.Sub(d).Sub(plane), a.Style)
+			nErr.Try(cube.DrawLine(a.To, a.To.Sub(d).Add(plane), a.Style))
+			nErr.Try(cube.DrawLine(a.To, a.To.Sub(d).Sub(plane), a.Style))
 		}
 		if a.Mode&2 != 0 {
-			cube.DrawLine(a.From, a.From.Add(d).Add(plane), a.Style)
-			cube.DrawLine(a.From, a.From.Add(d).Sub(plane), a.Style)
+			nErr.Try(cube.DrawLine(a.From, a.From.Add(d).Add(plane), a.Style))
+			nErr.Try(cube.DrawLine(a.From, a.From.Add(d).Sub(plane), a.Style))
 		}
 	}
 	if a.Label != "" {
@@ -1158,11 +976,14 @@ func (a Arrow3d) SetStyle(s *Style) Plot3dContent {
 }
 
 type ListBasedLine3d struct {
-	Vectors           Vectors
-	ShapeLineStyle    ShapeLineStyle
-	Title             string
-	HiddenLineRemoval bool
-	closed            bool
+	Vectors        Vectors
+	ShapeLineStyle ShapeLineStyle
+	Title          string
+	closed         bool
+}
+
+func (s ListBasedLine3d) RequiresHiddenLineRemoval() bool {
+	return false
 }
 
 func (s ListBasedLine3d) String() string {
@@ -1196,29 +1017,9 @@ func (v vecPath) IsClosed() bool {
 func (s ListBasedLine3d) DrawTo(_ *Plot3d, cube Cube) error {
 	sls := s.ShapeLineStyle.EnsureSomethingIsVisible()
 	if sls.IsLine() {
-		if s.HiddenLineRemoval {
-			isLast := false
-			var last, first Vector3d
-			for v, err := range s.Vectors {
-				if err != nil {
-					return err
-				}
-				if isLast {
-					cube.DrawLine(last, v, sls.LineStyle)
-				} else {
-					first = v
-					isLast = true
-				}
-				last = v
-			}
-			if s.closed && isLast {
-				cube.DrawLine(last, first, sls.LineStyle)
-			}
-		} else {
-			err := cube.DrawPath(vecPath{s.Vectors, s.closed}, sls.LineStyle)
-			if err != nil {
-				return err
-			}
+		err := cube.DrawPath(vecPath{s.Vectors, s.closed}, sls.LineStyle)
+		if err != nil {
+			return err
 		}
 	}
 	if sls.IsShape() {
@@ -1226,7 +1027,7 @@ func (s ListBasedLine3d) DrawTo(_ *Plot3d, cube Cube) error {
 			if err != nil {
 				return err
 			}
-			err = cube.DrawShape(v, sls.Shape, sls.ShapeStyle, s.HiddenLineRemoval)
+			err = cube.DrawShape(v, sls.Shape, sls.ShapeStyle)
 			if err != nil {
 				return err
 			}
