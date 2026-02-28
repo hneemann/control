@@ -534,12 +534,12 @@ func createPlot3dMethods() value.MethodMap {
 			return nil, fmt.Errorf("outputSize requires two float values")
 		}).SetMethodDescription("width", "height", "Sets the svg-output size."),
 		"hlr": value.MethodAtType(1, func(im Plot3dValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
-			if on, ok := stack.Get(1).(value.Bool); ok {
+			if on, ok := stack.GetOptional(1, value.Bool(true)).(value.Bool); ok {
 				im.Value = im.Value.EnableHLR(bool(on))
 				return im, nil
 			}
 			return nil, fmt.Errorf("hlr requires a bool value")
-		}).SetMethodDescription("hlr", "If set true a hidden line removal algorithm is enabled."),
+		}).SetMethodDescription("hlr", "If set true a hidden line removal algorithm is enabled.").VarArgsMethod(0, 1),
 	}
 }
 
