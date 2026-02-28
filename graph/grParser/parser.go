@@ -539,7 +539,7 @@ func createPlot3dMethods() value.MethodMap {
 				return im, nil
 			}
 			return nil, fmt.Errorf("hlr requires a bool value")
-		}).SetMethodDescription("hlr", "If set true a hidden line removal algorithm is enabled.").VarArgsMethod(0, 1),
+		}).SetMethodDescription("enable", "Enables or disables the hidden line removal algorithm.").VarArgsMethod(0, 1),
 	}
 }
 
