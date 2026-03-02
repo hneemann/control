@@ -191,9 +191,10 @@ func (l line3d) dist() float64 {
 
 func (c *CanvasCube) DrawLine(p1, p2 Vector3d, lineStyle *Style) error {
 	if c.requiresHLR {
+		const maxLineLen = 15
 		l := p1.Sub(p2).Abs()
-		if l > 10 {
-			n := int(l/10) + 1
+		if l > maxLineLen {
+			n := int(l/maxLineLen) + 1
 			d := p2.Sub(p1).Div(float64(n))
 			for i := 0; i < n; i++ {
 				p2 := p1.Add(d)

@@ -539,7 +539,10 @@ func createPlot3dMethods() value.MethodMap {
 				return im, nil
 			}
 			return nil, fmt.Errorf("hlr requires a bool value")
-		}).SetMethodDescription("enable", "Enables or disables the hidden line removal algorithm.").VarArgsMethod(0, 1),
+		}).SetMethodDescription("enable", "Enables or disables the hidden line removal algorithm. "+
+			"If only lines are drawn and no filled triangles, the hidden lines are not removed by default. "+
+			"In special cases, e.g. when very thick lines are drawn, this may be necessary and can "+
+			"be enabled with the hlr(true) method call.").VarArgsMethod(0, 1),
 	}
 }
 
