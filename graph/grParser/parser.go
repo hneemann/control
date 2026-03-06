@@ -9,6 +9,7 @@ import (
 	"github.com/hneemann/parser2/value"
 	"github.com/hneemann/parser2/value/export"
 	"github.com/hneemann/parser2/value/export/xmlWriter"
+	"strings"
 )
 
 const LaTeXTextSize = 20
@@ -233,22 +234,9 @@ func createPlot3dContentMethods() value.MethodMap {
 				return nil, fmt.Errorf("the size must be a float")
 			}
 
-			var marker graph.Shape
-			if markerInt, ok := stack.GetOptional(1, value.Int(0)).(value.Int); ok {
-				switch markerInt % 5 {
-				case 1:
-					marker = graph.NewCircleMarker(size)
-				case 2:
-					marker = graph.NewSquareMarker(size)
-				case 3:
-					marker = graph.NewTriangleMarker(size)
-				case 4:
-					marker = graph.NewDiamondMarker(size)
-				default:
-					marker = graph.NewCrossMarker(size)
-				}
-			} else {
-				return nil, fmt.Errorf("the marker is defined by an int")
+			marker, err := valueToMarker(stack.GetOptional(1, value.Int(0)), size)
+			if err != nil {
+				return nil, err
 			}
 
 			if sc, ok := plot.Value.(graph.HasShape3d); ok {
@@ -258,6 +246,38 @@ func createPlot3dContentMethods() value.MethodMap {
 			}
 		}).SetMethodDescription("type", "color", "size", "Sets the marker type.").VarArgsMethod(1, 3),
 	}
+}
+
+func valueToMarker(val value.Value, size float64) (graph.Shape, error) {
+	if markerFloat, ok := val.ToFloat(); ok {
+		switch int(markerFloat) % 5 {
+		case 1:
+			return graph.NewCircleMarker(size), nil
+		case 2:
+			return graph.NewSquareMarker(size), nil
+		case 3:
+			return graph.NewTriangleMarker(size), nil
+		case 4:
+			return graph.NewDiamondMarker(size), nil
+		default:
+			return graph.NewCrossMarker(size), nil
+		}
+	}
+	if markerStr, ok := val.(value.String); ok {
+		switch strings.ToLower(string(markerStr)) {
+		case "circle":
+			return graph.NewCircleMarker(size), nil
+		case "square":
+			return graph.NewSquareMarker(size), nil
+		case "triangle":
+			return graph.NewTriangleMarker(size), nil
+		case "diamond":
+			return graph.NewDiamondMarker(size), nil
+		default:
+			return graph.NewCrossMarker(size), nil
+		}
+	}
+	return nil, fmt.Errorf("marker must be defined by an int or a string")
 }
 
 type Plot3dValue struct {
@@ -924,22 +944,9 @@ func createPlotContentMethods() value.MethodMap {
 				return nil, fmt.Errorf("the size must be a float")
 			}
 
-			var marker graph.Shape
-			if markerInt, ok := stack.GetOptional(1, value.Int(0)).(value.Int); ok {
-				switch markerInt % 5 {
-				case 1:
-					marker = graph.NewCircleMarker(size)
-				case 2:
-					marker = graph.NewSquareMarker(size)
-				case 3:
-					marker = graph.NewTriangleMarker(size)
-				case 4:
-					marker = graph.NewDiamondMarker(size)
-				default:
-					marker = graph.NewCrossMarker(size)
-				}
-			} else {
-				return nil, fmt.Errorf("the marker is defined by an int")
+			marker, err := valueToMarker(stack.GetOptional(1, value.Int(0)), size)
+			if err != nil {
+				return nil, err
 			}
 
 			if sc, ok := plot.Value.(graph.HasShape); ok {
