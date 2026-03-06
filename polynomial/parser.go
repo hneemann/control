@@ -261,9 +261,15 @@ func polyMethods() value.MethodMap {
 			return pol.Derivative(), nil
 		}).SetMethodDescription("Calculates the derivative."),
 		"normalize": value.MethodAtType(0, func(pol Polynomial, st funcGen.Stack[value.Value]) (value.Value, error) {
-			return pol.Normalize(), nil
+			nl, _ := pol.Normalize()
+			return nl, nil
 		}).SetMethodDescription("normalize returns a normalized polynomial, which is the polynomial " +
 			"divided by its leading coefficient. This makes the leading coefficient 1"),
+		"normalizeTail": value.MethodAtType(0, func(pol Polynomial, st funcGen.Stack[value.Value]) (value.Value, error) {
+			p, _ := pol.NormalizeTail()
+			return p, nil
+		}).SetMethodDescription("NormalizeTail returns a normalized polynomial, which is the same polynomial " +
+			"divided by its lowest non-zero coefficient."),
 		"roots": value.MethodAtType(0, func(pol Polynomial, st funcGen.Stack[value.Value]) (value.Value, error) {
 			r, err := pol.Roots()
 			if err != nil {
@@ -409,6 +415,14 @@ func linMethods() value.MethodMap {
 		"reduce": value.MethodAtType(0, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
 			return lin.Reduce()
 		}).SetMethodDescription("Reduces the linear system."),
+		"normalize": value.MethodAtType(0, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
+			return lin.Normalize()
+		}).SetMethodDescription("Normalizes the linear system. The denominator is divided by its leading coefficient, " +
+			"so that the leading coefficient of the denominator becomes 1. The numerator is then divided by the same value."),
+		"normalizeTail": value.MethodAtType(0, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
+			return lin.NormalizeTail()
+		}).SetMethodDescription("Normalizes the linear system. The denominator is divided by its lowest coefficient, " +
+			"so that the lowest coefficient of the denominator becomes 1. The numerator is then divided by the same value."),
 		"string": value.MethodAtType(0, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
 			return value.String(lin.String()), nil
 		}).SetMethodDescription("Creates a string representation of the linear system."),

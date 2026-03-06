@@ -50,6 +50,28 @@ func (l *Linear) PZForm() (*Linear, error) {
 	return &pz, nil
 }
 
+func (l *Linear) Normalize() (*Linear, error) {
+	den, dif := l.Denominator.Normalize()
+	num := l.Numerator.DivFloat(dif)
+	return &Linear{
+		Numerator:   num,
+		Denominator: den,
+		poles:       l.poles,
+		zeros:       l.zeros,
+	}, nil
+}
+
+func (l *Linear) NormalizeTail() (*Linear, error) {
+	den, dif := l.Denominator.NormalizeTail()
+	num := l.Numerator.DivFloat(dif)
+	return &Linear{
+		Numerator:   num,
+		Denominator: den,
+		poles:       l.poles,
+		zeros:       l.zeros,
+	}, nil
+}
+
 func (l *Linear) Equals(b *Linear) bool {
 	return l.Numerator.Equals(b.Numerator) && l.Denominator.Equals(b.Denominator)
 }

@@ -243,6 +243,15 @@ func (p Polynomial) MulFloat(f float64) Polynomial {
 	return mp.Canonical()
 }
 
+func (p Polynomial) DivFloat(f float64) Polynomial {
+	mp := make(Polynomial, len(p))
+	copy(mp, p)
+	for i := range p {
+		mp[i] /= f
+	}
+	return mp.Canonical()
+}
+
 func (p Polynomial) AddFloat(f float64) Polynomial {
 	mp := make(Polynomial, len(p))
 	copy(mp, p)
@@ -252,7 +261,7 @@ func (p Polynomial) AddFloat(f float64) Polynomial {
 
 // Normalize returns a normalized polynomial, which is the same polynomial
 // divided by its leading coefficient. This makes the leading coefficient 1.
-func (p Polynomial) Normalize() Polynomial {
+func (p Polynomial) Normalize() (Polynomial, float64) {
 	poly := p.Canonical()
 	mp := make(Polynomial, len(poly))
 
@@ -261,7 +270,25 @@ func (p Polynomial) Normalize() Polynomial {
 	for i := range poly {
 		mp[i] /= dif
 	}
-	return mp
+	return mp, dif
+}
+
+// NormalizeTail returns a normalized polynomial, which is the same polynomial
+// divided by its lowest non-zero coefficient.
+func (p Polynomial) NormalizeTail() (Polynomial, float64) {
+	poly := p.Canonical()
+	for i := range poly {
+		if math.Abs(poly[i]) > eps {
+			mp := make(Polynomial, len(poly))
+			dif := poly[i]
+			copy(mp, poly)
+			for i := range poly {
+				mp[i] /= dif
+			}
+			return mp, dif
+		}
+	}
+	return p, 1
 }
 
 func (p Polynomial) Div(q Polynomial) (Polynomial, Polynomial, error) {
@@ -403,7 +430,7 @@ func (p Polynomial) rootsNewton() (Roots, error) {
 var startPoints = []complex128{complex(1, 1), complex(-2, 1), complex(10, 4)}
 
 func (p Polynomial) findRootNewton(zEps float64) (complex128, error) {
-	pSearch := p.Normalize()
+	pSearch, _ := p.Normalize()
 	deriv := pSearch.Derivative()
 	for i, z := range startPoints {
 		var f complex128
