@@ -370,18 +370,26 @@ func (p PlotValue) AddAtTop(pc value.Value) error {
 func createStyleMethods() value.MethodMap {
 	return value.MethodMap{
 		"dash": value.MethodAtType(6, func(styleValue StyleValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
-			style := styleValue.Value
-			n := stack.Size()
-			dash := make([]float64, n-1)
-			for i := 1; i < stack.Size(); i++ {
-				if f, ok := stack.Get(i).ToFloat(); ok {
-					dash[i-1] = f
-				} else {
-					return nil, fmt.Errorf("dash requires a float")
+			var dash []float64
+			switch stack.Size() {
+			case 1:
+				dash = []float64{5, 5}
+			case 2:
+				return nil, fmt.Errorf("dash requires at least two float values or no values for the default dash pattern")
+			default:
+				n := stack.Size()
+				dash = make([]float64, n-1)
+				for i := 1; i < stack.Size(); i++ {
+					if f, ok := stack.Get(i).ToFloat(); ok {
+						dash[i-1] = f
+					} else {
+						return nil, fmt.Errorf("dash requires a float")
+					}
 				}
 			}
+			style := styleValue.Value
 			return StyleValue{Holder[*graph.Style]{style.SetDash(dash...)}}, nil
-		}).SetMethodDescription("l1", "l2", "l3", "l4", "l5", "l6", "Sets the dash style.").VarArgsMethod(2, 6),
+		}).SetMethodDescription("l1", "l2", "l3", "l4", "l5", "l6", "Sets the dash style.").VarArgsMethod(0, 6),
 		"red": value.MethodAtType(0, func(styleValue StyleValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			return value.Int(styleValue.Value.Color.R), nil
 		}).SetMethodDescription("Returns the red color value."),
