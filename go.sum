@@ -28,6 +28,8 @@ github.com/hneemann/parser2 v0.0.0-20260130075050-612cf78d59ac h1:nI+1va1l+IlDIc
 github.com/hneemann/parser2 v0.0.0-20260130075050-612cf78d59ac/go.mod h1:7TzXHQvyJ7ZWcRTiAp03vN09yz55Qgbf2hTXS0b6vvE=
 github.com/hneemann/parser2 v0.0.0-20260308121458-2162fdb66a75 h1:5KpVJ3yufVk+t1zooUP3938xne2iVL39AMi2irNIl+Y=
 github.com/hneemann/parser2 v0.0.0-20260308121458-2162fdb66a75/go.mod h1:7TzXHQvyJ7ZWcRTiAp03vN09yz55Qgbf2hTXS0b6vvE=
+github.com/hneemann/parser2 v0.0.0-20260311181256-e752d6a87212 h1:JBprsqfjH/iiUiBd1N2SC6zh6i7srZwPJUL/JPdUJj4=
+github.com/hneemann/parser2 v0.0.0-20260311181256-e752d6a87212/go.mod h1:7TzXHQvyJ7ZWcRTiAp03vN09yz55Qgbf2hTXS0b6vvE=
 github.com/hneemann/session v0.0.0-20260226163124-8beedc0f67da h1:yaAK42VuicIEjqVNu20WyRq7pC3Men7iiVpnWTnTldI=
 github.com/hneemann/session v0.0.0-20260226163124-8beedc0f67da/go.mod h1:3lxFYNIGHpgMb2X2fefxmaw6bTH2kmdtNuaWXxh83jQ=
 github.com/hneemann/session v0.0.0-20260227071414-d6ce4281640c h1:Du4CyZzHy+b2EBSMRQ8RB/gS7kjtADCbdYCeyOoQyYY=

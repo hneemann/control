@@ -221,7 +221,7 @@ func createPlot3dContentMethods() value.MethodMap {
 			}
 			return Plot3dContentValue{Holder[graph.Plot3dContent]{pc}}, nil
 		}).SetMethodDescription("Closes a path."),
-		"mark": value.MethodAtType(3, func(plot Plot3dContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+		"points": value.MethodAtType(3, func(plot Plot3dContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			style, err := GetStyle(stack, 2, graph.Black)
 			if err != nil {
 				return nil, err
@@ -242,10 +242,10 @@ func createPlot3dContentMethods() value.MethodMap {
 			if sc, ok := plot.Value.(graph.HasShape3d); ok {
 				return Plot3dContentValue{Holder[graph.Plot3dContent]{sc.SetShape(marker, style.Value)}}, nil
 			} else {
-				return nil, fmt.Errorf("marker can only be set for plots using a marker")
+				return nil, fmt.Errorf("point type can only be set for plot contents that support points")
 			}
-		}).SetMethodDescription("type", "color", "size", "Sets the marker type.").VarArgsMethod(1, 3),
-	}
+		}).SetMethodDescription("type", "color", "size", "Sets the point type.").VarArgsMethod(1, 3),
+	}.Alias("points", "mark")
 }
 
 func valueToMarker(val value.Value, size float64) (graph.Shape, error) {
@@ -939,7 +939,7 @@ func createPlotContentMethods() value.MethodMap {
 				return nil, fmt.Errorf("title requires a string")
 			}
 		}).SetMethodDescription("str", "Sets a string to show as title in the legend."),
-		"mark": value.MethodAtType(3, func(plot PlotContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+		"points": value.MethodAtType(3, func(plot PlotContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			style, err := GetStyle(stack, 2, graph.Black)
 			if err != nil {
 				return nil, err
@@ -960,9 +960,9 @@ func createPlotContentMethods() value.MethodMap {
 			if sc, ok := plot.Value.(graph.HasShape); ok {
 				return PlotContentValue{Holder[graph.PlotContent]{sc.SetShape(marker, style.Value)}}, nil
 			} else {
-				return nil, fmt.Errorf("marker can only be set for plots using a marker")
+				return nil, fmt.Errorf("point type can only be set for plot contents that support points")
 			}
-		}).SetMethodDescription("type", "color", "size", "Sets the marker type.").VarArgsMethod(1, 3),
+		}).SetMethodDescription("type", "color", "size", "Sets the point type.").VarArgsMethod(1, 3),
 		"line": value.MethodAtType(2, func(plot PlotContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if style, err := GetStyle(stack, 1, nil); err == nil {
 				pc := plot.Value
@@ -996,7 +996,7 @@ func createPlotContentMethods() value.MethodMap {
 			}
 			return PlotContentValue{Holder[graph.PlotContent]{pc}}, nil
 		}).SetMethodDescription("Closes a path."),
-	}
+	}.Alias("points", "mark")
 }
 
 type PlotContentValue struct {
