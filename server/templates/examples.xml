@@ -44,45 +44,45 @@ plot(
   g.nyquist()
 )</example>
     <example name="Ortskurve 2" desc="Darstellung der Ortskurve"
-             name-en="Nyquist plot 2" desc-en="Nyquist plot">let g = 3/((s+1)*(s+1.5)*(s+2));
+             name-en="Nyquist plot 2" desc-en="Nyquist plot">let G = 3/((s+1)*(s+1.5)*(s+2));
 
 func h(w)
-  let c1 = g( j*w );
-  let c2 = g( j*w*0.99 );
+  let c1 = G( j*w );
+  let c2 = G( j*w*0.99 );
   hintDir(c1.real(),c1.imag(),c2.real(),c2.imag(),"#omega="+w);
 
 plot(
-  g.nyquist(),
+  G.nyquist(),
   [0.1, 0.25, 0.5, 1, 2, 5].map(h)
 )</example>
     <example name="Nyquist-Kriterium" desc="Anwendung des Nyquist-Kriteriums"
-             name-en="Nyquist stability criterion">let g = 6*(s+1)/((s-1)*(s-3));
+             name-en="Nyquist stability criterion">let G = 6*(s+1)/((s-1)*(s-3));
 
 plot(
-  g.nyquist(true)
+  G.nyquist(true)
 )</example>
     <example name="Bode" desc="Darstellung eines Bode-Diagramms"
-             name-en="Bode plot" desc-en="Bode plot">let g = 3/((s+1)*(s+2));
+             name-en="Bode plot" desc-en="Bode plot">let G = 3/((s+1)*(s+2));
 
 plot(
-  g.bode()
+  G.bode()
 )</example>
     <example name="Bode 2" desc="Darstellung mehrerer Kurven in einem Bode-Diagramm"
-             name-en="Bode plot 2" desc-en="Multiple systems">let g  = 3/((s+1)*(s+2));
-let k  = 1.6*(1+1/(1.7*s));
-let g0 = k*g;
+             name-en="Bode plot 2" desc-en="Multiple systems">let G  = 3/((s+1)*(s+2));
+let K  = 1.6*(1+1/(1.7*s));
+let G0 = K*G;
 
 plot(
-  g.bode(green, "G"),
-  k.bode(blue,  "K"),
-  g0.bode(black, "G#0")
+  G.bode(green, "G(s)"),
+  K.bode(blue,  "K(s)"),
+  G0.bode(black, "G#0(s)")
 )</example>
     <example name="WOK" desc="Darstellung einer Wurzelortskurve"
-             name-en="Root locus analysis" desc-en="Root locus analysis">let g = 3/((s+1)*(s+2));
-let k = 1+1/(0.9*s);
+             name-en="Root locus analysis" desc-en="Root locus analysis">let G = 3/((s+1)*(s+2));
+let K = 1+1/(0.9*s);
 
 plot(
-  (k*g).evans(1)
+  (K*G).evans(1)
 )</example>
 
     <example name="WOK 2" desc="Darstellung einer Wurzelortskurve"
@@ -93,15 +93,15 @@ plot(
 )</example>
 
     <example name="Simulation" desc="Simulation des Systems"
-             name-en="Simulation" desc-en="Simulation of a linear system">let g = 70/((s+1)*(s+2)*(s+2.5));
-let k1 = 0.2*(0.6*s+1)/(0.002*s+1);
-let k2 = pid(0.1,2);
-let k3 = pid(0.3,2,0.5);
+             name-en="Simulation" desc-en="Simulation of a linear system">let G = 70/((s+1)*(s+2)*(s+2.5));
+let K1 = 0.2*(0.6*s+1)/(0.002*s+1);
+let K2 = pid(0.1,2);
+let K3 = pid(0.3,2,0.5);
 
 plot(
-  (k1*g).loop().simStep(10).graph().line(blue,  "phasenanhebendes Korrekturglied"),
-  (k2*g).loop().simStep(10).graph().line(black, "PI"),
-  (k3*g).loop().simStep(10).graph().line(green, "PID"),
+  (K1*G).loop().simStep(10).graph().line(blue,  "phasenanhebendes Korrekturglied"),
+  (K2*G).loop().simStep(10).graph().line(black, "PI"),
+  (K3*G).loop().simStep(10).graph().line(green, "PID"),
   yConst(1)
 ).labels("t / s","h(t)").legendPos(5,0.87)</example>
 
