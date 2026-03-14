@@ -409,6 +409,9 @@ func linMethods() value.MethodMap {
 			}
 			return rootsAsValueList(poles), nil
 		}).SetMethodDescription("Returns the poles of the transfer function."),
+		"numAsymp": value.MethodAtType(0, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
+			return value.Int(len(lin.Denominator) - len(lin.Numerator)), nil
+		}).SetMethodDescription("Returns the number of asymptotes n-m, where n is the number of poles and m the number of zeros."),
 		"pzForm": value.MethodAtType(0, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
 			return lin.PZForm()
 		}).SetMethodDescription("Returns the pole-zero form of the linear system."),
