@@ -124,6 +124,10 @@ function overwriteConfirmed() {
     }
 }
 
+function newWindow() {
+    window.open("/", "", "width=500,height=800,menubar=no,toolbar=no,titlebar=no,location=no");
+}
+
 function newScript() {
     checkOverwrite(() => {
         setSource("", "")

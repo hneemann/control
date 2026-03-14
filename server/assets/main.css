@@ -8,6 +8,9 @@
         -moz-text-size-adjust: none;
         -webkit-text-size-adjust: none;
     }
+    .hideOnMobile {
+        visibility: hidden;
+    }
 }
 
 @media (pointer: fine) {
@@ -202,6 +205,12 @@ div.fileEntry:hover {
 }
 
 img.icon {
+    position: relative;
+    top: 0.1em;
+    width: 1.7em;
+    height: 1.7em;
+}
+img.iconPC {
     position: relative;
     top: 0.1em;
     width: 1.7em;
