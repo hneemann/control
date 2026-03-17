@@ -546,48 +546,46 @@ func (p Polar) DrawTo(plot *graph.Plot, canvas graph.Canvas) error {
 	// Draw the angle lines
 	radius := r.MaxDistance(zero)
 	for angle := 90; angle <= 270; angle += 15 {
-		if angle != 180 {
-			x := radius * math.Cos(float64(angle)*math.Pi/180)
-			y := radius * math.Sin(float64(angle)*math.Pi/180)
-			if ap, ep, state := r.Intersect(zero, graph.Point{X: x, Y: y}); state != graph.CompleteOutside {
-				var o graph.Orientation
-				if r.IsNearTop(ep) {
-					o |= graph.Top
-				} else if r.IsNearBottom(ep) {
+		x := radius * math.Cos(float64(angle)*math.Pi/180)
+		y := radius * math.Sin(float64(angle)*math.Pi/180)
+		if ap, ep, state := r.Intersect(zero, graph.Point{X: x, Y: y}); state != graph.CompleteOutside {
+			var o graph.Orientation
+			if r.IsNearTop(ep) {
+				o |= graph.Top
+			} else if r.IsNearBottom(ep) {
+				o |= graph.Bottom
+			} else {
+				if ep.Y > 0 {
 					o |= graph.Bottom
 				} else {
-					if ep.Y > 0 {
-						o |= graph.Bottom
-					} else {
-						o |= graph.Top
-					}
+					o |= graph.Top
 				}
-				if r.IsNearLeft(ep) {
-					o |= graph.Left
-				} else {
-					o |= graph.Right
-				}
-				err := canvas.DrawPath(graph.PointsFromSlice(ap, ep), style)
-				if err != nil {
-					return err
-				}
+			}
+			if r.IsNearLeft(ep) {
+				o |= graph.Left
+			} else {
+				o |= graph.Right
+			}
+			err := canvas.DrawPath(graph.PointsFromSlice(ap, ep), style)
+			if err != nil {
+				return err
+			}
+			if angle != 180 {
 				canvas.DrawText(ep, fmt.Sprintf("%d°", 180-angle), o, text, textSize)
 			}
 		}
 	}
 
-	if r.Contains(zero) {
-		for _, t := range plot.GetXTicks() {
-			radius = -t.Position
-			if radius > 1e-5 {
+	for _, t := range plot.GetXTicks() {
+		radius = -t.Position
+		if radius > 1e-5 {
+			point := graph.Point{X: t.Position, Y: 0}
+			if r.Contains(point) {
 				err := canvas.DrawPath(r.IntersectPath(polarPath{radius: radius, r: r}), style)
 				if err != nil {
 					return err
 				}
-				point := graph.Point{X: 0, Y: radius}
-				if r.Contains(point) {
-					canvas.DrawText(point, t.Label, graph.VCenter|graph.Left, text, textSize)
-				}
+				canvas.DrawText(point, t.Label[1:], graph.Top|graph.Left, text, textSize)
 			}
 		}
 	}
