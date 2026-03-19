@@ -585,7 +585,11 @@ func (p Polar) DrawTo(plot *graph.Plot, canvas graph.Canvas) error {
 				if err != nil {
 					return err
 				}
-				canvas.DrawText(point, t.Label[1:], graph.Top|graph.Left, text, textSize)
+				lab := t.Label
+				if len(lab) > 1 && lab[0] == '-' {
+					lab = lab[1:]
+				}
+				canvas.DrawText(point, lab, graph.Top|graph.Left, text, textSize)
 			}
 		}
 	}
