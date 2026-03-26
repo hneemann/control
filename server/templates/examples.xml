@@ -78,11 +78,11 @@ plot(
   G0.bode(black, "G#0(s)")
 )</example>
     <example name="WOK" desc="Darstellung einer Wurzelortskurve"
-             name-en="Root locus analysis" desc-en="Root locus analysis">let G = 3/((s+1)*(s+2));
-let K = 1+1/(0.9*s);
+             name-en="Root locus analysis" desc-en="Root locus analysis">let G = 1/((s+1)*(s-1));
+let K = (s+0.999)/(s+2);
 
 plot(
-  (K*G).evans(1)
+  (K*G).evans(3)
 )</example>
 
     <example name="WOK 2" desc="Darstellung einer Wurzelortskurve"
