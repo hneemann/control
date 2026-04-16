@@ -70,7 +70,9 @@ func main() {
 
 	var dm session.Manager[data.UserData]
 	dm = session.NewFileManager[data.UserData](
-		session.NewFileSystemFactory(*dataFolder),
+		session.NewHashUser(
+			session.NewFileSystemFactory(*dataFolder),
+		),
 		persist{})
 
 	if *oidc {
