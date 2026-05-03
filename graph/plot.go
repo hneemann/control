@@ -1095,6 +1095,7 @@ func NewLinearParameterFunc(tMin, tMax float64, steps int) (*ParameterFunc, erro
 	delta := (tMax - tMin) / float64(steps)
 	return &ParameterFunc{
 		Points:   steps,
+		Style:    Black,
 		InitialT: tMin,
 		NextT: func(t float64) float64 {
 			return t + delta
@@ -1112,6 +1113,7 @@ func NewLogParameterFunc(tMin, tMax float64, steps int) (*ParameterFunc, error) 
 	f := math.Pow(tMax/tMin, 1/float64(steps))
 	return &ParameterFunc{
 		Points:   steps,
+		Style:    Black,
 		InitialT: tMin,
 		NextT: func(t float64) float64 {
 			return t * f

@@ -992,7 +992,7 @@ func createPlotContentMethods() value.MethodMap {
 			if sc, ok := pc.(graph.IsCloseable); ok {
 				pc = sc.Close()
 			} else {
-				return nil, fmt.Errorf("Close can only be called an plot contents that can be closed.")
+				return nil, fmt.Errorf("Close can only be called on plot contents that can be closed.")
 			}
 			return PlotContentValue{Holder[graph.PlotContent]{pc}}, nil
 		}).SetMethodDescription("Closes a path."),
@@ -1087,7 +1087,7 @@ func closureMethods() value.MethodMap {
 				}
 				return 0, fmt.Errorf("the function given to graph must return a float")
 			}
-			gf := graph.Function{Function: f, Steps: steps}
+			gf := graph.Function{Function: f, Steps: steps, Style: graph.Black}
 			return PlotContentValue{Holder[graph.PlotContent]{gf}}, nil
 		}).SetMethodDescription("steps", "Creates a graph of the function (ℝ→ℝ) to be used in the plot command.").VarArgsMethod(0, 1),
 
@@ -1148,7 +1148,6 @@ func closureMethods() value.MethodMap {
 						return nil, fmt.Errorf("pGraph: %w", err)
 					}
 					gf.Func = f
-					gf.Style = graph.Black
 					return PlotContentValue{Holder[graph.PlotContent]{gf}}, nil
 				}
 			}
@@ -1228,14 +1227,14 @@ func closureMethods() value.MethodMap {
 				if err != nil {
 					return nil, err
 				}
-				gf := &graph.Line3d{Func: f, Steps: steps}
+				gf := &graph.Line3d{Func: f, Steps: steps, Style: graph.Black}
 				return Plot3dContentValue{Holder[graph.Plot3dContent]{gf}}, nil
 			case 2:
 				uSteps, vSteps, f, err := create3dFunc(cl, st)
 				if err != nil {
 					return nil, err
 				}
-				gf := &graph.Graph3d{Func: f, USteps: uSteps, VSteps: vSteps}
+				gf := &graph.Graph3d{Func: f, USteps: uSteps, VSteps: vSteps, Style: graph.Black}
 				return Plot3dContentValue{Holder[graph.Plot3dContent]{gf}}, nil
 			default:
 				return nil, fmt.Errorf("the function passed to graph3d requires either one or two arguments")
@@ -1463,7 +1462,7 @@ func Setup(fg *value.FunctionGenerator) {
 			} else {
 				return nil, fmt.Errorf("graph requires a closure as first argument")
 			}
-			gf := graph.Function{Function: f, Steps: steps}
+			gf := graph.Function{Function: f, Steps: steps, Style: graph.Black}
 			return PlotContentValue{Holder[graph.PlotContent]{gf}}, nil
 		},
 		Args:   -1,

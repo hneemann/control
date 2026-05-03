@@ -243,7 +243,7 @@ func polyMethods() value.MethodMap {
 			f := func(x float64) (float64, error) {
 				return pol.Eval(x), nil
 			}
-			gf := graph.Function{Function: f}
+			gf := graph.Function{Function: f, Style: graph.Black}
 			return grParser.PlotContentValue{Holder: grParser.Holder[graph.PlotContent]{Value: gf}}, nil
 		}).SetMethodDescription("Returns the graph (ℝ→ℝ) of the polynomial."),
 		"coef": value.MethodAtType(0, func(pol Polynomial, st funcGen.Stack[value.Value]) (value.Value, error) {
@@ -380,7 +380,7 @@ func linMethods() value.MethodMap {
 			f := func(x float64) (float64, error) {
 				return lin.Eval(x), nil
 			}
-			gf := graph.Function{Function: f}
+			gf := graph.Function{Function: f, Style: graph.Black}
 			return grParser.PlotContentValue{Holder: grParser.Holder[graph.PlotContent]{Value: gf}}, nil
 		}).SetMethodDescription("Returns the graph (ℝ→ℝ) of the linear system."),
 		"loop": value.MethodAtType(0, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
