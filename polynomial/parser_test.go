@@ -274,15 +274,12 @@ plot(
   g.bode(green, "G"),
   k.bode(blue, sprintf("K, k#p=%.2f, T#i=%.1f",kp,Ti)),
   g0.bode(black, sprintf("G#0, #Phi#r=%.1f°, #omega#s=%.2f rad/s",
-                         pm.pMargin, pm.w0) )
-).ampModify(
-    a->a.add(xConst(pm.w0, lineColor))
- )
- .phaseModify(
-      a->a.add(xConst(pm.w0, lineColor))
-          .add(yConst(-180+50, lineColor))
-          .add(yConst(-180+70, lineColor))
- )
+                         pm.pMargin, pm.w0) ),
+  xConst(pm.w0, lineColor),
+  xConst(pm.w0, lineColor).secondary(),
+  yConst(-180+50, lineColor).secondary(),
+  yConst(-180+70, lineColor).secondary(),
+)
 `, file: "z.html"},
 		// If modified, also modify the README.md
 		{name: "evansExample", exp: `

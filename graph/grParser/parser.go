@@ -353,7 +353,11 @@ func (p PlotValue) GetType() value.Type {
 
 func (p PlotValue) Add(pc value.Value) error {
 	if c, ok := pc.(PlotContentValue); ok {
-		p.Holder.Value.AddContent(c.Value)
+		if c.SecondaryAxis {
+			p.Holder.Value.AddContentToY2(c.Value)
+		} else {
+			p.Holder.Value.AddContent(c.Value)
+		}
 		return nil
 	}
 	return errors.New("value is not a plot content")
@@ -361,23 +365,11 @@ func (p PlotValue) Add(pc value.Value) error {
 
 func (p PlotValue) AddAtTop(pc value.Value) error {
 	if c, ok := pc.(PlotContentValue); ok {
-		p.Holder.Value.AddContentAtTop(c.Value)
-		return nil
-	}
-	return errors.New("value is not a plot content")
-}
-
-func (p PlotValue) AddToY2(pc value.Value) error {
-	if c, ok := pc.(PlotContentValue); ok {
-		p.Holder.Value.AddContentToY2(c.Value)
-		return nil
-	}
-	return errors.New("value is not a plot content")
-}
-
-func (p PlotValue) AddAtTopToY2(pc value.Value) error {
-	if c, ok := pc.(PlotContentValue); ok {
-		p.Holder.Value.AddContentAtTopToY2(c.Value)
+		if c.SecondaryAxis {
+			p.Holder.Value.AddContentAtTopToY2(c.Value)
+		} else {
+			p.Holder.Value.AddContentAtTop(c.Value)
+		}
 		return nil
 	}
 	return errors.New("value is not a plot content")
@@ -620,32 +612,6 @@ func createPlotMethods() value.MethodMap {
 			}
 			return plot, nil
 		}).SetMethodDescription("plotContent", "Adds a plot content to the plot at the top."),
-		"addToY2": value.MethodAtType(-1, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
-			plot = plot.Copy()
-			for v, err := range value.FlattenStack(stack, 1) {
-				if err != nil {
-					return nil, err
-				}
-				err = plot.AddToY2(v)
-				if err != nil {
-					return nil, err
-				}
-			}
-			return plot, nil
-		}).SetMethodDescription("plotContent", "Adds a plot content to the plot. The secondary axis is used to plot the content."),
-		"addAtTopToY2": value.MethodAtType(-1, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
-			plot = plot.Copy()
-			for v, err := range value.FlattenStack(stack, 1) {
-				if err != nil {
-					return nil, err
-				}
-				err = plot.AddAtTopToY2(v)
-				if err != nil {
-					return nil, err
-				}
-			}
-			return plot, nil
-		}).SetMethodDescription("plotContent", "Adds a plot content to the plot at the top. The secondary axis is used to plot the content."),
 		"title": value.MethodAtType(1, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if str, ok := stack.Get(1).(value.String); ok {
 				plot = plot.Copy()
@@ -815,7 +781,7 @@ func addAxisMethods(name string, aa func(plot *graph.Plot) *graph.AxisDescriptio
 				plot = plot.Copy()
 				aa(plot.Value).Label = string(str)
 			} else {
-				return nil, fmt.Errorf(name + "Label requires a string")
+				return nil, fmt.Errorf("%sLabel requires a string", name)
 			}
 			return plot, nil
 		}).SetMethodDescription("label", fmt.Sprintf("Sets the %s-label.", name))
@@ -827,7 +793,7 @@ func addAxisMethods(name string, aa func(plot *graph.Plot) *graph.AxisDescriptio
 				return plot, nil
 			}
 		}
-		return nil, fmt.Errorf(name + "Bounds requires two float values")
+		return nil, fmt.Errorf("%sBounds requires two float values", name)
 	}).SetMethodDescription(name+"Min", name+"Max", "Sets the "+name+"-bounds.")
 	mm[name+"Log"] = value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 		plot = plot.Copy()
@@ -855,7 +821,7 @@ func addAxisMethods(name string, aa func(plot *graph.Plot) *graph.AxisDescriptio
 			aa(plot.Value).TickSep = ts
 			return plot, nil
 		}
-		return nil, fmt.Errorf("tickSep" + uName + " requires a float value")
+		return nil, fmt.Errorf("tickSep%s requires a float value", uName)
 	}).SetMethodDescription("with", "Sets the space between ticks measured in characters.")
 	mm["no"+uName+"Expand"] = value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 		plot = plot.Copy()
@@ -931,7 +897,7 @@ func createPlotContentMethods() value.MethodMap {
 		"title": value.MethodAtType(1, func(plot PlotContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if leg, ok := stack.Get(1).(value.String); ok {
 				if sc, ok := plot.Value.(graph.HasTitle); ok {
-					return PlotContentValue{Holder[graph.PlotContent]{sc.SetTitle(string(leg))}}, nil
+					return PlotContentValue{Holder[graph.PlotContent]{sc.SetTitle(string(leg))}, plot.SecondaryAxis}, nil
 				} else {
 					return nil, fmt.Errorf("title can only be set for plots using a title")
 				}
@@ -958,7 +924,7 @@ func createPlotContentMethods() value.MethodMap {
 			}
 
 			if sc, ok := plot.Value.(graph.HasShape); ok {
-				return PlotContentValue{Holder[graph.PlotContent]{sc.SetShape(marker, style.Value)}}, nil
+				return PlotContentValue{Holder[graph.PlotContent]{sc.SetShape(marker, style.Value)}, plot.SecondaryAxis}, nil
 			} else {
 				return nil, fmt.Errorf("point type can only be set for plot contents that support points")
 			}
@@ -982,7 +948,7 @@ func createPlotContentMethods() value.MethodMap {
 				} else {
 					return nil, fmt.Errorf("the title must be a string")
 				}
-				return PlotContentValue{Holder[graph.PlotContent]{pc}}, nil
+				return PlotContentValue{Holder[graph.PlotContent]{pc}, plot.SecondaryAxis}, nil
 			} else {
 				return nil, fmt.Errorf("line requires a style: %w", err)
 			}
@@ -994,17 +960,22 @@ func createPlotContentMethods() value.MethodMap {
 			} else {
 				return nil, fmt.Errorf("Close can only be called on plot contents that can be closed.")
 			}
-			return PlotContentValue{Holder[graph.PlotContent]{pc}}, nil
+			return PlotContentValue{Holder[graph.PlotContent]{pc}, plot.SecondaryAxis}, nil
+		}).SetMethodDescription("Closes a path."),
+		"secondary": value.MethodAtType(0, func(plot PlotContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			pc := plot.Value
+			return PlotContentValue{Holder[graph.PlotContent]{pc}, true}, nil
 		}).SetMethodDescription("Closes a path."),
 	}.Alias("points", "mark")
 }
 
 type PlotContentValue struct {
 	Holder[graph.PlotContent]
+	SecondaryAxis bool
 }
 
 func NewPlotContentValue(pc graph.PlotContent) PlotContentValue {
-	return PlotContentValue{Holder[graph.PlotContent]{pc}}
+	return PlotContentValue{Holder[graph.PlotContent]{pc}, false}
 }
 
 func (p PlotContentValue) GetType() value.Type {
@@ -1028,7 +999,7 @@ func listMethods() value.MethodMap {
 				if size, ok := list.SizeIfKnown(); ok && size > 200 {
 					s.LineStyle = graph.Black
 				}
-				return PlotContentValue{Holder[graph.PlotContent]{s}}, nil
+				return PlotContentValue{Holder[graph.PlotContent]{s}, false}, nil
 			case 3:
 				if xc, ok := st.Get(1).(value.Closure); ok && xc.Args == 1 {
 					if yc, ok := st.Get(2).(value.Closure); ok && yc.Args == 1 {
@@ -1036,7 +1007,7 @@ func listMethods() value.MethodMap {
 						if size, ok := list.SizeIfKnown(); ok && size > 200 {
 							s.LineStyle = graph.Black
 						}
-						return PlotContentValue{Holder[graph.PlotContent]{s}}, nil
+						return PlotContentValue{Holder[graph.PlotContent]{s}, false}, nil
 					}
 				}
 			default:
@@ -1088,7 +1059,7 @@ func closureMethods() value.MethodMap {
 				return 0, fmt.Errorf("the function given to graph must return a float")
 			}
 			gf := graph.Function{Function: f, Steps: steps, Style: graph.Black}
-			return PlotContentValue{Holder[graph.PlotContent]{gf}}, nil
+			return PlotContentValue{Holder[graph.PlotContent]{gf}, false}, nil
 		}).SetMethodDescription("steps", "Creates a graph of the function (ℝ→ℝ) to be used in the plot command.").VarArgsMethod(0, 1),
 
 		"pGraph": value.MethodAtType(4, func(cl value.Closure, st funcGen.Stack[value.Value]) (value.Value, error) {
@@ -1148,7 +1119,7 @@ func closureMethods() value.MethodMap {
 						return nil, fmt.Errorf("pGraph: %w", err)
 					}
 					gf.Func = f
-					return PlotContentValue{Holder[graph.PlotContent]{gf}}, nil
+					return PlotContentValue{Holder[graph.PlotContent]{gf}, false}, nil
 				}
 			}
 			return nil, fmt.Errorf("pGraph requires two floats as first arguments")
@@ -1209,7 +1180,7 @@ func closureMethods() value.MethodMap {
 						Colors:  colors,
 						ZBounds: graph.NewBounds(tMin, tMax),
 					}
-					return PlotContentValue{Holder[graph.PlotContent]{h}}, nil
+					return PlotContentValue{Holder[graph.PlotContent]{h}, false}, nil
 				}
 			}
 			return nil, fmt.Errorf("heat requires two floats as first arguments")
@@ -1463,7 +1434,7 @@ func Setup(fg *value.FunctionGenerator) {
 				return nil, fmt.Errorf("graph requires a closure as first argument")
 			}
 			gf := graph.Function{Function: f, Steps: steps, Style: graph.Black}
-			return PlotContentValue{Holder[graph.PlotContent]{gf}}, nil
+			return PlotContentValue{Holder[graph.PlotContent]{gf}, false}, nil
 		},
 		Args:   -1,
 		IsPure: true,
@@ -1476,7 +1447,7 @@ func Setup(fg *value.FunctionGenerator) {
 					return nil, fmt.Errorf("yConst: %w", err)
 				}
 				c := graph.YConst{Y: y, Style: styleVal.Value}
-				return PlotContentValue{Holder[graph.PlotContent]{c}}, nil
+				return PlotContentValue{Holder[graph.PlotContent]{c}, false}, nil
 			}
 			return nil, fmt.Errorf("yConst requires a float")
 		},
@@ -1491,7 +1462,7 @@ func Setup(fg *value.FunctionGenerator) {
 					return nil, fmt.Errorf("xConst: %w", err)
 				}
 				c := graph.XConst{X: x, Style: styleVal.Value}
-				return PlotContentValue{Holder[graph.PlotContent]{c}}, nil
+				return PlotContentValue{Holder[graph.PlotContent]{c}, false}, nil
 			}
 			return nil, fmt.Errorf("yConst requires a float")
 		},

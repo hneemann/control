@@ -332,7 +332,7 @@ func (l *Linear) GetType() value.Type {
 }
 
 type BodePlotContentValue struct {
-	grParser.Holder[BodePlotContent]
+	grParser.Holder[*BodePlotContent]
 }
 
 func (b BodePlotContentValue) GetType() value.Type {
@@ -348,7 +348,13 @@ func bodePlotContentMethods() value.MethodMap {
 			} else {
 				return nil, fmt.Errorf("latency requires a float")
 			}
-		}).SetMethodDescription("latency", "Adds a latency to the bode plot ."),
+		}).SetMethodDescription("latency", "Adds a latency to the bode plot."),
+		"phase": value.MethodAtType(0, func(plot BodePlotContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			return grParser.PlotContentValue{grParser.Holder[graph.PlotContent]{bodePhase{plot.Value}}, false}, nil
+		}).SetMethodDescription("Returns the phase plot."),
+		"amplitude": value.MethodAtType(0, func(plot BodePlotContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			return grParser.PlotContentValue{grParser.Holder[graph.PlotContent]{bodeAmplitude{plot.Value}}, false}, nil
+		}).SetMethodDescription("Returns the phase plot."),
 		"title": value.MethodAtType(1, func(plot BodePlotContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if leg, ok := stack.Get(1).(value.String); ok {
 				plot.Value.Title = string(leg)
@@ -599,7 +605,7 @@ func createBodeMethod[T value.Value](convert func(T) *Linear) funcGen.Function[v
 		if style, err := grParser.GetStyle(st, 1, graph.Black); err == nil {
 			if title, ok := st.GetOptional(2, value.String("")).(value.String); ok {
 				if steps, ok := st.GetOptional(3, value.Int(0)).(value.Int); ok {
-					return BodePlotContentValue{Holder: grParser.Holder[BodePlotContent]{Value: convert(lin).CreateBodeContent(style.Value, string(title), int(steps))}}, nil
+					return BodePlotContentValue{Holder: grParser.Holder[*BodePlotContent]{Value: convert(lin).CreateBodeContent(style.Value, string(title), int(steps))}}, nil
 				}
 			}
 		}
@@ -1198,8 +1204,7 @@ func (b bodeAdder) Add(val value.Value) error {
 	}
 	if bpv, ok := val.(BodePlotContentValue); ok {
 		bp := bpv.Value
-		b.plot.Value.AddContent(bodeAmplitude{&bp})
-		b.plot.Value.AddContentToY2(bodePhase{&bp})
+		bp.addTo(b.plot.Value)
 		return nil
 	}
 	return errors.New("not a valid plot content")

@@ -1042,53 +1042,11 @@ type BodePlotContent struct {
 	phase      []graph.Point
 }
 
-func (bpc BodePlotContent) String() string {
+func (bpc *BodePlotContent) String() string {
 	return fmt.Sprintf("BodePlotContent(%s)", bpc.Linear.String())
 }
 
-type BodePlot struct {
-	amplitude *graph.Plot
-	phase     *graph.Plot
-}
-
-func (b BodePlot) String() string {
-	return "Bode " + b.amplitude.String()
-}
-
-func (b BodePlot) DrawTo(canvas graph.Canvas) error {
-	bode := graph.SplitHorizontal{b.amplitude, b.phase}
-	return bode.DrawTo(canvas)
-}
-
-func (b BodePlot) ModifyBoth(m func(ampl, phase *graph.Plot)) BodePlot {
-	a := *b.amplitude
-	p := *b.phase
-	m(&a, &p)
-	return BodePlot{
-		amplitude: &a,
-		phase:     &p,
-	}
-}
-
-func (b BodePlot) ModifyAmplitude(m func(ampl *graph.Plot)) BodePlot {
-	a := *b.amplitude
-	m(&a)
-	return BodePlot{
-		amplitude: &a,
-		phase:     b.phase,
-	}
-}
-
-func (b BodePlot) ModifyPhase(m func(phase *graph.Plot)) BodePlot {
-	p := *b.phase
-	m(&p)
-	return BodePlot{
-		amplitude: b.amplitude,
-		phase:     &p,
-	}
-}
-
-func (l *Linear) CreateBodeContent(style *graph.Style, title string, steps int) BodePlotContent {
+func (l *Linear) CreateBodeContent(style *graph.Style, title string, steps int) *BodePlotContent {
 	if steps == 0 {
 		steps = 200
 	} else if steps < 100 {
@@ -1096,7 +1054,7 @@ func (l *Linear) CreateBodeContent(style *graph.Style, title string, steps int) 
 	} else if steps > 2000 {
 		steps = 2000
 	}
-	return BodePlotContent{
+	return &BodePlotContent{
 		Linear: l,
 		Style:  style,
 		Title:  title,
@@ -1175,6 +1133,11 @@ func (bpc *BodePlotContent) generate(wMin, wMax float64) {
 		bpc.amplitude = amplitude
 		bpc.phase = phase
 	}
+}
+
+func (bpc *BodePlotContent) addTo(plot *graph.Plot) {
+	plot.AddContent(bodeAmplitude{bpc})
+	plot.AddContentToY2(bodePhase{bpc})
 }
 
 // calculateCompletePhase calculates the complete phase including all phase rotations

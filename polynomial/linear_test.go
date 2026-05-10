@@ -360,9 +360,9 @@ func Test_Bode1(t *testing.T) {
 	assert.NoError(t, err)
 
 	pl := NewBode(0.01, 100)
-	pl.Add(g.CreateBodeContent(graph.Green, "G", 0))
-	pl.Add(k.CreateBodeContent(graph.Blue, "K", 0))
-	pl.Add(k.Mul(g).CreateBodeContent(graph.Black, "G0", 0))
+	g.CreateBodeContent(graph.Green, "G", 0).addTo(pl)
+	k.CreateBodeContent(graph.Blue, "K", 0).addTo(pl)
+	k.Mul(g).CreateBodeContent(graph.Black, "G0", 0).addTo(pl)
 
 	err = exportPlot(pl, "bode1.svg")
 	assert.NoError(t, err)
