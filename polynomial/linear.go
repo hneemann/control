@@ -1234,7 +1234,7 @@ func (b bodeAmplitude) Legend() graph.Legend {
 
 func (l *Linear) NyquistPos(sMin, sMax float64, steps int) (*graph.ParameterFunc, error) {
 	if sMax == 0 {
-		sMax = l.findNyqustMax()
+		sMax = l.findNyquistMax()
 	}
 	if sMin == 0 {
 		sMin = sMax * 1e-6
@@ -1257,7 +1257,7 @@ func (l *Linear) NyquistPos(sMin, sMax float64, steps int) (*graph.ParameterFunc
 
 func (l *Linear) NyquistNeg(sMin, sMax float64, steps int) (*graph.ParameterFunc, error) {
 	if sMax == 0 {
-		sMax = l.findNyqustMax()
+		sMax = l.findNyquistMax()
 	}
 	if sMin == 0 {
 		sMin = sMax * 1e-6
@@ -1315,7 +1315,7 @@ var (
 
 func (l *Linear) Nyquist(sMin, sMax float64, alsoNeg bool, steps int) ([]graph.PlotContent, error) {
 	if sMax == 0 {
-		sMax = l.findNyqustMax()
+		sMax = l.findNyquistMax()
 	}
 	if sMin == 0 {
 		sMin = sMax * 1e-6
@@ -1348,7 +1348,7 @@ func (l *Linear) Nyquist(sMin, sMax float64, alsoNeg bool, steps int) ([]graph.P
 	return cp, nil
 }
 
-func (l *Linear) findNyqustMax() float64 {
+func (l *Linear) findNyquistMax() float64 {
 	w := 10.0
 	for {
 		g := cmplx.Abs(l.EvalCplx(complex(0, w)))
