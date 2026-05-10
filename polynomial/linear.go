@@ -532,15 +532,15 @@ func (p polarPath) IsClosed() bool {
 	return false
 }
 
-func (p Polar) DrawTo(plot *graph.Plot, canvas graph.Canvas) error {
-	style := plot.Grid
+func (p Polar) DrawTo(env *graph.PlotContentEnvironment) error {
+	style := env.Plot.Grid
 	if style == nil {
 		style = grParser.GridStyle
 	}
 
-	r := canvas.Rect()
+	r := env.Canvas.Rect()
 	text := style.Text()
-	textSize := canvas.Context().TextSize * 0.8
+	textSize := env.Canvas.Context().TextSize * 0.8
 	var zero graph.Point
 
 	// Draw the angle lines
@@ -566,22 +566,22 @@ func (p Polar) DrawTo(plot *graph.Plot, canvas graph.Canvas) error {
 			} else {
 				o |= graph.Right
 			}
-			err := canvas.DrawPath(graph.PointsFromSlice(ap, ep), style)
+			err := env.Canvas.DrawPath(graph.PointsFromSlice(ap, ep), style)
 			if err != nil {
 				return err
 			}
 			if angle != 180 {
-				canvas.DrawText(ep, fmt.Sprintf("%d°", 180-angle), o, text, textSize)
+				env.Canvas.DrawText(ep, fmt.Sprintf("%d°", 180-angle), o, text, textSize)
 			}
 		}
 	}
 
-	for _, t := range plot.GetXTicks() {
+	for _, t := range env.XAxis.Ticks {
 		radius = -t.Position
 		if radius > 1e-5 {
 			point := graph.Point{X: t.Position, Y: 0}
 			if r.Contains(point) {
-				err := canvas.DrawPath(r.IntersectPath(polarPath{radius: radius, r: r}), style)
+				err := env.Canvas.DrawPath(r.IntersectPath(polarPath{radius: radius, r: r}), style)
 				if err != nil {
 					return err
 				}
@@ -589,7 +589,7 @@ func (p Polar) DrawTo(plot *graph.Plot, canvas graph.Canvas) error {
 				if len(lab) > 1 && lab[0] == '-' {
 					lab = lab[1:]
 				}
-				canvas.DrawText(point, lab, graph.Top|graph.Left, text, textSize)
+				env.Canvas.DrawText(point, lab, graph.Top|graph.Left, text, textSize)
 			}
 		}
 	}
@@ -619,8 +619,8 @@ func (a Asymptotes) DependantBounds(_, _ graph.Bounds) (graph.Bounds, graph.Boun
 	return graph.Bounds{}, graph.Bounds{}, nil
 }
 
-func (a Asymptotes) DrawTo(_ *graph.Plot, canvas graph.Canvas) error {
-	r := canvas.Rect()
+func (a Asymptotes) DrawTo(env *graph.PlotContentEnvironment) error {
+	r := env.Canvas.Rect()
 
 	d := r.MaxDistance(a.Point)
 
@@ -631,7 +631,7 @@ func (a Asymptotes) DrawTo(_ *graph.Plot, canvas graph.Canvas) error {
 		y := a.Point.Y + d*math.Sin(alpha)
 
 		if p1, p2, state := r.Intersect(a.Point, graph.Point{X: x, Y: y}); state != graph.CompleteOutside {
-			err := canvas.DrawPath(graph.PointsFromSlice(p1, p2), asymptotesStyle)
+			err := env.Canvas.DrawPath(graph.PointsFromSlice(p1, p2), asymptotesStyle)
 			if err != nil {
 				return err
 			}
@@ -663,8 +663,8 @@ func (p PlotPreferences) DependantBounds(_, _ graph.Bounds) (x, y graph.Bounds, 
 	return graph.Bounds{}, graph.Bounds{}, nil
 }
 
-func (p PlotPreferences) DrawTo(plot *graph.Plot, _ graph.Canvas) error {
-	p.Modify(plot)
+func (p PlotPreferences) DrawTo(env *graph.PlotContentEnvironment) error {
+	p.Modify(env.Plot)
 	return nil
 }
 
@@ -971,15 +971,15 @@ func (ec *evansCurves) DependantBounds(_, _ graph.Bounds) (x, y graph.Bounds, er
 	return graph.Bounds{}, graph.Bounds{}, nil
 }
 
-func (ec *evansCurves) DrawTo(plot *graph.Plot, canvas graph.Canvas) error {
-	err := ec.generate(plot.GetTransform())
+func (ec *evansCurves) DrawTo(env *graph.PlotContentEnvironment) error {
+	err := ec.generate(env.Transform)
 	if err != nil {
 		return err
 	}
 
-	r := canvas.Rect()
+	r := env.Canvas.Rect()
 	for i := 0; i < ec.poleCount; i++ {
-		err = canvas.DrawPath(r.IntersectPath(ec.evPoints.getPoints(i)), graph.GetColor(i).SetStrokeWidth(2))
+		err = env.Canvas.DrawPath(r.IntersectPath(ec.evPoints.getPoints(i)), graph.GetColor(i).SetStrokeWidth(2))
 		if err != nil {
 			return err
 		}
@@ -1246,11 +1246,11 @@ func (b bodePhase) DependantBounds(xGiven, _ graph.Bounds) (x, y graph.Bounds, e
 	return graph.Bounds{}, bounds, nil
 }
 
-func (b bodePhase) DrawTo(_ *graph.Plot, canvas graph.Canvas) error {
-	r := canvas.Rect()
+func (b bodePhase) DrawTo(env *graph.PlotContentEnvironment) error {
+	r := env.Canvas.Rect()
 	b.bodeContent.generate(r.Min.X, r.Max.X)
 	path := graph.PointsFromSlice(b.bodeContent.phase...)
-	return canvas.DrawPath(r.IntersectPath(path), b.bodeContent.Style)
+	return env.Canvas.DrawPath(r.IntersectPath(path), b.bodeContent.Style)
 }
 
 func (b bodePhase) Legend() graph.Legend {
@@ -1278,11 +1278,11 @@ func (b bodeAmplitude) DependantBounds(xGiven, _ graph.Bounds) (x, y graph.Bound
 	return graph.Bounds{}, bounds, nil
 }
 
-func (b bodeAmplitude) DrawTo(_ *graph.Plot, canvas graph.Canvas) error {
-	r := canvas.Rect()
+func (b bodeAmplitude) DrawTo(env *graph.PlotContentEnvironment) error {
+	r := env.Canvas.Rect()
 	b.bodeContent.generate(r.Min.X, r.Max.X)
 	path := graph.PointsFromSlice(b.bodeContent.amplitude...)
-	return canvas.DrawPath(r.IntersectPath(path), b.bodeContent.Style)
+	return env.Canvas.DrawPath(r.IntersectPath(path), b.bodeContent.Style)
 }
 
 func (b bodeAmplitude) Legend() graph.Legend {

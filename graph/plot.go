@@ -113,23 +113,33 @@ type Plot struct {
 	ContentY2      []PlotContent
 	FillBackground bool
 	BoundsModifier BoundsModifier
-	xAxis          Axis
-	yAxis          Axis
-	y2Axis         Axis
 	HideLegend     bool
 	legendPosGiven PosMode
 	legendPos      Point
-	trans          Transform
-	canvas         Canvas
-	inner          Canvas
-	innerRect      Rect
-	textSize       float64
 }
 
-func (p *Plot) DrawTo(canvas Canvas) (err error) {
+type PlotContentEnvironment struct {
+	Plot         *Plot
+	ParentCanvas Canvas
+	InnerRect    Rect
+	Canvas       Canvas
+	Transform    Transform
+	XAxis        *Axis
+	YAxis        *Axis
+}
+
+func (p *PlotContentEnvironment) Dist(p1, p2 Point) float64 {
+	return p.Transform(p1).DistTo(p.Transform(p2))
+}
+
+func (p *Plot) DrawTo(canvas Canvas) error {
+	err, _ := p.DrawToAsInset(canvas, p.FillBackground)
+	return err
+}
+
+func (p *Plot) DrawToAsInset(canvas Canvas, fillBackground bool) (err error, env *PlotContentEnvironment) {
 	defer nErr.CatchErr(&err)
 
-	p.canvas = canvas
 	c := canvas.Context()
 	rect := canvas.Rect()
 	textStyle := Black.Text()
@@ -147,21 +157,21 @@ func (p *Plot) DrawTo(canvas Canvas) (err error) {
 		p.Y2.HideAxis = true
 	}
 
-	p.textSize = c.TextSize
-	if p.textSize <= rect.Height()/200 {
-		p.textSize = rect.Height() / 200
+	textSize := c.TextSize
+	if textSize <= rect.Height()/200 {
+		textSize = rect.Height() / 200
 	}
 	if p.Frame == nil {
 		p.Frame = Black.SetStrokeWidth(2)
 	}
 
-	if p.FillBackground {
+	if fillBackground {
 		nErr.Try(canvas.DrawPath(rect.Path(), White.SetStrokeWidth(0).SetFill(White)))
 	}
 
 	xBoundsPre, yBoundsPre, y2BoundsPre, err := p.calcBounds()
 	if err != nil {
-		return fmt.Errorf("error calculating plot bounds: %w", err)
+		return fmt.Errorf("error calculating plot bounds: %w", err), nil
 	}
 
 	if p.BoundsModifier != nil {
@@ -170,17 +180,16 @@ func (p *Plot) DrawTo(canvas Canvas) (err error) {
 
 	cross := p.Cross && xBoundsPre.Min <= 0 && xBoundsPre.Max >= 0 && yBoundsPre.Min <= 0 && yBoundsPre.Max >= 0 && len(p.ContentY2) == 0
 
-	large := p.textSize / 2
-	small := p.textSize / 4
+	large := textSize / 2
+	small := textSize / 4
 
 	thinLine := p.Frame.SetStrokeWidth(p.Frame.StrokeWidth / 2)
 
-	nonCrossInner := p.calculateInnerRect(rect)
+	nonCrossInner := p.calculateInnerRect(rect, textSize)
 	innerRect := rect
 	if !cross {
 		innerRect = nonCrossInner
 	}
-	p.innerRect = innerRect
 
 	xTickSep := p.X.TickSep
 	if xTickSep <= 0 {
@@ -194,14 +203,14 @@ func (p *Plot) DrawTo(canvas Canvas) (err error) {
 	xExp := 0.02
 	if cross && !p.X.HideAxis {
 		// space for the arrow head
-		xExp = 1.1 * p.textSize / innerRect.Width()
+		xExp = 1.1 * textSize / innerRect.Width()
 	}
 	if p.X.NoExpand {
 		xExp = 0
 	}
-	p.xAxis = p.X.GetFactory()(innerRect.Min.X, innerRect.Max.X, xBoundsPre,
+	xAxis := p.X.GetFactory()(innerRect.Min.X, innerRect.Max.X, xBoundsPre,
 		func(width float64, digits int) bool {
-			return width > p.textSize*(float64(digits)+1+xTickSep)*0.5
+			return width > textSize*(float64(digits)+1+xTickSep)*0.5
 		}, xExp)
 
 	yExp := 0.0
@@ -209,12 +218,12 @@ func (p *Plot) DrawTo(canvas Canvas) (err error) {
 		yAutoScale := !p.Y.Bounds.isSet
 		if cross {
 			// space for the arrow head
-			yExp = 1.1 * p.textSize / innerRect.Height()
+			yExp = 1.1 * textSize / innerRect.Height()
 		} else {
 			yExp = 0.02
 		}
 		if p.ProtectLabels && yAutoScale && !cross && (p.X.Label != "" || p.Y.Label != "" || p.Y2.Label != "" || p.Title != "") {
-			yExp = 1.8 * p.textSize / innerRect.Height()
+			yExp = 1.8 * textSize / innerRect.Height()
 		}
 	}
 	y2Exp := 0.0
@@ -222,42 +231,41 @@ func (p *Plot) DrawTo(canvas Canvas) (err error) {
 		yAutoScale := !p.Y2.Bounds.isSet
 		y2Exp = 0.02
 		if p.ProtectLabels && yAutoScale && !cross && (p.X.Label != "" || p.Y.Label != "" || p.Y2.Label != "" || p.Title != "") {
-			y2Exp = 1.8 * p.textSize / innerRect.Height()
+			y2Exp = 1.8 * textSize / innerRect.Height()
 		}
 	}
 
-	if p.Square && p.xAxis.IsLinear {
-		yBoundsWidth := innerRect.Height() * p.xAxis.Bounds.Width() / innerRect.Width()
+	if p.Square && xAxis.IsLinear {
+		yBoundsWidth := innerRect.Height() * xAxis.Bounds.Width() / innerRect.Width()
 		dif := yBoundsWidth / 2
 		yBoundsPre.Min = p.SquareYCenter - dif
 		yBoundsPre.Max = p.SquareYCenter + dif
 		yExp = 0
 	}
 
-	p.yAxis = p.Y.GetFactory()(innerRect.Min.Y, innerRect.Max.Y, yBoundsPre,
+	yAxis := p.Y.GetFactory()(innerRect.Min.Y, innerRect.Max.Y, yBoundsPre,
 		func(width float64, _ int) bool {
-			return width > p.textSize*(1+yTickSep)
+			return width > textSize*(1+yTickSep)
 		}, yExp)
 
-	p.y2Axis = p.Y2.GetFactory()(innerRect.Min.Y, innerRect.Max.Y, y2BoundsPre,
+	y2Axis := p.Y2.GetFactory()(innerRect.Min.Y, innerRect.Max.Y, y2BoundsPre,
 		func(width float64, _ int) bool {
-			return width > p.textSize*(1+yTickSep)
+			return width > textSize*(1+yTickSep)
 		}, y2Exp)
 
-	if p.Square && (!p.xAxis.IsLinear || !p.yAxis.IsLinear) {
-		return fmt.Errorf("square plots are only possible if both axis are linear")
+	if p.Square && (!xAxis.IsLinear || !yAxis.IsLinear) {
+		return fmt.Errorf("square plots are only possible if both axis are linear"), nil
 	}
 
-	p.trans = func(point Point) Point {
-		return Point{p.xAxis.Trans(point.X), p.yAxis.Trans(point.Y)}
+	trans := func(point Point) Point {
+		return Point{xAxis.Trans(point.X), yAxis.Trans(point.Y)}
 	}
-
-	p.inner = TransformCanvas{
-		transform: p.trans,
+	inner := TransformCanvas{
+		transform: trans,
 		parent:    canvas,
 		size: Rect{
-			Min: Point{p.xAxis.Bounds.Min, p.yAxis.Bounds.Min},
-			Max: Point{p.xAxis.Bounds.Max, p.yAxis.Bounds.Max},
+			Min: Point{xAxis.Bounds.Min, yAxis.Bounds.Min},
+			Max: Point{xAxis.Bounds.Max, yAxis.Bounds.Max},
 		},
 	}
 
@@ -266,22 +274,22 @@ func (p *Plot) DrawTo(canvas Canvas) (err error) {
 		orient := Top | HCenter
 		yp := innerRect.Min.Y
 		if cross {
-			yp = p.yAxis.Trans(0)
+			yp = yAxis.Trans(0)
 			if yp < nonCrossInner.Min.Y {
 				topBottom = -1
 				orient = Bottom | HCenter
 			}
 		}
-		for _, tick := range p.xAxis.Ticks {
+		for _, tick := range xAxis.Ticks {
 			if !cross || math.Abs(tick.Position) > 1e-8 {
-				xp := p.xAxis.Trans(tick.Position)
+				xp := xAxis.Trans(tick.Position)
 				if p.Grid != nil {
 					nErr.Try(canvas.DrawPath(PointsFromSlice(Point{xp, innerRect.Min.Y}, Point{xp, innerRect.Max.Y}), p.Grid))
 				}
 				if tick.Label == "" {
 					nErr.Try(canvas.DrawPath(PointsFromSlice(Point{xp, yp - small*topBottom}, Point{xp, yp}), thinLine))
 				} else {
-					canvas.DrawText(Point{xp, yp - (large+small)*topBottom}, tick.Label, orient, textStyle, p.textSize)
+					canvas.DrawText(Point{xp, yp - (large+small)*topBottom}, tick.Label, orient, textStyle, textSize)
 					nErr.Try(canvas.DrawPath(PointsFromSlice(Point{xp, yp - large*topBottom}, Point{xp, yp}), p.Frame))
 				}
 			}
@@ -293,22 +301,22 @@ func (p *Plot) DrawTo(canvas Canvas) (err error) {
 		orient := Right | VCenter
 		xp := innerRect.Min.X
 		if cross {
-			xp = p.xAxis.Trans(0)
+			xp = xAxis.Trans(0)
 			if xp < nonCrossInner.Min.X {
 				rightLeft = -1
 				orient = Left | VCenter
 			}
 		}
-		for _, tick := range p.yAxis.Ticks {
+		for _, tick := range yAxis.Ticks {
 			if !cross || math.Abs(tick.Position) > 1e-8 {
-				yp := p.yAxis.Trans(tick.Position)
+				yp := yAxis.Trans(tick.Position)
 				if p.Grid != nil {
 					nErr.Try(canvas.DrawPath(PointsFromSlice(Point{innerRect.Min.X, yp}, Point{innerRect.Max.X, yp}), p.Grid))
 				}
 				if tick.Label == "" {
 					nErr.Try(canvas.DrawPath(PointsFromSlice(Point{xp - small*rightLeft, yp}, Point{xp, yp}), thinLine))
 				} else {
-					canvas.DrawText(Point{xp - large*rightLeft, yp}, tick.Label, orient, yTextStyle, p.textSize)
+					canvas.DrawText(Point{xp - large*rightLeft, yp}, tick.Label, orient, yTextStyle, textSize)
 					nErr.Try(canvas.DrawPath(PointsFromSlice(Point{xp - large*rightLeft, yp}, Point{xp, yp}), p.Frame))
 				}
 			}
@@ -318,22 +326,22 @@ func (p *Plot) DrawTo(canvas Canvas) (err error) {
 	if !p.Y2.HideAxis {
 		orient := Left | VCenter
 		xp := innerRect.Max.X
-		for _, tick := range p.y2Axis.Ticks {
-			yp := p.y2Axis.Trans(tick.Position)
+		for _, tick := range y2Axis.Ticks {
+			yp := y2Axis.Trans(tick.Position)
 			if tick.Label == "" {
 				nErr.Try(canvas.DrawPath(PointsFromSlice(Point{xp + small, yp}, Point{xp, yp}), thinLine))
 			} else {
-				canvas.DrawText(Point{xp + large, yp}, tick.Label, orient, y2TextStyle, p.textSize)
+				canvas.DrawText(Point{xp + large, yp}, tick.Label, orient, y2TextStyle, textSize)
 				nErr.Try(canvas.DrawPath(PointsFromSlice(Point{xp + large, yp}, Point{xp, yp}), p.Frame))
 			}
 		}
 	}
 
 	if cross {
-		xp := p.xAxis.Trans(0)
-		yp := p.yAxis.Trans(0)
+		xp := xAxis.Trans(0)
+		yp := yAxis.Trans(0)
 		cs := p.Frame.StrokeWidth / 2
-		al := p.textSize * 0.8
+		al := textSize * 0.8
 		nErr.Try(canvas.DrawPath(PointsFromSlice(
 			Point{xp, innerRect.Min.Y},
 			Point{xp, innerRect.Max.Y - cs}), p.Frame))
@@ -352,27 +360,45 @@ func (p *Plot) DrawTo(canvas Canvas) (err error) {
 		), p.Frame))
 	}
 
+	env = &PlotContentEnvironment{
+		Plot:         p,
+		ParentCanvas: canvas,
+		InnerRect:    innerRect,
+		Transform:    trans,
+		Canvas:       inner,
+		XAxis:        &xAxis,
+		YAxis:        &yAxis,
+	}
 	var legends []Legend
 	for _, plotContent := range slices.Backward(p.Content) {
-		nErr.Try(plotContent.DrawTo(p, p.inner))
+		nErr.Try(plotContent.DrawTo(env))
 		l := plotContent.Legend()
 		if l.Name != "" && !p.HideLegend {
 			legends = append(legends, l)
 		}
 	}
 	if len(p.ContentY2) > 0 {
-		inner := TransformCanvas{
-			transform: func(point Point) Point {
-				return Point{p.xAxis.Trans(point.X), p.y2Axis.Trans(point.Y)}
+		transY2 := func(point Point) Point {
+			return Point{xAxis.Trans(point.X), y2Axis.Trans(point.Y)}
+		}
+		envY2 := PlotContentEnvironment{
+			Plot:         p,
+			ParentCanvas: canvas,
+			InnerRect:    innerRect,
+			Transform:    transY2,
+			Canvas: TransformCanvas{
+				transform: transY2,
+				parent:    canvas,
+				size: Rect{
+					Min: Point{xAxis.Bounds.Min, y2Axis.Bounds.Min},
+					Max: Point{xAxis.Bounds.Max, y2Axis.Bounds.Max},
+				},
 			},
-			parent: canvas,
-			size: Rect{
-				Min: Point{p.xAxis.Bounds.Min, p.y2Axis.Bounds.Min},
-				Max: Point{p.xAxis.Bounds.Max, p.y2Axis.Bounds.Max},
-			},
+			XAxis: &xAxis,
+			YAxis: &y2Axis,
 		}
 		for _, plotContent := range slices.Backward(p.ContentY2) {
-			nErr.Try(plotContent.DrawTo(p, inner))
+			nErr.Try(plotContent.DrawTo(&envY2))
 			l := plotContent.Legend()
 			if l.Name != "" && !p.HideLegend {
 				legends = append(legends, l)
@@ -380,31 +406,31 @@ func (p *Plot) DrawTo(canvas Canvas) (err error) {
 		}
 	}
 
-	if lab := p.xAxis.LabelFormat(p.X.Label); lab != "" {
+	if lab := xAxis.LabelFormat(p.X.Label); lab != "" {
 		yp := innerRect.Min.Y
 		if cross {
-			yp = p.yAxis.Trans(0)
+			yp = yAxis.Trans(0)
 		}
-		canvas.DrawText(Point{innerRect.Max.X - small, yp + small}, lab, Bottom|Right, textStyle, p.textSize)
+		canvas.DrawText(Point{innerRect.Max.X - small, yp + small}, lab, Bottom|Right, textStyle, textSize)
 	}
-	if lab := p.yAxis.LabelFormat(p.Y.Label); lab != "" {
+	if lab := yAxis.LabelFormat(p.Y.Label); lab != "" {
 		xp := innerRect.Min.X
 		if cross {
-			xp = p.xAxis.Trans(0)
+			xp = xAxis.Trans(0)
 		}
-		canvas.DrawText(Point{xp + small, innerRect.Max.Y - small}, lab, Top|Left, yTextStyle, p.textSize)
+		canvas.DrawText(Point{xp + small, innerRect.Max.Y - small}, lab, Top|Left, yTextStyle, textSize)
 	}
 	if !p.Y2.HideAxis {
-		if lab := p.y2Axis.LabelFormat(p.Y2.Label); lab != "" {
+		if lab := y2Axis.LabelFormat(p.Y2.Label); lab != "" {
 			xp := innerRect.Max.X
-			canvas.DrawText(Point{xp - small, innerRect.Max.Y - small}, lab, Top|Right, y2TextStyle, p.textSize)
+			canvas.DrawText(Point{xp - small, innerRect.Max.Y - small}, lab, Top|Right, y2TextStyle, textSize)
 		}
 	}
 	if p.Title != "" {
 		if p.Y2.HideAxis {
-			canvas.DrawText(Point{innerRect.Max.X - small, innerRect.Max.Y - small}, p.Title, Top|Right, textStyle, p.textSize)
+			canvas.DrawText(Point{innerRect.Max.X - small, innerRect.Max.Y - small}, p.Title, Top|Right, textStyle, textSize)
 		} else {
-			canvas.DrawText(Point{(innerRect.Max.X + innerRect.Min.X) / 2, innerRect.Max.Y - small}, p.Title, Top|HCenter, textStyle, p.textSize)
+			canvas.DrawText(Point{(innerRect.Max.X + innerRect.Min.X) / 2, innerRect.Max.Y - small}, p.Title, Top|HCenter, textStyle, textSize)
 		}
 	}
 
@@ -414,14 +440,14 @@ func (p *Plot) DrawTo(canvas Canvas) (err error) {
 
 	// user wants a cross but origin is not visible, so cross could not be plotted
 	if p.Cross && !cross {
-		if p.xAxis.Bounds.Min < 0 && p.xAxis.Bounds.Max > 0 {
-			xp := p.xAxis.Trans(0)
+		if xAxis.Bounds.Min < 0 && xAxis.Bounds.Max > 0 {
+			xp := xAxis.Trans(0)
 			nErr.Try(canvas.DrawPath(PointsFromSlice(
 				Point{xp, innerRect.Min.Y},
 				Point{xp, innerRect.Max.Y}), p.Frame))
 		}
-		if p.yAxis.Bounds.Min < 0 && p.yAxis.Bounds.Max > 0 {
-			yp := p.yAxis.Trans(0)
+		if yAxis.Bounds.Min < 0 && yAxis.Bounds.Max > 0 {
+			yp := yAxis.Trans(0)
 			nErr.Try(canvas.DrawPath(PointsFromSlice(
 				Point{innerRect.Min.X, yp},
 				Point{innerRect.Max.X, yp}), p.Frame))
@@ -432,9 +458,9 @@ func (p *Plot) DrawTo(canvas Canvas) (err error) {
 		var lp Point
 		switch p.legendPosGiven {
 		case NoPos:
-			lp = Point{innerRect.Min.X + p.textSize*3, innerRect.Min.Y + p.textSize*(float64(len(legends))*1.5-0.5)}
+			lp = Point{innerRect.Min.X + textSize*3, innerRect.Min.Y + textSize*(float64(len(legends))*1.5-0.5)}
 		case AbsPos:
-			lp = p.trans(p.legendPos)
+			lp = trans(p.legendPos)
 		case RelPos:
 			lp = Point{
 				innerRect.Min.X + p.legendPos.X*(innerRect.Max.X-innerRect.Min.X)/100,
@@ -442,18 +468,18 @@ func (p *Plot) DrawTo(canvas Canvas) (err error) {
 			}
 		}
 		for _, leg := range slices.Backward(legends) {
-			canvas.DrawText(lp, leg.Name, Left|VCenter, textStyle, p.textSize)
+			canvas.DrawText(lp, leg.Name, Left|VCenter, textStyle, textSize)
 			sls := leg.EnsureSomethingIsVisible()
 			if sls.IsLine() {
-				nErr.Try(canvas.DrawPath(PointsFromSlice(lp.Add(Point{-2*p.textSize - small, 0}), lp.Add(Point{-small, 0})), sls.LineStyle))
+				nErr.Try(canvas.DrawPath(PointsFromSlice(lp.Add(Point{-2*textSize - small, 0}), lp.Add(Point{-small, 0})), sls.LineStyle))
 			}
 			if sls.IsShape() {
-				nErr.Try(canvas.DrawShape(lp.Add(Point{-1*p.textSize - small, 0}), sls.Shape, sls.ShapeStyle))
+				nErr.Try(canvas.DrawShape(lp.Add(Point{-1*textSize - small, 0}), sls.Shape, sls.ShapeStyle))
 			}
-			lp = lp.Add(Point{0, -p.textSize * 1.5})
+			lp = lp.Add(Point{0, -textSize * 1.5})
 		}
 	}
-	return nil
+	return nil, env
 }
 
 func (p *Plot) calcBounds() (Bounds, Bounds, Bounds, error) {
@@ -528,7 +554,7 @@ func (p *Plot) calcBounds() (Bounds, Bounds, Bounds, error) {
 	return xBounds, yBounds, y2Bounds, nil
 }
 
-func (p *Plot) calculateInnerRect(rect Rect) Rect {
+func (p *Plot) calculateInnerRect(rect Rect, textSize float64) Rect {
 	rMin := rect.Min
 	rMax := rect.Max
 
@@ -566,12 +592,12 @@ func (p *Plot) calculateInnerRect(rect Rect) Rect {
 		if lb == 0 {
 			rMin.X += stroke / 2
 		} else {
-			rMin.X += p.textSize * lb * 0.75
+			rMin.X += textSize * lb * 0.75
 		}
 		if rb == 0 {
 			rMax.X -= stroke / 2
 		} else {
-			rMax.X -= p.textSize * rb * 0.75
+			rMax.X -= textSize * rb * 0.75
 		}
 	}
 
@@ -582,16 +608,16 @@ func (p *Plot) calculateInnerRect(rect Rect) Rect {
 	} else {
 		if p.X.HideAxis {
 			if p.Y.NoExpand {
-				rMin.Y += p.textSize / 3 * 2
-				rMax.Y -= p.textSize / 3 * 2
+				rMin.Y += textSize / 3 * 2
+				rMax.Y -= textSize / 3 * 2
 			} else {
 				rMin.Y += stroke / 2
 				rMax.Y -= stroke / 2
 			}
 		} else {
-			rMin.Y += p.textSize * 2
+			rMin.Y += textSize * 2
 			if p.Y.NoExpand && !p.Y.HideAxis {
-				rMax.Y -= p.textSize / 3 * 2
+				rMax.Y -= textSize / 3 * 2
 			} else {
 				rMax.Y -= stroke / 2
 			}
@@ -599,18 +625,6 @@ func (p *Plot) calculateInnerRect(rect Rect) Rect {
 	}
 
 	return Rect{Min: rMin, Max: rMax}
-}
-
-func (p *Plot) GetTransform() Transform {
-	return p.trans
-}
-
-func (p *Plot) GetXTicks() []Tick {
-	return p.xAxis.Ticks
-}
-
-func (p *Plot) GetYTicks() []Tick {
-	return p.yAxis.Ticks
 }
 
 func (p *Plot) AddContent(content PlotContent) {
@@ -644,10 +658,6 @@ func (p *Plot) String() string {
 		bu.WriteString(fmt.Sprint(content))
 	}
 	return bu.String()
-}
-
-func (p *Plot) Dist(p1, p2 Point) float64 {
-	return p.trans(p1).DistTo(p.trans(p2))
 }
 
 type Bounds struct {
@@ -720,7 +730,7 @@ type PlotContent interface {
 	DependantBounds(xGiven, yGiven Bounds) (x, y Bounds, err error)
 	// DrawTo draws the content to the given Canvas.
 	// The *Plot is passed to allow the content to access the plot's properties.
-	DrawTo(*Plot, Canvas) error
+	DrawTo(*PlotContentEnvironment) error
 	// Legend returns the legend of this Content
 	Legend() Legend
 }
@@ -803,8 +813,8 @@ func (f Function) DependantBounds(xGiven, _ Bounds) (Bounds, Bounds, error) {
 	return Bounds{}, Bounds{}, nil
 }
 
-func (f Function) DrawTo(plot *Plot, canvas Canvas) error {
-	r := canvas.Rect()
+func (f Function) DrawTo(env *PlotContentEnvironment) error {
+	r := env.Canvas.Rect()
 	p, err := NewLinearParameterFunc(r.Min.X, r.Max.X, f.steps())
 	if err != nil {
 		return fmt.Errorf("error creating linear parameter function: %w", err)
@@ -815,11 +825,11 @@ func (f Function) DrawTo(plot *Plot, canvas Canvas) error {
 	}
 	p.closed = f.closed
 	path := pFuncPath{
-		pf:   p,
-		plot: plot,
-		r:    r,
+		pf:  p,
+		env: env,
+		r:   r,
 	}
-	return canvas.DrawPath(r.IntersectPath(&path), f.Style)
+	return env.Canvas.DrawPath(r.IntersectPath(&path), f.Style)
 }
 
 func (f Function) Legend() Legend {
@@ -882,7 +892,8 @@ func (s Scatter) DependantBounds(_, _ Bounds) (Bounds, Bounds, error) {
 	return Bounds{}, Bounds{}, nil
 }
 
-func (s Scatter) DrawTo(_ *Plot, canvas Canvas) error {
+func (s Scatter) DrawTo(env *PlotContentEnvironment) error {
+	canvas := env.Canvas
 	rect := canvas.Rect()
 
 	sls := s.EnsureSomethingIsVisible()
@@ -944,12 +955,13 @@ func (h Hint) DependantBounds(_, _ Bounds) (Bounds, Bounds, error) {
 
 const arrowLen = 2.5
 
-func (h Hint) DrawTo(plot *Plot, canvas Canvas) error {
+func (h Hint) DrawTo(env *PlotContentEnvironment) error {
+	canvas := env.Canvas
 	r := canvas.Rect()
 	textSize := canvas.Context().TextSize
 	if r.Contains(h.Pos) {
-		r := plot.canvas.Rect()
-		hPos := plot.trans(h.Pos)
+		r := env.ParentCanvas.Rect()
+		hPos := env.Transform(h.Pos)
 		tPos := hPos
 		delta := textSize * arrowLen / math.Sqrt(2)
 		if r.IsInLeftHalf(hPos) {
@@ -962,7 +974,7 @@ func (h Hint) DrawTo(plot *Plot, canvas Canvas) error {
 		} else {
 			tPos = tPos.Add(Point{0, delta})
 		}
-		return drawArrow(plot, tPos, hPos, h.Style, 1, h.Text)
+		return drawArrow(env, tPos, hPos, h.Style, 1, h.Text)
 	}
 	return nil
 }
@@ -976,16 +988,16 @@ type HintDir struct {
 	PosDir Point
 }
 
-func (h HintDir) DrawTo(plot *Plot, canvas Canvas) error {
-	r := canvas.Rect()
+func (h HintDir) DrawTo(env *PlotContentEnvironment) error {
+	r := env.Canvas.Rect()
 	if r.Contains(h.Pos) {
-		p1 := plot.trans(h.Pos)
-		p2 := plot.trans(h.PosDir)
+		p1 := env.Transform(h.Pos)
+		p2 := env.Transform(h.PosDir)
 
-		delta := p1.Sub(p2).Norm().Rot90().Mul(canvas.Context().TextSize * arrowLen)
+		delta := p1.Sub(p2).Norm().Rot90().Mul(env.Canvas.Context().TextSize * arrowLen)
 		tPos := p1.Add(delta)
 
-		return drawArrow(plot, tPos, p1, h.Style, 1, h.Text)
+		return drawArrow(env, tPos, p1, h.Style, 1, h.Text)
 	}
 	return nil
 }
@@ -1020,18 +1032,18 @@ func (a Arrow) DependantBounds(_, _ Bounds) (Bounds, Bounds, error) {
 	return Bounds{}, Bounds{}, nil
 }
 
-func (a Arrow) DrawTo(plot *Plot, _ Canvas) error {
-	from := plot.trans(a.From)
-	to := plot.trans(a.To)
-	return drawArrow(plot, from, to, a.Style, a.Mode, a.Label)
+func (a Arrow) DrawTo(env *PlotContentEnvironment) error {
+	from := env.Transform(a.From)
+	to := env.Transform(a.To)
+	return drawArrow(env, from, to, a.Style, a.Mode, a.Label)
 }
 
 func (a Arrow) Legend() Legend {
 	return Legend{}
 }
 
-func drawArrow(plot *Plot, from, to Point, style *Style, mode int, label string) error {
-	textSize := plot.canvas.Context().TextSize
+func drawArrow(env *PlotContentEnvironment, from, to Point, style *Style, mode int, label string) error {
+	textSize := env.ParentCanvas.Context().TextSize
 	w := textSize * 0.75
 
 	dif := to.Sub(from).Norm().Mul(w)
@@ -1054,7 +1066,7 @@ func drawArrow(plot *Plot, from, to Point, style *Style, mode int, label string)
 			p = p.LineTo(from)
 			p = p.LineTo(from.Add(dif).Sub(norm))
 		}
-		err := plot.canvas.DrawPath(p, style)
+		err := env.ParentCanvas.DrawPath(p, style)
 		if err != nil {
 			return err
 		}
@@ -1072,7 +1084,7 @@ func drawArrow(plot *Plot, from, to Point, style *Style, mode int, label string)
 			textPos = from.Add(to).Mul(0.5)
 			o = orientationByDelta(norm)
 		}
-		plot.canvas.DrawText(textPos, label, o, style.Text(), textSize)
+		env.ParentCanvas.DrawText(textPos, label, o, style.Text(), textSize)
 	}
 	return nil
 }
@@ -1163,11 +1175,11 @@ func (c Cross) DependantBounds(_, _ Bounds) (Bounds, Bounds, error) {
 	return Bounds{}, Bounds{}, nil
 }
 
-func (c Cross) DrawTo(_ *Plot, canvas Canvas) error {
+func (c Cross) DrawTo(env *PlotContentEnvironment) error {
 	var err error
-	r := canvas.Rect()
+	r := env.Canvas.Rect()
 	if r.Contains(Point{0, 0}) {
-		err = canvas.DrawPath(NewPath(false).
+		err = env.Canvas.DrawPath(NewPath(false).
 			MoveTo(Point{r.Min.X, 0}).
 			LineTo(Point{r.Max.X, 0}).
 			MoveTo(Point{0, r.Min.Y}).
@@ -1268,11 +1280,12 @@ func (p *ParameterFunc) DependantBounds(_, _ Bounds) (Bounds, Bounds, error) {
 	return Bounds{}, Bounds{}, nil
 }
 
-func (p *ParameterFunc) DrawTo(plot *Plot, canvas Canvas) error {
+func (p *ParameterFunc) DrawTo(env *PlotContentEnvironment) error {
+	canvas := env.Canvas
 	path := pFuncPath{
-		pf:   p,
-		plot: plot,
-		r:    canvas.Rect(),
+		pf:  p,
+		env: env,
+		r:   canvas.Rect(),
 	}
 	if p.ModifyPath != nil {
 		return canvas.DrawPath(canvas.Rect().IntersectPath(p.ModifyPath(&path)), p.Style)
@@ -1289,7 +1302,7 @@ func (p *ParameterFunc) Legend() Legend {
 
 type pFuncPath struct {
 	pf      *ParameterFunc
-	plot    *Plot
+	env     *PlotContentEnvironment
 	r       Rect
 	maxDist float64
 }
@@ -1313,7 +1326,7 @@ func (p *pFuncPath) f(t, dt float64) (Point, Point, error) {
 
 func (p *pFuncPath) Iter(yield func(PathElement, error) bool) {
 	if p.maxDist == 0 {
-		p.maxDist = p.plot.canvas.Rect().Width() / float64(p.pf.Points) * 2
+		p.maxDist = p.env.Canvas.Rect().Width() / float64(p.pf.Points) * 2
 	}
 	pf := p.pf
 	t0 := pf.InitialT
@@ -1357,9 +1370,9 @@ func cosAngleBetween(d0, d1 Point) float64 {
 
 func (p *pFuncPath) refine(w0 float64, p0, d0 Point, w1 float64, p1, d1 Point, yield func(PathElement, error) bool, depth int, lastDist float64) bool {
 	dw := w1 - w0
-	dist := p.plot.Dist(p0, p1)
+	dist := p.env.Dist(p0, p1)
 	if dist > p.maxDist || // the distance of two points is too large
-		p.plot.Dist(p1, p0.Add(d0.Mul(dw))) > p.maxDist/50 || // the distance to the tangent is too large
+		p.env.Dist(p1, p0.Add(d0.Mul(dw))) > p.maxDist/50 || // the distance to the tangent is too large
 		cosAngleBetween(d0, d1) < 0.98 { // the angle is larger than approx 10 degrees
 		if depth > 0 {
 			w := (w0 + w1) / 2
@@ -1388,7 +1401,7 @@ func (p *pFuncPath) refine(w0 float64, p0, d0 Point, w1 float64, p1, d1 Point, y
 
 type ImageInset struct {
 	Location    Rect
-	Image       Image
+	Plot        *Plot
 	VisualGuide *Style
 	Relative    bool
 }
@@ -1408,68 +1421,66 @@ func (s ImageInset) DependantBounds(_, _ Bounds) (Bounds, Bounds, error) {
 	return Bounds{}, Bounds{}, nil
 }
 
-func (s ImageInset) DrawTo(p *Plot, _ Canvas) (cErr error) {
+func (s ImageInset) DrawTo(env *PlotContentEnvironment) (cErr error) {
 	defer nErr.CatchErr(&cErr)
-
+	innerRect := env.InnerRect
 	var minPos, maxPos Point
 	if s.Relative {
-		xMin := p.innerRect.Min.X + p.innerRect.Width()*s.Location.Min.X/100
-		yMin := p.innerRect.Min.Y + p.innerRect.Height()*s.Location.Min.Y/100
-		xMax := p.innerRect.Min.X + p.innerRect.Width()*s.Location.Max.X/100
-		yMax := p.innerRect.Min.Y + p.innerRect.Height()*s.Location.Max.Y/100
+		xMin := innerRect.Min.X + innerRect.Width()*s.Location.Min.X/100
+		yMin := innerRect.Min.Y + innerRect.Height()*s.Location.Min.Y/100
+		xMax := innerRect.Min.X + innerRect.Width()*s.Location.Max.X/100
+		yMax := innerRect.Min.Y + innerRect.Height()*s.Location.Max.Y/100
 		minPos = Point{X: xMin, Y: yMin}
 		maxPos = Point{X: xMax, Y: yMax}
 	} else {
-		minPos = p.trans(s.Location.Min).Add(Point{1, 1})
-		maxPos = p.trans(s.Location.Max).Sub(Point{1, 1})
+		minPos = env.Transform(s.Location.Min).Add(Point{1, 1})
+		maxPos = env.Transform(s.Location.Max).Sub(Point{1, 1})
 	}
 	inner := ResizeCanvas{
-		parent: p.canvas,
+		parent: env.ParentCanvas,
 		size: Rect{
 			Min: minPos,
 			Max: maxPos,
 		},
 	}
-	err := s.Image.DrawTo(inner)
+	err, ie := s.Plot.DrawToAsInset(inner, true)
 	if err != nil {
 		return fmt.Errorf("error drawing image inset: %w", err)
 	}
 
 	if s.VisualGuide != nil {
-		if insetPlot, ok := s.Image.(*Plot); ok {
-			ir := insetPlot.inner.Rect()
+		ir := ie.Canvas.Rect()
+		sMin := env.Transform(ir.Min)
+		sMax := env.Transform(ir.Max)
 
-			sMin := p.trans(ir.Min)
-			sMax := p.trans(ir.Max)
+		nErr.Try(
+			env.ParentCanvas.DrawPath(SlicePath{Closed: true}.
+				Add(sMin).
+				Add(Point{X: sMax.X, Y: sMin.Y}).
+				Add(sMax).
+				Add(Point{X: sMin.X, Y: sMax.Y}), s.VisualGuide),
+		)
 
-			nErr.Try(
-				p.canvas.DrawPath(SlicePath{Closed: true}.
-					Add(sMin).
-					Add(Point{X: sMax.X, Y: sMin.Y}).
-					Add(sMax).
-					Add(Point{X: sMin.X, Y: sMax.Y}), s.VisualGuide),
-			)
+		lMin := ie.Transform(ir.Min)
+		lMax := ie.Transform(ir.Max)
+		s12 := Point{X: sMin.X, Y: sMax.Y}
+		l12 := Point{X: lMin.X, Y: lMax.Y}
+		s21 := Point{X: sMax.X, Y: sMin.Y}
+		l21 := Point{X: lMax.X, Y: lMin.Y}
 
-			lMin := insetPlot.trans(ir.Min)
-			lMax := insetPlot.trans(ir.Max)
-			s12 := Point{X: sMin.X, Y: sMax.Y}
-			l12 := Point{X: lMin.X, Y: lMax.Y}
-			s21 := Point{X: sMax.X, Y: sMin.Y}
-			l21 := Point{X: lMax.X, Y: lMin.Y}
-
-			if (lMin.X < sMin.X && lMin.Y > sMin.Y) || (lMin.X > sMin.X && lMin.Y < sMin.Y) {
-				nErr.Try(p.canvas.DrawPath(NewPath(false).Add(sMin).Add(lMin), s.VisualGuide))
-			}
-			if (l12.X > s12.X && l12.Y > s12.Y) || (l12.X < s12.X && l12.Y < s12.Y) {
-				nErr.Try(p.canvas.DrawPath(NewPath(false).Add(s12).Add(l12), s.VisualGuide))
-			}
-			if (lMax.X < sMax.X && lMax.Y > sMax.Y) || (lMax.X > sMax.X && lMax.Y < sMax.Y) {
-				nErr.Try(p.canvas.DrawPath(NewPath(false).Add(sMax).Add(lMax), s.VisualGuide))
-			}
-			if (l21.X > s21.X && l21.Y > s21.Y) || (l21.X < s21.X && l21.Y < s21.Y) {
-				nErr.Try(p.canvas.DrawPath(NewPath(false).Add(s21).Add(l21), s.VisualGuide))
-			}
+		if (lMin.X < sMin.X && lMin.Y > sMin.Y) || (lMin.X > sMin.X && lMin.Y < sMin.Y) {
+			nErr.Try(env.ParentCanvas.DrawPath(NewPath(false).Add(sMin).Add(lMin), s.VisualGuide))
 		}
+		if (l12.X > s12.X && l12.Y > s12.Y) || (l12.X < s12.X && l12.Y < s12.Y) {
+			nErr.Try(env.ParentCanvas.DrawPath(NewPath(false).Add(s12).Add(l12), s.VisualGuide))
+		}
+		if (lMax.X < sMax.X && lMax.Y > sMax.Y) || (lMax.X > sMax.X && lMax.Y < sMax.Y) {
+			nErr.Try(env.ParentCanvas.DrawPath(NewPath(false).Add(sMax).Add(lMax), s.VisualGuide))
+		}
+		if (l21.X > s21.X && l21.Y > s21.Y) || (l21.X < s21.X && l21.Y < s21.Y) {
+			nErr.Try(env.ParentCanvas.DrawPath(NewPath(false).Add(s21).Add(l21), s.VisualGuide))
+		}
+
 	}
 	return nil
 }
@@ -1512,11 +1523,11 @@ func (yc YConst) DependantBounds(_, _ Bounds) (x, y Bounds, err error) {
 	return Bounds{}, Bounds{}, nil
 }
 
-func (yc YConst) DrawTo(_ *Plot, canvas Canvas) error {
+func (yc YConst) DrawTo(env *PlotContentEnvironment) error {
 	var err error
-	r := canvas.Rect()
+	r := env.Canvas.Rect()
 	if r.Max.Y >= yc.Y && r.Min.Y <= yc.Y {
-		err = canvas.DrawPath(NewPath(false).
+		err = env.Canvas.DrawPath(NewPath(false).
 			MoveTo(Point{r.Min.X, yc.Y}).
 			LineTo(Point{r.Max.X, yc.Y}), yc.Style)
 	}
@@ -1561,11 +1572,11 @@ func (xc XConst) DependantBounds(_, _ Bounds) (Bounds, Bounds, error) {
 	return Bounds{}, Bounds{}, nil
 }
 
-func (xc XConst) DrawTo(_ *Plot, canvas Canvas) error {
+func (xc XConst) DrawTo(env *PlotContentEnvironment) error {
 	var err error
-	r := canvas.Rect()
+	r := env.Canvas.Rect()
 	if r.Max.X >= xc.X && r.Min.X <= xc.X {
-		err = canvas.DrawPath(NewPath(false).
+		err = env.Canvas.DrawPath(NewPath(false).
 			MoveTo(Point{xc.X, r.Min.Y}).
 			LineTo(Point{xc.X, r.Max.Y}), xc.Style)
 	}
@@ -1590,8 +1601,8 @@ func (t Text) DependantBounds(_, _ Bounds) (x, y Bounds, err error) {
 	return Bounds{}, Bounds{}, nil
 }
 
-func (t Text) DrawTo(_ *Plot, canvas Canvas) error {
-	canvas.DrawText(t.Pos, t.Text, Left|Bottom, t.Style.Text(), canvas.Context().TextSize)
+func (t Text) DrawTo(env *PlotContentEnvironment) error {
+	env.Canvas.DrawText(t.Pos, t.Text, Left|Bottom, t.Style.Text(), env.Canvas.Context().TextSize)
 	return nil
 }
 
@@ -1621,16 +1632,16 @@ type pixLine struct {
 	err error
 }
 
-func (h Heat) DrawTo(plot *Plot, canvas Canvas) error {
+func (h Heat) DrawTo(env *PlotContentEnvironment) error {
 	if h.AxisFactory == nil {
 		h.AxisFactory = LinearAxis
 	}
 
-	xa := plot.xAxis
+	xa := env.XAxis
 	if xa.Reverse == nil {
 		return fmt.Errorf("heat plot requires a reverable x axis")
 	}
-	ya := plot.yAxis
+	ya := env.YAxis
 	if ya.Reverse == nil {
 		return fmt.Errorf("heat plot requires a reverable y axis")
 	}
@@ -1651,7 +1662,7 @@ func (h Heat) DrawTo(plot *Plot, canvas Canvas) error {
 
 	im := img.NewRGBA(img.Rectangle{img.Point{0, 0}, img.Point{steps, steps}})
 
-	r := plot.innerRect
+	r := env.InnerRect
 	mul := float64(len(h.Colors)-1) / h.ZBounds.Width()
 
 	lines := make(chan int)
@@ -1716,7 +1727,7 @@ func (h Heat) DrawTo(plot *Plot, canvas Canvas) error {
 
 	p1 := Point{X: xa.Reverse(r.Min.X), Y: ya.Reverse(r.Min.Y)}
 	p2 := Point{X: xa.Reverse(r.Max.X), Y: ya.Reverse(r.Max.Y)}
-	return canvas.DrawImage(p1, p2, im)
+	return env.Canvas.DrawImage(p1, p2, im)
 }
 
 func (h Heat) Legend() Legend {

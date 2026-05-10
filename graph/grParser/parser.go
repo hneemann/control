@@ -769,9 +769,9 @@ func createPlotMethods() value.MethodMap {
 			}
 			return nil, fmt.Errorf("zoom requires three float values")
 		}).SetMethodDescription("x", "y", "factor", "Zoom at the given point by the given factor."),
-		"inset": value.MethodAtType(5, CreateInsetMethod(false, plotValueToImage)).SetMethodDescription("xMin", "xMax", "yMin", "yMax", "visualGuideColor", "Converts the plot into an inset that can be added to another plot. "+
+		"inset": value.MethodAtType(5, CreateInsetMethod(false)).SetMethodDescription("xMin", "xMax", "yMin", "yMax", "visualGuideColor", "Converts the plot into an inset that can be added to another plot. "+
 			"If a Visual Guide Color is given, it is assumed that the inset is a part of the large plot, and a visual guide is drawn.").VarArgsMethod(4, 5),
-		"insetRel": value.MethodAtType(5, CreateInsetMethod(true, plotValueToImage)).SetMethodDescription("xMin", "xMax", "yMin", "yMax", "visualGuideColor", "Converts the plot into an inset that can be added to another plot. "+
+		"insetRel": value.MethodAtType(5, CreateInsetMethod(true)).SetMethodDescription("xMin", "xMax", "yMin", "yMax", "visualGuideColor", "Converts the plot into an inset that can be added to another plot. "+
 			"In contrast to inset, the coordinates are given in percent. "+
 			"If a Visual Guide Color is given, it is assumed that the inset is a part of the large plot, and a visual guide is drawn.").VarArgsMethod(4, 5),
 	}
@@ -842,13 +842,13 @@ func addAxisMethods(name string, aa func(plot *graph.Plot) *graph.AxisDescriptio
 	}).SetMethodDescription("Hides the " + name + "-axis.")
 }
 
-func plotValueToImage(p PlotValue) graph.Image {
+func plotValueToImage(p PlotValue) *graph.Plot {
 	p.Value.FillBackground = true
 	return p.Value
 }
 
-func CreateInsetMethod[PV value.Value](relative bool, toImage func(PV) graph.Image) func(plot PV, stack funcGen.Stack[value.Value]) (value.Value, error) {
-	return func(plot PV, stack funcGen.Stack[value.Value]) (value.Value, error) {
+func CreateInsetMethod(relative bool) func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+	return func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 		if xMin, ok := stack.Get(1).ToFloat(); ok {
 			if xMax, ok := stack.Get(2).ToFloat(); ok {
 				if yMin, ok := stack.Get(3).ToFloat(); ok {
@@ -878,7 +878,7 @@ func CreateInsetMethod[PV value.Value](relative bool, toImage func(PV) graph.Ima
 
 						return NewPlotContentValue(graph.ImageInset{
 							Location:    r,
-							Image:       toImage(plot),
+							Plot:        plot.Value,
 							VisualGuide: visualGuide,
 							Relative:    relative,
 						}), nil
