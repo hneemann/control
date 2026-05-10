@@ -111,6 +111,7 @@ type Plot struct {
 	ProtectLabels  bool
 	Content        []PlotContent
 	ContentY2      []PlotContent
+	PlotY2AtBottom bool
 	FillBackground bool
 	BoundsModifier BoundsModifier
 	HideLegend     bool
@@ -139,7 +140,22 @@ func (p *Plot) DrawTo(canvas Canvas) error {
 
 func (p *Plot) DrawToAsInset(canvas Canvas, fillBackground bool) (err error, env *PlotContentEnvironment) {
 	defer nErr.CatchErr(&err)
+	if p.PlotY2AtBottom && len(p.ContentY2) > 0 {
+		upper := *p
+		upper.ContentY2 = nil
 
+		lower := *p
+		lower.Content = lower.ContentY2
+		lower.Y = lower.Y2
+		lower.ContentY2 = nil
+
+		err := SplitHorizontal{&upper, &lower}.DrawTo(canvas)
+		return err, nil
+	}
+	return p.drawToInner(canvas, fillBackground)
+}
+
+func (p *Plot) drawToInner(canvas Canvas, fillBackground bool) (error, *PlotContentEnvironment) {
 	c := canvas.Context()
 	rect := canvas.Rect()
 	textStyle := Black.Text()
@@ -360,7 +376,7 @@ func (p *Plot) DrawToAsInset(canvas Canvas, fillBackground bool) (err error, env
 		), p.Frame))
 	}
 
-	env = &PlotContentEnvironment{
+	env := &PlotContentEnvironment{
 		Plot:         p,
 		ParentCanvas: canvas,
 		InnerRect:    innerRect,
@@ -637,6 +653,10 @@ func (p *Plot) AddContentAtTop(content PlotContent) {
 
 func (p *Plot) AddContentToY2(content PlotContent) {
 	p.ContentY2 = append(p.ContentY2, content)
+}
+
+func (p *Plot) AddContentAtTopToY2(content PlotContent) {
+	p.ContentY2 = append([]PlotContent{content}, p.ContentY2...)
 }
 
 func (p *Plot) SetLegendPosition(pos Point, rel bool) {

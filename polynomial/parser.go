@@ -21,7 +21,6 @@ import (
 )
 
 var (
-	BodeValueType            value.Type
 	BodePlotContentValueType value.Type
 	ComplexValueType         value.Type
 	PolynomialValueType      value.Type
@@ -608,214 +607,6 @@ func createBodeMethod[T value.Value](convert func(T) *Linear) funcGen.Function[v
 	}).SetMethodDescription("color", "title", "steps", "Creates a bode plot content.").VarArgsMethod(0, 3)
 }
 
-type BodePlotValue struct {
-	grParser.Holder[BodePlot]
-	context graph.Context
-}
-
-func (b BodePlotValue) Add(v value.Value) error {
-	if vp, ok := v.(BodePlotContentValue); ok {
-		b.Value.Add(vp.Value)
-		return nil
-	}
-	return fmt.Errorf("can only add bode plot content to bode plot")
-}
-
-func (b BodePlotValue) ToImage() graph.Image {
-	return graph.SplitHorizontal{b.Value.amplitude, b.Value.phase}
-}
-
-var (
-	_ export.ToHtmlInterface    = BodePlotValue{}
-	_ grParser.ToImageInterface = BodePlotValue{}
-)
-
-func (b BodePlotValue) DrawTo(canvas graph.Canvas) error {
-	return b.Value.DrawTo(canvas)
-}
-
-func (b BodePlotValue) GetType() value.Type {
-	return BodeValueType
-}
-
-func (b BodePlotValue) ToHtml(_ funcGen.Stack[value.Value], w *xmlWriter.XMLWriter) error {
-	return grParser.CreateSVG(b, &b.context, w)
-}
-
-func bodeMethods() value.MethodMap {
-	return value.MethodMap{
-		"textSize": value.MethodAtType(1, func(plot BodePlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
-			if si, ok := stack.Get(1).ToFloat(); ok {
-				plot.context.TextSize = si
-				return plot, nil
-			}
-			return nil, fmt.Errorf("textSize requires a float value")
-		}).SetMethodDescription("size", "Sets the text size."),
-		"outputSize": value.MethodAtType(2, func(plot BodePlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
-			if width, ok := stack.Get(1).ToFloat(); ok {
-				if height, ok := stack.Get(2).ToFloat(); ok {
-					plot.context.Width = width
-					plot.context.Height = height
-					return plot, nil
-				}
-			}
-			return nil, fmt.Errorf("outputSize requires two float values")
-		}).SetMethodDescription("width", "height", "Sets the svg-output size."),
-		"svg": value.MethodAtType(1, func(plot BodePlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
-			if name, ok := stack.Get(1).(value.String); ok {
-				return grParser.ImageToSvg(plot, &plot.context, string(name))
-			}
-			return nil, fmt.Errorf("svg requires a string value")
-		}).SetMethodDescription("filename", "Creates a svg-file to download."),
-		"wBounds": value.MethodAtType(2, func(bode BodePlotValue, st funcGen.Stack[value.Value]) (value.Value, error) {
-			if wMin, ok := st.Get(1).ToFloat(); ok {
-				if wMax, ok := st.Get(2).ToFloat(); ok {
-					b := graph.NewBounds(wMin, wMax)
-					bode.Value = bode.Value.ModifyBoth(func(a, p *graph.Plot) {
-						a.X.Bounds = b
-						p.X.Bounds = b
-					})
-					return bode, nil
-				}
-			}
-			return nil, errors.New("wBounds requires two float values")
-		}).SetMethodDescription("min", "max", "Sets the frequency bounds."),
-		"aBounds": value.MethodAtType(2, func(bode BodePlotValue, st funcGen.Stack[value.Value]) (value.Value, error) {
-			if aMin, ok := st.Get(1).ToFloat(); ok {
-				if aMax, ok := st.Get(2).ToFloat(); ok {
-					b := graph.NewBounds(aMin, aMax)
-					bode.Value = bode.Value.ModifyAmplitude(func(ampl *graph.Plot) {
-						ampl.Y.Bounds = b
-					})
-					return bode, nil
-				}
-			}
-			return nil, errors.New("aBounds requires two float values")
-		}).SetMethodDescription("min", "max", "Sets the amplitude bounds."),
-		"pBounds": value.MethodAtType(2, func(bode BodePlotValue, st funcGen.Stack[value.Value]) (value.Value, error) {
-			if aMin, ok := st.Get(1).ToFloat(); ok {
-				if aMax, ok := st.Get(2).ToFloat(); ok {
-					b := graph.NewBounds(aMin, aMax)
-					bode.Value = bode.Value.ModifyPhase(func(phase *graph.Plot) {
-						phase.Y.Bounds = b
-					})
-					return bode, nil
-				}
-			}
-			return nil, errors.New("pBounds requires two float values")
-		}).SetMethodDescription("min", "max", "Sets the phase bounds."),
-		"aLin": value.MethodAtType(0, func(bode BodePlotValue, st funcGen.Stack[value.Value]) (value.Value, error) {
-			bode.Value = bode.Value.ModifyAmplitude(func(ampl *graph.Plot) {
-				ampl.Y.Factory = graph.LinearAxis
-			})
-			return bode, nil
-		}).SetMethodDescription("Sets the y-axis of the amplitude plot to linear."),
-		"aLog": value.MethodAtType(0, func(bode BodePlotValue, st funcGen.Stack[value.Value]) (value.Value, error) {
-			bode.Value = bode.Value.ModifyAmplitude(func(ampl *graph.Plot) {
-				ampl.Y.Factory = graph.LogAxis
-			})
-			return bode, nil
-		}).SetMethodDescription("Sets the y-axis of the amplitude plot to logarithmic."),
-		"grid": value.MethodAtType(1, func(bode BodePlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
-			if style, err := grParser.GetStyle(stack, 1, grParser.GridStyle); err == nil {
-				bode.Value = bode.Value.ModifyBoth(func(a, p *graph.Plot) {
-					a.Grid = style.Value
-					p.Grid = style.Value
-				})
-				return bode, nil
-			} else {
-				return nil, err
-			}
-		}).SetMethodDescription("color", "Adds a grid.").VarArgsMethod(0, 1),
-		"frame": value.MethodAtType(1, func(bode BodePlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
-			if styleVal, err := grParser.GetStyle(stack, 1, nil); err == nil {
-				bode.Value = bode.Value.ModifyBoth(func(a, p *graph.Plot) {
-					a.Frame = styleVal.Value
-					p.Frame = styleVal.Value
-				})
-				return bode, nil
-			} else {
-				return nil, fmt.Errorf("frame requires a style: %w", err)
-			}
-		}).SetMethodDescription("color", "Sets the frame color."),
-		"ampModify": value.MethodAtType(1, func(bode BodePlotValue, st funcGen.Stack[value.Value]) (value.Value, error) {
-			if cl, ok := st.Get(1).(value.Closure); ok {
-				a, err := cl.Eval(st, grParser.NewPlotValue(bode.Value.amplitude))
-				if err != nil {
-					return nil, err
-				}
-				if ampPlot, ok := a.(grParser.PlotValue); ok {
-					bode.Value.amplitude = ampPlot.Value
-					return bode, nil
-				}
-			}
-			return nil, errors.New("ampModify requires a function that returns the modified plot")
-		}).SetMethodDescription("function", "The given function gets the amplitude plot and must return the modified amplitude plot."),
-		"phaseModify": value.MethodAtType(1, func(bode BodePlotValue, st funcGen.Stack[value.Value]) (value.Value, error) {
-			if cl, ok := st.Get(1).(value.Closure); ok {
-				a, err := cl.Eval(st, grParser.NewPlotValue(bode.Value.phase))
-				if err != nil {
-					return nil, err
-				}
-				if phasePlot, ok := a.(grParser.PlotValue); ok {
-					bode.Value.phase = phasePlot.Value
-					return bode, nil
-				}
-			}
-			return nil, errors.New("phaseModify requires a function that returns the modified plot")
-		}).SetMethodDescription("function", "The given function gets the phase plot and must return the modified phase plot."),
-		"amplitude": value.MethodAtType(0, func(bode BodePlotValue, st funcGen.Stack[value.Value]) (value.Value, error) {
-			return grParser.NewPlotValue(bode.Value.amplitude), nil
-		}).SetMethodDescription("Returns the amplitude plot."),
-		"phase": value.MethodAtType(0, func(bode BodePlotValue, st funcGen.Stack[value.Value]) (value.Value, error) {
-			return grParser.NewPlotValue(bode.Value.phase), nil
-		}).SetMethodDescription("Returns the phase plot."),
-		"title": value.MethodAtType(1, func(bode BodePlotValue, st funcGen.Stack[value.Value]) (value.Value, error) {
-			if name, ok := st.Get(1).(value.String); ok {
-				bode.Value = bode.Value.ModifyAmplitude(func(ampl *graph.Plot) {
-					ampl.Title = string(name)
-				})
-				return bode, nil
-			}
-			return nil, fmt.Errorf("title requires a string value")
-		}).SetMethodDescription("str", "Sets the given title to the amplitude plot."),
-		"LaTeX": value.MethodAtType(0, func(bode BodePlotValue, st funcGen.Stack[value.Value]) (value.Value, error) {
-			bode.Value.ToLaTeX()
-			bode.context.TextSize = grParser.LaTeXTextSize
-			return bode, nil
-		}).SetMethodDescription(fmt.Sprintf("Replaces labels with LaTeX code and sets the text size to %d.", grParser.LaTeXTextSize)),
-		"addSliderTo": value.MethodAtType(1, func(bode BodePlotValue, st funcGen.Stack[value.Value]) (value.Value, error) {
-			if gui, ok := st.Get(1).(*GuiElements); ok {
-				centerVal := gui.newSlider("\u03C9₀", 0, -2, 4)
-				widthVal := gui.newSlider("\u03C9ᵥ", 2, 0.1, 5)
-
-				if center, ok := centerVal.ToFloat(); ok {
-					if width, ok := widthVal.ToFloat(); ok {
-						center = math.Pow(10, center)
-						width = math.Pow(10, width)
-						b := graph.NewBounds(center/width, center*width)
-						bode.Value = bode.Value.ModifyBoth(func(a, p *graph.Plot) {
-							a.X.Bounds = b
-							p.X.Bounds = b
-						})
-						return bode, nil
-					}
-				}
-				return nil, fmt.Errorf("failed to create sliders")
-			}
-			return nil, fmt.Errorf("addTo requires a gui element as argument")
-		}).SetMethodDescription("gui", "Adds gui elements to the bode-plot to zoom and pan. "+
-			"The return value of the method is the bode-plot with the ω-axis bounds set to the current slider positions."),
-	}
-}
-
-func bodePlotValueToImage(bode BodePlotValue) graph.Image {
-	b := bode.Value
-	b.phase.FillBackground = true
-	b.amplitude.FillBackground = true
-	return b
-}
-
 func floatMethods() value.MethodMap {
 	return value.MethodMap{
 		"unitPrefix": value.MethodAtType(0, func(f value.Float, st funcGen.Stack[value.Value]) (value.Value, error) {
@@ -1397,6 +1188,23 @@ func (ch closureHandler) ToClosure(v value.Value) (funcGen.Function[value.Value]
 	}
 }
 
+type bodeAdder struct {
+	plot grParser.PlotValue
+}
+
+func (b bodeAdder) Add(val value.Value) error {
+	if pv, ok := val.(grParser.PlotContentValue); ok {
+		return b.plot.Add(pv)
+	}
+	if bpv, ok := val.(BodePlotContentValue); ok {
+		bp := bpv.Value
+		b.plot.Value.AddContent(bodeAmplitude{&bp})
+		b.plot.Value.AddContentToY2(bodePhase{&bp})
+		return nil
+	}
+	return errors.New("not a valid plot content")
+}
+
 var Parser = value.New().
 	Modify(func(fg *value.FunctionGenerator) {
 		ComplexValueType = fg.RegisterType("complex")
@@ -1404,7 +1212,6 @@ var Parser = value.New().
 		LinearValueType = fg.RegisterType("linearSystem")
 		BlockFactoryValueType = fg.RegisterType("block")
 		TwoPortValueType = fg.RegisterType("twoPort")
-		BodeValueType = fg.RegisterType("bodePlot")
 		BodePlotContentValueType = fg.RegisterType("bodePlotContent")
 		GuiElementsType = fg.RegisterType("gui")
 
@@ -1426,7 +1233,6 @@ var Parser = value.New().
 	RegisterMethods(value.FloatTypeId, floatMethods()).
 	RegisterMethods(value.IntTypeId, intMethods()).
 	RegisterMethods(value.ListTypeId, listMethods()).
-	RegisterMethods(BodeValueType, bodeMethods()).
 	RegisterMethods(BodePlotContentValueType, bodePlotContentMethods()).
 	RegisterMethods(ComplexValueType, cmplxMethods()).
 	RegisterMethods(TwoPortValueType, twoPortMethods()).
@@ -1663,13 +1469,12 @@ var Parser = value.New().
 						np := grParser.NewPlotValue(&graph.Plot{})
 						add = np
 						res = np
+					case BodePlotContentValue:
+						np := grParser.NewPlotValue(NewBode(0.01, 100))
+						add = bodeAdder{np}
+						res = np
 					case grParser.Plot3dContentValue:
 						np := grParser.NewPlot3dValue(graph.NewPlot3d())
-						add = np
-						res = np
-					case BodePlotContentValue:
-						b := NewBode(0.01, 100)
-						np := BodePlotValue{Holder: grParser.Holder[BodePlot]{Value: b}, context: graph.DefaultContext}
 						add = np
 						res = np
 					default:

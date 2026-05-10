@@ -1104,8 +1104,8 @@ func (l *Linear) CreateBodeContent(style *graph.Style, title string, steps int) 
 	}
 }
 
-func NewBode(wMin, wMax float64) BodePlot {
-	amplitude := &graph.Plot{
+func NewBode(wMin, wMax float64) *graph.Plot {
+	return &graph.Plot{
 		X: graph.AxisDescription{
 			Bounds:  graph.NewBounds(wMin, wMax),
 			Factory: graph.LogAxis,
@@ -1115,38 +1115,14 @@ func NewBode(wMin, wMax float64) BodePlot {
 			Factory: graph.DBAxis,
 			Label:   "Amplitude",
 		},
-		Grid:          grParser.GridStyle,
-		ProtectLabels: true,
-	}
-	phase := &graph.Plot{
-		X: graph.AxisDescription{
-			Bounds:  graph.NewBounds(wMin, wMax),
-			Factory: graph.LogAxis,
-			Label:   "ω [rad/s]",
-		},
-		Y: graph.AxisDescription{
+		Y2: graph.AxisDescription{
 			Factory: graph.CreateFixedStepAxis(45, 15),
 			Label:   "Phase [°]",
 		},
-		Grid:          grParser.GridStyle,
-		ProtectLabels: true,
+		Grid:           grParser.GridStyle,
+		PlotY2AtBottom: true,
+		ProtectLabels:  true,
 	}
-
-	b := BodePlot{
-		amplitude: amplitude,
-		phase:     phase,
-	}
-	return b
-}
-
-func (b BodePlot) Add(bpc BodePlotContent) {
-	b.amplitude.AddContent(bodeAmplitude{&bpc})
-	b.phase.AddContent(bodePhase{&bpc})
-}
-
-func (b BodePlot) ToLaTeX() {
-	b.amplitude.X.Label = "$\\omega$ [rad/s]"
-	b.phase.X.Label = "$\\omega$ [rad/s]"
 }
 
 func (bpc *BodePlotContent) generateExp(wMin, wMax, exp float64) {

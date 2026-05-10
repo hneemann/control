@@ -375,6 +375,14 @@ func (p PlotValue) AddToY2(pc value.Value) error {
 	return errors.New("value is not a plot content")
 }
 
+func (p PlotValue) AddAtTopToY2(pc value.Value) error {
+	if c, ok := pc.(PlotContentValue); ok {
+		p.Holder.Value.AddContentAtTopToY2(c.Value)
+		return nil
+	}
+	return errors.New("value is not a plot content")
+}
+
 func createStyleMethods() value.MethodMap {
 	return value.MethodMap{
 		"dash": value.MethodAtType(6, func(styleValue StyleValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
@@ -624,7 +632,20 @@ func createPlotMethods() value.MethodMap {
 				}
 			}
 			return plot, nil
-		}).SetMethodDescription("plotContent", "Adds a plot content to the plot."),
+		}).SetMethodDescription("plotContent", "Adds a plot content to the plot. The secondary axis is used to plot the content."),
+		"addAtTopToY2": value.MethodAtType(-1, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			plot = plot.Copy()
+			for v, err := range value.FlattenStack(stack, 1) {
+				if err != nil {
+					return nil, err
+				}
+				err = plot.AddAtTopToY2(v)
+				if err != nil {
+					return nil, err
+				}
+			}
+			return plot, nil
+		}).SetMethodDescription("plotContent", "Adds a plot content to the plot at the top. The secondary axis is used to plot the content."),
 		"title": value.MethodAtType(1, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if str, ok := stack.Get(1).(value.String); ok {
 				plot = plot.Copy()
@@ -691,6 +712,11 @@ func createPlotMethods() value.MethodMap {
 			plot.Value.Cross = true
 			return plot, nil
 		}).SetMethodDescription("Draws a coordinate cross instead of a rectangle around the plot."),
+		"stack": value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			plot = plot.Copy()
+			plot.Value.PlotY2AtBottom = true
+			return plot, nil
+		}).SetMethodDescription("If both y-axis are used, two stacked plots are created instead of using the left and right border for an axis."),
 		"ySquare": value.MethodAtType(1, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			plot = plot.Copy()
 			plot.Value.Square = true
