@@ -276,9 +276,9 @@ plot(
   g0.bode(black, sprintf("G#0, #Phi#r=%.1f°, #omega#s=%.2f rad/s",
                          pm.pMargin, pm.w0) ),
   xConst(pm.w0, lineColor),
-  xConst(pm.w0, lineColor).secondary(),
-  yConst(-180+50, lineColor).secondary(),
-  yConst(-180+70, lineColor).secondary(),
+  xConst(pm.w0, lineColor).toSecY(),
+  yConst(-180+50, lineColor).toSecY(),
+  yConst(-180+70, lineColor).toSecY(),
 )
 `, file: "z.html"},
 		// If modified, also modify the README.md
@@ -289,7 +289,7 @@ let mp = g.derivative().zeros();
 
 plot(
   mp.graph(r->r.real(), r->r.imag())
-    .mark(2, red.stroke(2))
+    .points(2, red.stroke(2))
     .title("Merge Points"),
   g.evans(150),
 ).xBounds(-4.5, 0.2)

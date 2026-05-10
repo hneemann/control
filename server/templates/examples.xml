@@ -22,8 +22,8 @@ plot(
 ];
 
 plot(
-  data.graph(p->p.x, p->p.a).mark(1,blue) .line(blue.dash(7,7),"a"),
-  data.graph(p->p.x, p->p.b).mark(2,green).line(green.dash(7,7),"b"),
+  data.graph(p->p.x, p->p.a).points(1,blue) .line(blue.dash(7,7),"a"),
+  data.graph(p->p.x, p->p.b).points(2,green).line(green.dash(7,7),"b"),
 ).legendPos(0.2,15)</example>
     <example name="Graph" desc="Funktionsplot"
              name-en="Graph" desc-en="Function plot">plot(

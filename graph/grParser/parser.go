@@ -245,7 +245,7 @@ func createPlot3dContentMethods() value.MethodMap {
 				return nil, fmt.Errorf("point type can only be set for plot contents that support points")
 			}
 		}).SetMethodDescription("type", "color", "size", "Sets the point type.").VarArgsMethod(1, 3),
-	}.Alias("points", "mark")
+	}
 }
 
 func valueToMarker(val value.Value, size float64) (graph.Shape, error) {
@@ -973,11 +973,11 @@ func createPlotContentMethods() value.MethodMap {
 			}
 			return PlotContentValue{Holder[graph.PlotContent]{pc}, plot.SecondaryAxis}, nil
 		}).SetMethodDescription("Closes a path."),
-		"secondary": value.MethodAtType(0, func(plot PlotContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+		"toSecY": value.MethodAtType(0, func(plot PlotContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			pc := plot.Value
 			return PlotContentValue{Holder[graph.PlotContent]{pc}, true}, nil
-		}).SetMethodDescription("Closes a path."),
-	}.Alias("points", "mark")
+		}).SetMethodDescription("The plot content is assigned to the secondary y-axis."),
+	}
 }
 
 type PlotContentValue struct {
