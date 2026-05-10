@@ -1073,12 +1073,12 @@ func NewBode(wMin, wMax float64) *graph.Plot {
 			Factory: graph.DBAxis,
 			Label:   "Amplitude",
 		},
-		Y2: graph.AxisDescription{
+		YSec: graph.AxisDescription{
 			Factory: graph.CreateFixedStepAxis(45, 15),
 			Label:   "Phase [°]",
 		},
 		Grid:           grParser.GridStyle,
-		PlotY2AtBottom: true,
+		StackBothYAxis: true,
 		ProtectLabels:  true,
 	}
 }
@@ -1186,10 +1186,14 @@ func (b bodePhase) DependantBounds(xGiven, _ graph.Bounds) (x, y graph.Bounds, e
 }
 
 func (b bodePhase) DrawTo(env *graph.PlotContentEnvironment) error {
+	style := b.bodeContent.Style
+	if !env.Plot.StackBothYAxis {
+		style = style.SetDash(5, 5)
+	}
 	r := env.Canvas.Rect()
 	b.bodeContent.generate(r.Min.X, r.Max.X)
 	path := graph.PointsFromSlice(b.bodeContent.phase...)
-	return env.Canvas.DrawPath(r.IntersectPath(path), b.bodeContent.Style)
+	return env.Canvas.DrawPath(r.IntersectPath(path), style)
 }
 
 func (b bodePhase) Legend() graph.Legend {

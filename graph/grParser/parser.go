@@ -621,17 +621,24 @@ func createPlotMethods() value.MethodMap {
 			}
 			return plot, nil
 		}).SetMethodDescription("title", "Sets the title."),
-		"labels": value.MethodAtType(2, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+		"labels": value.MethodAtType(3, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if xStr, ok := stack.Get(1).(value.String); ok {
 				if yStr, ok := stack.Get(2).(value.String); ok {
 					plot = plot.Copy()
 					plot.Value.X.Label = string(xStr)
 					plot.Value.Y.Label = string(yStr)
-					return plot, nil
+					if stack.Size() == 4 {
+						if ySecStr, ok := stack.Get(3).(value.String); ok {
+							plot.Value.YSec.Label = string(ySecStr)
+							return plot, nil
+						}
+					} else {
+						return plot, nil
+					}
 				}
 			}
-			return nil, fmt.Errorf("xLabel requires a string")
-		}).SetMethodDescription("xLabel", "yLabel", "Sets the axis labels."),
+			return nil, fmt.Errorf("labels requires string values")
+		}).SetMethodDescription("xLabel", "yLabel", "ySecLabel", "Sets the axis labels.").VarArgsMethod(2, 3),
 		"protectLabels": value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			plot = plot.Copy()
 			plot.Value.ProtectLabels = true
@@ -678,11 +685,15 @@ func createPlotMethods() value.MethodMap {
 			plot.Value.Cross = true
 			return plot, nil
 		}).SetMethodDescription("Draws a coordinate cross instead of a rectangle around the plot."),
-		"stack": value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
-			plot = plot.Copy()
-			plot.Value.PlotY2AtBottom = true
-			return plot, nil
-		}).SetMethodDescription("If both y-axis are used, two stacked plots are created instead of using the left and right border for an axis."),
+		"stack": value.MethodAtType(1, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			if sta, ok := stack.GetOptional(1, value.Bool(true)).(value.Bool); ok {
+				plot = plot.Copy()
+				plot.Value.StackBothYAxis = bool(sta)
+				return plot, nil
+			} else {
+				return nil, errors.New("stack requires a bool value")
+			}
+		}).SetMethodDescription("stacking", "If set to true and both y-axis are used, two stacked plots are created instead of using the left and right border for an axis.").VarArgsMethod(0, 1),
 		"ySquare": value.MethodAtType(1, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			plot = plot.Copy()
 			plot.Value.Square = true
@@ -769,7 +780,7 @@ func createPlotMethods() value.MethodMap {
 	}
 	addAxisMethods("x", func(plot *graph.Plot) *graph.AxisDescription { return &plot.X }, mm)
 	addAxisMethods("y", func(plot *graph.Plot) *graph.AxisDescription { return &plot.Y }, mm)
-	addAxisMethods("y2", func(plot *graph.Plot) *graph.AxisDescription { return &plot.Y2 }, mm)
+	addAxisMethods("ySec", func(plot *graph.Plot) *graph.AxisDescription { return &plot.YSec }, mm)
 	return mm
 }
 

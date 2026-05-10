@@ -98,7 +98,7 @@ const (
 )
 
 type Plot struct {
-	X, Y, Y2       AxisDescription
+	X, Y, YSec     AxisDescription
 	Square         bool
 	SquareYCenter  float64
 	LeftBorder     float64
@@ -110,8 +110,8 @@ type Plot struct {
 	Title          string
 	ProtectLabels  bool
 	Content        []PlotContent
-	ContentY2      []PlotContent
-	PlotY2AtBottom bool
+	ContentYSec    []PlotContent
+	StackBothYAxis bool
 	FillBackground bool
 	BoundsModifier BoundsModifier
 	HideLegend     bool
@@ -140,14 +140,14 @@ func (p *Plot) DrawTo(canvas Canvas) error {
 
 func (p *Plot) DrawToAsInset(canvas Canvas, fillBackground bool) (err error, env *PlotContentEnvironment) {
 	defer nErr.CatchErr(&err)
-	if p.PlotY2AtBottom && len(p.ContentY2) > 0 {
+	if p.StackBothYAxis && len(p.ContentYSec) > 0 {
 		upper := *p
-		upper.ContentY2 = nil
+		upper.ContentYSec = nil
 
 		lower := *p
-		lower.Content = lower.ContentY2
-		lower.Y = lower.Y2
-		lower.ContentY2 = nil
+		lower.Content = lower.ContentYSec
+		lower.Y = lower.YSec
+		lower.ContentYSec = nil
 
 		err := SplitHorizontal{&upper, &lower}.DrawTo(canvas)
 		return err, nil
@@ -162,15 +162,15 @@ func (p *Plot) drawToInner(canvas Canvas, fillBackground bool) (error, *PlotCont
 	yTextStyle := textStyle
 	y2TextStyle := textStyle
 
-	if len(p.ContentY2) > 0 {
-		if len(p.ContentY2) == 1 {
-			y2TextStyle = p.ContentY2[0].Legend().GetStyle().Text()
+	if len(p.ContentYSec) > 0 {
+		if len(p.ContentYSec) == 1 {
+			y2TextStyle = p.ContentYSec[0].Legend().GetStyle().Text()
 		}
 		if len(p.Content) == 1 {
 			yTextStyle = p.Content[0].Legend().GetStyle().Text()
 		}
 	} else {
-		p.Y2.HideAxis = true
+		p.YSec.HideAxis = true
 	}
 
 	textSize := c.TextSize
@@ -185,7 +185,7 @@ func (p *Plot) drawToInner(canvas Canvas, fillBackground bool) (error, *PlotCont
 		nErr.Try(canvas.DrawPath(rect.Path(), White.SetStrokeWidth(0).SetFill(White)))
 	}
 
-	xBoundsPre, yBoundsPre, y2BoundsPre, err := p.calcBounds()
+	xBoundsPre, yBoundsPre, ySecBoundsPre, err := p.calcBounds()
 	if err != nil {
 		return fmt.Errorf("error calculating plot bounds: %w", err), nil
 	}
@@ -194,7 +194,7 @@ func (p *Plot) drawToInner(canvas Canvas, fillBackground bool) (error, *PlotCont
 		xBoundsPre, yBoundsPre = p.BoundsModifier(xBoundsPre, yBoundsPre, p, canvas)
 	}
 
-	cross := p.Cross && xBoundsPre.Min <= 0 && xBoundsPre.Max >= 0 && yBoundsPre.Min <= 0 && yBoundsPre.Max >= 0 && len(p.ContentY2) == 0
+	cross := p.Cross && xBoundsPre.Min <= 0 && xBoundsPre.Max >= 0 && yBoundsPre.Min <= 0 && yBoundsPre.Max >= 0 && len(p.ContentYSec) == 0
 
 	large := textSize / 2
 	small := textSize / 4
@@ -238,16 +238,16 @@ func (p *Plot) drawToInner(canvas Canvas, fillBackground bool) (error, *PlotCont
 		} else {
 			yExp = 0.02
 		}
-		if p.ProtectLabels && yAutoScale && !cross && (p.X.Label != "" || p.Y.Label != "" || p.Y2.Label != "" || p.Title != "") {
+		if p.ProtectLabels && yAutoScale && !cross && (p.X.Label != "" || p.Y.Label != "" || p.YSec.Label != "" || p.Title != "") {
 			yExp = 1.8 * textSize / innerRect.Height()
 		}
 	}
-	y2Exp := 0.0
-	if !p.Y2.NoExpand {
-		yAutoScale := !p.Y2.Bounds.isSet
-		y2Exp = 0.02
-		if p.ProtectLabels && yAutoScale && !cross && (p.X.Label != "" || p.Y.Label != "" || p.Y2.Label != "" || p.Title != "") {
-			y2Exp = 1.8 * textSize / innerRect.Height()
+	ySecExp := 0.0
+	if !p.YSec.NoExpand {
+		yAutoScale := !p.YSec.Bounds.isSet
+		ySecExp = 0.02
+		if p.ProtectLabels && yAutoScale && !cross && (p.X.Label != "" || p.Y.Label != "" || p.YSec.Label != "" || p.Title != "") {
+			ySecExp = 1.8 * textSize / innerRect.Height()
 		}
 	}
 
@@ -264,10 +264,10 @@ func (p *Plot) drawToInner(canvas Canvas, fillBackground bool) (error, *PlotCont
 			return width > textSize*(1+yTickSep)
 		}, yExp)
 
-	y2Axis := p.Y2.GetFactory()(innerRect.Min.Y, innerRect.Max.Y, y2BoundsPre,
+	ySecAxis := p.YSec.GetFactory()(innerRect.Min.Y, innerRect.Max.Y, ySecBoundsPre,
 		func(width float64, _ int) bool {
 			return width > textSize*(1+yTickSep)
-		}, y2Exp)
+		}, ySecExp)
 
 	if p.Square && (!xAxis.IsLinear || !yAxis.IsLinear) {
 		return fmt.Errorf("square plots are only possible if both axis are linear"), nil
@@ -339,11 +339,11 @@ func (p *Plot) drawToInner(canvas Canvas, fillBackground bool) (error, *PlotCont
 		}
 	}
 
-	if !p.Y2.HideAxis {
+	if !p.YSec.HideAxis {
 		orient := Left | VCenter
 		xp := innerRect.Max.X
-		for _, tick := range y2Axis.Ticks {
-			yp := y2Axis.Trans(tick.Position)
+		for _, tick := range ySecAxis.Ticks {
+			yp := ySecAxis.Trans(tick.Position)
 			if tick.Label == "" {
 				nErr.Try(canvas.DrawPath(PointsFromSlice(Point{xp + small, yp}, Point{xp, yp}), thinLine))
 			} else {
@@ -393,28 +393,28 @@ func (p *Plot) drawToInner(canvas Canvas, fillBackground bool) (error, *PlotCont
 			legends = append(legends, l)
 		}
 	}
-	if len(p.ContentY2) > 0 {
-		transY2 := func(point Point) Point {
-			return Point{xAxis.Trans(point.X), y2Axis.Trans(point.Y)}
+	if len(p.ContentYSec) > 0 {
+		transYSec := func(point Point) Point {
+			return Point{xAxis.Trans(point.X), ySecAxis.Trans(point.Y)}
 		}
-		envY2 := PlotContentEnvironment{
+		envYSec := PlotContentEnvironment{
 			Plot:         p,
 			ParentCanvas: canvas,
 			InnerRect:    innerRect,
-			Transform:    transY2,
+			Transform:    transYSec,
 			Canvas: TransformCanvas{
-				transform: transY2,
+				transform: transYSec,
 				parent:    canvas,
 				size: Rect{
-					Min: Point{xAxis.Bounds.Min, y2Axis.Bounds.Min},
-					Max: Point{xAxis.Bounds.Max, y2Axis.Bounds.Max},
+					Min: Point{xAxis.Bounds.Min, ySecAxis.Bounds.Min},
+					Max: Point{xAxis.Bounds.Max, ySecAxis.Bounds.Max},
 				},
 			},
 			XAxis: &xAxis,
-			YAxis: &y2Axis,
+			YAxis: &ySecAxis,
 		}
-		for _, plotContent := range slices.Backward(p.ContentY2) {
-			nErr.Try(plotContent.DrawTo(&envY2))
+		for _, plotContent := range slices.Backward(p.ContentYSec) {
+			nErr.Try(plotContent.DrawTo(&envYSec))
 			l := plotContent.Legend()
 			if l.Name != "" && !p.HideLegend {
 				legends = append(legends, l)
@@ -436,14 +436,14 @@ func (p *Plot) drawToInner(canvas Canvas, fillBackground bool) (error, *PlotCont
 		}
 		canvas.DrawText(Point{xp + small, innerRect.Max.Y - small}, lab, Top|Left, yTextStyle, textSize)
 	}
-	if !p.Y2.HideAxis {
-		if lab := y2Axis.LabelFormat(p.Y2.Label); lab != "" {
+	if !p.YSec.HideAxis {
+		if lab := ySecAxis.LabelFormat(p.YSec.Label); lab != "" {
 			xp := innerRect.Max.X
 			canvas.DrawText(Point{xp - small, innerRect.Max.Y - small}, lab, Top|Right, y2TextStyle, textSize)
 		}
 	}
 	if p.Title != "" {
-		if p.Y2.HideAxis {
+		if p.YSec.HideAxis {
 			canvas.DrawText(Point{innerRect.Max.X - small, innerRect.Max.Y - small}, p.Title, Top|Right, textStyle, textSize)
 		} else {
 			canvas.DrawText(Point{(innerRect.Max.X + innerRect.Min.X) / 2, innerRect.Max.Y - small}, p.Title, Top|HCenter, textStyle, textSize)
@@ -501,12 +501,12 @@ func (p *Plot) drawToInner(canvas Canvas, fillBackground bool) (error, *PlotCont
 func (p *Plot) calcBounds() (Bounds, Bounds, Bounds, error) {
 	xBounds := p.X.Bounds
 	yBounds := p.Y.Bounds
-	y2Bounds := p.Y2.Bounds
+	ySecBounds := p.YSec.Bounds
 
 	if !(xBounds.isSet && yBounds.isSet) {
 		mergeX := !xBounds.isSet
 		mergeY := !yBounds.isSet
-		mergeY2 := !y2Bounds.isSet
+		mergeYSec := !ySecBounds.isSet
 		for _, plotContent := range p.Content {
 			x, y, err := plotContent.Bounds()
 			if err != nil {
@@ -519,7 +519,7 @@ func (p *Plot) calcBounds() (Bounds, Bounds, Bounds, error) {
 				yBounds.MergeBounds(y)
 			}
 		}
-		for _, plotContent := range p.ContentY2 {
+		for _, plotContent := range p.ContentYSec {
 			x, y, err := plotContent.Bounds()
 			if err != nil {
 				return Bounds{}, Bounds{}, Bounds{}, err
@@ -527,8 +527,8 @@ func (p *Plot) calcBounds() (Bounds, Bounds, Bounds, error) {
 			if mergeX {
 				xBounds.MergeBounds(x)
 			}
-			if mergeY2 {
-				y2Bounds.MergeBounds(y)
+			if mergeYSec {
+				ySecBounds.MergeBounds(y)
 			}
 		}
 		{
@@ -550,7 +550,7 @@ func (p *Plot) calcBounds() (Bounds, Bounds, Bounds, error) {
 		}
 		{
 			var xPrefBounds, yPrefBounds Bounds
-			for _, plotContent := range p.ContentY2 {
+			for _, plotContent := range p.ContentYSec {
 				x, y, err := plotContent.DependantBounds(xBounds, yBounds)
 				if err != nil {
 					return Bounds{}, Bounds{}, Bounds{}, err
@@ -561,13 +561,13 @@ func (p *Plot) calcBounds() (Bounds, Bounds, Bounds, error) {
 			if mergeX {
 				xBounds.MergeBounds(xPrefBounds)
 			}
-			if mergeY2 {
-				y2Bounds.MergeBounds(yPrefBounds)
+			if mergeYSec {
+				ySecBounds.MergeBounds(yPrefBounds)
 			}
 		}
 	}
 
-	return xBounds, yBounds, y2Bounds, nil
+	return xBounds, yBounds, ySecBounds, nil
 }
 
 func (p *Plot) calculateInnerRect(rect Rect, textSize float64) Rect {
@@ -588,7 +588,7 @@ func (p *Plot) calculateInnerRect(rect Rect, textSize float64) Rect {
 	}
 	rb := p.RightBorder
 	if rb <= 0 {
-		if p.Y2.HideAxis {
+		if p.YSec.HideAxis {
 			if p.X.NoExpand {
 				rb = 1
 			} else {
@@ -652,11 +652,11 @@ func (p *Plot) AddContentAtTop(content PlotContent) {
 }
 
 func (p *Plot) AddContentToY2(content PlotContent) {
-	p.ContentY2 = append(p.ContentY2, content)
+	p.ContentYSec = append(p.ContentYSec, content)
 }
 
 func (p *Plot) AddContentAtTopToY2(content PlotContent) {
-	p.ContentY2 = append([]PlotContent{content}, p.ContentY2...)
+	p.ContentYSec = append([]PlotContent{content}, p.ContentYSec...)
 }
 
 func (p *Plot) SetLegendPosition(pos Point, rel bool) {
