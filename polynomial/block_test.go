@@ -33,7 +33,7 @@ func TestSimple(t *testing.T) {
 			Points:         data.toPoints(0, n+1),
 			ShapeLineStyle: graph.ShapeLineStyle{LineStyle: style},
 			Title:          name,
-		})
+		}, false)
 		n++
 	}
 

@@ -164,6 +164,10 @@ type contentHolder struct {
 	secondary bool
 }
 
+func (h contentHolder) String() string {
+	return fmt.Sprint(h.content)
+}
+
 type PlotContentEnvironment struct {
 	Plot         *Plot
 	ParentCanvas Canvas
