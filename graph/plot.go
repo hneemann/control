@@ -457,9 +457,7 @@ func (p *Plot) drawToInner(canvas Canvas, fillBackground bool) (error, *PlotCont
 	var legends []Legend
 	for _, holder := range slices.Backward(p.Content) {
 		if holder.secondary {
-			if envYSec != nil {
-				nErr.Try(holder.content.DrawTo(envYSec))
-			}
+			nErr.Try(holder.content.DrawTo(envYSec))
 		} else {
 			nErr.Try(holder.content.DrawTo(env))
 		}

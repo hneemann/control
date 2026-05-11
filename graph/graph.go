@@ -349,6 +349,12 @@ type Image interface {
 	DrawTo(canvas Canvas) error
 }
 
+type ImageFunc func(canvas Canvas) error
+
+func (i ImageFunc) DrawTo(canvas Canvas) error {
+	return i(canvas)
+}
+
 type Canvas interface {
 	DrawPath(Path, *Style) error
 	DrawTriangle(Point, Point, Point, *Style) error
