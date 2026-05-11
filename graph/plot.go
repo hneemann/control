@@ -169,10 +169,10 @@ func (h contentHolder) String() string {
 }
 
 type PlotContentEnvironment struct {
-	Plot         *Plot
-	ParentCanvas Canvas
-	InnerRect    Rect
 	Canvas       Canvas
+	ParentCanvas Canvas
+	Plot         *Plot
+	InnerRect    Rect
 	Transform    Transform
 	XAxis        *Axis
 	YAxis        *Axis
@@ -762,8 +762,9 @@ type PlotContent interface {
 	// A function y=f(x), for example, has certain y bounds if the x bounds
 	// are given.
 	DependantBounds(xGiven, yGiven Bounds) (x, y Bounds, err error)
-	// DrawTo draws the content to the given Canvas.
-	// The *Plot is passed to allow the content to access the plot's properties.
+	// DrawTo draws the content.
+	// The *PlotContentEnvironment is passed to allow the content to access the
+	// plot's properties, including the Canvas.
 	DrawTo(*PlotContentEnvironment) error
 	// Legend returns the legend of this Content
 	Legend() Legend
@@ -1694,7 +1695,7 @@ func (h Heat) DrawTo(env *PlotContentEnvironment) error {
 		steps = 400
 	}
 
-	im := img.NewRGBA(img.Rectangle{img.Point{0, 0}, img.Point{steps, steps}})
+	im := img.NewRGBA(img.Rectangle{Min: img.Point{}, Max: img.Point{X: steps, Y: steps}})
 
 	r := env.InnerRect
 	mul := float64(len(h.Colors)-1) / h.ZBounds.Width()
