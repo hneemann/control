@@ -551,7 +551,7 @@ func (p *Plot) calcBounds() (Bounds, Bounds, Bounds, error) {
 		{
 			var xPrefBounds, yPrefBounds Bounds
 			for _, plotContent := range p.ContentYSec {
-				x, y, err := plotContent.DependantBounds(xBounds, yBounds)
+				x, y, err := plotContent.DependantBounds(xBounds, ySecBounds)
 				if err != nil {
 					return Bounds{}, Bounds{}, Bounds{}, err
 				}
