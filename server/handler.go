@@ -1,6 +1,8 @@
 package server
 
 import (
+	"bytes"
+	"compress/zlib"
 	"embed"
 	"encoding/base64"
 	"encoding/xml"
@@ -14,6 +16,7 @@ import (
 	"github.com/hneemann/session"
 	"html"
 	"html/template"
+	"io"
 	"log"
 	"net/http"
 	"runtime/debug"
@@ -83,9 +86,21 @@ func CreateMain(examples []Example) http.HandlerFunc {
 		if b64Source != "" {
 			b, err := base64.URLEncoding.WithPadding(-1).DecodeString(b64Source)
 			if err != nil {
-				log.Println("error decoding code:", err)
+				log.Println("error decoding code from base64:", err)
 			} else {
-				code = string(b)
+				byteReader := bytes.NewReader(b)
+				zlibReader, err := zlib.NewReader(byteReader)
+				defer zlibReader.Close()
+				if err == nil {
+					out, err := io.ReadAll(zlibReader)
+					if err == nil {
+						code = string(out)
+					} else {
+						log.Println("error deflate code:", err)
+					}
+				} else {
+					log.Println("error reading zlib header of code:", err)
+				}
 			}
 		}
 

@@ -143,18 +143,27 @@ function loadExample(name) {
     });
 }
 
-function bytesToBase64(bytes) {
-    const binString = Array.from(bytes, (byte) =>
-        String.fromCodePoint(byte),
-    ).join("");
-    return btoa(binString).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+async function compressAndEncode(text) {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(text);
+
+    const cs = new CompressionStream('deflate');
+    const writer = cs.writable.getWriter();
+    writer.write(data);
+    writer.close();
+
+    const compressedBuffer = await new Response(cs.readable).arrayBuffer();
+
+    return btoa(String.fromCharCode(...new Uint8Array(compressedBuffer))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
 }
 
 function sourceLink() {
     hidePopUp();
     let source = document.getElementById('source').value;
-    let b64 = bytesToBase64(new TextEncoder().encode(source))
-    window.open("/?c=" + b64, "_blank");
+
+    compressAndEncode(source)
+        .then(base64 =>  window.open("/?c=" + base64, "_blank"))
+        .catch(err => console.error(err));
 }
 
 
