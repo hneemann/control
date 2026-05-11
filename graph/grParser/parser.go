@@ -353,11 +353,7 @@ func (p PlotValue) GetType() value.Type {
 
 func (p PlotValue) Add(pc value.Value) error {
 	if c, ok := pc.(PlotContentValue); ok {
-		if c.SecondaryAxis {
-			p.Holder.Value.AddContentToY2(c.Value)
-		} else {
-			p.Holder.Value.AddContent(c.Value)
-		}
+		p.Holder.Value.AddContent(c.Value, c.SecondaryAxis)
 		return nil
 	}
 	return errors.New("value is not a plot content")
@@ -365,11 +361,7 @@ func (p PlotValue) Add(pc value.Value) error {
 
 func (p PlotValue) AddAtTop(pc value.Value) error {
 	if c, ok := pc.(PlotContentValue); ok {
-		if c.SecondaryAxis {
-			p.Holder.Value.AddContentAtTopToY2(c.Value)
-		} else {
-			p.Holder.Value.AddContentAtTop(c.Value)
-		}
+		p.Holder.Value.AddContentAtTop(c.Value, c.SecondaryAxis)
 		return nil
 	}
 	return errors.New("value is not a plot content")

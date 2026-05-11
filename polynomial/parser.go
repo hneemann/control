@@ -350,11 +350,11 @@ func bodePlotContentMethods() value.MethodMap {
 			}
 		}).SetMethodDescription("latency", "Adds a latency to the bode plot."),
 		"phase": value.MethodAtType(0, func(plot BodePlotContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
-			return grParser.PlotContentValue{grParser.Holder[graph.PlotContent]{bodePhase{plot.Value}}, false}, nil
+			return grParser.PlotContentValue{Holder: grParser.Holder[graph.PlotContent]{Value: bodePhase{plot.Value}}}, nil
 		}).SetMethodDescription("Returns the phase plot."),
 		"amplitude": value.MethodAtType(0, func(plot BodePlotContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
-			return grParser.PlotContentValue{grParser.Holder[graph.PlotContent]{bodeAmplitude{plot.Value}}, false}, nil
-		}).SetMethodDescription("Returns the phase plot."),
+			return grParser.PlotContentValue{Holder: grParser.Holder[graph.PlotContent]{Value: bodeAmplitude{plot.Value}}}, nil
+		}).SetMethodDescription("Returns the amplitude plot."),
 		"title": value.MethodAtType(1, func(plot BodePlotContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if leg, ok := stack.Get(1).(value.String); ok {
 				plot.Value.Title = string(leg)

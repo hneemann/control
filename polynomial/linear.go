@@ -1136,8 +1136,8 @@ func (bpc *BodePlotContent) generate(wMin, wMax float64) {
 }
 
 func (bpc *BodePlotContent) addTo(plot *graph.Plot) {
-	plot.AddContent(bodeAmplitude{bpc})
-	plot.AddContentToY2(bodePhase{bpc})
+	plot.AddContent(bodeAmplitude{bpc}, false)
+	plot.AddContent(bodePhase{bpc}, true)
 }
 
 // calculateCompletePhase calculates the complete phase including all phase rotations
