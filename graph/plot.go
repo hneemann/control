@@ -98,24 +98,26 @@ const (
 )
 
 type Plot struct {
-	X, Y, YSec     AxisDescription
-	Square         bool
-	SquareYCenter  float64
-	LeftBorder     float64
-	RightBorder    float64
-	NoBorder       bool
-	Cross          bool
-	Grid           *Style
-	Frame          *Style
-	Title          string
-	ProtectLabels  bool
-	Content        plotContent
-	StackBothYAxis bool
-	FillBackground bool
-	BoundsModifier BoundsModifier
-	HideLegend     bool
-	legendPosGiven PosMode
-	legendPos      Point
+	X, Y, YSec        AxisDescription
+	Square            bool
+	SquareYCenter     float64
+	LeftBorder        float64
+	RightBorder       float64
+	NoBorder          bool
+	Cross             bool
+	Grid              *Style
+	Frame             *Style
+	Title             string
+	ProtectLabels     bool
+	Content           plotContent
+	StackBothYAxis    bool
+	FillBackground    bool
+	BoundsModifier    BoundsModifier
+	HideLegend        bool
+	legendPosGiven    PosMode
+	legendPos         Point
+	legendPosGivenSec PosMode
+	legendPosSec      Point
 }
 
 type plotContent []contentHolder
@@ -129,7 +131,7 @@ func (pc plotContent) hasSecondary() bool {
 	return false
 }
 
-func (pc plotContent) extractSecondary(sec bool) plotContent {
+func (pc plotContent) getBySecType(sec bool) plotContent {
 	var c plotContent
 	for _, holder := range pc {
 		if holder.secondary == sec {
@@ -191,12 +193,14 @@ func (p *Plot) DrawToAsInset(canvas Canvas, fillBackground bool) (err error, env
 	defer nErr.CatchErr(&err)
 	if p.StackBothYAxis && p.Content.hasSecondary() {
 		upper := *p
-		upper.Content = p.Content.extractSecondary(false)
+		upper.Content = p.Content.getBySecType(false)
 
 		lower := *p
-		lower.Content = p.Content.extractSecondary(true)
+		lower.Content = p.Content.getBySecType(true)
 		lower.Title = ""
 		lower.Y = p.YSec
+		lower.legendPosGiven = p.legendPosGivenSec
+		lower.legendPos = p.legendPosSec
 
 		err := SplitHorizontal{&upper, &lower}.DrawTo(canvas)
 		return err, nil
@@ -211,11 +215,10 @@ func (p *Plot) drawToInner(canvas Canvas, fillBackground bool) (error, *PlotCont
 	yTextStyle := textStyle
 	ySecTextStyle := textStyle
 
-	if p.Content.hasSecondary() {
+	hasSecondary := p.Content.hasSecondary()
+	if hasSecondary {
 		yTextStyle = p.Content.singleStyle(textStyle, false)
 		ySecTextStyle = p.Content.singleStyle(textStyle, true)
-	} else {
-		p.YSec.HideAxis = true
 	}
 
 	textSize := c.TextSize
@@ -239,14 +242,14 @@ func (p *Plot) drawToInner(canvas Canvas, fillBackground bool) (error, *PlotCont
 		xBoundsPre, yBoundsPre = p.BoundsModifier(xBoundsPre, yBoundsPre, p, canvas)
 	}
 
-	cross := p.Cross && xBoundsPre.Min <= 0 && xBoundsPre.Max >= 0 && yBoundsPre.Min <= 0 && yBoundsPre.Max >= 0 && p.YSec.HideAxis
+	cross := p.Cross && xBoundsPre.Min <= 0 && xBoundsPre.Max >= 0 && yBoundsPre.Min <= 0 && yBoundsPre.Max >= 0 && !hasSecondary
 
 	large := textSize / 2
 	small := textSize / 4
 
 	thinLine := p.Frame.SetStrokeWidth(p.Frame.StrokeWidth / 2)
 
-	nonCrossInner := p.calculateInnerRect(rect, textSize)
+	nonCrossInner := p.calculateInnerRect(rect, textSize, hasSecondary)
 	innerRect := rect
 	if !cross {
 		innerRect = nonCrossInner
@@ -372,7 +375,7 @@ func (p *Plot) drawToInner(canvas Canvas, fillBackground bool) (error, *PlotCont
 		}
 	}
 
-	if !p.YSec.HideAxis {
+	if !p.YSec.HideAxis && hasSecondary {
 		orient := Left | VCenter
 		xp := innerRect.Max.X
 		for _, tick := range ySecAxis.Ticks {
@@ -429,7 +432,7 @@ func (p *Plot) drawToInner(canvas Canvas, fillBackground bool) (error, *PlotCont
 		YAxis: &yAxis,
 	}
 	var envYSec *PlotContentEnvironment
-	if !p.YSec.HideAxis {
+	if hasSecondary {
 		transYSec := func(point Point) Point {
 			return Point{xAxis.Trans(point.X), ySecAxis.Trans(point.Y)}
 		}
@@ -480,7 +483,7 @@ func (p *Plot) drawToInner(canvas Canvas, fillBackground bool) (error, *PlotCont
 		}
 		canvas.DrawText(Point{xp + small, innerRect.Max.Y - small}, lab, Top|Left, yTextStyle, textSize)
 	}
-	if !p.YSec.HideAxis {
+	if !p.YSec.HideAxis && hasSecondary {
 		if lab := ySecAxis.LabelFormat(p.YSec.Label); lab != "" {
 			xp := innerRect.Max.X
 			canvas.DrawText(Point{xp - small, innerRect.Max.Y - small}, lab, Top|Right, ySecTextStyle, textSize)
@@ -592,7 +595,7 @@ func (p *Plot) calcBounds() (Bounds, Bounds, Bounds, error) {
 	return xBounds, yBounds, ySecBounds, nil
 }
 
-func (p *Plot) calculateInnerRect(rect Rect, textSize float64) Rect {
+func (p *Plot) calculateInnerRect(rect Rect, textSize float64, hasSecondary bool) Rect {
 	rMin := rect.Min
 	rMax := rect.Max
 
@@ -610,7 +613,7 @@ func (p *Plot) calculateInnerRect(rect Rect, textSize float64) Rect {
 	}
 	rb := p.RightBorder
 	if rb <= 0 {
-		if p.YSec.HideAxis {
+		if p.YSec.HideAxis || !hasSecondary {
 			if p.X.NoExpand {
 				rb = 1
 			} else {
@@ -680,6 +683,15 @@ func (p *Plot) SetLegendPosition(pos Point, rel bool) {
 		p.legendPosGiven = AbsPos
 	}
 	p.legendPos = pos
+}
+
+func (p *Plot) SetLegendPositionSec(pos Point, rel bool) {
+	if rel {
+		p.legendPosGivenSec = RelPos
+	} else {
+		p.legendPosGivenSec = AbsPos
+	}
+	p.legendPosSec = pos
 }
 
 func (p *Plot) String() string {

@@ -722,6 +722,26 @@ func createPlotMethods() value.MethodMap {
 			}
 			return nil, fmt.Errorf("legendRelPos requires two float values")
 		}).SetMethodDescription("x", "y", "Sets the relative position of the legend. The x- and y-coordinate are given in percent."),
+		"legendPosSec": value.MethodAtType(2, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			if x, ok := stack.Get(1).ToFloat(); ok {
+				if y, ok := stack.Get(2).ToFloat(); ok {
+					plot = plot.Copy()
+					plot.Value.SetLegendPositionSec(graph.Point{X: x, Y: y}, false)
+					return plot, nil
+				}
+			}
+			return nil, fmt.Errorf("legendPos requires two float values")
+		}).SetMethodDescription("x", "y", "Sets the position of the secondary legend."),
+		"legendRelPosSec": value.MethodAtType(2, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			if x, ok := stack.Get(1).ToFloat(); ok {
+				if y, ok := stack.Get(2).ToFloat(); ok {
+					plot = plot.Copy()
+					plot.Value.SetLegendPositionSec(graph.Point{X: x, Y: y}, true)
+					return plot, nil
+				}
+			}
+			return nil, fmt.Errorf("legendRelPos requires two float values")
+		}).SetMethodDescription("x", "y", "Sets the relative position of the secondary legend. The x- and y-coordinate are given in percent."),
 		"noLegend": value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			plot.Value.HideLegend = true
 			return plot, nil
@@ -770,14 +790,13 @@ func createPlotMethods() value.MethodMap {
 			"In contrast to inset, the coordinates are given in percent. "+
 			"If a Visual Guide Color is given, it is assumed that the inset is a part of the large plot, and a visual guide is drawn.").VarArgsMethod(4, 5),
 	}
-	addAxisMethods("x", func(plot *graph.Plot) *graph.AxisDescription { return &plot.X }, mm)
-	addAxisMethods("y", func(plot *graph.Plot) *graph.AxisDescription { return &plot.Y }, mm)
-	addAxisMethods("ySec", func(plot *graph.Plot) *graph.AxisDescription { return &plot.YSec }, mm)
+	addAxisMethods("x", "X", func(plot *graph.Plot) *graph.AxisDescription { return &plot.X }, mm)
+	addAxisMethods("y", "Y", func(plot *graph.Plot) *graph.AxisDescription { return &plot.Y }, mm)
+	addAxisMethods("ySec", "YSec", func(plot *graph.Plot) *graph.AxisDescription { return &plot.YSec }, mm)
 	return mm
 }
 
-func addAxisMethods(name string, aa func(plot *graph.Plot) *graph.AxisDescription, mm value.MethodMap) {
-	uName := strings.ToUpper(name)
+func addAxisMethods(name, uName string, aa func(plot *graph.Plot) *graph.AxisDescription, mm value.MethodMap) {
 	mm[name+"Label"] =
 		value.MethodAtType(1, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if str, ok := stack.Get(1).(value.String); ok {
