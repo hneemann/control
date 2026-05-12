@@ -529,7 +529,7 @@ func (p *Plot) drawToInternal(canvas Canvas, fillBackground bool) (error, *PlotC
 		}
 	}
 	if p.Title != "" {
-		if p.YSec.HideAxis {
+		if p.YSec.HideAxis || !hasSecondary {
 			canvas.DrawText(Point{innerRect.Max.X - small, innerRect.Max.Y - small}, p.Title, Top|Right, textStyle, textSize)
 		} else {
 			canvas.DrawText(Point{(innerRect.Max.X + innerRect.Min.X) / 2, innerRect.Max.Y - small}, p.Title, Top|HCenter, textStyle, textSize)
