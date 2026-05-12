@@ -97,27 +97,66 @@ const (
 	RelPos
 )
 
+type RelativePos struct {
+	Pos  Point
+	Mode PosMode
+}
+
+func NewRelativePos(pos Point, rel bool) RelativePos {
+	var rp RelativePos
+	rp.Set(pos, rel)
+	return rp
+}
+
+func (lp *RelativePos) Set(pos Point, rel bool) {
+	if rel {
+		lp.Mode = RelPos
+	} else {
+		lp.Mode = AbsPos
+	}
+	lp.Pos = pos
+}
+
+func (lp *RelativePos) Get(trans Transform, rect Rect) Point {
+	if p, ok := lp.GetNoDef(trans, rect); ok {
+		return p
+	}
+	return trans(lp.Pos)
+}
+
+func (lp *RelativePos) GetNoDef(trans Transform, rect Rect) (Point, bool) {
+	switch lp.Mode {
+	case AbsPos:
+		return trans(lp.Pos), true
+	case RelPos:
+		return Point{
+			rect.Min.X + lp.Pos.X*(rect.Max.X-rect.Min.X)/100,
+			rect.Min.Y + lp.Pos.Y*(rect.Max.Y-rect.Min.Y)/100,
+		}, true
+	default:
+		return Point{}, false
+	}
+}
+
 type Plot struct {
-	X, Y, YSec        AxisDescription
-	Square            bool
-	SquareYCenter     float64
-	LeftBorder        float64
-	RightBorder       float64
-	NoBorder          bool
-	Cross             bool
-	Grid              *Style
-	Frame             *Style
-	Title             string
-	ProtectLabels     bool
-	Content           plotContent
-	StackBothYAxis    bool
-	FillBackground    bool
-	BoundsModifier    BoundsModifier
-	HideLegend        bool
-	legendPosGiven    PosMode
-	legendPos         Point
-	legendPosGivenSec PosMode
-	legendPosSec      Point
+	X, Y, YSec     AxisDescription
+	Square         bool
+	SquareYCenter  float64
+	LeftBorder     float64
+	RightBorder    float64
+	NoBorder       bool
+	Cross          bool
+	Grid           *Style
+	Frame          *Style
+	Title          string
+	ProtectLabels  bool
+	Content        plotContent
+	StackBothYAxis bool
+	FillBackground bool
+	BoundsModifier BoundsModifier
+	HideLegend     bool
+	LegendPos      RelativePos
+	LegendPosSec   RelativePos
 }
 
 type plotContent []contentHolder
@@ -199,8 +238,7 @@ func (p *Plot) DrawToAsInset(canvas Canvas, fillBackground bool) (err error, env
 		lower.Content = p.Content.getBySecType(true)
 		lower.Title = ""
 		lower.Y = p.YSec
-		lower.legendPosGiven = p.legendPosGivenSec
-		lower.legendPos = p.legendPosSec
+		lower.LegendPos = p.LegendPosSec
 
 		err := SplitHorizontal{&upper, &lower}.DrawTo(canvas)
 		return err, nil
@@ -517,16 +555,10 @@ func (p *Plot) drawToInner(canvas Canvas, fillBackground bool) (error, *PlotCont
 
 	if len(legends) > 0 {
 		var lp Point
-		switch p.legendPosGiven {
-		case NoPos:
+		if rp, ok := p.LegendPos.GetNoDef(trans, innerRect); ok {
+			lp = rp
+		} else {
 			lp = Point{innerRect.Min.X + textSize*3, innerRect.Min.Y + textSize*(float64(len(legends))*1.5-0.5)}
-		case AbsPos:
-			lp = trans(p.legendPos)
-		case RelPos:
-			lp = Point{
-				innerRect.Min.X + p.legendPos.X*(innerRect.Max.X-innerRect.Min.X)/100,
-				innerRect.Min.Y + p.legendPos.Y*(innerRect.Max.Y-innerRect.Min.Y)/100,
-			}
 		}
 		for _, leg := range slices.Backward(legends) {
 			canvas.DrawText(lp, leg.Name, Left|VCenter, textStyle, textSize)
@@ -672,24 +704,6 @@ func (p *Plot) AddContent(content PlotContent, secondary bool) {
 
 func (p *Plot) AddContentAtTop(content PlotContent, secondary bool) {
 	p.Content = append(plotContent{contentHolder{content, secondary}}, p.Content...)
-}
-
-func (p *Plot) SetLegendPosition(pos Point, rel bool) {
-	if rel {
-		p.legendPosGiven = RelPos
-	} else {
-		p.legendPosGiven = AbsPos
-	}
-	p.legendPos = pos
-}
-
-func (p *Plot) SetLegendPositionSec(pos Point, rel bool) {
-	if rel {
-		p.legendPosGivenSec = RelPos
-	} else {
-		p.legendPosGivenSec = AbsPos
-	}
-	p.legendPosSec = pos
 }
 
 func (p *Plot) String() string {
@@ -1445,19 +1459,21 @@ func (p *pFuncPath) refine(w0 float64, p0, d0 Point, w1 float64, p1, d1 Point, y
 }
 
 type ImageInset struct {
-	Location    Rect
+	Min         RelativePos
+	Max         RelativePos
 	Plot        *Plot
 	VisualGuide *Style
-	Relative    bool
 }
 
 func (s ImageInset) Bounds() (Bounds, Bounds, error) {
 	var x, y Bounds
-	if !s.Relative {
-		x.Merge(s.Location.Min.X)
-		x.Merge(s.Location.Max.X)
-		y.Merge(s.Location.Min.Y)
-		y.Merge(s.Location.Max.Y)
+	if s.Min.Mode == AbsPos {
+		x.Merge(s.Min.Pos.X)
+		y.Merge(s.Min.Pos.Y)
+	}
+	if s.Max.Mode == AbsPos {
+		x.Merge(s.Max.Pos.X)
+		y.Merge(s.Max.Pos.Y)
 	}
 	return x, y, nil
 }
@@ -1468,24 +1484,11 @@ func (s ImageInset) DependantBounds(_, _ Bounds) (Bounds, Bounds, error) {
 
 func (s ImageInset) DrawTo(env *PlotContentEnvironment) (cErr error) {
 	defer nErr.CatchErr(&cErr)
-	innerRect := env.InnerRect
-	var minPos, maxPos Point
-	if s.Relative {
-		xMin := innerRect.Min.X + innerRect.Width()*s.Location.Min.X/100
-		yMin := innerRect.Min.Y + innerRect.Height()*s.Location.Min.Y/100
-		xMax := innerRect.Min.X + innerRect.Width()*s.Location.Max.X/100
-		yMax := innerRect.Min.Y + innerRect.Height()*s.Location.Max.Y/100
-		minPos = Point{X: xMin, Y: yMin}
-		maxPos = Point{X: xMax, Y: yMax}
-	} else {
-		minPos = env.Transform(s.Location.Min).Add(Point{1, 1})
-		maxPos = env.Transform(s.Location.Max).Sub(Point{1, 1})
-	}
 	inner := ResizeCanvas{
 		parent: env.ParentCanvas,
 		size: Rect{
-			Min: minPos,
-			Max: maxPos,
+			Min: s.Min.Get(env.Transform, env.InnerRect),
+			Max: s.Max.Get(env.Transform, env.InnerRect),
 		},
 	}
 	err, ie := s.Plot.DrawToAsInset(inner, true)

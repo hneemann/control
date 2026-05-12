@@ -706,7 +706,7 @@ func createPlotMethods() value.MethodMap {
 			if x, ok := stack.Get(1).ToFloat(); ok {
 				if y, ok := stack.Get(2).ToFloat(); ok {
 					plot = plot.Copy()
-					plot.Value.SetLegendPosition(graph.Point{X: x, Y: y}, false)
+					plot.Value.LegendPos.Set(graph.Point{X: x, Y: y}, false)
 					return plot, nil
 				}
 			}
@@ -716,7 +716,7 @@ func createPlotMethods() value.MethodMap {
 			if x, ok := stack.Get(1).ToFloat(); ok {
 				if y, ok := stack.Get(2).ToFloat(); ok {
 					plot = plot.Copy()
-					plot.Value.SetLegendPosition(graph.Point{X: x, Y: y}, true)
+					plot.Value.LegendPos.Set(graph.Point{X: x, Y: y}, true)
 					return plot, nil
 				}
 			}
@@ -726,7 +726,7 @@ func createPlotMethods() value.MethodMap {
 			if x, ok := stack.Get(1).ToFloat(); ok {
 				if y, ok := stack.Get(2).ToFloat(); ok {
 					plot = plot.Copy()
-					plot.Value.SetLegendPositionSec(graph.Point{X: x, Y: y}, false)
+					plot.Value.LegendPosSec.Set(graph.Point{X: x, Y: y}, false)
 					return plot, nil
 				}
 			}
@@ -736,7 +736,7 @@ func createPlotMethods() value.MethodMap {
 			if x, ok := stack.Get(1).ToFloat(); ok {
 				if y, ok := stack.Get(2).ToFloat(); ok {
 					plot = plot.Copy()
-					plot.Value.SetLegendPositionSec(graph.Point{X: x, Y: y}, true)
+					plot.Value.LegendPosSec.Set(graph.Point{X: x, Y: y}, true)
 					return plot, nil
 				}
 			}
@@ -867,19 +867,12 @@ func CreateInsetMethod(relative bool) func(plot PlotValue, stack funcGen.Stack[v
 			if xMax, ok := stack.Get(2).ToFloat(); ok {
 				if yMin, ok := stack.Get(3).ToFloat(); ok {
 					if yMax, ok := stack.Get(4).ToFloat(); ok {
-						if relative {
-							xMin = checkBounds(xMin, 0, 100)
-							xMax = checkBounds(xMax, 0, 100)
-							yMin = checkBounds(yMin, 0, 100)
-							yMax = checkBounds(yMax, 0, 100)
-						}
 						if xMax < xMin {
 							xMax, xMin = xMin, xMax
 						}
 						if yMax < yMin {
 							yMax, yMin = yMin, yMax
 						}
-						r := graph.NewRect(xMin, xMax, yMin, yMax)
 
 						var visualGuide *graph.Style
 						if stack.Size() > 5 {
@@ -891,10 +884,10 @@ func CreateInsetMethod(relative bool) func(plot PlotValue, stack funcGen.Stack[v
 						}
 
 						return NewPlotContentValue(graph.ImageInset{
-							Location:    r,
+							Min:         graph.NewRelativePos(graph.Point{X: xMin, Y: yMin}, relative),
+							Max:         graph.NewRelativePos(graph.Point{X: xMax, Y: yMax}, relative),
 							Plot:        plot.Value,
 							VisualGuide: visualGuide,
-							Relative:    relative,
 						}), nil
 					}
 				}
