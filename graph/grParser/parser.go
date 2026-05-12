@@ -9,6 +9,8 @@ import (
 	"github.com/hneemann/parser2/value"
 	"github.com/hneemann/parser2/value/export"
 	"github.com/hneemann/parser2/value/export/xmlWriter"
+	col "image/color"
+	"math"
 	"strings"
 )
 
@@ -1171,27 +1173,27 @@ func closureMethods() value.MethodMap {
 						return nil, fmt.Errorf("heat requires a function with two arguments")
 					}
 
-					fac := func() func(x, y float64) (float64, error) {
+					mul := float64(len(colors)-1) / (tMax - tMin)
+					fac := func() func(x, y float64) (col.RGBA, error) {
 						stack := funcGen.NewEmptyStack[value.Value]()
-						return func(x, y float64) (float64, error) {
+						return func(x, y float64) (col.RGBA, error) {
 							stack.Push(value.Float(x))
 							stack.Push(value.Float(y))
 							zVal, err := cl.Func(stack.CreateFrame(2), nil)
 							if err != nil {
-								return 0, err
+								return col.RGBA{}, err
 							}
 							if z, ok := zVal.ToFloat(); ok {
-								return z, nil
+								zCol := (z - tMin) * mul
+								return getColorFromZ(zCol, colors), nil
 							}
-							return 0, fmt.Errorf("the function given to heat must return a float")
+							return col.RGBA{}, fmt.Errorf("the function given to heat must return a float")
 						}
 					}
 
 					h := graph.Heat{
 						FuncFac: fac,
 						Steps:   steps,
-						Colors:  colors,
-						ZBounds: graph.NewBounds(tMin, tMax),
 					}
 					return PlotContentValue{Holder[graph.PlotContent]{h}, false}, nil
 				}
@@ -1200,6 +1202,39 @@ func closureMethods() value.MethodMap {
 		}).SetMethodDescription("zMin", "zMax", "listOfColors", "steps", "Creates a heat plot of the function. "+
 			"The function needs to have two arguments (x,y) and has to return a float (z). "+
 			"The z-value is used to calculate a color, which is used to color a square located at the coordinate (x,y).").VarArgsMethod(2, 4),
+
+		"heatCol": value.MethodAtType(1, func(cl value.Closure, st funcGen.Stack[value.Value]) (value.Value, error) {
+			steps := 0
+			if s, ok := st.GetOptional(1, value.Int(0)).ToFloat(); ok {
+				steps = int(s)
+			} else {
+				return nil, fmt.Errorf("heatCol requires a number as argument")
+			}
+			fac := func() func(x, y float64) (col.RGBA, error) {
+				stack := funcGen.NewEmptyStack[value.Value]()
+				return func(x, y float64) (col.RGBA, error) {
+					stack.Push(value.Float(x))
+					stack.Push(value.Float(y))
+					color, err := cl.Func(stack.CreateFrame(2), nil)
+					if err != nil {
+						return col.RGBA{}, err
+					}
+					if colorVal, ok := color.(StyleValue); ok {
+						return colorVal.Value.Color.ToGoColor(), nil
+					} else {
+						return col.RGBA{}, fmt.Errorf("the function given to heatCol must return a color")
+					}
+				}
+			}
+
+			h := graph.Heat{
+				FuncFac: fac,
+				Steps:   steps,
+			}
+			return PlotContentValue{Holder[graph.PlotContent]{h}, false}, nil
+		}).SetMethodDescription("steps", "Creates a heat plot of the function. "+
+			"The function needs to have two arguments (x,y) and has to return a color, "+
+			"which is used to color a square located at the coordinate (x,y).").VarArgsMethod(0, 1),
 
 		"graph3d": value.MethodAtType(2, func(cl value.Closure, st funcGen.Stack[value.Value]) (value.Value, error) {
 			switch cl.Args {
@@ -1243,6 +1278,25 @@ func closureMethods() value.MethodMap {
 			return Plot3dContentValue{Holder[graph.Plot3dContent]{gf}}, nil
 		}).SetMethodDescription("xSteps", "ySteps", "hexagonal", "Creates a solid graph of a function (either ℝ²→ℝ³ or ℝ²→ℝ) to be used in the plot3d command. "+
 			"A solid surface is drawn.").VarArgsMethod(0, 3),
+	}
+}
+
+func getColorFromZ(z float64, colList []graph.Color) col.RGBA {
+	f := math.Floor(z)
+	p := z - f
+	i := int(f)
+	if i < 0 {
+		return colList[0].ToGoColor()
+	} else if i >= len(colList)-1 {
+		return colList[len(colList)-1].ToGoColor()
+	}
+	c1 := colList[i]
+	c2 := colList[i+1]
+	return col.RGBA{
+		R: uint8(float64(c1.R)*(1-p) + float64(c2.R)*p),
+		G: uint8(float64(c1.G)*(1-p) + float64(c2.G)*p),
+		B: uint8(float64(c1.B)*(1-p) + float64(c2.B)*p),
+		A: 255,
 	}
 }
 
@@ -1370,6 +1424,20 @@ func Setup(fg *value.FunctionGenerator) {
 		Args:   -1,
 		IsPure: true,
 	}.SetDescription("r or n", "g", "b", "a", "Returns the color with the number n or, if three arguments are specified, the given rgb color.").VarArgs(1, 4))
+	fg.AddStaticFunction("colorHSV", funcGen.Function[value.Value]{
+		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
+			if h, ok := st.Get(0).ToFloat(); ok {
+				if s, ok := st.Get(1).ToFloat(); ok {
+					if v, ok := st.Get(2).ToFloat(); ok {
+						return StyleValue{Holder[*graph.Style]{graph.NewStyleHSV(h, s, v)}}, nil
+					}
+				}
+			}
+			return nil, fmt.Errorf("color requires three float values")
+		},
+		Args:   3,
+		IsPure: true,
+	}.SetDescription("h", "s", "v", "Returns the color given as HSV color."))
 	fg.AddStaticFunction("vec", funcGen.Function[value.Value]{
 		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
 			if x, ok := st.Get(0).ToFloat(); ok {

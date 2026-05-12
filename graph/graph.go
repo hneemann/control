@@ -200,6 +200,67 @@ func NewStyleAlpha(r, g, b, a uint8) *Style {
 	return &Style{Stroke: true, Color: Color{r, g, b, a}, Fill: false, FillColor: Color{r, g, b, a}, StrokeWidth: 1}
 }
 
+func NewStyleHSV(h, s, v float64) *Style {
+
+	// 1. Validierung und Korrektur der Grenzwerte
+
+	// H (Hue) auf den Bereich [0, 360) normalisieren
+	h = math.Mod(h, 360)
+	if h < 0 {
+		h += 360
+	}
+
+	// S (Saturation) auf den Bereich [0, 1] begrenzen
+	if s < 0 {
+		s = 0
+	} else if s > 1 {
+		s = 1
+	}
+
+	// V (Value) auf den Bereich [0, 1] begrenzen
+	if v < 0 {
+		v = 0
+	} else if v > 1 {
+		v = 1
+	}
+
+	var r1, g1, b1 float64
+
+	// Chroma berechnen
+	c := v * s
+	// H' berechnen (Sektor)
+	hPrime := h / 60.0
+	// X berechnen (Zwischenwert)
+	x := c * (1 - math.Abs(math.Mod(hPrime, 2)-1))
+	// Helligkeitsanpassung
+	m := v - c
+
+	// Zuordnung basierend auf dem Sektor
+	switch {
+	case 0 <= hPrime && hPrime < 1:
+		r1, g1, b1 = c, x, 0
+	case 1 <= hPrime && hPrime < 2:
+		r1, g1, b1 = x, c, 0
+	case 2 <= hPrime && hPrime < 3:
+		r1, g1, b1 = 0, c, x
+	case 3 <= hPrime && hPrime < 4:
+		r1, g1, b1 = 0, x, c
+	case 4 <= hPrime && hPrime < 5:
+		r1, g1, b1 = x, 0, c
+	case 5 <= hPrime && hPrime <= 6:
+		r1, g1, b1 = c, 0, x
+	default:
+		r1, g1, b1 = 0, 0, 0
+	}
+
+	// Auf 0-255 skalieren und m addieren
+	r := uint8(math.Round((r1 + m) * 255))
+	g := uint8(math.Round((g1 + m) * 255))
+	b := uint8(math.Round((b1 + m) * 255))
+
+	return NewStyle(r, g, b)
+}
+
 var (
 	Black     = NewStyle(0, 0, 0)
 	Gray      = NewStyle(190, 190, 190)

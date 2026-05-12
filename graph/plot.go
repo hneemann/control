@@ -1663,10 +1663,8 @@ func (t Text) Legend() Legend {
 
 type Heat struct {
 	AxisFactory AxisFactory
-	ZBounds     Bounds
-	FuncFac     func() func(x, y float64) (float64, error)
+	FuncFac     func() func(x, y float64) (col.RGBA, error)
 	Steps       int
-	Colors      []Color
 }
 
 func (h Heat) Bounds() (x, y Bounds, err error) {
@@ -1696,14 +1694,8 @@ func (h Heat) DrawTo(env *PlotContentEnvironment) error {
 	if ya.Reverse == nil {
 		return fmt.Errorf("heat plot requires a reverable y axis")
 	}
-	if h.ZBounds.isSet == false || h.ZBounds.Width() <= 1e-6 {
-		h.ZBounds = NewBounds(-1, 1)
-	}
 	if h.FuncFac == nil {
 		return fmt.Errorf("heat plot requires a function")
-	}
-	if len(h.Colors) < 2 {
-		return fmt.Errorf("heat plot requires at least two colors")
 	}
 
 	steps := h.Steps
@@ -1714,7 +1706,6 @@ func (h Heat) DrawTo(env *PlotContentEnvironment) error {
 	im := img.NewRGBA(img.Rectangle{Min: img.Point{}, Max: img.Point{X: steps, Y: steps}})
 
 	r := env.InnerRect
-	mul := float64(len(h.Colors)-1) / h.ZBounds.Width()
 
 	lines := make(chan int)
 	stop := make(chan struct{})
@@ -1740,16 +1731,15 @@ func (h Heat) DrawTo(env *PlotContentEnvironment) error {
 			l := 0
 			for y := range lines {
 				yp := ya.Reverse(r.Min.Y + (r.Max.Y-r.Min.Y)*float64(y)/float64(steps-1))
-				var vz float64
+				var co col.RGBA
 				var err error
 				for x := 0; x < steps; x++ {
 					xp := xa.Reverse(r.Min.X + (r.Max.X-r.Min.X)*float64(x)/float64(steps-1))
-					vz, err = f(xp, yp)
+					co, err = f(xp, yp)
 					if err != nil {
 						break
 					}
-					z := (vz - h.ZBounds.Min) * mul
-					pix[l][x] = h.getColor(z)
+					pix[l][x] = co
 				}
 				select {
 				case <-stop:
@@ -1783,23 +1773,4 @@ func (h Heat) DrawTo(env *PlotContentEnvironment) error {
 
 func (h Heat) Legend() Legend {
 	return Legend{}
-}
-
-func (h Heat) getColor(z float64) col.RGBA {
-	f := math.Floor(z)
-	p := z - f
-	i := int(f)
-	if i < 0 {
-		return h.Colors[0].ToGoColor()
-	} else if i >= len(h.Colors)-1 {
-		return h.Colors[len(h.Colors)-1].ToGoColor()
-	}
-	c1 := h.Colors[i]
-	c2 := h.Colors[i+1]
-	return col.RGBA{
-		R: uint8(float64(c1.R)*(1-p) + float64(c2.R)*p),
-		G: uint8(float64(c1.G)*(1-p) + float64(c2.G)*p),
-		B: uint8(float64(c1.B)*(1-p) + float64(c2.B)*p),
-		A: 255,
-	}
 }
