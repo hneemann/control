@@ -533,7 +533,7 @@ func (p polarPath) IsClosed() bool {
 }
 
 func (p Polar) DrawTo(env *graph.PlotContentEnvironment) error {
-	style := env.Plot.Grid
+	style := env.Plot.X.Grid
 	if style == nil {
 		style = grParser.GridStyle
 	}
@@ -1068,16 +1068,18 @@ func NewBode(wMin, wMax float64) *graph.Plot {
 			Bounds:  graph.NewBounds(wMin, wMax),
 			Factory: graph.LogAxis,
 			Label:   "ω [rad/s]",
+			Grid:    grParser.GridStyle,
 		},
 		Y: graph.AxisDescription{
 			Factory: graph.DBAxis,
 			Label:   "Amplitude",
+			Grid:    grParser.GridStyle,
 		},
 		YSec: graph.AxisDescription{
 			Factory: graph.CreateFixedStepAxis(45, 15),
 			Label:   "Phase [°]",
+			Grid:    grParser.GridStyle,
 		},
-		Grid:           grParser.GridStyle,
 		StackBothYAxis: true,
 		ProtectLabels:  true,
 	}

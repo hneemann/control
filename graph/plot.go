@@ -79,6 +79,7 @@ type AxisDescription struct {
 	NoExpand bool
 	Label    string
 	HideAxis bool
+	Grid     *Style
 }
 
 // GetFactory returns the AxisFactory, or LinearAxis if none is set.
@@ -146,7 +147,6 @@ type Plot struct {
 	RightBorder    float64
 	NoBorder       bool
 	Cross          bool
-	Grid           *Style
 	Frame          *Style
 	Title          string
 	ProtectLabels  bool
@@ -243,10 +243,10 @@ func (p *Plot) DrawToAsInset(canvas Canvas, fillBackground bool) (err error, env
 		err := SplitHorizontal{&upper, &lower}.DrawTo(canvas)
 		return err, nil
 	}
-	return p.drawToInner(canvas, fillBackground)
+	return p.drawToInternal(canvas, fillBackground)
 }
 
-func (p *Plot) drawToInner(canvas Canvas, fillBackground bool) (error, *PlotContentEnvironment) {
+func (p *Plot) drawToInternal(canvas Canvas, fillBackground bool) (error, *PlotContentEnvironment) {
 	c := canvas.Context()
 	rect := canvas.Rect()
 	textStyle := Black.Text()
@@ -373,8 +373,8 @@ func (p *Plot) drawToInner(canvas Canvas, fillBackground bool) (error, *PlotCont
 		for _, tick := range xAxis.Ticks {
 			if !cross || math.Abs(tick.Position) > 1e-8 {
 				xp := xAxis.Trans(tick.Position)
-				if p.Grid != nil {
-					nErr.Try(canvas.DrawPath(PointsFromSlice(Point{xp, innerRect.Min.Y}, Point{xp, innerRect.Max.Y}), p.Grid))
+				if p.X.Grid != nil {
+					nErr.Try(canvas.DrawPath(PointsFromSlice(Point{xp, innerRect.Min.Y}, Point{xp, innerRect.Max.Y}), p.X.Grid))
 				}
 				if tick.Label == "" {
 					nErr.Try(canvas.DrawPath(PointsFromSlice(Point{xp, yp - small*topBottom}, Point{xp, yp}), thinLine))
@@ -400,8 +400,8 @@ func (p *Plot) drawToInner(canvas Canvas, fillBackground bool) (error, *PlotCont
 		for _, tick := range yAxis.Ticks {
 			if !cross || math.Abs(tick.Position) > 1e-8 {
 				yp := yAxis.Trans(tick.Position)
-				if p.Grid != nil {
-					nErr.Try(canvas.DrawPath(PointsFromSlice(Point{innerRect.Min.X, yp}, Point{innerRect.Max.X, yp}), p.Grid))
+				if p.Y.Grid != nil {
+					nErr.Try(canvas.DrawPath(PointsFromSlice(Point{innerRect.Min.X, yp}, Point{innerRect.Max.X, yp}), p.Y.Grid))
 				}
 				if tick.Label == "" {
 					nErr.Try(canvas.DrawPath(PointsFromSlice(Point{xp - small*rightLeft, yp}, Point{xp, yp}), thinLine))
@@ -418,6 +418,9 @@ func (p *Plot) drawToInner(canvas Canvas, fillBackground bool) (error, *PlotCont
 		xp := innerRect.Max.X
 		for _, tick := range ySecAxis.Ticks {
 			yp := ySecAxis.Trans(tick.Position)
+			if p.YSec.Grid != nil {
+				nErr.Try(canvas.DrawPath(PointsFromSlice(Point{innerRect.Min.X, yp}, Point{innerRect.Max.X, yp}), p.YSec.Grid))
+			}
 			if tick.Label == "" {
 				nErr.Try(canvas.DrawPath(PointsFromSlice(Point{xp + small, yp}, Point{xp, yp}), thinLine))
 			} else {

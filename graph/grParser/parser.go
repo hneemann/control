@@ -642,7 +642,8 @@ func createPlotMethods() value.MethodMap {
 				return nil, fmt.Errorf("grid: %w", err)
 			}
 			plot = plot.Copy()
-			plot.Value.Grid = styleVal.Value
+			plot.Value.X.Grid = styleVal.Value
+			plot.Value.Y.Grid = styleVal.Value
 			return plot, nil
 		}).SetMethodDescription("color", "Adds a grid.").VarArgsMethod(0, 1),
 		"frame": value.MethodAtType(1, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
@@ -854,6 +855,18 @@ func addAxisMethods(name, uName string, aa func(plot *graph.Plot) *graph.AxisDes
 		aa(plot.Value).HideAxis = true
 		return plot, nil
 	}).SetMethodDescription("Hides the " + name + "-axis.")
+	mm[name+"Grid"] = value.MethodAtType(1, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+		styleVal, err := GetStyle(stack, 1, GridStyle)
+		if err != nil {
+			return nil, fmt.Errorf("%sGrid: %w", name, err)
+		}
+		aa(plot.Value).Grid = styleVal.Value
+		return plot, nil
+	}).SetMethodDescription("color", "Adds a grid.").VarArgsMethod(0, 1)
+	mm["no"+uName+"Grid"] = value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+		aa(plot.Value).Grid = nil
+		return plot, nil
+	}).SetMethodDescription("DIsables the " + name + "-axis grid.")
 }
 
 func plotValueToImage(p PlotValue) *graph.Plot {
