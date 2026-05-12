@@ -44,6 +44,9 @@ the browser. The APP can therefore be operated as a static WEB page.
 
 # Limits #
 
+The roots of the polynomials are determined using Newton's method, which is only 
+suitable for polynomials with a small number of roots.
+
 The simulation of linear systems is for now done by using the Euler method, with a 
 fixed number of steps which is good enough for most simple cases, but not 
 sufficient for simulating more complex systems.
@@ -77,7 +80,7 @@ multiple plot contents, containing the root locus itself, the zeros, the poles a
 also the polar grid and the asymptotes. 
 
 ```
-let g = (s^2+2.5*s+2.225)/((s+1)*(s+2)*(s)*(s+3)*(s+4));
+let g = (s^2+2.5*s+2.225)/(s*(s+1)*(s+2)*(s+3)*(s+4));
 
 plot(
   g.evans(150),
