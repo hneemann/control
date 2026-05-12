@@ -869,11 +869,6 @@ func addAxisMethods(name, uName string, aa func(plot *graph.Plot) *graph.AxisDes
 	}).SetMethodDescription("DIsables the " + name + "-axis grid.")
 }
 
-func plotValueToImage(p PlotValue) *graph.Plot {
-	p.Value.FillBackground = true
-	return p.Value
-}
-
 func CreateInsetMethod(relative bool) func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 	return func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 		if xMin, ok := stack.Get(1).ToFloat(); ok {
@@ -908,16 +903,6 @@ func CreateInsetMethod(relative bool) func(plot PlotValue, stack funcGen.Stack[v
 		}
 		return nil, fmt.Errorf("inset requires floats as arguments")
 	}
-}
-
-func checkBounds(x, min, max float64) float64 {
-	if x < min {
-		return min
-	}
-	if x > max {
-		return max
-	}
-	return x
 }
 
 func createPlotContentMethods() value.MethodMap {
