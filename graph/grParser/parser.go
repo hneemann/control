@@ -979,7 +979,7 @@ func createPlotContentMethods() value.MethodMap {
 			}
 			return PlotContentValue{Holder[graph.PlotContent]{pc}, plot.SecondaryAxis}, nil
 		}).SetMethodDescription("Closes a path."),
-		"toSecY": value.MethodAtType(0, func(plot PlotContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+		"toYSec": value.MethodAtType(0, func(plot PlotContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			pc := plot.Value
 			return PlotContentValue{Holder[graph.PlotContent]{pc}, true}, nil
 		}).SetMethodDescription("The plot content is assigned to the secondary y-axis. By default, the second " +
