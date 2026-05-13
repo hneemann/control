@@ -869,7 +869,7 @@ func addAxisMethods(name, uName string, aa func(plot *graph.Plot) *graph.AxisDes
 	mm["no"+uName+"Grid"] = value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 		aa(plot.Value).Grid = nil
 		return plot, nil
-	}).SetMethodDescription("DIsables the " + name + "-axis grid.")
+	}).SetMethodDescription("Disables the " + name + "-axis grid.")
 }
 
 func CreateInsetMethod(relative bool) func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
