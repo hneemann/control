@@ -688,7 +688,8 @@ func createPlotMethods() value.MethodMap {
 			} else {
 				return nil, errors.New("stack requires a bool value")
 			}
-		}).SetMethodDescription("stacking", "If set to true and both y-axis are used, two stacked plots are created instead of using the left and right border for an axis.").VarArgsMethod(0, 1),
+		}).SetMethodDescription("stacking", "If this value is set to “true” and both y-axes are used, two stacked "+
+			"charts are created instead of using the left and right borders for one axis each.").VarArgsMethod(0, 1),
 		"ySquare": value.MethodAtType(1, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			plot = plot.Copy()
 			plot.Value.Square = true
@@ -943,7 +944,8 @@ func createPlotContentMethods() value.MethodMap {
 			} else {
 				return nil, fmt.Errorf("point type can only be set for plot contents that support points")
 			}
-		}).SetMethodDescription("type", "color", "size", "Sets the point type.").VarArgsMethod(1, 3),
+		}).SetMethodDescription("type", "color", "size", "Sets the point type, color and size. The type is an integer "+
+			"(0: Cross, 1: Circle, 2: Square, 3: Triangle, 4: Diamond)").VarArgsMethod(1, 3),
 		"line": value.MethodAtType(2, func(plot PlotContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if style, err := GetStyle(stack, 1, nil); err == nil {
 				pc := plot.Value
@@ -980,7 +982,9 @@ func createPlotContentMethods() value.MethodMap {
 		"toSecY": value.MethodAtType(0, func(plot PlotContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			pc := plot.Value
 			return PlotContentValue{Holder[graph.PlotContent]{pc}, true}, nil
-		}).SetMethodDescription("The plot content is assigned to the secondary y-axis."),
+		}).SetMethodDescription("The plot content is assigned to the secondary y-axis. By default, the second " +
+			"axis is drawn on the right side of the chart. Using the 'stack' command, you can instead draw two charts " +
+			"stacked on top of each other, with both axes on the left."),
 	}
 }
 
