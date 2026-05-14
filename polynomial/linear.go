@@ -1081,6 +1081,10 @@ func NewBode(wMin, wMax float64) *graph.Chart {
 	}
 }
 
+func (bpc *BodeChartContent) String() string {
+	return fmt.Sprintf("BodeChartContent(%s)", bpc.Linear.String())
+}
+
 func (bpc *BodeChartContent) generateExp(wMin, wMax, exp float64) {
 	// compensate expansion of x-axis to make the graphs fill the complete x-range
 	// required to avoid calculating values twice
