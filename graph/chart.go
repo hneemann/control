@@ -733,7 +733,7 @@ func NewBounds(min, max float64) Bounds {
 	return Bounds{isSet: true, Min: min, Max: max}
 }
 
-func (b Bounds) Width() float64 {
+func (b *Bounds) Width() float64 {
 	return b.Max - b.Min
 }
 
