@@ -276,9 +276,9 @@ plot(
   g0.bode(black, sprintf("G#0, #Phi#r=%.1f°, #omega#s=%.2f rad/s",
                          pm.pMargin, pm.w0) ),
   xConst(pm.w0, lineColor),
-  xConst(pm.w0, lineColor).toSecY(),
-  yConst(-180+50, lineColor).toSecY(),
-  yConst(-180+70, lineColor).toSecY(),
+  xConst(pm.w0, lineColor).toYSec(),
+  yConst(-180+50, lineColor).toYSec(),
+  yConst(-180+70, lineColor).toYSec(),
 )
 `, file: "z.html"},
 		// If modified, also modify the README.md

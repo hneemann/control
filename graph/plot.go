@@ -273,7 +273,7 @@ func (p *Plot) drawToInternal(canvas Canvas, fillBackground bool) (error, *PlotC
 
 	xBoundsPre, yBoundsPre, ySecBoundsPre, err := p.calcBounds()
 	if err != nil {
-		return fmt.Errorf("error calculating plot bounds: %w", err), nil
+		return fmt.Errorf("error calculating chart bounds: %w", err), nil
 	}
 
 	if p.BoundsModifier != nil {
@@ -356,7 +356,7 @@ func (p *Plot) drawToInternal(canvas Canvas, fillBackground bool) (error, *PlotC
 		}, ySecExp)
 
 	if p.Square && (!xAxis.IsLinear || !yAxis.IsLinear) {
-		return fmt.Errorf("square plots are only possible if both axis are linear"), nil
+		return fmt.Errorf("square charts are only possible if both axis are linear"), nil
 	}
 
 	if !p.X.HideAxis {
@@ -1688,14 +1688,14 @@ func (h Heat) DrawTo(env *PlotContentEnvironment) error {
 
 	xa := env.XAxis
 	if xa.Reverse == nil {
-		return fmt.Errorf("heat plot requires a reverable x axis")
+		return fmt.Errorf("heat chart requires a reverable x axis")
 	}
 	ya := env.YAxis
 	if ya.Reverse == nil {
-		return fmt.Errorf("heat plot requires a reverable y axis")
+		return fmt.Errorf("heat chart requires a reverable y axis")
 	}
 	if h.FuncFac == nil {
-		return fmt.Errorf("heat plot requires a function")
+		return fmt.Errorf("heat chart requires a function")
 	}
 
 	steps := h.Steps

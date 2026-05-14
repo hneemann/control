@@ -163,7 +163,7 @@ func createPlot3dContentMethods() value.MethodMap {
 					if vbs, ok := pc.Value.(graph.UBoundsSetter); ok {
 						pc.Value = vbs.SetUBounds(graph.NewBounds(vMin, vMax))
 					} else {
-						return nil, errors.New("the plot3d content does not support u-bounds")
+						return nil, errors.New("the 3d chart content does not support u-bounds")
 					}
 					return pc, nil
 				}
@@ -176,7 +176,7 @@ func createPlot3dContentMethods() value.MethodMap {
 					if vbs, ok := pc.Value.(graph.VBoundsSetter); ok {
 						pc.Value = vbs.SetVBounds(graph.NewBounds(vMin, vMax))
 					} else {
-						return nil, errors.New("the plot3d content does not support v-bounds")
+						return nil, errors.New("the 3d chart content does not support v-bounds")
 					}
 					return pc, nil
 				}
@@ -198,7 +198,7 @@ func createPlot3dContentMethods() value.MethodMap {
 					if ss, ok := pc.Value.(graph.SecondaryStyle); ok {
 						pc.Value = ss.SetSecondaryStyle(style2.Value)
 					} else {
-						return nil, errors.New("the plot3d content does not support a secondary style")
+						return nil, errors.New("the 3d chart content does not support a secondary style")
 					}
 				}
 			}
@@ -210,16 +210,16 @@ func createPlot3dContentMethods() value.MethodMap {
 					pc.Value = ts.SetTitle(string(str))
 					return pc, nil
 				}
-				return nil, fmt.Errorf("plot content does not support a title")
+				return nil, fmt.Errorf("chart content does not support a title")
 			}
 			return nil, fmt.Errorf("title requires a string")
-		}).SetMethodDescription("title", "Sets the title of the 3d plot content."),
+		}).SetMethodDescription("title", "Sets the title of the 3d chart content."),
 		"close": value.MethodAtType(0, func(plot Plot3dContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			pc := plot.Value
 			if sc, ok := pc.(graph.IsCloseable3d); ok {
 				pc = sc.Close()
 			} else {
-				return nil, fmt.Errorf("Close can only be called on plot contents that can be closed.")
+				return nil, fmt.Errorf("Close can only be called on chart contents that can be closed.")
 			}
 			return Plot3dContentValue{Holder[graph.Plot3dContent]{pc}}, nil
 		}).SetMethodDescription("Closes a path."),
@@ -244,7 +244,7 @@ func createPlot3dContentMethods() value.MethodMap {
 			if sc, ok := plot.Value.(graph.HasShape3d); ok {
 				return Plot3dContentValue{Holder[graph.Plot3dContent]{sc.SetShape(marker, style.Value)}}, nil
 			} else {
-				return nil, fmt.Errorf("point type can only be set for plot contents that support points")
+				return nil, fmt.Errorf("point type can only be set for chart contents that support points")
 			}
 		}).SetMethodDescription("type", "color", "size", "Sets the point type.").VarArgsMethod(1, 3),
 	}
@@ -308,7 +308,7 @@ func (p Plot3dValue) Add(pc value.Value) error {
 		p.Holder.Value.AddContent(c.Value)
 		return nil
 	}
-	return errors.New("value is not a plot3d content")
+	return errors.New("value is not a 3d chart content")
 }
 
 func (p Plot3dValue) ToHtml(_ funcGen.Stack[value.Value], w *xmlWriter.XMLWriter) error {
@@ -358,7 +358,7 @@ func (p PlotValue) Add(pc value.Value) error {
 		p.Holder.Value.AddContent(c.Value, c.SecondaryAxis)
 		return nil
 	}
-	return errors.New("value is not a plot content")
+	return errors.New("value is not a chart content")
 }
 
 func (p PlotValue) AddAtTop(pc value.Value) error {
@@ -366,7 +366,7 @@ func (p PlotValue) AddAtTop(pc value.Value) error {
 		p.Holder.Value.AddContentAtTop(c.Value, c.SecondaryAxis)
 		return nil
 	}
-	return errors.New("value is not a plot content")
+	return errors.New("value is not a chart content")
 }
 
 func createStyleMethods() value.MethodMap {
@@ -458,7 +458,7 @@ func createPlot3dMethods() value.MethodMap {
 				}
 			}
 			return plot, nil
-		}).SetMethodDescription("plotContent", "Adds a plot content to the plot."),
+		}).SetMethodDescription("chartContent", "Adds a chart content to the chart."),
 		"angles": value.MethodAtType(3, func(plot Plot3dValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if alpha, ok := stack.Get(1).ToFloat(); ok {
 				if beta, ok := stack.Get(2).ToFloat(); ok {
@@ -476,14 +476,14 @@ func createPlot3dMethods() value.MethodMap {
 				return plot, nil
 			}
 			return Plot3dValue{}, fmt.Errorf("size requires a float value")
-		}).SetMethodDescription("size", "Sets the size of the cube in the 3d plot. Default is 1."),
+		}).SetMethodDescription("size", "Sets the size of the cube in the 3d chart. Default is 1."),
 		"perspective": value.MethodAtType(1, func(plot Plot3dValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if p, ok := stack.Get(1).ToFloat(); ok {
 				plot.Value.Perspective = p
 				return plot, nil
 			}
 			return Plot3dValue{}, fmt.Errorf("perspective requires a float value")
-		}).SetMethodDescription("perspective", "Sets the perspective of the 3d plot. Default is 1."),
+		}).SetMethodDescription("perspective", "Sets the perspective of the 3d chart. Default is 1."),
 		"labels": value.MethodAtType(3, func(plot Plot3dValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if xStr, ok := stack.Get(1).(value.String); ok {
 				if yStr, ok := stack.Get(2).(value.String); ok {
@@ -592,7 +592,7 @@ func createPlotMethods() value.MethodMap {
 				}
 			}
 			return plot, nil
-		}).SetMethodDescription("plotContent", "Adds a plot content to the plot."),
+		}).SetMethodDescription("chartContent", "Adds a chart content to the chart."),
 		"addAtTop": value.MethodAtType(-1, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			plot = plot.Copy()
 			for v, err := range value.FlattenStack(stack, 1) {
@@ -605,7 +605,7 @@ func createPlotMethods() value.MethodMap {
 				}
 			}
 			return plot, nil
-		}).SetMethodDescription("plotContent", "Adds a plot content to the plot at the top."),
+		}).SetMethodDescription("chartContent", "Adds a chart content to the chart at the top of the plotting sequence."),
 		"title": value.MethodAtType(1, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if str, ok := stack.Get(1).(value.String); ok {
 				plot = plot.Copy()
@@ -679,7 +679,7 @@ func createPlotMethods() value.MethodMap {
 			plot = plot.Copy()
 			plot.Value.Cross = true
 			return plot, nil
-		}).SetMethodDescription("Draws a coordinate cross instead of a rectangle around the plot."),
+		}).SetMethodDescription("Draws a coordinate cross instead of a rectangle around the chart."),
 		"stack": value.MethodAtType(1, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if sta, ok := stack.GetOptional(1, value.Bool(true)).(value.Bool); ok {
 				plot = plot.Copy()
@@ -705,7 +705,7 @@ func createPlotMethods() value.MethodMap {
 			plot.Value.NoBorder = true
 			return plot, nil
 		}).SetMethodDescription("All the border withs are set to zero. This is useful, if insets are used and the space under " +
-			"the axis should not remain free. In this case, the axis is drawn outside the assigned drawing area, whereby the underlying plot is overdrawn."),
+			"the axis should not remain free. In this case, the axis is drawn outside the assigned drawing area, whereby the underlying chart is overdrawn."),
 		"legendPos": value.MethodAtType(2, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if x, ok := stack.Get(1).ToFloat(); ok {
 				if y, ok := stack.Get(2).ToFloat(); ok {
@@ -788,11 +788,11 @@ func createPlotMethods() value.MethodMap {
 			}
 			return nil, fmt.Errorf("zoom requires three float values")
 		}).SetMethodDescription("x", "y", "factor", "Zoom at the given point by the given factor."),
-		"inset": value.MethodAtType(5, CreateInsetMethod(false)).SetMethodDescription("xMin", "xMax", "yMin", "yMax", "visualGuideColor", "Converts the plot into an inset that can be added to another plot. "+
-			"If a Visual Guide Color is given, it is assumed that the inset is a part of the large plot, and a visual guide is drawn.").VarArgsMethod(4, 5),
-		"insetRel": value.MethodAtType(5, CreateInsetMethod(true)).SetMethodDescription("xMin", "xMax", "yMin", "yMax", "visualGuideColor", "Converts the plot into an inset that can be added to another plot. "+
+		"inset": value.MethodAtType(5, CreateInsetMethod(false)).SetMethodDescription("xMin", "xMax", "yMin", "yMax", "visualGuideColor", "Converts the chart into an inset that can be added to another chart. "+
+			"If a Visual Guide Color is given, it is assumed that the inset is a part of the large chart, and a visual guide is drawn.").VarArgsMethod(4, 5),
+		"insetRel": value.MethodAtType(5, CreateInsetMethod(true)).SetMethodDescription("xMin", "xMax", "yMin", "yMax", "visualGuideColor", "Converts the chart into an inset that can be added to another chart. "+
 			"In contrast to inset, the coordinates are given in percent. "+
-			"If a Visual Guide Color is given, it is assumed that the inset is a part of the large plot, and a visual guide is drawn.").VarArgsMethod(4, 5),
+			"If a Visual Guide Color is given, it is assumed that the inset is a part of the large chart, and a visual guide is drawn.").VarArgsMethod(4, 5),
 	}
 	addAxisMethods("x", "X", func(plot *graph.Plot) *graph.AxisDescription { return &plot.X }, mm)
 	addAxisMethods("y", "Y", func(plot *graph.Plot) *graph.AxisDescription { return &plot.Y }, mm)
@@ -915,7 +915,7 @@ func createPlotContentMethods() value.MethodMap {
 				if sc, ok := plot.Value.(graph.HasTitle); ok {
 					return PlotContentValue{Holder[graph.PlotContent]{sc.SetTitle(string(leg))}, plot.SecondaryAxis}, nil
 				} else {
-					return nil, fmt.Errorf("title can only be set for plots using a title")
+					return nil, fmt.Errorf("title can only be set for charts using a title")
 				}
 			} else {
 				return nil, fmt.Errorf("title requires a string")
@@ -942,9 +942,9 @@ func createPlotContentMethods() value.MethodMap {
 			if sc, ok := plot.Value.(graph.HasShape); ok {
 				return PlotContentValue{Holder[graph.PlotContent]{sc.SetShape(marker, style.Value)}, plot.SecondaryAxis}, nil
 			} else {
-				return nil, fmt.Errorf("point type can only be set for plot contents that support points")
+				return nil, fmt.Errorf("point type can only be set for chart contents that support points")
 			}
-		}).SetMethodDescription("type", "color", "size", "Sets the point type, color and size. The type is an integer "+
+		}).SetMethodDescription("type", "color", "size", "Sets the point type, color and size. The type is given by an integer "+
 			"(0: Cross, 1: Circle, 2: Square, 3: Triangle, 4: Diamond)").VarArgsMethod(1, 3),
 		"line": value.MethodAtType(2, func(plot PlotContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if style, err := GetStyle(stack, 1, nil); err == nil {
@@ -952,14 +952,14 @@ func createPlotContentMethods() value.MethodMap {
 				if sc, ok := pc.(graph.HasLine); ok {
 					pc = sc.SetLine(style.Value)
 				} else {
-					return nil, fmt.Errorf("line can only be set for plots using a line")
+					return nil, fmt.Errorf("line can only be set for charts using a line")
 				}
 				if title, ok := stack.GetOptional(2, value.String("")).(value.String); ok {
 					if title != "" {
 						if sc, ok := pc.(graph.HasTitle); ok {
 							pc = sc.SetTitle(string(title))
 						} else {
-							return nil, fmt.Errorf("a title can only be set for plots using a title")
+							return nil, fmt.Errorf("a title can only be set for charts using a title")
 						}
 					}
 				} else {
@@ -975,14 +975,14 @@ func createPlotContentMethods() value.MethodMap {
 			if sc, ok := pc.(graph.IsCloseable); ok {
 				pc = sc.Close()
 			} else {
-				return nil, fmt.Errorf("Close can only be called on plot contents that can be closed.")
+				return nil, fmt.Errorf("Close can only be called on chart contents that can be closed.")
 			}
 			return PlotContentValue{Holder[graph.PlotContent]{pc}, plot.SecondaryAxis}, nil
 		}).SetMethodDescription("Closes a path."),
 		"toYSec": value.MethodAtType(0, func(plot PlotContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			pc := plot.Value
 			return PlotContentValue{Holder[graph.PlotContent]{pc}, true}, nil
-		}).SetMethodDescription("The plot content is assigned to the secondary y-axis. By default, the second " +
+		}).SetMethodDescription("The chart content is assigned to the secondary y-axis. By default, the second " +
 			"axis is drawn on the right side of the chart. Using the 'stack' command, you can instead draw two charts " +
 			"stacked on top of each other, with both axes on the left."),
 	}
@@ -1033,7 +1033,7 @@ func listMethods() value.MethodMap {
 				return nil, fmt.Errorf("graph requires either none or two arguments")
 			}
 			return nil, fmt.Errorf("graph requires a function as first and second argument")
-		}).SetMethodDescription("func(item) x", "func(item) y", "Creates a scatter plot content. "+
+		}).SetMethodDescription("func(item) x", "func(item) y", "Creates a scatter chart content. "+
 			"The two functions are called with the list elements and must return the x respectively y values. "+
 			"If the functions are omitted, the list elements themselves must be lists of the form [x,y].").VarArgsMethod(0, 2),
 		"graph3d": value.MethodAtType(0, func(list *value.List, st funcGen.Stack[value.Value]) (value.Value, error) {
@@ -1203,7 +1203,7 @@ func closureMethods() value.MethodMap {
 				}
 			}
 			return nil, fmt.Errorf("heat requires two floats as first arguments")
-		}).SetMethodDescription("zMin", "zMax", "listOfColors", "steps", "Creates a heat plot of the function. "+
+		}).SetMethodDescription("zMin", "zMax", "listOfColors", "steps", "Creates a heat chart of the function. "+
 			"The function needs to have two arguments (x,y) and has to return a float (z). "+
 			"The z-value is used to calculate a color, which is used to color a square located at the coordinate (x,y).").VarArgsMethod(2, 4),
 
@@ -1236,7 +1236,7 @@ func closureMethods() value.MethodMap {
 				Steps:   steps,
 			}
 			return PlotContentValue{Holder[graph.PlotContent]{h}, false}, nil
-		}).SetMethodDescription("steps", "Creates a heat plot of the function. "+
+		}).SetMethodDescription("steps", "Creates a heat chart of the function. "+
 			"The function needs to have two arguments (x,y) and has to return a color, "+
 			"which is used to color a square located at the coordinate (x,y).").VarArgsMethod(0, 1),
 
@@ -1370,12 +1370,12 @@ func create3dFuncLine(cl value.Closure, st funcGen.Stack[value.Value]) (int, fun
 const defSize = 4
 
 func Setup(fg *value.FunctionGenerator) {
-	PlotType = fg.RegisterType("plot")
-	PlotContentType = fg.RegisterType("plotContent")
+	PlotType = fg.RegisterType("chart")
+	PlotContentType = fg.RegisterType("chartContent")
 	StyleType = fg.RegisterType("style")
 	ImageType = fg.RegisterType("image")
-	Plot3dType = fg.RegisterType("plot3d")
-	Plot3dContentType = fg.RegisterType("plot3dContent")
+	Plot3dType = fg.RegisterType("3dChart")
+	Plot3dContentType = fg.RegisterType("3dChartContent")
 	graph.Vector3dType = fg.RegisterType("vector")
 
 	fg.RegisterMethods(PlotType, createPlotMethods())
@@ -1472,7 +1472,7 @@ func Setup(fg *value.FunctionGenerator) {
 		},
 		Args:   -1,
 		IsPure: true,
-	}.SetDescription("content...", "Creates a new plot."))
+	}.SetDescription("content...", "Creates a new chart."))
 	fg.AddStaticFunction("plot3d", funcGen.Function[value.Value]{
 		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
 			p := NewPlot3dValue(graph.NewPlot3d())
@@ -1489,7 +1489,7 @@ func Setup(fg *value.FunctionGenerator) {
 		},
 		Args:   -1,
 		IsPure: true,
-	}.SetDescription("content...", "Creates a new 3d plot."))
+	}.SetDescription("content...", "Creates a new 3d chart."))
 	fg.AddStaticFunction("graph", funcGen.Function[value.Value]{
 		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
 			steps := 0
@@ -1538,7 +1538,7 @@ func Setup(fg *value.FunctionGenerator) {
 		},
 		Args:   2,
 		IsPure: true,
-	}.SetDescription("y", "color", "Creates a constant line plot content.").VarArgs(1, 2))
+	}.SetDescription("y", "color", "Creates a constant line chart content.").VarArgs(1, 2))
 	fg.AddStaticFunction("xConst", funcGen.Function[value.Value]{
 		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
 			if x, ok := st.Get(0).ToFloat(); ok {
@@ -1553,7 +1553,7 @@ func Setup(fg *value.FunctionGenerator) {
 		},
 		Args:   2,
 		IsPure: true,
-	}.SetDescription("y", "color", "Creates a constant line plot content.").VarArgs(1, 2))
+	}.SetDescription("y", "color", "Creates a constant line chart content.").VarArgs(1, 2))
 	fg.AddStaticFunction("hint", funcGen.Function[value.Value]{
 		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
 			if x, ok := st.Get(0).ToFloat(); ok {
@@ -1576,7 +1576,7 @@ func Setup(fg *value.FunctionGenerator) {
 		},
 		Args:   4,
 		IsPure: true,
-	}.SetDescription("x", "y", "text", "color", "Creates a new hint plot content.").VarArgs(3, 4))
+	}.SetDescription("x", "y", "text", "color", "Creates a new hint chart content.").VarArgs(3, 4))
 	fg.AddStaticFunction("hintDir", funcGen.Function[value.Value]{
 		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
 			if x1, ok := st.Get(0).ToFloat(); ok {
@@ -1606,7 +1606,7 @@ func Setup(fg *value.FunctionGenerator) {
 		},
 		Args:   6,
 		IsPure: true,
-	}.SetDescription("x1", "y1", "x2", "y2", "text", "color", "Creates a new directional hint plot content.").VarArgs(5, 6))
+	}.SetDescription("x1", "y1", "x2", "y2", "text", "color", "Creates a new directional hint chart content.").VarArgs(5, 6))
 	fg.AddStaticFunction("text", funcGen.Function[value.Value]{
 		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
 			if x, ok := st.Get(0).ToFloat(); ok {
@@ -1629,7 +1629,7 @@ func Setup(fg *value.FunctionGenerator) {
 		},
 		Args:   4,
 		IsPure: true,
-	}.SetDescription("x", "y", "text", "color", "Adds an arbitrary text to the plot.").VarArgs(3, 4))
+	}.SetDescription("x", "y", "text", "color", "Adds an arbitrary text to the chart.").VarArgs(3, 4))
 	fg.AddStaticFunction("arrow", funcGen.Function[value.Value]{
 		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
 			if x1, ok := st.Get(0).ToFloat(); ok {
@@ -1665,7 +1665,7 @@ func Setup(fg *value.FunctionGenerator) {
 		},
 		Args:   7,
 		IsPure: true,
-	}.SetDescription("x1", "y1", "x2", "y2", "text", "color", "mode", "Creates an arrow plot content. "+
+	}.SetDescription("x1", "y1", "x2", "y2", "text", "color", "mode", "Creates an arrow chart content. "+
 		"The mode flag defines which arrow heads to draw (0: none, 1: at the tip (default), 2: at the tail, 3: at both ends).").VarArgs(4, 7))
 	fg.AddStaticFunction("arrow3d", funcGen.Function[value.Value]{
 		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
@@ -1707,7 +1707,7 @@ func Setup(fg *value.FunctionGenerator) {
 		},
 		Args:   6,
 		IsPure: true,
-	}.SetDescription("v1", "v2", "text", "color", "plane", "mode", "Creates an arrow plot3d content. "+
+	}.SetDescription("v1", "v2", "text", "color", "plane", "mode", "Creates an arrow 3d chart content. "+
 		"If no plane vector is given, the arrow is oriented so that the two reverse tips of the arrow head have the same z-value. "+
 		"If a plane vector is given, it's part perpendicular to the arrow is used as a normal vector to define the plane created by "+
 		"the tip of the arrow head and the two reverse tips. "+

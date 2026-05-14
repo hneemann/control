@@ -348,13 +348,13 @@ func bodePlotContentMethods() value.MethodMap {
 			} else {
 				return nil, fmt.Errorf("latency requires a float")
 			}
-		}).SetMethodDescription("latency", "Adds a latency to the bode plot."),
+		}).SetMethodDescription("latency", "Adds a latency to the bode chart."),
 		"phase": value.MethodAtType(0, func(plot BodePlotContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			return grParser.PlotContentValue{Holder: grParser.Holder[graph.PlotContent]{Value: bodePhase{plot.Value}}}, nil
-		}).SetMethodDescription("Returns the phase plot."),
+		}).SetMethodDescription("Returns the phase chart content."),
 		"amplitude": value.MethodAtType(0, func(plot BodePlotContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			return grParser.PlotContentValue{Holder: grParser.Holder[graph.PlotContent]{Value: bodeAmplitude{plot.Value}}}, nil
-		}).SetMethodDescription("Returns the amplitude plot."),
+		}).SetMethodDescription("Returns the amplitude chart content."),
 		"title": value.MethodAtType(1, func(plot BodePlotContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if leg, ok := stack.Get(1).(value.String); ok {
 				plot.Value.Title = string(leg)
@@ -456,7 +456,7 @@ func linMethods() value.MethodMap {
 				}, contentList), nil
 			}
 			return nil, fmt.Errorf("evans requires a float")
-		}).SetMethodDescription("kMin", "kMax", "Creates an evans plot content. This is the root locus curve "+
+		}).SetMethodDescription("kMin", "kMax", "Creates an evans chart content. This is the root locus curve "+
 			"which shows the location of the poles of the closed loop of a linear system with the gain k of the "+
 			"open chain as its parameter. If only one argument is given, "+
 			"this argument is used as kMax and kMin is set to 0.").VarArgsMethod(1, 2),
@@ -484,7 +484,7 @@ func linMethods() value.MethodMap {
 			return value.NewListConvert(func(i graph.PlotContent) (value.Value, error) {
 				return grParser.NewPlotContentValue(i), nil
 			}, contentList), nil
-		}).SetMethodDescription("neg", "wMax", "wMin", "steps", "Creates a nyquist plot content. If neg is true also the range -∞<ω<0 is included. "+
+		}).SetMethodDescription("neg", "wMax", "wMin", "steps", "Creates a nyquist chart content. If neg is true also the range -∞<ω<0 is included. "+
 			"The value wMax gives the maximum value for ω. It defaults to 1000rad/s.").VarArgsMethod(0, 4),
 		"nyquistPos": value.MethodAtType(3, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
 			sMax, ok := st.GetOptional(1, value.Float(0)).ToFloat()
@@ -505,7 +505,7 @@ func linMethods() value.MethodMap {
 			}
 			contentValue := grParser.NewPlotContentValue(plotContent)
 			return contentValue, nil
-		}).SetMethodDescription("wMax", "wMin", "steps", "Creates a nyquist plot content with positive ω. "+
+		}).SetMethodDescription("wMax", "wMin", "steps", "Creates a nyquist chart content with positive ω. "+
 			"The value wMax gives the maximum value for ω. It defaults to 1000rad/s.").VarArgsMethod(0, 3),
 		"nyquistNeg": value.MethodAtType(3, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
 			sMax, ok := st.GetOptional(1, value.Float(0)).ToFloat()
@@ -526,7 +526,7 @@ func linMethods() value.MethodMap {
 			}
 			contentValue := grParser.NewPlotContentValue(plotContent)
 			return contentValue, nil
-		}).SetMethodDescription("wMax", "wMin", "steps", "Creates a nyquist plot content with negative ω. "+
+		}).SetMethodDescription("wMax", "wMin", "steps", "Creates a nyquist chart content with negative ω. "+
 			"The value wMax gives the maximum value for ω. It defaults to 1000rad/s.").VarArgsMethod(0, 3),
 		"pMargin": value.MethodAtType(0, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
 			w0, margin, err := lin.PMargin()
@@ -610,7 +610,7 @@ func createBodeMethod[T value.Value](convert func(T) *Linear) funcGen.Function[v
 			}
 		}
 		return nil, fmt.Errorf("bode requires a color, a string and an int as arguments")
-	}).SetMethodDescription("color", "title", "steps", "Creates a bode plot content.").VarArgsMethod(0, 3)
+	}).SetMethodDescription("color", "title", "steps", "Creates a bode chart content.").VarArgsMethod(0, 3)
 }
 
 func floatMethods() value.MethodMap {
@@ -1142,8 +1142,8 @@ func plot3dMethods() value.MethodMap {
 				return plot3d, nil
 			}
 			return nil, fmt.Errorf("addTo requires a gui element as argument")
-		}).SetMethodDescription("gui", "Adds gui elements to the 3d-plot to rotate the plot. "+
-			"The return value of the method is the 3d-plot, with the viewing angles set to the current slider positions.").Pure(false),
+		}).SetMethodDescription("gui", "Adds gui elements to the 3d-chart allowing to rotate the chart. "+
+			"The return value of the method is the 3d-chart, with the viewing angles set to the current slider positions.").Pure(false),
 	}
 }
 
@@ -1207,7 +1207,7 @@ func (b bodeAdder) Add(val value.Value) error {
 		bp.addTo(b.plot.Value)
 		return nil
 	}
-	return errors.New("not a valid plot content")
+	return errors.New("not a valid chart content")
 }
 
 var Parser = value.New().
@@ -1394,7 +1394,7 @@ var Parser = value.New().
 		},
 		Args:   0,
 		IsPure: true,
-	}.SetDescription("Returns a polar grid to be added to a plot.")).
+	}.SetDescription("Returns a polar grid to be added to a chart.")).
 	AddStaticFunction("rootLocus", funcGen.Function[value.Value]{
 		Func: func(st funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
 			if cppClosure, ok := st.Get(0).(value.Closure); ok {
@@ -1435,7 +1435,7 @@ var Parser = value.New().
 		},
 		Args:   4,
 		IsPure: true,
-	}.SetDescription("func(k) value", "kMin", "kMax", "parName", "Creates a root locus plot content. "+
+	}.SetDescription("func(k) value", "kMin", "kMax", "parName", "Creates a root locus chart content. "+
 		"If the function returns a polynomial for the given k, the roots of that polynomial are calculated. "+
 		"If a linear system is returned, the poles are calculated.").VarArgs(3, 4)).
 	AddStaticFunction("pid", funcGen.Function[value.Value]{
@@ -1483,7 +1483,7 @@ var Parser = value.New().
 						add = np
 						res = np
 					default:
-						return nil, fmt.Errorf("plot requires plot content, 3d-plot content or bode plot content as arguments")
+						return nil, fmt.Errorf("plot requires chart contentor a 3d-chart content as arguments")
 					}
 				}
 				err = add.Add(v)
