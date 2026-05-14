@@ -80,12 +80,12 @@ func createVector3dMethods() value.MethodMap {
 }
 
 var (
-	PlotType          value.Type
-	PlotContentType   value.Type
-	StyleType         value.Type
-	ImageType         value.Type
-	Plot3dType        value.Type
-	Plot3dContentType value.Type
+	ChartType          value.Type
+	ChartContentType   value.Type
+	StyleType          value.Type
+	ImageType          value.Type
+	Chart3dType        value.Type
+	Chart3dContentType value.Type
 )
 
 type ToImageInterface interface {
@@ -147,17 +147,17 @@ func createImageMethods() value.MethodMap {
 	}
 }
 
-type Plot3dContentValue struct {
-	Holder[graph.Plot3dContent]
+type Chart3dContentValue struct {
+	Holder[graph.Chart3dContent]
 }
 
-func (p Plot3dContentValue) GetType() value.Type {
-	return Plot3dContentType
+func (p Chart3dContentValue) GetType() value.Type {
+	return Chart3dContentType
 }
 
-func createPlot3dContentMethods() value.MethodMap {
+func createChart3dContentMethods() value.MethodMap {
 	return value.MethodMap{
-		"uBounds": value.MethodAtType(2, func(pc Plot3dContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+		"uBounds": value.MethodAtType(2, func(pc Chart3dContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if vMin, ok := stack.Get(1).ToFloat(); ok {
 				if vMax, ok := stack.Get(2).ToFloat(); ok {
 					if vbs, ok := pc.Value.(graph.UBoundsSetter); ok {
@@ -170,7 +170,7 @@ func createPlot3dContentMethods() value.MethodMap {
 			}
 			return nil, fmt.Errorf("uBounds requires two float values")
 		}).SetMethodDescription("uMin", "uMax", "Sets the parameter u-bounds."),
-		"vBounds": value.MethodAtType(2, func(pc Plot3dContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+		"vBounds": value.MethodAtType(2, func(pc Chart3dContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if vMin, ok := stack.Get(1).ToFloat(); ok {
 				if vMax, ok := stack.Get(2).ToFloat(); ok {
 					if vbs, ok := pc.Value.(graph.VBoundsSetter); ok {
@@ -183,7 +183,7 @@ func createPlot3dContentMethods() value.MethodMap {
 			}
 			return nil, fmt.Errorf("vBounds requires two float values")
 		}).SetMethodDescription("vMin", "vMax", "Sets the parameter v-bounds."),
-		"color": value.MethodAtType(2, func(pc Plot3dContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+		"color": value.MethodAtType(2, func(pc Chart3dContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			style, err := GetStyle(stack, 1, graph.Black)
 			if err != nil {
 				return nil, err
@@ -204,7 +204,7 @@ func createPlot3dContentMethods() value.MethodMap {
 			}
 			return pc, nil
 		}).SetMethodDescription("color1", "color2", "Sets the color.").VarArgsMethod(1, 2),
-		"title": value.MethodAtType(1, func(pc Plot3dContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+		"title": value.MethodAtType(1, func(pc Chart3dContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if str, ok := stack.Get(1).(value.String); ok {
 				if ts, ok := pc.Value.(graph.TitleSetter); ok {
 					pc.Value = ts.SetTitle(string(str))
@@ -214,16 +214,16 @@ func createPlot3dContentMethods() value.MethodMap {
 			}
 			return nil, fmt.Errorf("title requires a string")
 		}).SetMethodDescription("title", "Sets the title of the 3d chart content."),
-		"close": value.MethodAtType(0, func(plot Plot3dContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
-			pc := plot.Value
+		"close": value.MethodAtType(0, func(chart Chart3dContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			pc := chart.Value
 			if sc, ok := pc.(graph.IsCloseable3d); ok {
 				pc = sc.Close()
 			} else {
 				return nil, fmt.Errorf("Close can only be called on chart contents that can be closed.")
 			}
-			return Plot3dContentValue{Holder[graph.Plot3dContent]{pc}}, nil
+			return Chart3dContentValue{Holder[graph.Chart3dContent]{pc}}, nil
 		}).SetMethodDescription("Closes a path."),
-		"points": value.MethodAtType(3, func(plot Plot3dContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+		"points": value.MethodAtType(3, func(chart Chart3dContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			style, err := GetStyle(stack, 2, graph.Black)
 			if err != nil {
 				return nil, err
@@ -241,8 +241,8 @@ func createPlot3dContentMethods() value.MethodMap {
 				return nil, err
 			}
 
-			if sc, ok := plot.Value.(graph.HasShape3d); ok {
-				return Plot3dContentValue{Holder[graph.Plot3dContent]{sc.SetShape(marker, style.Value)}}, nil
+			if sc, ok := chart.Value.(graph.HasShape3d); ok {
+				return Chart3dContentValue{Holder[graph.Chart3dContent]{sc.SetShape(marker, style.Value)}}, nil
 			} else {
 				return nil, fmt.Errorf("point type can only be set for chart contents that support points")
 			}
@@ -282,87 +282,87 @@ func valueToMarker(val value.Value, size float64) (graph.Shape, error) {
 	return nil, fmt.Errorf("marker must be defined by an int or a string")
 }
 
-type Plot3dValue struct {
-	Holder[*graph.Plot3d]
+type Chart3dValue struct {
+	Holder[*graph.Chart3d]
 	context graph.Context
 }
 
-func (p Plot3dValue) ToImage() graph.Image {
+func (p Chart3dValue) ToImage() graph.Image {
 	return p.Value
 }
 
-func (p Plot3dValue) DrawTo(canvas graph.Canvas) error {
+func (p Chart3dValue) DrawTo(canvas graph.Canvas) error {
 	return p.Holder.Value.DrawTo(canvas)
 }
 
-func NewPlot3dValue(plot *graph.Plot3d) Plot3dValue {
-	return Plot3dValue{Holder[*graph.Plot3d]{plot}, graph.DefaultContext}
+func NewChart3dValue(chart *graph.Chart3d) Chart3dValue {
+	return Chart3dValue{Holder[*graph.Chart3d]{chart}, graph.DefaultContext}
 }
 
-func (p Plot3dValue) GetType() value.Type {
-	return Plot3dType
+func (p Chart3dValue) GetType() value.Type {
+	return Chart3dType
 }
 
-func (p Plot3dValue) Add(pc value.Value) error {
-	if c, ok := pc.(Plot3dContentValue); ok {
+func (p Chart3dValue) Add(pc value.Value) error {
+	if c, ok := pc.(Chart3dContentValue); ok {
 		p.Holder.Value.AddContent(c.Value)
 		return nil
 	}
 	return errors.New("value is not a 3d chart content")
 }
 
-func (p Plot3dValue) ToHtml(_ funcGen.Stack[value.Value], w *xmlWriter.XMLWriter) error {
+func (p Chart3dValue) ToHtml(_ funcGen.Stack[value.Value], w *xmlWriter.XMLWriter) error {
 	return CreateSVG(p, &p.context, w)
 }
 
-type PlotValue struct {
-	Holder[*graph.Plot]
+type ChartValue struct {
+	Holder[*graph.Chart]
 	context graph.Context
 }
 
-func (p PlotValue) Copy() PlotValue {
-	newPlot := *p.Value
-	return PlotValue{
-		Holder:  Holder[*graph.Plot]{&newPlot},
+func (p ChartValue) Copy() ChartValue {
+	newChart := *p.Value
+	return ChartValue{
+		Holder:  Holder[*graph.Chart]{&newChart},
 		context: p.context,
 	}
 }
 
-func (p PlotValue) ToImage() graph.Image {
+func (p ChartValue) ToImage() graph.Image {
 	return p.Value
 }
 
-func (p PlotValue) ToHtml(_ funcGen.Stack[value.Value], w *xmlWriter.XMLWriter) error {
+func (p ChartValue) ToHtml(_ funcGen.Stack[value.Value], w *xmlWriter.XMLWriter) error {
 	return CreateSVG(p, &p.context, w)
 }
 
 var (
-	_ export.ToHtmlInterface = PlotValue{}
-	_ ToImageInterface       = PlotValue{}
+	_ export.ToHtmlInterface = ChartValue{}
+	_ ToImageInterface       = ChartValue{}
 )
 
-func (p PlotValue) DrawTo(canvas graph.Canvas) error {
+func (p ChartValue) DrawTo(canvas graph.Canvas) error {
 	return p.Holder.Value.DrawTo(canvas)
 }
 
-func NewPlotValue(plot *graph.Plot) PlotValue {
-	return PlotValue{Holder[*graph.Plot]{plot}, graph.DefaultContext}
+func NewChartValue(chart *graph.Chart) ChartValue {
+	return ChartValue{Holder[*graph.Chart]{chart}, graph.DefaultContext}
 }
 
-func (p PlotValue) GetType() value.Type {
-	return PlotType
+func (p ChartValue) GetType() value.Type {
+	return ChartType
 }
 
-func (p PlotValue) Add(pc value.Value) error {
-	if c, ok := pc.(PlotContentValue); ok {
+func (p ChartValue) Add(pc value.Value) error {
+	if c, ok := pc.(ChartContentValue); ok {
 		p.Holder.Value.AddContent(c.Value, c.SecondaryAxis)
 		return nil
 	}
 	return errors.New("value is not a chart content")
 }
 
-func (p PlotValue) AddAtTop(pc value.Value) error {
-	if c, ok := pc.(PlotContentValue); ok {
+func (p ChartValue) AddAtTop(pc value.Value) error {
+	if c, ok := pc.(ChartContentValue); ok {
 		p.Holder.Value.AddContentAtTop(c.Value, c.SecondaryAxis)
 		return nil
 	}
@@ -445,115 +445,115 @@ func createStyleMethods() value.MethodMap {
 	}
 }
 
-func createPlot3dMethods() value.MethodMap {
+func createChart3dMethods() value.MethodMap {
 	return value.MethodMap{
-		"add": value.MethodAtType(-1, func(plot Plot3dValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+		"add": value.MethodAtType(-1, func(chart Chart3dValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			for v, err := range value.FlattenStack(stack, 1) {
 				if err != nil {
 					return nil, err
 				}
-				err = plot.Add(v)
+				err = chart.Add(v)
 				if err != nil {
 					return nil, err
 				}
 			}
-			return plot, nil
+			return chart, nil
 		}).SetMethodDescription("chartContent", "Adds a chart content to the chart."),
-		"angles": value.MethodAtType(3, func(plot Plot3dValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+		"angles": value.MethodAtType(3, func(chart Chart3dValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if alpha, ok := stack.Get(1).ToFloat(); ok {
 				if beta, ok := stack.Get(2).ToFloat(); ok {
 					if gamma, ok := stack.GetOptional(3, value.Float(0)).ToFloat(); ok {
-						plot.Value.SetAngle(alpha, beta, gamma)
-						return plot, nil
+						chart.Value.SetAngle(alpha, beta, gamma)
+						return chart, nil
 					}
 				}
 			}
-			return Plot3dValue{}, fmt.Errorf("angle requires three float values")
+			return Chart3dValue{}, fmt.Errorf("angle requires three float values")
 		}).SetMethodDescription("alpha", "beta", "gamma", "Sets the projection angles.").VarArgsMethod(2, 3),
-		"size": value.MethodAtType(1, func(plot Plot3dValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+		"size": value.MethodAtType(1, func(chart Chart3dValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if size, ok := stack.Get(1).ToFloat(); ok {
-				plot.Value.Size = size
-				return plot, nil
+				chart.Value.Size = size
+				return chart, nil
 			}
-			return Plot3dValue{}, fmt.Errorf("size requires a float value")
+			return Chart3dValue{}, fmt.Errorf("size requires a float value")
 		}).SetMethodDescription("size", "Sets the size of the cube in the 3d chart. Default is 1."),
-		"perspective": value.MethodAtType(1, func(plot Plot3dValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+		"perspective": value.MethodAtType(1, func(chart Chart3dValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if p, ok := stack.Get(1).ToFloat(); ok {
-				plot.Value.Perspective = p
-				return plot, nil
+				chart.Value.Perspective = p
+				return chart, nil
 			}
-			return Plot3dValue{}, fmt.Errorf("perspective requires a float value")
+			return Chart3dValue{}, fmt.Errorf("perspective requires a float value")
 		}).SetMethodDescription("perspective", "Sets the perspective of the 3d chart. Default is 1."),
-		"labels": value.MethodAtType(3, func(plot Plot3dValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+		"labels": value.MethodAtType(3, func(chart Chart3dValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if xStr, ok := stack.Get(1).(value.String); ok {
 				if yStr, ok := stack.Get(2).(value.String); ok {
 					if zStr, ok := stack.Get(3).(value.String); ok {
-						plot.Value.X.Label = string(xStr)
-						plot.Value.Y.Label = string(yStr)
-						plot.Value.Z.Label = string(zStr)
-						return plot, nil
+						chart.Value.X.Label = string(xStr)
+						chart.Value.Y.Label = string(yStr)
+						chart.Value.Z.Label = string(zStr)
+						return chart, nil
 					}
 				}
 			}
 			return nil, fmt.Errorf("xLabel requires a string")
 		}).SetMethodDescription("xLabel", "yLabel", "zLabel", "Sets the axis labels."),
-		"noAxis": value.MethodAtType(0, func(plot Plot3dValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
-			plot.Value.X.HideAxis = true
-			plot.Value.Y.HideAxis = true
-			plot.Value.Z.HideAxis = true
-			return plot, nil
+		"noAxis": value.MethodAtType(0, func(chart Chart3dValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			chart.Value.X.HideAxis = true
+			chart.Value.Y.HideAxis = true
+			chart.Value.Z.HideAxis = true
+			return chart, nil
 		}).SetMethodDescription("Hides all axis."),
-		"noXAxis": value.MethodAtType(0, func(plot Plot3dValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
-			plot.Value.X.HideAxis = true
-			return plot, nil
+		"noXAxis": value.MethodAtType(0, func(chart Chart3dValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			chart.Value.X.HideAxis = true
+			return chart, nil
 		}).SetMethodDescription("Hides the x-axis."),
-		"noYAxis": value.MethodAtType(0, func(plot Plot3dValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
-			plot.Value.Y.HideAxis = true
-			return plot, nil
+		"noYAxis": value.MethodAtType(0, func(chart Chart3dValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			chart.Value.Y.HideAxis = true
+			return chart, nil
 		}).SetMethodDescription("Hides the y-axis."),
-		"noZAxis": value.MethodAtType(0, func(plot Plot3dValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
-			plot.Value.Z.HideAxis = true
-			return plot, nil
+		"noZAxis": value.MethodAtType(0, func(chart Chart3dValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			chart.Value.Z.HideAxis = true
+			return chart, nil
 		}).SetMethodDescription("Hides the z-axis."),
-		"hideCube": value.MethodAtType(0, func(plot Plot3dValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
-			plot.Value.HideCube = true
-			return plot, nil
+		"hideCube": value.MethodAtType(0, func(chart Chart3dValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			chart.Value.HideCube = true
+			return chart, nil
 		}).SetMethodDescription("Hides the cube."),
-		"xBounds": value.MethodAtType(2, func(plot Plot3dValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+		"xBounds": value.MethodAtType(2, func(chart Chart3dValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if vMin, ok := stack.Get(1).ToFloat(); ok {
 				if vMax, ok := stack.Get(2).ToFloat(); ok {
-					plot.Value.X.Bounds = graph.NewBounds(vMin, vMax)
-					return plot, nil
+					chart.Value.X.Bounds = graph.NewBounds(vMin, vMax)
+					return chart, nil
 				}
 			}
 			return nil, fmt.Errorf("xBounds requires two float values")
 		}).SetMethodDescription("xMin", "xMax", "Sets the x-bounds."),
-		"yBounds": value.MethodAtType(2, func(plot Plot3dValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+		"yBounds": value.MethodAtType(2, func(chart Chart3dValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if vMin, ok := stack.Get(1).ToFloat(); ok {
 				if vMax, ok := stack.Get(2).ToFloat(); ok {
-					plot.Value.Y.Bounds = graph.NewBounds(vMin, vMax)
-					return plot, nil
+					chart.Value.Y.Bounds = graph.NewBounds(vMin, vMax)
+					return chart, nil
 				}
 			}
 			return nil, fmt.Errorf("yBounds requires two float values")
 		}).SetMethodDescription("yMin", "yMax", "Sets the y-bounds."),
-		"zBounds": value.MethodAtType(2, func(plot Plot3dValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+		"zBounds": value.MethodAtType(2, func(chart Chart3dValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if vMin, ok := stack.Get(1).ToFloat(); ok {
 				if vMax, ok := stack.Get(2).ToFloat(); ok {
-					plot.Value.Z.Bounds = graph.NewBounds(vMin, vMax)
-					return plot, nil
+					chart.Value.Z.Bounds = graph.NewBounds(vMin, vMax)
+					return chart, nil
 				}
 			}
 			return nil, fmt.Errorf("zBounds requires two float values")
 		}).SetMethodDescription("zMin", "zMax", "Sets the z-bounds."),
-		"svg": value.MethodAtType(1, func(plot Plot3dValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+		"svg": value.MethodAtType(1, func(chart Chart3dValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if str, ok := stack.Get(1).(value.String); ok {
-				return ImageToSvg(plot, &plot.context, string(str))
+				return ImageToSvg(chart, &chart.context, string(str))
 			} else {
 				return nil, fmt.Errorf("svg requires a string")
 			}
 		}).SetMethodDescription("name", "Creates a svg-file to download."),
-		"outputSize": value.MethodAtType(2, func(im Plot3dValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+		"outputSize": value.MethodAtType(2, func(im Chart3dValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if width, ok := stack.Get(1).ToFloat(); ok {
 				if height, ok := stack.Get(2).ToFloat(); ok {
 					im.context.Width = width
@@ -563,7 +563,7 @@ func createPlot3dMethods() value.MethodMap {
 			}
 			return nil, fmt.Errorf("outputSize requires two float values")
 		}).SetMethodDescription("width", "height", "Sets the svg-output size."),
-		"hlr": value.MethodAtType(1, func(im Plot3dValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+		"hlr": value.MethodAtType(1, func(im Chart3dValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if on, ok := stack.GetOptional(1, value.Bool(true)).(value.Bool); ok {
 				im.Value = im.Value.EnableHLR(bool(on))
 				return im, nil
@@ -578,211 +578,211 @@ func createPlot3dMethods() value.MethodMap {
 
 var GridStyle = graph.Gray.SetDash(5, 5).SetStrokeWidth(1)
 
-func createPlotMethods() value.MethodMap {
+func createChartMethods() value.MethodMap {
 	mm := value.MethodMap{
-		"add": value.MethodAtType(-1, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
-			plot = plot.Copy()
+		"add": value.MethodAtType(-1, func(chart ChartValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			chart = chart.Copy()
 			for v, err := range value.FlattenStack(stack, 1) {
 				if err != nil {
 					return nil, err
 				}
-				err = plot.Add(v)
+				err = chart.Add(v)
 				if err != nil {
 					return nil, err
 				}
 			}
-			return plot, nil
+			return chart, nil
 		}).SetMethodDescription("chartContent", "Adds a chart content to the chart."),
-		"addAtTop": value.MethodAtType(-1, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
-			plot = plot.Copy()
+		"addAtTop": value.MethodAtType(-1, func(chart ChartValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			chart = chart.Copy()
 			for v, err := range value.FlattenStack(stack, 1) {
 				if err != nil {
 					return nil, err
 				}
-				err = plot.AddAtTop(v)
+				err = chart.AddAtTop(v)
 				if err != nil {
 					return nil, err
 				}
 			}
-			return plot, nil
+			return chart, nil
 		}).SetMethodDescription("chartContent", "Adds a chart content to the chart at the top of the plotting sequence."),
-		"title": value.MethodAtType(1, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+		"title": value.MethodAtType(1, func(chart ChartValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if str, ok := stack.Get(1).(value.String); ok {
-				plot = plot.Copy()
-				plot.Value.Title = string(str)
+				chart = chart.Copy()
+				chart.Value.Title = string(str)
 			} else {
 				return nil, fmt.Errorf("title requires a string")
 			}
-			return plot, nil
+			return chart, nil
 		}).SetMethodDescription("title", "Sets the title."),
-		"labels": value.MethodAtType(3, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+		"labels": value.MethodAtType(3, func(chart ChartValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if xStr, ok := stack.Get(1).(value.String); ok {
 				if yStr, ok := stack.Get(2).(value.String); ok {
-					plot = plot.Copy()
-					plot.Value.X.Label = string(xStr)
-					plot.Value.Y.Label = string(yStr)
+					chart = chart.Copy()
+					chart.Value.X.Label = string(xStr)
+					chart.Value.Y.Label = string(yStr)
 					if stack.Size() == 4 {
 						if ySecStr, ok := stack.Get(3).(value.String); ok {
-							plot.Value.YSec.Label = string(ySecStr)
-							return plot, nil
+							chart.Value.YSec.Label = string(ySecStr)
+							return chart, nil
 						}
 					} else {
-						return plot, nil
+						return chart, nil
 					}
 				}
 			}
 			return nil, fmt.Errorf("labels requires string values")
 		}).SetMethodDescription("xLabel", "yLabel", "ySecLabel", "Sets the axis labels.").VarArgsMethod(2, 3),
-		"protectLabels": value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
-			plot = plot.Copy()
-			plot.Value.ProtectLabels = true
-			return plot, nil
+		"protectLabels": value.MethodAtType(0, func(chart ChartValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			chart = chart.Copy()
+			chart.Value.ProtectLabels = true
+			return chart, nil
 		}).SetMethodDescription("Autoscaling protects the labels."),
-		"grid": value.MethodAtType(1, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+		"grid": value.MethodAtType(1, func(chart ChartValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			styleVal, err := GetStyle(stack, 1, GridStyle)
 			if err != nil {
 				return nil, fmt.Errorf("grid: %w", err)
 			}
-			plot = plot.Copy()
-			plot.Value.X.Grid = styleVal.Value
-			plot.Value.Y.Grid = styleVal.Value
-			return plot, nil
+			chart = chart.Copy()
+			chart.Value.X.Grid = styleVal.Value
+			chart.Value.Y.Grid = styleVal.Value
+			return chart, nil
 		}).SetMethodDescription("color", "Adds a grid.").VarArgsMethod(0, 1),
-		"frame": value.MethodAtType(1, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+		"frame": value.MethodAtType(1, func(chart ChartValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if styleVal, err := GetStyle(stack, 1, nil); err == nil {
-				plot = plot.Copy()
-				plot.Value.Frame = styleVal.Value
-				return plot, nil
+				chart = chart.Copy()
+				chart.Value.Frame = styleVal.Value
+				return chart, nil
 			} else {
 				return nil, fmt.Errorf("frame requires a style: %w", err)
 			}
 		}).SetMethodDescription("color", "Sets the frame color."),
-		"svg": value.MethodAtType(1, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+		"svg": value.MethodAtType(1, func(chart ChartValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if str, ok := stack.Get(1).(value.String); ok {
-				return ImageToSvg(plot, &plot.context, string(str))
+				return ImageToSvg(chart, &chart.context, string(str))
 			} else {
 				return nil, fmt.Errorf("svg requires a string")
 			}
 		}).SetMethodDescription("name", "Creates a svg-file to download."),
-		"borders": value.MethodAtType(2, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+		"borders": value.MethodAtType(2, func(chart ChartValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if l, ok := stack.Get(1).ToFloat(); ok {
 				if r, ok := stack.Get(2).ToFloat(); ok {
-					plot = plot.Copy()
-					plot.Value.LeftBorder = l
-					plot.Value.RightBorder = r
-					return plot, nil
+					chart = chart.Copy()
+					chart.Value.LeftBorder = l
+					chart.Value.RightBorder = r
+					return chart, nil
 				}
 			}
 			return nil, fmt.Errorf("borders requires two floats")
 		}).SetMethodDescription("left", "right", "Sets the width of the left and right border measured in characters."),
-		"cross": value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
-			plot = plot.Copy()
-			plot.Value.Cross = true
-			return plot, nil
+		"cross": value.MethodAtType(0, func(chart ChartValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			chart = chart.Copy()
+			chart.Value.Cross = true
+			return chart, nil
 		}).SetMethodDescription("Draws a coordinate cross instead of a rectangle around the chart."),
-		"stack": value.MethodAtType(1, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+		"stack": value.MethodAtType(1, func(chart ChartValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if sta, ok := stack.GetOptional(1, value.Bool(true)).(value.Bool); ok {
-				plot = plot.Copy()
-				plot.Value.StackBothYAxis = bool(sta)
-				return plot, nil
+				chart = chart.Copy()
+				chart.Value.StackBothYAxis = bool(sta)
+				return chart, nil
 			} else {
 				return nil, errors.New("stack requires a bool value")
 			}
 		}).SetMethodDescription("stacking", "If this value is set to “true” and both y-axes are used, two stacked "+
 			"charts are created instead of using the left and right borders for one axis each.").VarArgsMethod(0, 1),
-		"ySquare": value.MethodAtType(1, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
-			plot = plot.Copy()
-			plot.Value.Square = true
+		"ySquare": value.MethodAtType(1, func(chart ChartValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			chart = chart.Copy()
+			chart.Value.Square = true
 			if c, ok := stack.GetOptional(1, value.Float(0)).ToFloat(); ok {
-				plot.Value.SquareYCenter = c
+				chart.Value.SquareYCenter = c
 			} else {
 				return nil, errors.New("square requires a float value")
 			}
-			return plot, nil
+			return chart, nil
 		}).SetMethodDescription("yCenter", "Sets the aspect ratio of the axis bounds to one by setting the Y bounds appropriately.").VarArgsMethod(0, 1),
-		"noBorders": value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
-			plot = plot.Copy()
-			plot.Value.NoBorder = true
-			return plot, nil
+		"noBorders": value.MethodAtType(0, func(chart ChartValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			chart = chart.Copy()
+			chart.Value.NoBorder = true
+			return chart, nil
 		}).SetMethodDescription("All the border withs are set to zero. This is useful, if insets are used and the space under " +
 			"the axis should not remain free. In this case, the axis is drawn outside the assigned drawing area, whereby the underlying chart is overdrawn."),
-		"legendPos": value.MethodAtType(2, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+		"legendPos": value.MethodAtType(2, func(chart ChartValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if x, ok := stack.Get(1).ToFloat(); ok {
 				if y, ok := stack.Get(2).ToFloat(); ok {
-					plot = plot.Copy()
-					plot.Value.LegendPos.Set(graph.Point{X: x, Y: y}, false)
-					return plot, nil
+					chart = chart.Copy()
+					chart.Value.LegendPos.Set(graph.Point{X: x, Y: y}, false)
+					return chart, nil
 				}
 			}
 			return nil, fmt.Errorf("legendPos requires two float values")
 		}).SetMethodDescription("x", "y", "Sets the position of the legend."),
-		"legendRelPos": value.MethodAtType(2, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+		"legendRelPos": value.MethodAtType(2, func(chart ChartValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if x, ok := stack.Get(1).ToFloat(); ok {
 				if y, ok := stack.Get(2).ToFloat(); ok {
-					plot = plot.Copy()
-					plot.Value.LegendPos.Set(graph.Point{X: x, Y: y}, true)
-					return plot, nil
+					chart = chart.Copy()
+					chart.Value.LegendPos.Set(graph.Point{X: x, Y: y}, true)
+					return chart, nil
 				}
 			}
 			return nil, fmt.Errorf("legendRelPos requires two float values")
 		}).SetMethodDescription("x", "y", "Sets the relative position of the legend. The x- and y-coordinate are given in percent."),
-		"legendPosSec": value.MethodAtType(2, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+		"legendPosSec": value.MethodAtType(2, func(chart ChartValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if x, ok := stack.Get(1).ToFloat(); ok {
 				if y, ok := stack.Get(2).ToFloat(); ok {
-					plot = plot.Copy()
-					plot.Value.LegendPosSec.Set(graph.Point{X: x, Y: y}, false)
-					return plot, nil
+					chart = chart.Copy()
+					chart.Value.LegendPosSec.Set(graph.Point{X: x, Y: y}, false)
+					return chart, nil
 				}
 			}
 			return nil, fmt.Errorf("legendPos requires two float values")
 		}).SetMethodDescription("x", "y", "Sets the position of the secondary legend."),
-		"legendRelPosSec": value.MethodAtType(2, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+		"legendRelPosSec": value.MethodAtType(2, func(chart ChartValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if x, ok := stack.Get(1).ToFloat(); ok {
 				if y, ok := stack.Get(2).ToFloat(); ok {
-					plot = plot.Copy()
-					plot.Value.LegendPosSec.Set(graph.Point{X: x, Y: y}, true)
-					return plot, nil
+					chart = chart.Copy()
+					chart.Value.LegendPosSec.Set(graph.Point{X: x, Y: y}, true)
+					return chart, nil
 				}
 			}
 			return nil, fmt.Errorf("legendRelPos requires two float values")
 		}).SetMethodDescription("x", "y", "Sets the relative position of the secondary legend. The x- and y-coordinate are given in percent."),
-		"noLegend": value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
-			plot.Value.HideLegend = true
-			return plot, nil
+		"noLegend": value.MethodAtType(0, func(chart ChartValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			chart.Value.HideLegend = true
+			return chart, nil
 		}).SetMethodDescription("Hides the legend."),
-		"textSize": value.MethodAtType(1, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+		"textSize": value.MethodAtType(1, func(chart ChartValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if si, ok := stack.Get(1).ToFloat(); ok {
-				plot = plot.Copy()
-				plot.context.TextSize = si
-				return plot, nil
+				chart = chart.Copy()
+				chart.context.TextSize = si
+				return chart, nil
 			}
 			return nil, fmt.Errorf("textSize requires a float values")
 		}).SetMethodDescription("size", "Sets the text size."),
-		"LaTeX": value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
-			plot.context.TextSize = LaTeXTextSize
-			return plot, nil
+		"LaTeX": value.MethodAtType(0, func(chart ChartValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			chart.context.TextSize = LaTeXTextSize
+			return chart, nil
 		}).SetMethodDescription(fmt.Sprintf("Sets the text size to %d.", LaTeXTextSize)),
-		"outputSize": value.MethodAtType(2, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+		"outputSize": value.MethodAtType(2, func(chart ChartValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if width, ok := stack.Get(1).ToFloat(); ok {
 				if height, ok := stack.Get(2).ToFloat(); ok {
-					plot = plot.Copy()
-					plot.context.Width = width
-					plot.context.Height = height
-					return plot, nil
+					chart = chart.Copy()
+					chart.context.Width = width
+					chart.context.Height = height
+					return chart, nil
 				}
 			}
 			return nil, fmt.Errorf("outputSize requires two float values")
 		}).SetMethodDescription("width", "height", "Sets the svg-output size."),
-		"zoom": value.MethodAtType(3, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+		"zoom": value.MethodAtType(3, func(chart ChartValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if x, ok := stack.Get(1).ToFloat(); ok {
 				if y, ok := stack.Get(2).ToFloat(); ok {
 					if f, ok := stack.Get(3).ToFloat(); ok {
 						if f <= 0 {
 							return nil, fmt.Errorf("factor needs to be greater than 0")
 						}
-						plot = plot.Copy()
-						plot.Value.BoundsModifier = graph.Zoom(graph.Point{X: x, Y: y}, f)
-						return plot, nil
+						chart = chart.Copy()
+						chart.Value.BoundsModifier = graph.Zoom(graph.Point{X: x, Y: y}, f)
+						return chart, nil
 					}
 				}
 			}
@@ -794,86 +794,86 @@ func createPlotMethods() value.MethodMap {
 			"In contrast to inset, the coordinates are given in percent. "+
 			"If a Visual Guide Color is given, it is assumed that the inset is a part of the large chart, and a visual guide is drawn.").VarArgsMethod(4, 5),
 	}
-	addAxisMethods("x", "X", func(plot *graph.Plot) *graph.AxisDescription { return &plot.X }, mm)
-	addAxisMethods("y", "Y", func(plot *graph.Plot) *graph.AxisDescription { return &plot.Y }, mm)
-	addAxisMethods("ySec", "YSec", func(plot *graph.Plot) *graph.AxisDescription { return &plot.YSec }, mm)
+	addAxisMethods("x", "X", func(chart *graph.Chart) *graph.AxisDescription { return &chart.X }, mm)
+	addAxisMethods("y", "Y", func(chart *graph.Chart) *graph.AxisDescription { return &chart.Y }, mm)
+	addAxisMethods("ySec", "YSec", func(chart *graph.Chart) *graph.AxisDescription { return &chart.YSec }, mm)
 	return mm
 }
 
-func addAxisMethods(name, uName string, aa func(plot *graph.Plot) *graph.AxisDescription, mm value.MethodMap) {
+func addAxisMethods(name, uName string, aa func(chart *graph.Chart) *graph.AxisDescription, mm value.MethodMap) {
 	mm[name+"Label"] =
-		value.MethodAtType(1, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+		value.MethodAtType(1, func(chart ChartValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if str, ok := stack.Get(1).(value.String); ok {
-				plot = plot.Copy()
-				aa(plot.Value).Label = string(str)
+				chart = chart.Copy()
+				aa(chart.Value).Label = string(str)
 			} else {
 				return nil, fmt.Errorf("%sLabel requires a string", name)
 			}
-			return plot, nil
+			return chart, nil
 		}).SetMethodDescription("label", fmt.Sprintf("Sets the %s-label.", name))
-	mm[name+"Bounds"] = value.MethodAtType(2, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+	mm[name+"Bounds"] = value.MethodAtType(2, func(chart ChartValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 		if vMin, ok := stack.Get(1).ToFloat(); ok {
 			if vMax, ok := stack.Get(2).ToFloat(); ok {
-				plot = plot.Copy()
-				aa(plot.Value).Bounds = graph.NewBounds(vMin, vMax)
-				return plot, nil
+				chart = chart.Copy()
+				aa(chart.Value).Bounds = graph.NewBounds(vMin, vMax)
+				return chart, nil
 			}
 		}
 		return nil, fmt.Errorf("%sBounds requires two float values", name)
 	}).SetMethodDescription(name+"Min", name+"Max", "Sets the "+name+"-bounds.")
-	mm[name+"Log"] = value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
-		plot = plot.Copy()
-		aa(plot.Value).Factory = graph.LogAxis
-		return plot, nil
+	mm[name+"Log"] = value.MethodAtType(0, func(chart ChartValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+		chart = chart.Copy()
+		aa(chart.Value).Factory = graph.LogAxis
+		return chart, nil
 	}).SetMethodDescription("Enables log scaling of " + name + "-Axis.")
-	mm[name+"dB"] = value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
-		plot = plot.Copy()
-		aa(plot.Value).Factory = graph.DBAxis
-		return plot, nil
+	mm[name+"dB"] = value.MethodAtType(0, func(chart ChartValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+		chart = chart.Copy()
+		aa(chart.Value).Factory = graph.DBAxis
+		return chart, nil
 	}).SetMethodDescription("Enables dB scaling of " + name + "-Axis.")
-	mm[name+"Lin"] = value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
-		plot = plot.Copy()
-		aa(plot.Value).Factory = graph.LinearAxis
-		return plot, nil
+	mm[name+"Lin"] = value.MethodAtType(0, func(chart ChartValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+		chart = chart.Copy()
+		aa(chart.Value).Factory = graph.LinearAxis
+		return chart, nil
 	}).SetMethodDescription("Enables linear scaling of " + name + "-Axis.")
-	mm[name+"Date"] = value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
-		plot = plot.Copy()
-		aa(plot.Value).Factory = graph.CreateDateAxis("02.01.06", "02.01.06 15:04")
-		return plot, nil
+	mm[name+"Date"] = value.MethodAtType(0, func(chart ChartValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+		chart = chart.Copy()
+		aa(chart.Value).Factory = graph.CreateDateAxis("02.01.06", "02.01.06 15:04")
+		return chart, nil
 	}).SetMethodDescription("Enables date scaling of " + name + "-Axis.")
-	mm["tickSep"+uName] = value.MethodAtType(1, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+	mm["tickSep"+uName] = value.MethodAtType(1, func(chart ChartValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 		if ts, ok := stack.Get(1).ToFloat(); ok {
-			plot = plot.Copy()
-			aa(plot.Value).TickSep = ts
-			return plot, nil
+			chart = chart.Copy()
+			aa(chart.Value).TickSep = ts
+			return chart, nil
 		}
 		return nil, fmt.Errorf("tickSep%s requires a float value", uName)
 	}).SetMethodDescription("with", "Sets the space between ticks measured in characters.")
-	mm["no"+uName+"Expand"] = value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
-		plot = plot.Copy()
-		aa(plot.Value).NoExpand = true
-		return plot, nil
+	mm["no"+uName+"Expand"] = value.MethodAtType(0, func(chart ChartValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+		chart = chart.Copy()
+		aa(chart.Value).NoExpand = true
+		return chart, nil
 	}).SetMethodDescription("No expansion of " + name + "-Axis. By default, the axis is expanded to prevent points from being drawn directly on top of the frame.")
-	mm["no"+uName+"Axis"] = value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
-		aa(plot.Value).HideAxis = true
-		return plot, nil
+	mm["no"+uName+"Axis"] = value.MethodAtType(0, func(chart ChartValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+		aa(chart.Value).HideAxis = true
+		return chart, nil
 	}).SetMethodDescription("Hides the " + name + "-axis.")
-	mm[name+"Grid"] = value.MethodAtType(1, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+	mm[name+"Grid"] = value.MethodAtType(1, func(chart ChartValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 		styleVal, err := GetStyle(stack, 1, GridStyle)
 		if err != nil {
 			return nil, fmt.Errorf("%sGrid: %w", name, err)
 		}
-		aa(plot.Value).Grid = styleVal.Value
-		return plot, nil
+		aa(chart.Value).Grid = styleVal.Value
+		return chart, nil
 	}).SetMethodDescription("color", "Adds a grid.").VarArgsMethod(0, 1)
-	mm["no"+uName+"Grid"] = value.MethodAtType(0, func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
-		aa(plot.Value).Grid = nil
-		return plot, nil
+	mm["no"+uName+"Grid"] = value.MethodAtType(0, func(chart ChartValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+		aa(chart.Value).Grid = nil
+		return chart, nil
 	}).SetMethodDescription("Disables the " + name + "-axis grid.")
 }
 
-func CreateInsetMethod(relative bool) func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
-	return func(plot PlotValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+func CreateInsetMethod(relative bool) func(chart ChartValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+	return func(chart ChartValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 		if xMin, ok := stack.Get(1).ToFloat(); ok {
 			if xMax, ok := stack.Get(2).ToFloat(); ok {
 				if yMin, ok := stack.Get(3).ToFloat(); ok {
@@ -894,10 +894,10 @@ func CreateInsetMethod(relative bool) func(plot PlotValue, stack funcGen.Stack[v
 							visualGuide = vsv.Value
 						}
 
-						return NewPlotContentValue(graph.ImageInset{
+						return NewChartContentValue(graph.ImageInset{
 							Min:         graph.NewRelativePos(graph.Point{X: xMin, Y: yMin}, relative),
 							Max:         graph.NewRelativePos(graph.Point{X: xMax, Y: yMax}, relative),
-							Plot:        plot.Value,
+							Chart:       chart.Value,
 							VisualGuide: visualGuide,
 						}), nil
 					}
@@ -908,12 +908,12 @@ func CreateInsetMethod(relative bool) func(plot PlotValue, stack funcGen.Stack[v
 	}
 }
 
-func createPlotContentMethods() value.MethodMap {
+func createChartContentMethods() value.MethodMap {
 	return value.MethodMap{
-		"title": value.MethodAtType(1, func(plot PlotContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+		"title": value.MethodAtType(1, func(ccv ChartContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if leg, ok := stack.Get(1).(value.String); ok {
-				if sc, ok := plot.Value.(graph.HasTitle); ok {
-					return PlotContentValue{Holder[graph.PlotContent]{sc.SetTitle(string(leg))}, plot.SecondaryAxis}, nil
+				if sc, ok := ccv.Value.(graph.HasTitle); ok {
+					return ChartContentValue{Holder[graph.ChartContent]{sc.SetTitle(string(leg))}, ccv.SecondaryAxis}, nil
 				} else {
 					return nil, fmt.Errorf("title can only be set for charts using a title")
 				}
@@ -921,7 +921,7 @@ func createPlotContentMethods() value.MethodMap {
 				return nil, fmt.Errorf("title requires a string")
 			}
 		}).SetMethodDescription("str", "Sets a string to show as title in the legend."),
-		"points": value.MethodAtType(3, func(plot PlotContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+		"points": value.MethodAtType(3, func(ccv ChartContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			style, err := GetStyle(stack, 2, graph.Black)
 			if err != nil {
 				return nil, err
@@ -939,16 +939,16 @@ func createPlotContentMethods() value.MethodMap {
 				return nil, err
 			}
 
-			if sc, ok := plot.Value.(graph.HasShape); ok {
-				return PlotContentValue{Holder[graph.PlotContent]{sc.SetShape(marker, style.Value)}, plot.SecondaryAxis}, nil
+			if sc, ok := ccv.Value.(graph.HasShape); ok {
+				return ChartContentValue{Holder[graph.ChartContent]{sc.SetShape(marker, style.Value)}, ccv.SecondaryAxis}, nil
 			} else {
 				return nil, fmt.Errorf("point type can only be set for chart contents that support points")
 			}
 		}).SetMethodDescription("type", "color", "size", "Sets the point type, color and size. The type is given by an integer "+
 			"(0: Cross, 1: Circle, 2: Square, 3: Triangle, 4: Diamond)").VarArgsMethod(1, 3),
-		"line": value.MethodAtType(2, func(plot PlotContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+		"line": value.MethodAtType(2, func(ccv ChartContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if style, err := GetStyle(stack, 1, nil); err == nil {
-				pc := plot.Value
+				pc := ccv.Value
 				if sc, ok := pc.(graph.HasLine); ok {
 					pc = sc.SetLine(style.Value)
 				} else {
@@ -965,40 +965,40 @@ func createPlotContentMethods() value.MethodMap {
 				} else {
 					return nil, fmt.Errorf("the title must be a string")
 				}
-				return PlotContentValue{Holder[graph.PlotContent]{pc}, plot.SecondaryAxis}, nil
+				return ChartContentValue{Holder[graph.ChartContent]{pc}, ccv.SecondaryAxis}, nil
 			} else {
 				return nil, fmt.Errorf("line requires a style: %w", err)
 			}
 		}).SetMethodDescription("color", "title", "Sets the line style and title.").VarArgsMethod(1, 2),
-		"close": value.MethodAtType(0, func(plot PlotContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
-			pc := plot.Value
+		"close": value.MethodAtType(0, func(ccv ChartContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			pc := ccv.Value
 			if sc, ok := pc.(graph.IsCloseable); ok {
 				pc = sc.Close()
 			} else {
 				return nil, fmt.Errorf("Close can only be called on chart contents that can be closed.")
 			}
-			return PlotContentValue{Holder[graph.PlotContent]{pc}, plot.SecondaryAxis}, nil
+			return ChartContentValue{Holder[graph.ChartContent]{pc}, ccv.SecondaryAxis}, nil
 		}).SetMethodDescription("Closes a path."),
-		"toYSec": value.MethodAtType(0, func(plot PlotContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
-			pc := plot.Value
-			return PlotContentValue{Holder[graph.PlotContent]{pc}, true}, nil
+		"toYSec": value.MethodAtType(0, func(ccv ChartContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			pc := ccv.Value
+			return ChartContentValue{Holder[graph.ChartContent]{pc}, true}, nil
 		}).SetMethodDescription("The chart content is assigned to the secondary y-axis. By default, the second " +
 			"axis is drawn on the right side of the chart. Using the 'stack' command, you can instead draw two charts " +
 			"stacked on top of each other, with both axes on the left."),
 	}
 }
 
-type PlotContentValue struct {
-	Holder[graph.PlotContent]
+type ChartContentValue struct {
+	Holder[graph.ChartContent]
 	SecondaryAxis bool
 }
 
-func NewPlotContentValue(pc graph.PlotContent) PlotContentValue {
-	return PlotContentValue{Holder[graph.PlotContent]{pc}, false}
+func NewChartContentValue(pc graph.ChartContent) ChartContentValue {
+	return ChartContentValue{Holder[graph.ChartContent]{pc}, false}
 }
 
-func (p PlotContentValue) GetType() value.Type {
-	return PlotContentType
+func (p ChartContentValue) GetType() value.Type {
+	return ChartContentType
 }
 
 type StyleValue struct {
@@ -1018,7 +1018,7 @@ func listMethods() value.MethodMap {
 				if size, ok := list.SizeIfKnown(); ok && size > 200 {
 					s.LineStyle = graph.Black
 				}
-				return PlotContentValue{Holder[graph.PlotContent]{s}, false}, nil
+				return ChartContentValue{Holder[graph.ChartContent]{s}, false}, nil
 			case 3:
 				if xc, ok := st.Get(1).(value.Closure); ok && xc.Args == 1 {
 					if yc, ok := st.Get(2).(value.Closure); ok && yc.Args == 1 {
@@ -1026,7 +1026,7 @@ func listMethods() value.MethodMap {
 						if size, ok := list.SizeIfKnown(); ok && size > 200 {
 							s.LineStyle = graph.Black
 						}
-						return PlotContentValue{Holder[graph.PlotContent]{s}, false}, nil
+						return ChartContentValue{Holder[graph.ChartContent]{s}, false}, nil
 					}
 				}
 			default:
@@ -1038,7 +1038,7 @@ func listMethods() value.MethodMap {
 			"If the functions are omitted, the list elements themselves must be lists of the form [x,y].").VarArgsMethod(0, 2),
 		"graph3d": value.MethodAtType(0, func(list *value.List, st funcGen.Stack[value.Value]) (value.Value, error) {
 			s := graph.ListBasedLine3d{Vectors: listToVectors(list)}
-			return Plot3dContentValue{Holder[graph.Plot3dContent]{s}}, nil
+			return Chart3dContentValue{Holder[graph.Chart3dContent]{s}}, nil
 		}).SetMethodDescription("Creates a line connecting all the vectors in the list."),
 	}
 }
@@ -1078,7 +1078,7 @@ func closureMethods() value.MethodMap {
 				return 0, fmt.Errorf("the function given to graph must return a float")
 			}
 			gf := graph.Function{Function: f, Steps: steps, Style: graph.Black}
-			return PlotContentValue{Holder[graph.PlotContent]{gf}, false}, nil
+			return ChartContentValue{Holder[graph.ChartContent]{gf}, false}, nil
 		}).SetMethodDescription("steps", "Creates a graph of the function (ℝ→ℝ) to be used in the plot command.").VarArgsMethod(0, 1),
 
 		"pGraph": value.MethodAtType(4, func(cl value.Closure, st funcGen.Stack[value.Value]) (value.Value, error) {
@@ -1138,7 +1138,7 @@ func closureMethods() value.MethodMap {
 						return nil, fmt.Errorf("pGraph: %w", err)
 					}
 					gf.Func = f
-					return PlotContentValue{Holder[graph.PlotContent]{gf}, false}, nil
+					return ChartContentValue{Holder[graph.ChartContent]{gf}, false}, nil
 				}
 			}
 			return nil, fmt.Errorf("pGraph requires two floats as first arguments")
@@ -1199,7 +1199,7 @@ func closureMethods() value.MethodMap {
 						FuncFac: fac,
 						Steps:   steps,
 					}
-					return PlotContentValue{Holder[graph.PlotContent]{h}, false}, nil
+					return ChartContentValue{Holder[graph.ChartContent]{h}, false}, nil
 				}
 			}
 			return nil, fmt.Errorf("heat requires two floats as first arguments")
@@ -1235,7 +1235,7 @@ func closureMethods() value.MethodMap {
 				FuncFac: fac,
 				Steps:   steps,
 			}
-			return PlotContentValue{Holder[graph.PlotContent]{h}, false}, nil
+			return ChartContentValue{Holder[graph.ChartContent]{h}, false}, nil
 		}).SetMethodDescription("steps", "Creates a heat chart of the function. "+
 			"The function needs to have two arguments (x,y) and has to return a color, "+
 			"which is used to color a square located at the coordinate (x,y).").VarArgsMethod(0, 1),
@@ -1251,14 +1251,14 @@ func closureMethods() value.MethodMap {
 					return nil, err
 				}
 				gf := &graph.Line3d{Func: f, Steps: steps, Style: graph.Black}
-				return Plot3dContentValue{Holder[graph.Plot3dContent]{gf}}, nil
+				return Chart3dContentValue{Holder[graph.Chart3dContent]{gf}}, nil
 			case 2:
 				uSteps, vSteps, f, err := create3dFunc(cl, st)
 				if err != nil {
 					return nil, err
 				}
 				gf := &graph.Graph3d{Func: f, USteps: uSteps, VSteps: vSteps, Style: graph.Black}
-				return Plot3dContentValue{Holder[graph.Plot3dContent]{gf}}, nil
+				return Chart3dContentValue{Holder[graph.Chart3dContent]{gf}}, nil
 			default:
 				return nil, fmt.Errorf("the function passed to graph3d requires either one or two arguments")
 			}
@@ -1279,7 +1279,7 @@ func closureMethods() value.MethodMap {
 			}
 
 			gf := &graph.Solid3d{Func: f, USteps: uSteps, VSteps: vSteps, Hexagonal: hexagonal}
-			return Plot3dContentValue{Holder[graph.Plot3dContent]{gf}}, nil
+			return Chart3dContentValue{Holder[graph.Chart3dContent]{gf}}, nil
 		}).SetMethodDescription("xSteps", "ySteps", "hexagonal", "Creates a solid graph of a function (either ℝ²→ℝ³ or ℝ²→ℝ) to be used in the plot3d command. "+
 			"A solid surface is drawn.").VarArgsMethod(0, 3),
 	}
@@ -1370,22 +1370,22 @@ func create3dFuncLine(cl value.Closure, st funcGen.Stack[value.Value]) (int, fun
 const defSize = 4
 
 func Setup(fg *value.FunctionGenerator) {
-	PlotType = fg.RegisterType("chart", "Represents a chart. It is possible ta add different content types to it. The chart is visualized as an embedded SVG graphic.")
-	PlotContentType = fg.RegisterType("chartContent", "Something which can be added to a chart.")
+	ChartType = fg.RegisterType("chart", "Represents a chart. It is possible ta add different content types to it. The chart is visualized as an embedded SVG graphic.")
+	ChartContentType = fg.RegisterType("chartContent", "Something which can be added to a chart.")
 	StyleType = fg.RegisterType("style", "Represents a certain style. It describes the stroke color, the fill color and the line style.")
 	ImageType = fg.RegisterType("image", "A simple chart. It is usually created by combining several charts.")
-	Plot3dType = fg.RegisterType("3dChart", "Represents a 3d chart.")
-	Plot3dContentType = fg.RegisterType("3dChartContent", "Something which can be added to a 3d chart.")
+	Chart3dType = fg.RegisterType("3dChart", "Represents a 3d chart.")
+	Chart3dContentType = fg.RegisterType("3dChartContent", "Something which can be added to a 3d chart.")
 	graph.Vector3dType = fg.RegisterType("vector", "A 3d vector")
 
-	fg.RegisterMethods(PlotType, createPlotMethods())
-	fg.RegisterMethods(PlotContentType, createPlotContentMethods())
+	fg.RegisterMethods(ChartType, createChartMethods())
+	fg.RegisterMethods(ChartContentType, createChartContentMethods())
 	fg.RegisterMethods(StyleType, createStyleMethods())
 	fg.RegisterMethods(ImageType, createImageMethods())
 	fg.RegisterMethods(value.ListTypeId, listMethods())
 	fg.RegisterMethods(value.ClosureTypeId, closureMethods())
-	fg.RegisterMethods(Plot3dType, createPlot3dMethods())
-	fg.RegisterMethods(Plot3dContentType, createPlot3dContentMethods())
+	fg.RegisterMethods(Chart3dType, createChart3dMethods())
+	fg.RegisterMethods(Chart3dContentType, createChart3dContentMethods())
 	fg.RegisterMethods(graph.Vector3dType, createVector3dMethods())
 	export.AddHTMLStylingHelpers(fg)
 	fg.AddConstant("black", StyleValue{Holder[*graph.Style]{graph.Black}})
@@ -1458,7 +1458,7 @@ func Setup(fg *value.FunctionGenerator) {
 	}.SetDescription("x", "y", "z", "Creates a vector.").VarArgs(2, 3))
 	fg.AddStaticFunction("plot", funcGen.Function[value.Value]{
 		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
-			p := NewPlotValue(&graph.Plot{})
+			p := NewChartValue(&graph.Chart{})
 			for v, err := range value.FlattenStack(st, 0) {
 				if err != nil {
 					return nil, err
@@ -1475,7 +1475,7 @@ func Setup(fg *value.FunctionGenerator) {
 	}.SetDescription("content...", "Creates a new chart."))
 	fg.AddStaticFunction("plot3d", funcGen.Function[value.Value]{
 		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
-			p := NewPlot3dValue(graph.NewPlot3d())
+			p := NewChart3dValue(graph.NewChart3d())
 			for v, err := range value.FlattenStack(st, 0) {
 				if err != nil {
 					return nil, err
@@ -1519,7 +1519,7 @@ func Setup(fg *value.FunctionGenerator) {
 				return nil, fmt.Errorf("graph requires a closure as first argument")
 			}
 			gf := graph.Function{Function: f, Steps: steps, Style: graph.Black}
-			return PlotContentValue{Holder[graph.PlotContent]{gf}, false}, nil
+			return ChartContentValue{Holder[graph.ChartContent]{gf}, false}, nil
 		},
 		Args:   -1,
 		IsPure: true,
@@ -1532,7 +1532,7 @@ func Setup(fg *value.FunctionGenerator) {
 					return nil, fmt.Errorf("yConst: %w", err)
 				}
 				c := graph.YConst{Y: y, Style: styleVal.Value}
-				return PlotContentValue{Holder[graph.PlotContent]{c}, false}, nil
+				return ChartContentValue{Holder[graph.ChartContent]{c}, false}, nil
 			}
 			return nil, fmt.Errorf("yConst requires a float")
 		},
@@ -1547,7 +1547,7 @@ func Setup(fg *value.FunctionGenerator) {
 					return nil, fmt.Errorf("xConst: %w", err)
 				}
 				c := graph.XConst{X: x, Style: styleVal.Value}
-				return PlotContentValue{Holder[graph.PlotContent]{c}, false}, nil
+				return ChartContentValue{Holder[graph.ChartContent]{c}, false}, nil
 			}
 			return nil, fmt.Errorf("yConst requires a float")
 		},
@@ -1568,7 +1568,7 @@ func Setup(fg *value.FunctionGenerator) {
 							return nil, fmt.Errorf("hint: %w", err)
 						}
 						hint.Style = styleVal.Value
-						return PlotContentValue{Holder: Holder[graph.PlotContent]{hint}}, nil
+						return ChartContentValue{Holder: Holder[graph.ChartContent]{hint}}, nil
 					}
 				}
 			}
@@ -1596,7 +1596,7 @@ func Setup(fg *value.FunctionGenerator) {
 									return nil, fmt.Errorf("hintDir: %w", err)
 								}
 								hint.Style = styleVal.Value
-								return PlotContentValue{Holder: Holder[graph.PlotContent]{hint}}, nil
+								return ChartContentValue{Holder: Holder[graph.ChartContent]{hint}}, nil
 							}
 						}
 					}
@@ -1621,7 +1621,7 @@ func Setup(fg *value.FunctionGenerator) {
 							return nil, fmt.Errorf("text: %w", err)
 						}
 						t.Style = styleVal.Value
-						return PlotContentValue{Holder: Holder[graph.PlotContent]{t}}, nil
+						return ChartContentValue{Holder: Holder[graph.ChartContent]{t}}, nil
 					}
 				}
 			}
@@ -1656,7 +1656,7 @@ func Setup(fg *value.FunctionGenerator) {
 							} else {
 								return nil, fmt.Errorf("arrow requires an int as fifth argument")
 							}
-							return PlotContentValue{Holder: Holder[graph.PlotContent]{arrow}}, nil
+							return ChartContentValue{Holder: Holder[graph.ChartContent]{arrow}}, nil
 						}
 					}
 				}
@@ -1700,7 +1700,7 @@ func Setup(fg *value.FunctionGenerator) {
 						return nil, fmt.Errorf("arrow requires an int as sixth argument")
 					}
 
-					return Plot3dContentValue{Holder: Holder[graph.Plot3dContent]{arrow}}, nil
+					return Chart3dContentValue{Holder: Holder[graph.Chart3dContent]{arrow}}, nil
 				}
 			}
 			return nil, fmt.Errorf("arrow requires four floats and a string")
@@ -1943,11 +1943,11 @@ func listToVectors(list *value.List) graph.Vectors {
 	}
 }
 
-func ImageToSvg(plot graph.Image, context *graph.Context, name string) (value.Value, error) {
+func ImageToSvg(img graph.Image, context *graph.Context, name string) (value.Value, error) {
 	var buf bytes.Buffer
 	buf.WriteString("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n")
 	w := xmlWriter.NewWithBuffer(&buf).PrettyPrint()
-	err := CreateSVG(plot, context, w)
+	err := CreateSVG(img, context, w)
 	if err != nil {
 		return nil, err
 	}

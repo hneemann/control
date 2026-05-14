@@ -92,17 +92,17 @@ func TestLinear(t *testing.T) {
 		{name: "pid", exp: "let kp=12;let ti=1.5;let td=2;let p=pid(kp,ti,td); string(p)", res: value.String("(36*s^2+18*s+12)/(1.5*s)")},
 
 		{name: "loop", exp: "let g=(s+1)/(s^2+4*s+5); string(g.loop())", res: value.String("(s+1)/(s^2+5*s+6)")},
-		{name: "evans", exp: "let g=(s+1)/(s^2+4*s+5); string(plot(g.evans(10)))", res: value.String("Plot: Scatter: Poles, Scatter: Zeros, Evans Curves, Polar Grid, Asymptotes, Plot Preferences")},
-		{name: "nyquist", exp: "let g=(s+1)/(s^2+4*s+5); string(plot(g.nyquist()))", res: value.String("Plot: Plot Preferences, Scatter: ω=0, Parameter curve, coordinate cross")},
+		{name: "evans", exp: "let g=(s+1)/(s^2+4*s+5); string(plot(g.evans(10)))", res: value.String("Chart: Scatter: Poles, Scatter: Zeros, Evans Curves, Polar Grid, Asymptotes, Chart Preferences")},
+		{name: "nyquist", exp: "let g=(s+1)/(s^2+4*s+5); string(plot(g.nyquist()))", res: value.String("Chart: Chart Preferences, Scatter: ω=0, Parameter curve, coordinate cross")},
 
 		{name: "gMargin", exp: "let g=(s+0.2)/((s^2+2*s+10)*(s+4)*(s^2+0.2*s+0.1));10^(g.gMargin().gMargin/20)", res: value.Float(74.45626527211962)},
 		{name: "pMargin", exp: "let g=74.45626527211962*(s+0.2)/((s^2+2*s+10)*(s+4)*(s^2+0.2*s+0.1));g.pMargin().pMargin/100", res: value.Float(0)},
 		{name: "pMargin", exp: "let g=70*(s+0.2)/((s^2+2*s+10)*(s+4)*(s^2+0.2*s+0.1));g.pMargin().pMargin", res: value.Float(11.868562012450866)},
 
-		{name: "bode-lin", exp: "let g=(s+0.2)/((s+1)*(s+2));string(g.bode())", res: value.String("BodePlotContent((s+0.2)/(s^2+3*s+2))")},
-		{name: "bode-poly", exp: "let g=s+0.2;string(g.bode())", res: value.String("BodePlotContent(s+0.2)")},
-		{name: "bode-float", exp: "let g=0.2;string(g.bode())", res: value.String("BodePlotContent(0.2)")},
-		{name: "bode-int", exp: "let g=2;string(g.bode())", res: value.String("BodePlotContent(2)")},
+		{name: "bode-lin", exp: "let g=(s+0.2)/((s+1)*(s+2));string(g.bode())", res: value.String("BodeChartContent((s+0.2)/(s^2+3*s+2))")},
+		{name: "bode-poly", exp: "let g=s+0.2;string(g.bode())", res: value.String("BodeChartContent(s+0.2)")},
+		{name: "bode-float", exp: "let g=0.2;string(g.bode())", res: value.String("BodeChartContent(0.2)")},
+		{name: "bode-int", exp: "let g=2;string(g.bode())", res: value.String("BodeChartContent(2)")},
 	}
 
 	for _, test := range tests {
@@ -303,7 +303,7 @@ func getLinear(Ti)
   (pid(0.1,Ti)*G).loop();
 
 plot(
-  text(-2.2, 1.9, "Root Locus Plot varying T#i"),
+  text(-2.2, 1.9, "Root Locus Chart varying T#i"),
   rootLocus(getLinear, 0.1, 10, "T#i"),
 ).legendPos(-2.7,-1.4)
 `, file: "z.html"},

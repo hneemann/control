@@ -223,30 +223,30 @@ func (l LinePath3d) IsClosed() bool {
 	return false
 }
 
-type Plot3dContent interface {
-	DrawTo(*Plot3d, Cube) error
+type Chart3dContent interface {
+	DrawTo(*Chart3d, Cube) error
 	Legend() Legend
-	SetStyle(s *Style) Plot3dContent
+	SetStyle(s *Style) Chart3dContent
 	RequiresHiddenLineRemoval() bool
 }
 type UBoundsSetter interface {
-	SetUBounds(bounds Bounds) Plot3dContent
+	SetUBounds(bounds Bounds) Chart3dContent
 }
 
 type VBoundsSetter interface {
-	SetVBounds(bounds Bounds) Plot3dContent
+	SetVBounds(bounds Bounds) Chart3dContent
 }
 
 type TitleSetter interface {
-	SetTitle(title string) Plot3dContent
+	SetTitle(title string) Chart3dContent
 }
 
 type IsCloseable3d interface {
-	Close() Plot3dContent
+	Close() Chart3dContent
 }
 
 type HasShape3d interface {
-	SetShape(Shape, *Style) Plot3dContent
+	SetShape(Shape, *Style) Chart3dContent
 }
 
 type hlrMode int
@@ -257,9 +257,9 @@ const (
 	hlrOff
 )
 
-type Plot3d struct {
+type Chart3d struct {
 	X, Y, Z     AxisDescription
-	Contents    []Plot3dContent
+	Contents    []Chart3dContent
 	alpha       float64
 	beta        float64
 	gamma       float64
@@ -275,8 +275,8 @@ const (
 	pFac     = 800
 )
 
-func NewPlot3d() *Plot3d {
-	return &Plot3d{
+func NewChart3d() *Chart3d {
+	return &Chart3d{
 		alpha:       DefAlpha,
 		beta:        DefBeta,
 		gamma:       0,
@@ -458,9 +458,9 @@ func (t *rotPath3d) IsClosed() bool {
 	return t.p.IsClosed()
 }
 
-func (p *Plot3d) String() string {
+func (p *Chart3d) String() string {
 	bu := bytes.Buffer{}
-	bu.WriteString("Plot3d: ")
+	bu.WriteString("Chart3d: ")
 	for i, content := range p.Contents {
 		if i > 0 {
 			bu.WriteString(", ")
@@ -470,7 +470,7 @@ func (p *Plot3d) String() string {
 	return bu.String()
 }
 
-func (p *Plot3d) DrawTo(canvas Canvas) (err error) {
+func (p *Chart3d) DrawTo(canvas Canvas) (err error) {
 	defer nErr.CatchErr(&err)
 
 	var requiresHiddenLineRemoval bool
@@ -581,17 +581,17 @@ func checkEmpty(str string, def string) string {
 	return str
 }
 
-func (p *Plot3d) AddContent(value Plot3dContent) {
+func (p *Chart3d) AddContent(value Chart3dContent) {
 	p.Contents = append(p.Contents, value)
 }
 
-func (p *Plot3d) SetAngle(alpha float64, beta float64, gamma float64) {
+func (p *Chart3d) SetAngle(alpha float64, beta float64, gamma float64) {
 	p.alpha = alpha
 	p.beta = beta
 	p.gamma = gamma
 }
 
-func (p *Plot3d) EnableHLR(b bool) *Plot3d {
+func (p *Chart3d) EnableHLR(b bool) *Chart3d {
 	np := *p
 	if b {
 		np.hlrMode = hlrOn
@@ -602,7 +602,7 @@ func (p *Plot3d) EnableHLR(b bool) *Plot3d {
 }
 
 type SecondaryStyle interface {
-	SetSecondaryStyle(s *Style) Plot3dContent
+	SetSecondaryStyle(s *Style) Chart3dContent
 }
 
 type Graph3d struct {
@@ -623,31 +623,31 @@ func (g *Graph3d) String() string {
 	return "Graph3d"
 }
 
-func (g *Graph3d) SetUBounds(bounds Bounds) Plot3dContent {
+func (g *Graph3d) SetUBounds(bounds Bounds) Chart3dContent {
 	ng := *g
 	ng.U = bounds
 	return &ng
 }
 
-func (g *Graph3d) SetVBounds(bounds Bounds) Plot3dContent {
+func (g *Graph3d) SetVBounds(bounds Bounds) Chart3dContent {
 	ng := *g
 	ng.V = bounds
 	return &ng
 }
 
-func (g *Graph3d) SetStyle(s *Style) Plot3dContent {
+func (g *Graph3d) SetStyle(s *Style) Chart3dContent {
 	ng := *g
 	ng.Style = s
 	return &ng
 }
 
-func (g *Graph3d) SetTitle(s string) Plot3dContent {
+func (g *Graph3d) SetTitle(s string) Chart3dContent {
 	ng := *g
 	ng.Title = s
 	return &ng
 }
 
-func (g *Graph3d) DrawTo(_ *Plot3d, cube Cube) error {
+func (g *Graph3d) DrawTo(_ *Chart3d, cube Cube) error {
 	uSteps := g.USteps
 	if uSteps <= 0 {
 		uSteps = 31
@@ -727,37 +727,37 @@ func (g *Solid3d) String() string {
 	return "Solid3d"
 }
 
-func (g *Solid3d) SetStyle(s *Style) Plot3dContent {
+func (g *Solid3d) SetStyle(s *Style) Chart3dContent {
 	ng := *g
 	ng.Style1 = s
 	return &ng
 }
 
-func (g *Solid3d) SetTitle(s string) Plot3dContent {
+func (g *Solid3d) SetTitle(s string) Chart3dContent {
 	ng := *g
 	ng.Title = s
 	return &ng
 }
 
-func (g *Solid3d) SetUBounds(bounds Bounds) Plot3dContent {
+func (g *Solid3d) SetUBounds(bounds Bounds) Chart3dContent {
 	ng := *g
 	ng.U = bounds
 	return &ng
 }
 
-func (g *Solid3d) SetVBounds(bounds Bounds) Plot3dContent {
+func (g *Solid3d) SetVBounds(bounds Bounds) Chart3dContent {
 	ng := *g
 	ng.V = bounds
 	return &ng
 }
 
-func (g *Solid3d) SetSecondaryStyle(s *Style) Plot3dContent {
+func (g *Solid3d) SetSecondaryStyle(s *Style) Chart3dContent {
 	ng := *g
 	ng.Style2 = s
 	return &ng
 }
 
-func (g *Solid3d) DrawTo(_ *Plot3d, cube Cube) (err error) {
+func (g *Solid3d) DrawTo(_ *Chart3d, cube Cube) (err error) {
 	defer nErr.CatchErr(&err)
 
 	uSteps := g.USteps
@@ -854,24 +854,24 @@ func (g *Line3d) String() string {
 	return "Line3d"
 }
 
-func (g *Line3d) SetUBounds(bounds Bounds) Plot3dContent {
+func (g *Line3d) SetUBounds(bounds Bounds) Chart3dContent {
 	ng := *g
 	ng.U = bounds
 	return &ng
 }
 
-func (g *Line3d) SetStyle(s *Style) Plot3dContent {
+func (g *Line3d) SetStyle(s *Style) Chart3dContent {
 	ng := *g
 	ng.Style = s
 	return &ng
 }
-func (g *Line3d) SetTitle(s string) Plot3dContent {
+func (g *Line3d) SetTitle(s string) Chart3dContent {
 	ng := *g
 	ng.Title = s
 	return &ng
 }
 
-func (g *Line3d) DrawTo(_ *Plot3d, cube Cube) error {
+func (g *Line3d) DrawTo(_ *Chart3d, cube Cube) error {
 	steps := g.Steps
 	if steps <= 0 {
 		steps = 200
@@ -921,7 +921,7 @@ func (a Arrow3d) String() string {
 	return fmt.Sprintf("Arrow3d(From=%v, To=%v)", a.From, a.To)
 }
 
-func (a Arrow3d) DrawTo(_ *Plot3d, cube Cube) (e error) {
+func (a Arrow3d) DrawTo(_ *Chart3d, cube Cube) (e error) {
 	defer nErr.CatchErr(&e)
 	nErr.Try(cube.DrawLine(a.From, a.To, a.Style))
 
@@ -970,7 +970,7 @@ func (a Arrow3d) Legend() Legend {
 	return Legend{Name: "", ShapeLineStyle: ShapeLineStyle{LineStyle: a.Style}}
 }
 
-func (a Arrow3d) SetStyle(s *Style) Plot3dContent {
+func (a Arrow3d) SetStyle(s *Style) Chart3dContent {
 	a.Style = s
 	return a
 }
@@ -990,7 +990,7 @@ func (s ListBasedLine3d) String() string {
 	return "ListBasedLine3d"
 }
 
-func (s ListBasedLine3d) Close() Plot3dContent {
+func (s ListBasedLine3d) Close() Chart3dContent {
 	s.closed = true
 	return s
 }
@@ -1014,7 +1014,7 @@ func (v vecPath) IsClosed() bool {
 	return v.Closed
 }
 
-func (s ListBasedLine3d) DrawTo(_ *Plot3d, cube Cube) error {
+func (s ListBasedLine3d) DrawTo(_ *Chart3d, cube Cube) error {
 	sls := s.ShapeLineStyle.EnsureSomethingIsVisible()
 	if sls.IsLine() {
 		err := cube.DrawPath(vecPath{s.Vectors, s.closed}, sls.LineStyle)
@@ -1043,12 +1043,12 @@ func (s ListBasedLine3d) Legend() Legend {
 	}
 }
 
-func (s ListBasedLine3d) SetStyle(style *Style) Plot3dContent {
+func (s ListBasedLine3d) SetStyle(style *Style) Chart3dContent {
 	s.ShapeLineStyle.LineStyle = style
 	return s
 }
 
-func (s ListBasedLine3d) SetShape(shape Shape, style *Style) Plot3dContent {
+func (s ListBasedLine3d) SetShape(shape Shape, style *Style) Chart3dContent {
 	s.ShapeLineStyle.Shape = shape
 	s.ShapeLineStyle.ShapeStyle = style
 	return s

@@ -532,8 +532,8 @@ func (p polarPath) IsClosed() bool {
 	return false
 }
 
-func (p Polar) DrawTo(env *graph.PlotContentEnvironment) error {
-	style := env.Plot.X.Grid
+func (p Polar) DrawTo(env *graph.ChartContentEnvironment) error {
+	style := env.Chart.X.Grid
 	if style == nil {
 		style = grParser.GridStyle
 	}
@@ -619,7 +619,7 @@ func (a Asymptotes) DependantBounds(_, _ graph.Bounds) (graph.Bounds, graph.Boun
 	return graph.Bounds{}, graph.Bounds{}, nil
 }
 
-func (a Asymptotes) DrawTo(env *graph.PlotContentEnvironment) error {
+func (a Asymptotes) DrawTo(env *graph.ChartContentEnvironment) error {
 	r := env.Canvas.Rect()
 
 	d := r.MaxDistance(a.Point)
@@ -646,13 +646,13 @@ func (a Asymptotes) Legend() graph.Legend {
 	return graph.Legend{Name: "Asymptotes", ShapeLineStyle: graph.ShapeLineStyle{LineStyle: asymptotesStyle}}
 }
 
-// PlotPreferences allows modifying a graph.Plot after it has been created.
+// PlotPreferences allows modifying a graph.Chart after it has been created.
 // It can be used to set labels, styles, or other properties of the plot.
 // It can't modify the bounds of the plot, as the axes are already drawn when
 // the Modify function is called.
 type PlotPreferences struct {
 	// Modify is a function that modifies the plot.
-	Modify func(*graph.Plot)
+	Modify func(*graph.Chart)
 }
 
 func (p PlotPreferences) Bounds() (x, y graph.Bounds, err error) {
@@ -663,8 +663,8 @@ func (p PlotPreferences) DependantBounds(_, _ graph.Bounds) (x, y graph.Bounds, 
 	return graph.Bounds{}, graph.Bounds{}, nil
 }
 
-func (p PlotPreferences) DrawTo(env *graph.PlotContentEnvironment) error {
-	p.Modify(env.Plot)
+func (p PlotPreferences) DrawTo(env *graph.ChartContentEnvironment) error {
+	p.Modify(env.Chart)
 	return nil
 }
 
@@ -673,11 +673,11 @@ func (p PlotPreferences) Legend() graph.Legend {
 }
 
 func (p PlotPreferences) String() string {
-	return "Plot Preferences"
+	return "Chart Preferences"
 }
 
 func NewImReLabels() PlotPreferences {
-	return PlotPreferences{Modify: func(plot *graph.Plot) {
+	return PlotPreferences{Modify: func(plot *graph.Chart) {
 		if plot.Y.Label == "" {
 			plot.Y.Label = "Im"
 		}
@@ -687,7 +687,7 @@ func NewImReLabels() PlotPreferences {
 	}}
 }
 
-func (l *Linear) CreateEvans(kMin, kMax float64) ([]graph.PlotContent, error) {
+func (l *Linear) CreateEvans(kMin, kMax float64) ([]graph.ChartContent, error) {
 
 	lin, err := l.Reduce()
 	if err != nil {
@@ -745,7 +745,7 @@ func (l *Linear) CreateEvans(kMin, kMax float64) ([]graph.PlotContent, error) {
 		}
 	}
 
-	curveList := make([]graph.PlotContent, 0, 5)
+	curveList := make([]graph.ChartContent, 0, 5)
 
 	markerStyle := graph.Black.SetStrokeWidth(2)
 	if p.Count() > 0 {
@@ -971,7 +971,7 @@ func (ec *evansCurves) DependantBounds(_, _ graph.Bounds) (x, y graph.Bounds, er
 	return graph.Bounds{}, graph.Bounds{}, nil
 }
 
-func (ec *evansCurves) DrawTo(env *graph.PlotContentEnvironment) error {
+func (ec *evansCurves) DrawTo(env *graph.ChartContentEnvironment) error {
 	err := ec.generate(env.Transform)
 	if err != nil {
 		return err
@@ -992,7 +992,7 @@ func (ec *evansCurves) Legend() graph.Legend {
 	return graph.Legend{}
 }
 
-func RootLocus(cpp PolynomialProvider, kMin, kMax float64, parName string) ([]graph.PlotContent, error) {
+func RootLocus(cpp PolynomialProvider, kMin, kMax float64, parName string) ([]graph.ChartContent, error) {
 	ecs := evansCurves{
 		polyProvider:        cpp,
 		useComplexNumRefine: true,
@@ -1024,13 +1024,13 @@ func RootLocus(cpp PolynomialProvider, kMin, kMax float64, parName string) ([]gr
 			},
 			Title: fmt.Sprintf("%s = %g", parName, kMax),
 		}
-		return []graph.PlotContent{minMarker, maxMarker, &ecs, Polar{}}, nil
+		return []graph.ChartContent{minMarker, maxMarker, &ecs, Polar{}}, nil
 	} else {
-		return []graph.PlotContent{&ecs, Polar{}}, nil
+		return []graph.ChartContent{&ecs, Polar{}}, nil
 	}
 }
 
-type BodePlotContent struct {
+type BodeChartContent struct {
 	Linear  *Linear
 	Latency float64
 	Style   *graph.Style
@@ -1042,11 +1042,11 @@ type BodePlotContent struct {
 	phase      []graph.Point
 }
 
-func (bpc *BodePlotContent) String() string {
-	return fmt.Sprintf("BodePlotContent(%s)", bpc.Linear.String())
+func (bpc *BodeChartContent) String() string {
+	return fmt.Sprintf("BodeChartContent(%s)", bpc.Linear.String())
 }
 
-func (l *Linear) CreateBodeContent(style *graph.Style, title string, steps int) *BodePlotContent {
+func (l *Linear) CreateBodeContent(style *graph.Style, title string, steps int) *BodeChartContent {
 	if steps == 0 {
 		steps = 200
 	} else if steps < 100 {
@@ -1054,7 +1054,7 @@ func (l *Linear) CreateBodeContent(style *graph.Style, title string, steps int) 
 	} else if steps > 2000 {
 		steps = 2000
 	}
-	return &BodePlotContent{
+	return &BodeChartContent{
 		Linear: l,
 		Style:  style,
 		Title:  title,
@@ -1062,8 +1062,8 @@ func (l *Linear) CreateBodeContent(style *graph.Style, title string, steps int) 
 	}
 }
 
-func NewBode(wMin, wMax float64) *graph.Plot {
-	return &graph.Plot{
+func NewBode(wMin, wMax float64) *graph.Chart {
+	return &graph.Chart{
 		X: graph.AxisDescription{
 			Bounds:  graph.NewBounds(wMin, wMax),
 			Factory: graph.LogAxis,
@@ -1085,7 +1085,7 @@ func NewBode(wMin, wMax float64) *graph.Plot {
 	}
 }
 
-func (bpc *BodePlotContent) generateExp(wMin, wMax, exp float64) {
+func (bpc *BodeChartContent) generateExp(wMin, wMax, exp float64) {
 	// compensate expansion of x-axis to make the graphs fill the complete x-range
 	// required to avoid calculating values twice
 	logMin := math.Log10(wMin)
@@ -1098,7 +1098,7 @@ func (bpc *BodePlotContent) generateExp(wMin, wMax, exp float64) {
 	bpc.generate(wMin, wMax)
 }
 
-func (bpc *BodePlotContent) generate(wMin, wMax float64) {
+func (bpc *BodeChartContent) generate(wMin, wMax float64) {
 	if wMin <= 0 {
 		wMin = 0.001
 	}
@@ -1137,7 +1137,7 @@ func (bpc *BodePlotContent) generate(wMin, wMax float64) {
 	}
 }
 
-func (bpc *BodePlotContent) addTo(plot *graph.Plot) {
+func (bpc *BodeChartContent) addTo(plot *graph.Chart) {
 	plot.AddContent(bodeAmplitude{bpc}, false)
 	plot.AddContent(bodePhase{bpc}, true)
 }
@@ -1171,7 +1171,7 @@ func calculateCompletePhase(l *Linear, w float64) (offset float64, start float64
 }
 
 type bodePhase struct {
-	bodeContent *BodePlotContent
+	bodeContent *BodeChartContent
 }
 
 func (b bodePhase) Bounds() (x, y graph.Bounds, err error) {
@@ -1187,9 +1187,9 @@ func (b bodePhase) DependantBounds(xGiven, _ graph.Bounds) (x, y graph.Bounds, e
 	return graph.Bounds{}, bounds, nil
 }
 
-func (b bodePhase) DrawTo(env *graph.PlotContentEnvironment) error {
+func (b bodePhase) DrawTo(env *graph.ChartContentEnvironment) error {
 	style := b.bodeContent.Style
-	if !env.Plot.StackBothYAxis {
+	if !env.Chart.StackBothYAxis {
 		style = style.SetDash(5, 5)
 	}
 	r := env.Canvas.Rect()
@@ -1203,7 +1203,7 @@ func (b bodePhase) Legend() graph.Legend {
 }
 
 type bodeAmplitude struct {
-	bodeContent *BodePlotContent
+	bodeContent *BodeChartContent
 }
 
 func (b bodeAmplitude) String() string {
@@ -1223,7 +1223,7 @@ func (b bodeAmplitude) DependantBounds(xGiven, _ graph.Bounds) (x, y graph.Bound
 	return graph.Bounds{}, bounds, nil
 }
 
-func (b bodeAmplitude) DrawTo(env *graph.PlotContentEnvironment) error {
+func (b bodeAmplitude) DrawTo(env *graph.ChartContentEnvironment) error {
 	r := env.Canvas.Rect()
 	b.bodeContent.generate(r.Min.X, r.Max.X)
 	path := graph.PointsFromSlice(b.bodeContent.amplitude...)
@@ -1315,7 +1315,7 @@ var (
 	negStyle = graph.Black.SetDash(4, 4).SetStrokeWidth(2)
 )
 
-func (l *Linear) Nyquist(sMin, sMax float64, alsoNeg bool, steps int) ([]graph.PlotContent, error) {
+func (l *Linear) Nyquist(sMin, sMax float64, alsoNeg bool, steps int) ([]graph.ChartContent, error) {
 	if sMax == 0 {
 		sMax = l.findNyquistMax()
 	}
@@ -1326,7 +1326,7 @@ func (l *Linear) Nyquist(sMin, sMax float64, alsoNeg bool, steps int) ([]graph.P
 	cZero := l.EvalCplx(complex(0, 0))
 	isZero := !(math.IsNaN(real(cZero)) || math.IsNaN(imag(cZero)))
 
-	var cp []graph.PlotContent
+	var cp []graph.ChartContent
 	cp = append(cp, NewImReLabels())
 	if alsoNeg {
 		neg, err := l.NyquistNeg(sMin, sMax, steps)

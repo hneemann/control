@@ -25,7 +25,7 @@ func TestSimple(t *testing.T) {
 	data, err := s.Run(100, 0, 0)
 	assert.NoError(t, err)
 
-	p := graph.Plot{Y: graph.AxisDescription{Bounds: graph.NewBounds(-0.2, 2)}}
+	p := graph.Chart{Y: graph.AxisDescription{Bounds: graph.NewBounds(-0.2, 2)}}
 
 	for n, name := range s.outputs {
 		style := graph.GetColor(n)

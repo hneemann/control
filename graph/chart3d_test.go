@@ -13,7 +13,7 @@ func TestPlot3d_DrawTo(t *testing.T) {
 	writer := xmlWriter.New()
 	svg := NewSVG(context, writer)
 
-	plot := &Plot3d{
+	plot := &Chart3d{
 		X: AxisDescription{
 			Bounds:  NewBounds(-7, 7),
 			Factory: LinearAxis,
@@ -26,7 +26,7 @@ func TestPlot3d_DrawTo(t *testing.T) {
 			Bounds:  NewBounds(-1, 3),
 			Factory: LinearAxis,
 		},
-		Contents: []Plot3dContent{
+		Contents: []Chart3dContent{
 			&Graph3d{
 				Func: func(x, y float64) (Vector3d, error) {
 					r := math.Sqrt(x*x + y*y)

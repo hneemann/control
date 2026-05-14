@@ -216,8 +216,8 @@ func Test_Evans1(t *testing.T) {
 	}
 }
 
-func createPlot(c []graph.PlotContent) *graph.Plot {
-	pl := &graph.Plot{}
+func createPlot(c []graph.ChartContent) *graph.Chart {
+	pl := &graph.Chart{}
 	for _, content := range c {
 		pl.AddContent(content, false)
 	}

@@ -54,10 +54,10 @@ type Legend struct {
 	Name string
 }
 
-type BoundsModifier func(xBounds, yBounds Bounds, p *Plot, canvas Canvas) (Bounds, Bounds)
+type BoundsModifier func(xBounds, yBounds Bounds, p *Chart, canvas Canvas) (Bounds, Bounds)
 
 func Zoom(p Point, f float64) BoundsModifier {
-	return func(xBounds, yBounds Bounds, _ *Plot, _ Canvas) (Bounds, Bounds) {
+	return func(xBounds, yBounds Bounds, _ *Chart, _ Canvas) (Bounds, Bounds) {
 		if xBounds.isSet {
 			d := xBounds.Width() / (2 * f)
 			xBounds.Min = p.X - d
@@ -139,7 +139,7 @@ func (lp *RelativePos) GetNoDef(trans Transform, rect Rect) (Point, bool) {
 	}
 }
 
-type Plot struct {
+type Chart struct {
 	X, Y, YSec     AxisDescription
 	Square         bool
 	SquareYCenter  float64
@@ -150,7 +150,7 @@ type Plot struct {
 	Frame          *Style
 	Title          string
 	ProtectLabels  bool
-	Content        plotContent
+	Content        chartContent
 	StackBothYAxis bool
 	FillBackground bool
 	BoundsModifier BoundsModifier
@@ -159,9 +159,9 @@ type Plot struct {
 	LegendPosSec   RelativePos
 }
 
-type plotContent []contentHolder
+type chartContent []contentHolder
 
-func (pc plotContent) hasSecondary() bool {
+func (pc chartContent) hasSecondary() bool {
 	for _, holder := range pc {
 		if holder.secondary {
 			return true
@@ -170,8 +170,8 @@ func (pc plotContent) hasSecondary() bool {
 	return false
 }
 
-func (pc plotContent) getBySecType(sec bool) plotContent {
-	var c plotContent
+func (pc chartContent) getBySecType(sec bool) chartContent {
+	var c chartContent
 	for _, holder := range pc {
 		if holder.secondary == sec {
 			c = append(c, contentHolder{
@@ -183,7 +183,7 @@ func (pc plotContent) getBySecType(sec bool) plotContent {
 	return c
 }
 
-func (pc plotContent) singleStyle(def *Style, sec bool) *Style {
+func (pc chartContent) singleStyle(def *Style, sec bool) *Style {
 	var found *Style
 	for _, holder := range pc {
 		if holder.secondary == sec {
@@ -201,7 +201,7 @@ func (pc plotContent) singleStyle(def *Style, sec bool) *Style {
 }
 
 type contentHolder struct {
-	content   PlotContent
+	content   ChartContent
 	secondary bool
 }
 
@@ -209,26 +209,26 @@ func (h contentHolder) String() string {
 	return fmt.Sprint(h.content)
 }
 
-type PlotContentEnvironment struct {
+type ChartContentEnvironment struct {
 	Canvas       Canvas
 	ParentCanvas Canvas
-	Plot         *Plot
+	Chart        *Chart
 	InnerRect    Rect
 	Transform    Transform
 	XAxis        *Axis
 	YAxis        *Axis
 }
 
-func (p *PlotContentEnvironment) Dist(p1, p2 Point) float64 {
+func (p *ChartContentEnvironment) Dist(p1, p2 Point) float64 {
 	return p.Transform(p1).DistTo(p.Transform(p2))
 }
 
-func (p *Plot) DrawTo(canvas Canvas) error {
+func (p *Chart) DrawTo(canvas Canvas) error {
 	err, _ := p.DrawToAsInset(canvas, p.FillBackground)
 	return err
 }
 
-func (p *Plot) DrawToAsInset(canvas Canvas, fillBackground bool) (err error, env *PlotContentEnvironment) {
+func (p *Chart) DrawToAsInset(canvas Canvas, fillBackground bool) (err error, env *ChartContentEnvironment) {
 	defer nErr.CatchErr(&err)
 	if p.StackBothYAxis && p.Content.hasSecondary() {
 		upper := *p
@@ -246,7 +246,7 @@ func (p *Plot) DrawToAsInset(canvas Canvas, fillBackground bool) (err error, env
 	return p.drawToInternal(canvas, fillBackground)
 }
 
-func (p *Plot) drawToInternal(canvas Canvas, fillBackground bool) (error, *PlotContentEnvironment) {
+func (p *Chart) drawToInternal(canvas Canvas, fillBackground bool) (error, *ChartContentEnvironment) {
 	c := canvas.Context()
 	rect := canvas.Rect()
 	textStyle := Black.Text()
@@ -456,8 +456,8 @@ func (p *Plot) drawToInternal(canvas Canvas, fillBackground bool) (error, *PlotC
 	trans := func(point Point) Point {
 		return Point{xAxis.Trans(point.X), yAxis.Trans(point.Y)}
 	}
-	env := &PlotContentEnvironment{
-		Plot:         p,
+	env := &ChartContentEnvironment{
+		Chart:        p,
 		ParentCanvas: canvas,
 		InnerRect:    innerRect,
 		Transform:    trans,
@@ -472,13 +472,13 @@ func (p *Plot) drawToInternal(canvas Canvas, fillBackground bool) (error, *PlotC
 		XAxis: &xAxis,
 		YAxis: &yAxis,
 	}
-	var envYSec *PlotContentEnvironment
+	var envYSec *ChartContentEnvironment
 	if hasSecondary {
 		transYSec := func(point Point) Point {
 			return Point{xAxis.Trans(point.X), ySecAxis.Trans(point.Y)}
 		}
-		envYSec = &PlotContentEnvironment{
-			Plot:         p,
+		envYSec = &ChartContentEnvironment{
+			Chart:        p,
 			ParentCanvas: canvas,
 			InnerRect:    innerRect,
 			Transform:    transYSec,
@@ -578,7 +578,7 @@ func (p *Plot) drawToInternal(canvas Canvas, fillBackground bool) (error, *PlotC
 	return nil, env
 }
 
-func (p *Plot) calcBounds() (Bounds, Bounds, Bounds, error) {
+func (p *Chart) calcBounds() (Bounds, Bounds, Bounds, error) {
 	xBounds := p.X.Bounds
 	yBounds := p.Y.Bounds
 	ySecBounds := p.YSec.Bounds
@@ -628,7 +628,7 @@ func (p *Plot) calcBounds() (Bounds, Bounds, Bounds, error) {
 	return xBounds, yBounds, ySecBounds, nil
 }
 
-func (p *Plot) calculateInnerRect(rect Rect, textSize float64, hasSecondary bool) Rect {
+func (p *Chart) calculateInnerRect(rect Rect, textSize float64, hasSecondary bool) Rect {
 	rMin := rect.Min
 	rMax := rect.Max
 
@@ -701,17 +701,17 @@ func (p *Plot) calculateInnerRect(rect Rect, textSize float64, hasSecondary bool
 	return Rect{Min: rMin, Max: rMax}
 }
 
-func (p *Plot) AddContent(content PlotContent, secondary bool) {
+func (p *Chart) AddContent(content ChartContent, secondary bool) {
 	p.Content = append(p.Content, contentHolder{content, secondary})
 }
 
-func (p *Plot) AddContentAtTop(content PlotContent, secondary bool) {
-	p.Content = append(plotContent{contentHolder{content, secondary}}, p.Content...)
+func (p *Chart) AddContentAtTop(content ChartContent, secondary bool) {
+	p.Content = append(chartContent{contentHolder{content, secondary}}, p.Content...)
 }
 
-func (p *Plot) String() string {
+func (p *Chart) String() string {
 	bu := bytes.Buffer{}
-	bu.WriteString("Plot: ")
+	bu.WriteString("Chart: ")
 	for i, content := range p.Content {
 		if i > 0 {
 			bu.WriteString(", ")
@@ -773,11 +773,11 @@ func (b *Bounds) Merge(p float64) {
 	}
 }
 
-// PlotContent is the interface that all plot contents must implement.
-// If the plot is created at first, all Bounds methods are called and the
+// ChartContent is the interface that all chart contents must implement.
+// If the chart is created at first, all Bounds methods are called and the
 // returned bounds are merged. After that, the DependantBounds method
 // is called with the merged bounds.
-type PlotContent interface {
+type ChartContent interface {
 	// Bounds returns the fixed bounds of the content.
 	// There may be non. For example, if the content is a function
 	// that has by definition no bounds because it is defined for all x
@@ -785,32 +785,32 @@ type PlotContent interface {
 	// A set of given data points on the other hand has fixed bounds.
 	Bounds() (x, y Bounds, err error)
 	// DependantBounds returns the preferred bounds for the content
-	// that depend on the bounds given by all other plot contents or the user.
+	// that depend on the bounds given by all other chart contents or the user.
 	// A function y=f(x), for example, has certain y bounds if the x bounds
 	// are given.
 	DependantBounds(xGiven, yGiven Bounds) (x, y Bounds, err error)
 	// DrawTo draws the content.
-	// The *PlotContentEnvironment is passed to allow the content to access the
-	// plot's properties, including the Canvas.
-	DrawTo(*PlotContentEnvironment) error
+	// The *ChartContentEnvironment is passed to allow the content to access the
+	// chart's properties, including the Canvas.
+	DrawTo(*ChartContentEnvironment) error
 	// Legend returns the legend of this Content
 	Legend() Legend
 }
 
 type HasLine interface {
-	SetLine(*Style) PlotContent
+	SetLine(*Style) ChartContent
 }
 
 type HasShape interface {
-	SetShape(Shape, *Style) PlotContent
+	SetShape(Shape, *Style) ChartContent
 }
 
 type HasTitle interface {
-	SetTitle(title string) PlotContent
+	SetTitle(title string) ChartContent
 }
 
 type IsCloseable interface {
-	Close() PlotContent
+	Close() ChartContent
 }
 
 // Function represents a mathematical function that can be plotted.
@@ -822,17 +822,17 @@ type Function struct {
 	closed   bool
 }
 
-func (f Function) SetLine(style *Style) PlotContent {
+func (f Function) SetLine(style *Style) ChartContent {
 	f.Style = style
 	return f
 }
 
-func (f Function) SetTitle(title string) PlotContent {
+func (f Function) SetTitle(title string) ChartContent {
 	f.Title = title
 	return f
 }
 
-func (f Function) Close() PlotContent {
+func (f Function) Close() ChartContent {
 	f.closed = true
 	return f
 }
@@ -875,7 +875,7 @@ func (f Function) DependantBounds(xGiven, _ Bounds) (Bounds, Bounds, error) {
 	return Bounds{}, Bounds{}, nil
 }
 
-func (f Function) DrawTo(env *PlotContentEnvironment) error {
+func (f Function) DrawTo(env *ChartContentEnvironment) error {
 	r := env.Canvas.Rect()
 	p, err := NewLinearParameterFunc(r.Min.X, r.Max.X, f.steps())
 	if err != nil {
@@ -901,7 +901,7 @@ func (f Function) Legend() Legend {
 	}
 }
 
-// Scatter represents a scatter plot with points represented by a Shape
+// Scatter represents a scatter chart with points represented by a Shape
 // and can have a line style for connecting the points.
 type Scatter struct {
 	ShapeLineStyle
@@ -910,23 +910,23 @@ type Scatter struct {
 	Title  string
 }
 
-func (s Scatter) SetShape(shape Shape, style *Style) PlotContent {
+func (s Scatter) SetShape(shape Shape, style *Style) ChartContent {
 	s.Shape = shape
 	s.ShapeStyle = style
 	return s
 }
 
-func (s Scatter) SetLine(style *Style) PlotContent {
+func (s Scatter) SetLine(style *Style) ChartContent {
 	s.LineStyle = style
 	return s
 }
 
-func (s Scatter) SetTitle(title string) PlotContent {
+func (s Scatter) SetTitle(title string) ChartContent {
 	s.Title = title
 	return s
 }
 
-func (s Scatter) Close() PlotContent {
+func (s Scatter) Close() ChartContent {
 	s.Closed = true
 	return s
 }
@@ -954,7 +954,7 @@ func (s Scatter) DependantBounds(_, _ Bounds) (Bounds, Bounds, error) {
 	return Bounds{}, Bounds{}, nil
 }
 
-func (s Scatter) DrawTo(env *PlotContentEnvironment) error {
+func (s Scatter) DrawTo(env *ChartContentEnvironment) error {
 	canvas := env.Canvas
 	rect := canvas.Rect()
 
@@ -1017,7 +1017,7 @@ func (h Hint) DependantBounds(_, _ Bounds) (Bounds, Bounds, error) {
 
 const arrowLen = 2.5
 
-func (h Hint) DrawTo(env *PlotContentEnvironment) error {
+func (h Hint) DrawTo(env *ChartContentEnvironment) error {
 	canvas := env.Canvas
 	r := canvas.Rect()
 	textSize := canvas.Context().TextSize
@@ -1050,7 +1050,7 @@ type HintDir struct {
 	PosDir Point
 }
 
-func (h HintDir) DrawTo(env *PlotContentEnvironment) error {
+func (h HintDir) DrawTo(env *ChartContentEnvironment) error {
 	r := env.Canvas.Rect()
 	if r.Contains(h.Pos) {
 		p1 := env.Transform(h.Pos)
@@ -1094,7 +1094,7 @@ func (a Arrow) DependantBounds(_, _ Bounds) (Bounds, Bounds, error) {
 	return Bounds{}, Bounds{}, nil
 }
 
-func (a Arrow) DrawTo(env *PlotContentEnvironment) error {
+func (a Arrow) DrawTo(env *ChartContentEnvironment) error {
 	from := env.Transform(a.From)
 	to := env.Transform(a.To)
 	return drawArrow(env, from, to, a.Style, a.Mode, a.Label)
@@ -1104,7 +1104,7 @@ func (a Arrow) Legend() Legend {
 	return Legend{}
 }
 
-func drawArrow(env *PlotContentEnvironment, from, to Point, style *Style, mode int, label string) error {
+func drawArrow(env *ChartContentEnvironment, from, to Point, style *Style, mode int, label string) error {
 	textSize := env.ParentCanvas.Context().TextSize
 	w := textSize * 0.75
 
@@ -1219,7 +1219,7 @@ type Cross struct {
 	Style *Style
 }
 
-func (c Cross) SetLine(style *Style) PlotContent {
+func (c Cross) SetLine(style *Style) ChartContent {
 	return Cross{
 		Style: style,
 	}
@@ -1237,7 +1237,7 @@ func (c Cross) DependantBounds(_, _ Bounds) (Bounds, Bounds, error) {
 	return Bounds{}, Bounds{}, nil
 }
 
-func (c Cross) DrawTo(env *PlotContentEnvironment) error {
+func (c Cross) DrawTo(env *ChartContentEnvironment) error {
 	var err error
 	r := env.Canvas.Rect()
 	if r.Contains(Point{0, 0}) {
@@ -1265,19 +1265,19 @@ type ParameterFunc struct {
 	closed     bool
 }
 
-func (p *ParameterFunc) SetTitle(title string) PlotContent {
+func (p *ParameterFunc) SetTitle(title string) ChartContent {
 	np := *p
 	np.Title = title
 	return &np
 }
 
-func (p *ParameterFunc) SetLine(style *Style) PlotContent {
+func (p *ParameterFunc) SetLine(style *Style) ChartContent {
 	np := *p
 	np.Style = style
 	return &np
 }
 
-func (p *ParameterFunc) Close() PlotContent {
+func (p *ParameterFunc) Close() ChartContent {
 	np := *p
 	np.closed = true
 	return &np
@@ -1342,7 +1342,7 @@ func (p *ParameterFunc) DependantBounds(_, _ Bounds) (Bounds, Bounds, error) {
 	return Bounds{}, Bounds{}, nil
 }
 
-func (p *ParameterFunc) DrawTo(env *PlotContentEnvironment) error {
+func (p *ParameterFunc) DrawTo(env *ChartContentEnvironment) error {
 	canvas := env.Canvas
 	path := pFuncPath{
 		pf:  p,
@@ -1364,7 +1364,7 @@ func (p *ParameterFunc) Legend() Legend {
 
 type pFuncPath struct {
 	pf      *ParameterFunc
-	env     *PlotContentEnvironment
+	env     *ChartContentEnvironment
 	r       Rect
 	maxDist float64
 }
@@ -1464,7 +1464,7 @@ func (p *pFuncPath) refine(w0 float64, p0, d0 Point, w1 float64, p1, d1 Point, y
 type ImageInset struct {
 	Min         RelativePos
 	Max         RelativePos
-	Plot        *Plot
+	Chart       *Chart
 	VisualGuide *Style
 }
 
@@ -1485,7 +1485,7 @@ func (s ImageInset) DependantBounds(_, _ Bounds) (Bounds, Bounds, error) {
 	return Bounds{}, Bounds{}, nil
 }
 
-func (s ImageInset) DrawTo(env *PlotContentEnvironment) (cErr error) {
+func (s ImageInset) DrawTo(env *ChartContentEnvironment) (cErr error) {
 	defer nErr.CatchErr(&cErr)
 	inner := ResizeCanvas{
 		parent: env.ParentCanvas,
@@ -1494,7 +1494,7 @@ func (s ImageInset) DrawTo(env *PlotContentEnvironment) (cErr error) {
 			Max: s.Max.Get(env.Transform, env.InnerRect),
 		},
 	}
-	err, ie := s.Plot.DrawToAsInset(inner, true)
+	err, ie := s.Chart.DrawToAsInset(inner, true)
 	if err != nil {
 		return fmt.Errorf("error drawing image inset: %w", err)
 	}
@@ -1546,7 +1546,7 @@ type YConst struct {
 	Title string
 }
 
-func (yc YConst) SetLine(style *Style) PlotContent {
+func (yc YConst) SetLine(style *Style) ChartContent {
 	return YConst{
 		Y:     yc.Y,
 		Title: yc.Title,
@@ -1554,7 +1554,7 @@ func (yc YConst) SetLine(style *Style) PlotContent {
 	}
 }
 
-func (yc YConst) SetTitle(t string) PlotContent {
+func (yc YConst) SetTitle(t string) ChartContent {
 	return YConst{
 		Y:     yc.Y,
 		Title: t,
@@ -1574,7 +1574,7 @@ func (yc YConst) DependantBounds(_, _ Bounds) (x, y Bounds, err error) {
 	return Bounds{}, Bounds{}, nil
 }
 
-func (yc YConst) DrawTo(env *PlotContentEnvironment) error {
+func (yc YConst) DrawTo(env *ChartContentEnvironment) error {
 	var err error
 	r := env.Canvas.Rect()
 	if r.Max.Y >= yc.Y && r.Min.Y <= yc.Y {
@@ -1595,7 +1595,7 @@ type XConst struct {
 	Title string
 }
 
-func (xc XConst) SetLine(style *Style) PlotContent {
+func (xc XConst) SetLine(style *Style) ChartContent {
 	return XConst{
 		X:     xc.X,
 		Style: style,
@@ -1603,7 +1603,7 @@ func (xc XConst) SetLine(style *Style) PlotContent {
 	}
 }
 
-func (xc XConst) SetTitle(t string) PlotContent {
+func (xc XConst) SetTitle(t string) ChartContent {
 	return XConst{
 		X:     xc.X,
 		Title: t,
@@ -1623,7 +1623,7 @@ func (xc XConst) DependantBounds(_, _ Bounds) (Bounds, Bounds, error) {
 	return Bounds{}, Bounds{}, nil
 }
 
-func (xc XConst) DrawTo(env *PlotContentEnvironment) error {
+func (xc XConst) DrawTo(env *ChartContentEnvironment) error {
 	var err error
 	r := env.Canvas.Rect()
 	if r.Max.X >= xc.X && r.Min.X <= xc.X {
@@ -1652,7 +1652,7 @@ func (t Text) DependantBounds(_, _ Bounds) (x, y Bounds, err error) {
 	return Bounds{}, Bounds{}, nil
 }
 
-func (t Text) DrawTo(env *PlotContentEnvironment) error {
+func (t Text) DrawTo(env *ChartContentEnvironment) error {
 	env.Canvas.DrawText(t.Pos, t.Text, Left|Bottom, t.Style.Text(), env.Canvas.Context().TextSize)
 	return nil
 }
@@ -1681,7 +1681,7 @@ type pixLine struct {
 	err error
 }
 
-func (h Heat) DrawTo(env *PlotContentEnvironment) error {
+func (h Heat) DrawTo(env *ChartContentEnvironment) error {
 	if h.AxisFactory == nil {
 		h.AxisFactory = LinearAxis
 	}
