@@ -441,7 +441,7 @@ func createStyleMethods() value.MethodMap {
 				return nil, fmt.Errorf("fill requires a style: %w", err)
 			}
 			return StyleValue{Holder[*graph.Style]{style.SetFill(styleVal.Value)}}, nil
-		}).SetMethodDescription("color", "The color used to fill."),
+		}).SetMethodDescription("color", "Sets the color used to fill a shape."),
 	}
 }
 
@@ -1370,13 +1370,13 @@ func create3dFuncLine(cl value.Closure, st funcGen.Stack[value.Value]) (int, fun
 const defSize = 4
 
 func Setup(fg *value.FunctionGenerator) {
-	PlotType = fg.RegisterType("chart")
-	PlotContentType = fg.RegisterType("chartContent")
-	StyleType = fg.RegisterType("style")
-	ImageType = fg.RegisterType("image")
-	Plot3dType = fg.RegisterType("3dChart")
-	Plot3dContentType = fg.RegisterType("3dChartContent")
-	graph.Vector3dType = fg.RegisterType("vector")
+	PlotType = fg.RegisterType("chart", "Represents a chart. It is possible ta add different content types to it. The chart is visualized as an embedded SVG graphic.")
+	PlotContentType = fg.RegisterType("chartContent", "Something which can be added to a chart.")
+	StyleType = fg.RegisterType("style", "Represents a certain style. It describes the stroke color, the fill color and the line style.")
+	ImageType = fg.RegisterType("image", "A simple chart. It is usually created by combining several charts.")
+	Plot3dType = fg.RegisterType("3dChart", "Represents a 3d chart.")
+	Plot3dContentType = fg.RegisterType("3dChartContent", "Something which can be added to a 3d chart.")
+	graph.Vector3dType = fg.RegisterType("vector", "A 3d vector")
 
 	fg.RegisterMethods(PlotType, createPlotMethods())
 	fg.RegisterMethods(PlotContentType, createPlotContentMethods())

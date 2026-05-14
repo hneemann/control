@@ -10,14 +10,15 @@
     Content
     <ol>
     {{range .}}
-        <li><a href="#{{.Name}}">{{.Name}}, {{.Description}}</a></li>
+        <li><a href="#{{.Name}}">{{.Name}}, {{.Type}}</a></li>
     {{end}}
     </ol>
     {{range .}}
     <div class="help-section">
         <hr/>
         <h3 id="{{.Name}}">{{.Name}}</h3>
-        {{.Description}}:
+        <p>{{.Description}}</p>
+        {{.Type}}:
         <div style="margin-left: 1em;">
         {{range .Functions}}
            <h4>{{.Name}}({{range $i,$a := .Description.Args}}{{if $i}}, {{end}}{{$a}}{{end}})</h4>
