@@ -1213,9 +1213,9 @@ func (b bodeAdder) Add(val value.Value) error {
 var Parser = value.New().
 	Modify(func(fg *value.FunctionGenerator) {
 		ComplexValueType = fg.RegisterType("complex", " A complex number")
-		PolynomialValueType = fg.RegisterType("polynomial", "A polynomial. The polynomial is represented by its real coefficients.")
+		PolynomialValueType = fg.RegisterType("polynomial", "A polynomial. The polynomial is represented by it's real coefficients.")
 		LinearValueType = fg.RegisterType("linearSystem", "A linear system. The system is represented by its numerator and denominator polynomials.")
-		BlockFactoryValueType = fg.RegisterType("block", "A Simulink like simulation block. Blocks are connected by the names of the input and output signals.")
+		BlockFactoryValueType = fg.RegisterType("block", "A Simulink like simulation block. Blocks are connected by the names of the input and output signals. See the non linear simulation example for details on it's usage.")
 		TwoPortValueType = fg.RegisterType("twoPort", "A classical two-port described by a 2x2 matrix.")
 		BodeChartContentValueType = fg.RegisterType("bodeChartContent", "The two bode curves (amplitude and phase) which can be added to a chart.")
 		GuiElementsType = fg.RegisterType("gui", "The interface to gui elements able to modify the output.")
