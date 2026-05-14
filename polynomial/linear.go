@@ -1042,10 +1042,6 @@ type BodeChartContent struct {
 	phase      []graph.Point
 }
 
-func (bpc *BodeChartContent) String() string {
-	return fmt.Sprintf("BodeChartContent(%s)", bpc.Linear.String())
-}
-
 func (l *Linear) CreateBodeContent(style *graph.Style, title string, steps int) *BodeChartContent {
 	if steps == 0 {
 		steps = 200
@@ -1202,12 +1198,16 @@ func (b bodePhase) Legend() graph.Legend {
 	return graph.Legend{}
 }
 
+func (b bodePhase) String() string {
+	return fmt.Sprintf("BodePhase(%s)", b.bodeContent.Linear.String())
+}
+
 type bodeAmplitude struct {
 	bodeContent *BodeChartContent
 }
 
 func (b bodeAmplitude) String() string {
-	return b.bodeContent.String()
+	return fmt.Sprintf("BodeAmplitude(%s)", b.bodeContent.Linear.String())
 }
 
 func (b bodeAmplitude) Bounds() (x, y graph.Bounds, err error) {
