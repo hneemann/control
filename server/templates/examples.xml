@@ -95,11 +95,11 @@ plot(
     <example name="Simulation" desc="Simulation des Systems"
              name-en="Simulation" desc-en="Simulation of a linear system">let G = 70/((s+1)*(s+2)*(s+2.5));
 let K1 = 0.2*(0.6*s+1)/(0.002*s+1);
-let K2 = pid(0.1,2);
-let K3 = pid(0.3,2,0.5);
+let K2 = pid(0.1,1.8);
+let K3 = pid(0.3,1.8,0.5);
 
 plot(
-  (K1*G).loop().simStep(10).graph().line(blue,  "phasenanhebendes Korrekturglied"),
+  (K1*G).loop().simStep(10).graph().line(blue,  "Phase-lead Compensator"),
   (K2*G).loop().simStep(10).graph().line(black, "PI"),
   (K3*G).loop().simStep(10).graph().line(green, "PID"),
   yConst(1)
