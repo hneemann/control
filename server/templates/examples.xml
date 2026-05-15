@@ -75,7 +75,7 @@ let G0 = K*G;
 plot(
   G.bode(green, "G(s)"),
   K.bode(blue,  "K(s)"),
-  G0.bode(black, "G#0(s)")
+  G0.bode(black, "G_{0}(s)")
 )</example>
     <example name="WOK" desc="Darstellung einer Wurzelortskurve"
              name-en="Root locus analysis" desc-en="Root locus analysis">let G = 1/((s+1)*(s-1));
