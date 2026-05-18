@@ -137,7 +137,7 @@ func main() {
 
 	var err error
 	if *cert != "" && *key != "" {
-		log.Println("Starting server with TLS at port", *port)
+		log.Printf("Starting server with TLS at port %d and cert %s", *port, *cert)
 		err = serv.ListenAndServeTLS(*cert, *key)
 	} else {
 		log.Println("Starting server without TLS at port", *port)
