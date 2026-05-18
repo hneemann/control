@@ -153,6 +153,20 @@ func (c Color) Darker(p float64) Color {
 	}
 }
 
+func (c Color) Softer(p float64) Color {
+	if p > 99 {
+		p = 99
+	} else if p < 0 {
+		p = 0
+	}
+	return Color{
+		R: colVal((float64(c.R)*(100-p) + p*255) / 100),
+		G: colVal((float64(c.G)*(100-p) + p*255) / 100),
+		B: colVal((float64(c.B)*(100-p) + p*255) / 100),
+		A: c.A,
+	}
+}
+
 func (c Color) Brighter(p float64) Color {
 	r := int(c.R)
 	if r < 3 {
@@ -341,6 +355,13 @@ func (s *Style) Darker(p float64) *Style {
 	var style Style
 	style = *s
 	style.Color = s.Color.Darker(p)
+	return &style
+}
+
+func (s *Style) Softer(p float64) *Style {
+	var style Style
+	style = *s
+	style.Color = s.Color.Softer(p)
 	return &style
 }
 

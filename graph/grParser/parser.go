@@ -411,6 +411,13 @@ func createStyleMethods() value.MethodMap {
 			}
 			return nil, fmt.Errorf("darker requires a float")
 		}).SetMethodDescription("percent", "Makes the color darker."),
+		"softer": value.MethodAtType(1, func(styleValue StyleValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			if p, ok := stack.Get(1).ToFloat(); ok {
+				style := styleValue.Value
+				return StyleValue{Holder[*graph.Style]{style.Softer(p)}}, nil
+			}
+			return nil, fmt.Errorf("softer requires a float")
+		}).SetMethodDescription("percent", "Makes the color softer by adding more white."),
 		"brighter": value.MethodAtType(1, func(styleValue StyleValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if p, ok := stack.Get(1).ToFloat(); ok {
 				style := styleValue.Value
@@ -436,12 +443,12 @@ func createStyleMethods() value.MethodMap {
 		}).SetMethodDescription("transparency", "Sets the colors transparency. The value 0 means no transparency, and 1 means fully transparent."),
 		"fill": value.MethodAtType(1, func(styleValue StyleValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			style := styleValue.Value
-			styleVal, err := GetStyle(stack, 1, nil)
+			styleVal, err := GetStyle(stack, 1, style)
 			if err != nil {
 				return nil, fmt.Errorf("fill requires a style: %w", err)
 			}
 			return StyleValue{Holder[*graph.Style]{style.SetFill(styleVal.Value)}}, nil
-		}).SetMethodDescription("color", "Sets the color used to fill a shape."),
+		}).SetMethodDescription("color", "Sets the color used to fill a shape.").VarArgsMethod(0, 1),
 	}
 }
 
