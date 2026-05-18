@@ -1388,7 +1388,7 @@ func (p *pFuncPath) f(t, dt float64) (Point, Point, error) {
 
 func (p *pFuncPath) Iter(yield func(PathElement, error) bool) {
 	if p.maxDist == 0 {
-		p.maxDist = p.env.Canvas.Rect().Width() / float64(p.pf.Points) * 2
+		p.maxDist = p.env.ParentCanvas.Rect().Width() / float64(p.pf.Points) * 2
 	}
 	pf := p.pf
 	t0 := pf.InitialT
