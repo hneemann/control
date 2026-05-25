@@ -977,6 +977,21 @@ func createChartContentMethods() value.MethodMap {
 				return nil, fmt.Errorf("line requires a style: %w", err)
 			}
 		}).SetMethodDescription("color", "title", "Sets the line style and title.").VarArgsMethod(1, 2),
+		"width": value.MethodAtType(2, func(ccv ChartContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			if w, ok := stack.Get(1).ToFloat(); ok {
+				if o, ok := stack.GetOptional(2, value.Float(0)).ToFloat(); ok {
+					if sc, ok := ccv.Value.(graph.HasWidth); ok {
+						return ChartContentValue{Holder[graph.ChartContent]{sc.SetWidthOffset(w, o)}, ccv.SecondaryAxis}, nil
+					} else {
+						return nil, fmt.Errorf("width can only be set for charts using a width")
+					}
+				} else {
+					return nil, fmt.Errorf("widthOffset requires a float as second argument")
+				}
+			} else {
+				return nil, fmt.Errorf("width requires a float as first argument")
+			}
+		}).SetMethodDescription("width", "offset", "Sets the width for bars in a bar chart and the offset if multiple bars are used.").VarArgsMethod(1, 2),
 		"close": value.MethodAtType(0, func(ccv ChartContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			pc := ccv.Value
 			if sc, ok := pc.(graph.IsCloseable); ok {
@@ -986,6 +1001,14 @@ func createChartContentMethods() value.MethodMap {
 			}
 			return ChartContentValue{Holder[graph.ChartContent]{pc}, ccv.SecondaryAxis}, nil
 		}).SetMethodDescription("Closes a path."),
+		"horizontal": value.MethodAtType(0, func(ccv ChartContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			pc := ccv.Value
+			if b, ok := pc.(graph.Bars); ok {
+				b.Horizontal = true
+				return ChartContentValue{Holder[graph.ChartContent]{b}, ccv.SecondaryAxis}, nil
+			}
+			return nil, errors.New("horizontal can only be called on bar chart contents")
+		}).SetMethodDescription("Draws horizontal bars"),
 		"toYSec": value.MethodAtType(0, func(ccv ChartContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			pc := ccv.Value
 			return ChartContentValue{Holder[graph.ChartContent]{pc}, true}, nil
@@ -1041,6 +1064,31 @@ func listMethods() value.MethodMap {
 			}
 			return nil, fmt.Errorf("graph requires a function as first and second argument")
 		}).SetMethodDescription("func(item) x", "func(item) y", "Creates a scatter chart content. "+
+			"The two functions are called with the list elements and must return the x respectively y values. "+
+			"If the functions are omitted, the list elements themselves must be lists of the form [x,y].").VarArgsMethod(0, 2),
+		"bars": value.MethodAtType(2, func(list *value.List, st funcGen.Stack[value.Value]) (value.Value, error) {
+			switch st.Size() {
+			case 1:
+				s := graph.Bars{Points: listToPoints(list)}
+				if size, ok := list.SizeIfKnown(); ok && size > 200 {
+					s.Style = graph.Black
+				}
+				return ChartContentValue{Holder[graph.ChartContent]{s}, false}, nil
+			case 3:
+				if xc, ok := st.Get(1).(value.Closure); ok && xc.Args == 1 {
+					if yc, ok := st.Get(2).(value.Closure); ok && yc.Args == 1 {
+						s := graph.Bars{Points: listFuncToPoints(list, xc, yc)}
+						if size, ok := list.SizeIfKnown(); ok && size > 200 {
+							s.Style = graph.Black
+						}
+						return ChartContentValue{Holder[graph.ChartContent]{s}, false}, nil
+					}
+				}
+			default:
+				return nil, fmt.Errorf("bars requires either none or two arguments")
+			}
+			return nil, fmt.Errorf("bars requires a function as first and second argument")
+		}).SetMethodDescription("func(item) x", "func(item) y", "Creates a bar chart content. "+
 			"The two functions are called with the list elements and must return the x respectively y values. "+
 			"If the functions are omitted, the list elements themselves must be lists of the form [x,y].").VarArgsMethod(0, 2),
 		"graph3d": value.MethodAtType(0, func(list *value.List, st funcGen.Stack[value.Value]) (value.Value, error) {

@@ -51,7 +51,8 @@ func (ml ShapeLineStyle) GetStyle() *Style {
 
 type Legend struct {
 	ShapeLineStyle
-	Name string
+	Name      string
+	ColorOnly bool
 }
 
 type BoundsModifier func(xBounds, yBounds Bounds, p *Chart, canvas Canvas) (Bounds, Bounds)
@@ -565,12 +566,20 @@ func (p *Chart) drawToInternal(canvas Canvas, fillBackground bool) (error, *Char
 		}
 		for _, leg := range slices.Backward(legends) {
 			canvas.DrawText(lp, leg.Name, Left|VCenter, textStyle, textSize)
-			sls := leg.EnsureSomethingIsVisible()
-			if sls.IsLine() {
-				nErr.Try(canvas.DrawPath(PointsFromSlice(lp.Add(Point{-2*textSize - small, 0}), lp.Add(Point{-small, 0})), sls.LineStyle))
-			}
-			if sls.IsShape() {
-				nErr.Try(canvas.DrawShape(lp.Add(Point{-1*textSize - small, 0}), sls.Shape, sls.ShapeStyle))
+			if leg.ColorOnly {
+				nErr.Try(canvas.DrawPath(NewPath(true).
+					MoveTo(lp.Add(Point{-2*textSize - small, textSize / 2})).
+					LineTo(lp.Add(Point{-small, textSize / 2})).
+					LineTo(lp.Add(Point{-small, -textSize / 2})).
+					LineTo(lp.Add(Point{-2*textSize - small, -textSize / 2})), leg.LineStyle))
+			} else {
+				sls := leg.EnsureSomethingIsVisible()
+				if sls.IsLine() {
+					nErr.Try(canvas.DrawPath(PointsFromSlice(lp.Add(Point{-2*textSize - small, 0}), lp.Add(Point{-small, 0})), sls.LineStyle))
+				}
+				if sls.IsShape() {
+					nErr.Try(canvas.DrawShape(lp.Add(Point{-1*textSize - small, 0}), sls.Shape, sls.ShapeStyle))
+				}
 			}
 			lp = lp.Add(Point{0, -textSize * 1.5})
 		}
@@ -799,6 +808,10 @@ type ChartContent interface {
 
 type HasLine interface {
 	SetLine(*Style) ChartContent
+}
+
+type HasWidth interface {
+	SetWidthOffset(float64, float64) ChartContent
 }
 
 type HasShape interface {
@@ -1586,7 +1599,7 @@ func (yc YConst) DrawTo(env *ChartContentEnvironment) error {
 }
 
 func (yc YConst) Legend() Legend {
-	return Legend{ShapeLineStyle{LineStyle: yc.Style}, yc.Title}
+	return Legend{ShapeLineStyle: ShapeLineStyle{LineStyle: yc.Style}, Name: yc.Title}
 }
 
 type XConst struct {
@@ -1635,7 +1648,7 @@ func (xc XConst) DrawTo(env *ChartContentEnvironment) error {
 }
 
 func (xc XConst) Legend() Legend {
-	return Legend{ShapeLineStyle{LineStyle: xc.Style}, xc.Title}
+	return Legend{ShapeLineStyle: ShapeLineStyle{LineStyle: xc.Style}, Name: xc.Title}
 }
 
 type Text struct {
@@ -1773,4 +1786,111 @@ func (h Heat) DrawTo(env *ChartContentEnvironment) error {
 
 func (h Heat) Legend() Legend {
 	return Legend{}
+}
+
+type Bars struct {
+	Points     Points
+	Style      *Style
+	Title      string
+	Width      float64
+	Offset     float64
+	Horizontal bool
+}
+
+func (b Bars) SetLine(style *Style) ChartContent {
+	if style.Fill {
+		b.Style = style
+	} else {
+		b.Style = style.SetFill(style)
+	}
+	return b
+}
+
+func (b Bars) SetTitle(title string) ChartContent {
+	b.Title = title
+	return b
+}
+
+func (b Bars) SetWidthOffset(width, offset float64) ChartContent {
+	b.Width = width
+	b.Offset = offset
+	return b
+}
+
+func (b Bars) Bounds() (Bounds, Bounds, error) {
+	var x, y Bounds
+	y.Merge(0)
+	w := b.Width / 2
+	for p, err := range b.Points {
+		if err != nil {
+			return Bounds{}, Bounds{}, err
+		}
+		x.Merge(p.X + b.Offset + w)
+		x.Merge(p.X + b.Offset - w)
+		y.Merge(p.Y)
+	}
+	if b.Horizontal {
+		return y, x, nil
+	}
+	return x, y, nil
+}
+
+func (b Bars) DependantBounds(_, _ Bounds) (Bounds, Bounds, error) {
+	return Bounds{}, Bounds{}, nil
+}
+
+func (b Bars) DrawTo(environment *ChartContentEnvironment) error {
+	canvas := environment.Canvas
+	for p, err := range b.Points {
+		if err != nil {
+			return fmt.Errorf("error plotting bars: %w", err)
+		}
+		o := b.Offset
+		var path Path
+		if b.Width == 0 {
+			path = NewPath(false).
+				MoveTo(Point{X: p.X + o, Y: 0}).
+				LineTo(Point{X: p.X + o, Y: p.Y})
+		} else {
+			w := b.Width / 2
+			path = NewPath(true).
+				MoveTo(Point{X: p.X + o - w, Y: 0}).
+				LineTo(Point{X: p.X + o + w, Y: 0}).
+				LineTo(Point{X: p.X + o + w, Y: p.Y}).
+				LineTo(Point{X: p.X + o - w, Y: p.Y})
+
+		}
+		if b.Horizontal {
+			path = swapXYPath{path: path}
+		}
+		err = canvas.DrawPath(path, b.Style)
+		if err != nil {
+			return fmt.Errorf("error plotting bars: %w", err)
+		}
+	}
+	return nil
+}
+
+type swapXYPath struct {
+	path Path
+}
+
+func (s swapXYPath) Iter(yield func(PathElement, error) bool) {
+	for pe, err := range s.path.Iter {
+		if !yield(PathElement{Mode: pe.Mode, Point: Point{X: pe.Point.Y, Y: pe.Point.X}}, err) {
+			return
+		}
+	}
+}
+
+func (s swapXYPath) IsClosed() bool {
+	return s.path.IsClosed()
+}
+
+func (b Bars) Legend() Legend {
+	return Legend{
+		Name:           b.Title,
+		ShapeLineStyle: ShapeLineStyle{LineStyle: b.Style},
+		ColorOnly:      true,
+	}
 }
