@@ -1797,6 +1797,10 @@ type Bars struct {
 	Horizontal bool
 }
 
+func (b Bars) String() string {
+	return "BarChart"
+}
+
 func (b Bars) SetLine(style *Style) ChartContent {
 	if style.Fill {
 		b.Style = style
