@@ -782,6 +782,17 @@ func (b *Bounds) Merge(p float64) {
 	}
 }
 
+func (b *Bounds) Limit(x float64) float64 {
+	if b.isSet {
+		if x < b.Min {
+			return b.Min
+		} else if x > b.Max {
+			return b.Max
+		}
+	}
+	return x
+}
+
 // ChartContent is the interface that all chart contents must implement.
 // If the chart is created at first, all Bounds methods are called and the
 // returned bounds are merged. After that, the DependantBounds method
@@ -1849,27 +1860,39 @@ func (b Bars) DrawTo(environment *ChartContentEnvironment) error {
 		if err != nil {
 			return fmt.Errorf("error plotting bars: %w", err)
 		}
-		o := b.Offset
-		var path Path
-		if b.Width == 0 {
-			path = NewPath(false).
-				MoveTo(Point{X: p.X + o, Y: 0}).
-				LineTo(Point{X: p.X + o, Y: p.Y})
-		} else {
-			w := b.Width / 2
-			path = NewPath(true).
-				MoveTo(Point{X: p.X + o - w, Y: 0}).
-				LineTo(Point{X: p.X + o + w, Y: 0}).
-				LineTo(Point{X: p.X + o + w, Y: p.Y}).
-				LineTo(Point{X: p.X + o - w, Y: p.Y})
-
-		}
+		var x, y0, y1 float64
 		if b.Horizontal {
-			path = swapXYPath{path: path}
+			x = environment.YAxis.Bounds.Limit(p.X)
+			y0 = environment.XAxis.Bounds.Limit(0)
+			y1 = environment.XAxis.Bounds.Limit(p.Y)
+		} else {
+			x = environment.XAxis.Bounds.Limit(p.X)
+			y0 = environment.YAxis.Bounds.Limit(0)
+			y1 = environment.YAxis.Bounds.Limit(p.Y)
 		}
-		err = canvas.DrawPath(path, b.Style)
-		if err != nil {
-			return fmt.Errorf("error plotting bars: %w", err)
+		if y0 != y1 {
+			o := b.Offset
+			var path Path
+			if b.Width == 0 {
+				path = NewPath(false).
+					MoveTo(Point{X: x + o, Y: y0}).
+					LineTo(Point{X: x + o, Y: y1})
+			} else {
+				w := b.Width / 2
+				path = NewPath(true).
+					MoveTo(Point{X: x + o - w, Y: y0}).
+					LineTo(Point{X: x + o + w, Y: y0}).
+					LineTo(Point{X: x + o + w, Y: y1}).
+					LineTo(Point{X: x + o - w, Y: y1})
+
+			}
+			if b.Horizontal {
+				path = swapXYPath{path: path}
+			}
+			err = canvas.DrawPath(path, b.Style)
+			if err != nil {
+				return fmt.Errorf("error plotting bars: %w", err)
+			}
 		}
 	}
 	return nil
