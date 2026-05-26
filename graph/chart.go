@@ -303,15 +303,6 @@ func (p *Chart) drawToInternal(canvas Canvas, fillBackground bool) (error, *Char
 		innerRect = nonCrossInner
 	}
 
-	xTickSep := p.X.TickSep
-	if xTickSep <= 0 {
-		xTickSep = 1
-	}
-	yTickSep := p.Y.TickSep
-	if yTickSep <= 0 {
-		yTickSep = 1
-	}
-
 	xExp := 0.02
 	if cross && !p.X.HideAxis {
 		// space for the arrow head
@@ -322,7 +313,7 @@ func (p *Chart) drawToInternal(canvas Canvas, fillBackground bool) (error, *Char
 	}
 	xAxis := p.X.GetAxis(innerRect.Min.X, innerRect.Max.X, xBoundsPre,
 		func(width float64, digits int) bool {
-			return width > textSize*(float64(digits)+1+xTickSep)*0.5
+			return width > math.Max(1, textSize*(float64(digits)+2+p.X.TickSep)*0.5)
 		}, xExp)
 
 	yExp := 0.0
@@ -355,15 +346,13 @@ func (p *Chart) drawToInternal(canvas Canvas, fillBackground bool) (error, *Char
 		yExp = 0
 	}
 
+	yTickMax := math.Max(1, textSize*(2+p.Y.TickSep))
 	yAxis := p.Y.GetAxis(innerRect.Min.Y, innerRect.Max.Y, yBoundsPre,
-		func(width float64, _ int) bool {
-			return width > textSize*(1+yTickSep)
-		}, yExp)
+		func(width float64, _ int) bool { return width > yTickMax }, yExp)
 
+	ySecTickMax := math.Max(1, textSize*(2+p.YSec.TickSep))
 	ySecAxis := p.YSec.GetAxis(innerRect.Min.Y, innerRect.Max.Y, ySecBoundsPre,
-		func(width float64, _ int) bool {
-			return width > textSize*(1+yTickSep)
-		}, ySecExp)
+		func(width float64, _ int) bool { return width > ySecTickMax }, ySecExp)
 
 	if p.Square && (!xAxis.IsLinear || !yAxis.IsLinear) {
 		return fmt.Errorf("square charts are only possible if both axis are linear"), nil
