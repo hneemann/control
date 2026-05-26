@@ -74,21 +74,27 @@ func Zoom(p Point, f float64) BoundsModifier {
 }
 
 type AxisDescription struct {
-	Factory  AxisFactory
-	TickSep  float64
-	Bounds   Bounds
-	NoExpand bool
-	Label    string
-	HideAxis bool
-	Grid     *Style
+	Factory     AxisFactory
+	TickSep     float64
+	Bounds      Bounds
+	NoExpand    bool
+	Label       string
+	HideAxis    bool
+	Grid        *Style
+	CustomTicks Ticks
 }
 
-// GetFactory returns the AxisFactory, or LinearAxis if none is set.
-func (a AxisDescription) GetFactory() AxisFactory {
-	if a.Factory == nil {
-		return LinearAxis
+// GetAxis returns the Axis
+func (a AxisDescription) GetAxis(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth, expand float64) Axis {
+	fac := a.Factory
+	if fac == nil {
+		fac = LinearAxis
 	}
-	return a.Factory
+	axis := fac(minParent, maxParent, bounds, ctw, expand)
+	if len(a.CustomTicks) > 0 {
+		axis.Ticks = a.CustomTicks
+	}
+	return axis
 }
 
 type PosMode int
@@ -191,7 +197,10 @@ func (pc chartContent) singleStyle(def *Style, sec bool) *Style {
 			if found != nil {
 				return def
 			} else {
-				found = holder.content.Legend().GetStyle().Text()
+				legend := holder.content.Legend()
+				if len(legend) > 0 {
+					found = legend[0].GetStyle().Text()
+				}
 			}
 		}
 	}
@@ -241,7 +250,7 @@ func (p *Chart) DrawToAsInset(canvas Canvas, fillBackground bool) (err error, en
 		lower.Y = p.YSec
 		lower.LegendPos = p.LegendPosSec
 
-		err := SplitHorizontal{&upper, &lower}.DrawTo(canvas)
+		err = SplitHorizontal{&upper, &lower}.DrawTo(canvas)
 		return err, nil
 	}
 	return p.drawToInternal(canvas, fillBackground)
@@ -311,7 +320,7 @@ func (p *Chart) drawToInternal(canvas Canvas, fillBackground bool) (error, *Char
 	if p.X.NoExpand {
 		xExp = 0
 	}
-	xAxis := p.X.GetFactory()(innerRect.Min.X, innerRect.Max.X, xBoundsPre,
+	xAxis := p.X.GetAxis(innerRect.Min.X, innerRect.Max.X, xBoundsPre,
 		func(width float64, digits int) bool {
 			return width > textSize*(float64(digits)+1+xTickSep)*0.5
 		}, xExp)
@@ -346,12 +355,12 @@ func (p *Chart) drawToInternal(canvas Canvas, fillBackground bool) (error, *Char
 		yExp = 0
 	}
 
-	yAxis := p.Y.GetFactory()(innerRect.Min.Y, innerRect.Max.Y, yBoundsPre,
+	yAxis := p.Y.GetAxis(innerRect.Min.Y, innerRect.Max.Y, yBoundsPre,
 		func(width float64, _ int) bool {
 			return width > textSize*(1+yTickSep)
 		}, yExp)
 
-	ySecAxis := p.YSec.GetFactory()(innerRect.Min.Y, innerRect.Max.Y, ySecBoundsPre,
+	ySecAxis := p.YSec.GetAxis(innerRect.Min.Y, innerRect.Max.Y, ySecBoundsPre,
 		func(width float64, _ int) bool {
 			return width > textSize*(1+yTickSep)
 		}, ySecExp)
@@ -504,8 +513,8 @@ func (p *Chart) drawToInternal(canvas Canvas, fillBackground bool) (error, *Char
 			nErr.Try(holder.content.DrawTo(env))
 		}
 		l := holder.content.Legend()
-		if l.Name != "" && !p.HideLegend {
-			legends = append(legends, l)
+		if len(l) > 0 && !p.HideLegend {
+			legends = append(legends, l...)
 		}
 	}
 
@@ -814,15 +823,11 @@ type ChartContent interface {
 	// chart's properties, including the Canvas.
 	DrawTo(*ChartContentEnvironment) error
 	// Legend returns the legend of this Content
-	Legend() Legend
+	Legend() []Legend
 }
 
 type HasLine interface {
 	SetLine(*Style) ChartContent
-}
-
-type HasWidth interface {
-	SetWidthOffset(float64, float64) ChartContent
 }
 
 type HasShape interface {
@@ -918,11 +923,14 @@ func (f Function) DrawTo(env *ChartContentEnvironment) error {
 	return env.Canvas.DrawPath(r.IntersectPath(&path), f.Style)
 }
 
-func (f Function) Legend() Legend {
-	return Legend{
+func (f Function) Legend() []Legend {
+	if f.Title == "" {
+		return nil
+	}
+	return []Legend{{
 		Name:           f.Title,
 		ShapeLineStyle: ShapeLineStyle{LineStyle: f.Style},
-	}
+	}}
 }
 
 // Scatter represents a scatter chart with points represented by a Shape
@@ -1010,11 +1018,14 @@ func (s Scatter) DrawTo(env *ChartContentEnvironment) error {
 	return nil
 }
 
-func (s Scatter) Legend() Legend {
-	return Legend{
+func (s Scatter) Legend() []Legend {
+	if s.Title == "" {
+		return nil
+	}
+	return []Legend{{
 		Name:           s.Title,
 		ShapeLineStyle: s.EnsureSomethingIsVisible(),
-	}
+	}}
 }
 
 // Hint is a simple marker that can be used to indicate a point of interest
@@ -1065,8 +1076,8 @@ func (h Hint) DrawTo(env *ChartContentEnvironment) error {
 	return nil
 }
 
-func (h Hint) Legend() Legend {
-	return Legend{}
+func (h Hint) Legend() []Legend {
+	return nil
 }
 
 type HintDir struct {
@@ -1124,8 +1135,8 @@ func (a Arrow) DrawTo(env *ChartContentEnvironment) error {
 	return drawArrow(env, from, to, a.Style, a.Mode, a.Label)
 }
 
-func (a Arrow) Legend() Legend {
-	return Legend{}
+func (a Arrow) Legend() []Legend {
+	return nil
 }
 
 func drawArrow(env *ChartContentEnvironment, from, to Point, style *Style, mode int, label string) error {
@@ -1274,8 +1285,8 @@ func (c Cross) DrawTo(env *ChartContentEnvironment) error {
 	return err
 }
 
-func (c Cross) Legend() Legend {
-	return Legend{}
+func (c Cross) Legend() []Legend {
+	return nil
 }
 
 type ParameterFunc struct {
@@ -1379,11 +1390,14 @@ func (p *ParameterFunc) DrawTo(env *ChartContentEnvironment) error {
 	return canvas.DrawPath(canvas.Rect().IntersectPath(&path), p.Style)
 }
 
-func (p *ParameterFunc) Legend() Legend {
-	return Legend{
+func (p *ParameterFunc) Legend() []Legend {
+	if p.Title == "" {
+		return nil
+	}
+	return []Legend{{
 		Name:           p.Title,
 		ShapeLineStyle: ShapeLineStyle{LineStyle: p.Style},
-	}
+	}}
 }
 
 type pFuncPath struct {
@@ -1560,8 +1574,8 @@ func (s ImageInset) DrawTo(env *ChartContentEnvironment) (cErr error) {
 	return nil
 }
 
-func (s ImageInset) Legend() Legend {
-	return Legend{}
+func (s ImageInset) Legend() []Legend {
+	return nil
 }
 
 type YConst struct {
@@ -1609,8 +1623,11 @@ func (yc YConst) DrawTo(env *ChartContentEnvironment) error {
 	return err
 }
 
-func (yc YConst) Legend() Legend {
-	return Legend{ShapeLineStyle: ShapeLineStyle{LineStyle: yc.Style}, Name: yc.Title}
+func (yc YConst) Legend() []Legend {
+	if yc.Title == "" {
+		return nil
+	}
+	return []Legend{{ShapeLineStyle: ShapeLineStyle{LineStyle: yc.Style}, Name: yc.Title}}
 }
 
 type XConst struct {
@@ -1658,8 +1675,11 @@ func (xc XConst) DrawTo(env *ChartContentEnvironment) error {
 	return err
 }
 
-func (xc XConst) Legend() Legend {
-	return Legend{ShapeLineStyle: ShapeLineStyle{LineStyle: xc.Style}, Name: xc.Title}
+func (xc XConst) Legend() []Legend {
+	if xc.Title == "" {
+		return nil
+	}
+	return []Legend{{ShapeLineStyle: ShapeLineStyle{LineStyle: xc.Style}, Name: xc.Title}}
 }
 
 type Text struct {
@@ -1681,8 +1701,8 @@ func (t Text) DrawTo(env *ChartContentEnvironment) error {
 	return nil
 }
 
-func (t Text) Legend() Legend {
-	return Legend{}
+func (t Text) Legend() []Legend {
+	return nil
 }
 
 type Heat struct {
@@ -1795,16 +1815,18 @@ func (h Heat) DrawTo(env *ChartContentEnvironment) error {
 	return env.Canvas.DrawImage(p1, p2, im)
 }
 
-func (h Heat) Legend() Legend {
-	return Legend{}
+func (h Heat) Legend() []Legend {
+	return nil
+}
+
+type BarSet struct {
+	Points Points
+	Style  *Style
+	Title  string
 }
 
 type Bars struct {
-	Points     Points
-	Style      *Style
-	Title      string
-	Width      float64
-	Offset     float64
+	BarSets    []BarSet
 	Horizontal bool
 }
 
@@ -1812,38 +1834,53 @@ func (b Bars) String() string {
 	return "BarChart"
 }
 
-func (b Bars) SetLine(style *Style) ChartContent {
-	if style.Fill {
-		b.Style = style
-	} else {
-		b.Style = style.SetFill(style)
+func (b Bars) Add(cc ChartContent) (ChartContent, error) {
+	if other, ok := cc.(Bars); ok {
+		return Bars{
+			BarSets:    append(b.BarSets, other.BarSets...),
+			Horizontal: b.Horizontal || other.Horizontal,
+		}, nil
 	}
-	return b
+	return nil, fmt.Errorf("cannot add %T to Bars", cc)
 }
 
-func (b Bars) SetTitle(title string) ChartContent {
-	b.Title = title
-	return b
-}
-
-func (b Bars) SetWidthOffset(width, offset float64) ChartContent {
-	b.Width = width
-	b.Offset = offset
-	return b
+func (b Bars) barWidth() float64 {
+	var w Bounds
+	nMax := 0
+	for _, sets := range b.BarSets {
+		n := 0
+		for p, err := range sets.Points {
+			if err != nil {
+				return 0
+			}
+			w.Merge(p.X)
+			n++
+		}
+		if n > nMax {
+			nMax = n
+		}
+	}
+	bars := (len(b.BarSets)+1)*(nMax-1) + 1
+	return w.Width() / float64(bars)
 }
 
 func (b Bars) Bounds() (Bounds, Bounds, error) {
 	var x, y Bounds
 	y.Merge(0)
-	w := b.Width / 2
-	for p, err := range b.Points {
-		if err != nil {
-			return Bounds{}, Bounds{}, err
+	for _, sets := range b.BarSets {
+		for p, err := range sets.Points {
+			if err != nil {
+				return Bounds{}, Bounds{}, err
+			}
+			x.Merge(p.X)
+			y.Merge(p.Y)
 		}
-		x.Merge(p.X + b.Offset + w)
-		x.Merge(p.X + b.Offset - w)
-		y.Merge(p.Y)
 	}
+
+	bw := b.barWidth() * float64(len(b.BarSets)) / 2
+	x.Merge(x.Min - bw)
+	x.Merge(x.Max + bw)
+
 	if b.Horizontal {
 		return y, x, nil
 	}
@@ -1856,42 +1893,50 @@ func (b Bars) DependantBounds(_, _ Bounds) (Bounds, Bounds, error) {
 
 func (b Bars) DrawTo(environment *ChartContentEnvironment) error {
 	canvas := environment.Canvas
-	for p, err := range b.Points {
-		if err != nil {
-			return fmt.Errorf("error plotting bars: %w", err)
+	barWidth := b.barWidth()
+	gap := barWidth * 0.1
+	ofs := float64(len(b.BarSets)) * barWidth / 2
+	for i, set := range b.BarSets {
+		style := set.Style
+		if !style.Fill {
+			style = style.SetFill(style)
 		}
-		var x, y0, y1 float64
-		if b.Horizontal {
-			x = environment.YAxis.Bounds.Limit(p.X)
-			y0 = environment.XAxis.Bounds.Limit(0)
-			y1 = environment.XAxis.Bounds.Limit(p.Y)
-		} else {
-			x = environment.XAxis.Bounds.Limit(p.X)
-			y0 = environment.YAxis.Bounds.Limit(0)
-			y1 = environment.YAxis.Bounds.Limit(p.Y)
-		}
-		if y0 != y1 {
-			o := b.Offset
-			var path Path
-			if b.Width == 0 {
-				path = NewPath(false).
-					MoveTo(Point{X: x + o, Y: y0}).
-					LineTo(Point{X: x + o, Y: y1})
-			} else {
-				w := b.Width / 2
-				path = NewPath(true).
-					MoveTo(Point{X: x + o - w, Y: y0}).
-					LineTo(Point{X: x + o + w, Y: y0}).
-					LineTo(Point{X: x + o + w, Y: y1}).
-					LineTo(Point{X: x + o - w, Y: y1})
-
-			}
-			if b.Horizontal {
-				path = swapXYPath{path: path}
-			}
-			err = canvas.DrawPath(path, b.Style)
+		for p, err := range set.Points {
 			if err != nil {
 				return fmt.Errorf("error plotting bars: %w", err)
+			}
+			var x, y0, y1 float64
+			if b.Horizontal {
+				x = environment.YAxis.Bounds.Limit(p.X)
+				y0 = environment.XAxis.Bounds.Limit(0)
+				y1 = environment.XAxis.Bounds.Limit(p.Y)
+			} else {
+				x = environment.XAxis.Bounds.Limit(p.X)
+				y0 = environment.YAxis.Bounds.Limit(0)
+				y1 = environment.YAxis.Bounds.Limit(p.Y)
+			}
+			if y0 != y1 {
+				o := barWidth*float64(i) - ofs
+				var path Path
+				if barWidth == 0 {
+					path = NewPath(false).
+						MoveTo(Point{X: x + o, Y: y0}).
+						LineTo(Point{X: x + o, Y: y1})
+				} else {
+					path = NewPath(true).
+						MoveTo(Point{X: x + o + gap, Y: y0}).
+						LineTo(Point{X: x + o + barWidth - gap, Y: y0}).
+						LineTo(Point{X: x + o + barWidth - gap, Y: y1}).
+						LineTo(Point{X: x + o + gap, Y: y1})
+
+				}
+				if b.Horizontal {
+					path = swapXYPath{path: path}
+				}
+				err = canvas.DrawPath(path, style)
+				if err != nil {
+					return fmt.Errorf("error plotting bars: %w", err)
+				}
 			}
 		}
 	}
@@ -1914,10 +1959,20 @@ func (s swapXYPath) IsClosed() bool {
 	return s.path.IsClosed()
 }
 
-func (b Bars) Legend() Legend {
-	return Legend{
-		Name:           b.Title,
-		ShapeLineStyle: ShapeLineStyle{LineStyle: b.Style},
-		ColorOnly:      true,
+func (b Bars) Legend() []Legend {
+	var l []Legend
+	for _, set := range slices.Backward(b.BarSets) {
+		if set.Title != "" {
+			style := set.Style
+			if !style.Fill {
+				style = style.SetFill(style)
+			}
+			l = append(l, Legend{
+				Name:           set.Title,
+				ShapeLineStyle: ShapeLineStyle{LineStyle: style},
+				ColorOnly:      true,
+			})
+		}
 	}
+	return l
 }

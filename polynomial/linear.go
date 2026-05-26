@@ -596,8 +596,8 @@ func (p Polar) DrawTo(env *graph.ChartContentEnvironment) error {
 	return nil
 }
 
-func (p Polar) Legend() graph.Legend {
-	return graph.Legend{}
+func (p Polar) Legend() []graph.Legend {
+	return nil
 }
 
 type Asymptotes struct {
@@ -642,8 +642,8 @@ func (a Asymptotes) DrawTo(env *graph.ChartContentEnvironment) error {
 	return nil
 }
 
-func (a Asymptotes) Legend() graph.Legend {
-	return graph.Legend{Name: "Asymptotes", ShapeLineStyle: graph.ShapeLineStyle{LineStyle: asymptotesStyle}}
+func (a Asymptotes) Legend() []graph.Legend {
+	return []graph.Legend{{Name: "Asymptotes", ShapeLineStyle: graph.ShapeLineStyle{LineStyle: asymptotesStyle}}}
 }
 
 // PlotPreferences allows modifying a graph.Chart after it has been created.
@@ -668,8 +668,8 @@ func (p PlotPreferences) DrawTo(env *graph.ChartContentEnvironment) error {
 	return nil
 }
 
-func (p PlotPreferences) Legend() graph.Legend {
-	return graph.Legend{}
+func (p PlotPreferences) Legend() []graph.Legend {
+	return nil
 }
 
 func (p PlotPreferences) String() string {
@@ -988,8 +988,8 @@ func (ec *evansCurves) DrawTo(env *graph.ChartContentEnvironment) error {
 	return nil
 }
 
-func (ec *evansCurves) Legend() graph.Legend {
-	return graph.Legend{}
+func (ec *evansCurves) Legend() []graph.Legend {
+	return nil
 }
 
 func RootLocus(cpp PolynomialProvider, kMin, kMax float64, parName string) ([]graph.ChartContent, error) {
@@ -1198,8 +1198,8 @@ func (b bodePhase) DrawTo(env *graph.ChartContentEnvironment) error {
 	return env.Canvas.DrawPath(r.IntersectPath(path), style)
 }
 
-func (b bodePhase) Legend() graph.Legend {
-	return graph.Legend{}
+func (b bodePhase) Legend() []graph.Legend {
+	return nil
 }
 
 func (b bodePhase) String() string {
@@ -1234,8 +1234,11 @@ func (b bodeAmplitude) DrawTo(env *graph.ChartContentEnvironment) error {
 	return env.Canvas.DrawPath(r.IntersectPath(path), b.bodeContent.Style)
 }
 
-func (b bodeAmplitude) Legend() graph.Legend {
-	return graph.Legend{ShapeLineStyle: graph.ShapeLineStyle{LineStyle: b.bodeContent.Style}, Name: b.bodeContent.Title}
+func (b bodeAmplitude) Legend() []graph.Legend {
+	if b.bodeContent.Title == "" {
+		return nil
+	}
+	return []graph.Legend{{ShapeLineStyle: graph.ShapeLineStyle{LineStyle: b.bodeContent.Style}, Name: b.bodeContent.Title}}
 }
 
 func (l *Linear) NyquistPos(sMin, sMax float64, steps int) (*graph.ParameterFunc, error) {

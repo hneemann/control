@@ -295,9 +295,9 @@ func newUnityCube(parent Cube, x, y, z AxisDescription) *unityCube {
 	ctw := func(width float64, digits int) bool {
 		return width > float64(digits)*10
 	}
-	ax := x.GetFactory()(-100, 100, x.Bounds, ctw, 0.02)
-	ay := y.GetFactory()(-100, 100, y.Bounds, ctw, 0.02)
-	az := z.GetFactory()(-100, 100, z.Bounds, ctw, 0.02)
+	ax := x.GetAxis(-100, 100, x.Bounds, ctw, 0.02)
+	ay := y.GetAxis(-100, 100, y.Bounds, ctw, 0.02)
+	az := z.GetAxis(-100, 100, z.Bounds, ctw, 0.02)
 	return &unityCube{
 		parent: parent,
 		X:      x.Bounds, Y: y.Bounds, Z: z.Bounds,
