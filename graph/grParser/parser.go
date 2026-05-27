@@ -884,8 +884,8 @@ func addAxisMethods(name, uName string, aa func(chart *graph.Chart) *graph.AxisD
 			if err != nil {
 				return nil, fmt.Errorf("%sTicks: %w", name, err)
 			}
-			for _, i := range items {
-				if tickValue, ok := i.(*value.List); ok {
+			for n, item := range items {
+				if tickValue, ok := item.(*value.List); ok {
 					tick, err := tickValue.ToSlice(stack)
 					if err != nil {
 						return nil, fmt.Errorf("%sTicks: %w", name, err)
@@ -897,6 +897,11 @@ func addAxisMethods(name, uName string, aa func(chart *graph.Chart) *graph.AxisD
 								continue
 							}
 						}
+					}
+				} else {
+					if tickStr, ok := item.(value.String); ok {
+						ticks = append(ticks, graph.Tick{Position: float64(n), Label: string(tickStr)})
+						continue
 					}
 				}
 				return nil, errors.New("a tick needs to be a list containing a value and a string")
@@ -1077,7 +1082,7 @@ func listMethods() value.MethodMap {
 		"graph": value.MethodAtType(2, func(list *value.List, st funcGen.Stack[value.Value]) (value.Value, error) {
 			switch st.Size() {
 			case 1:
-				s := graph.Scatter{Points: listToPoints(list)}
+				s := graph.Scatter{Points: listToPoints(list, true)}
 				if size, ok := list.SizeIfKnown(); ok && size > 200 {
 					s.LineStyle = graph.Black
 				}
@@ -1103,7 +1108,7 @@ func listMethods() value.MethodMap {
 			if style, err := GetStyle(st, 1, graph.Black); err == nil {
 				if title, ok := st.GetOptional(2, value.String("")).(value.String); ok {
 					set := graph.BarSet{
-						Points: listToPoints(list),
+						Points: listToPoints(list, false),
 						Style:  style.Value,
 						Title:  string(title),
 					}
@@ -1916,9 +1921,10 @@ func GetStyle(st funcGen.Stack[value.Value], index int, defStyle *graph.Style) (
 	return StyleValue{}, fmt.Errorf("argument %d needs to be a style or a color number", index)
 }
 
-func listToPoints(list *value.List) graph.Points {
+func listToPoints(list *value.List, cmplx bool) graph.Points {
 	return func(yield func(graph.Point, error) bool) {
 		st := funcGen.NewEmptyStack[value.Value]()
+		n := 0
 		for v, err := range list.Iterate(st) {
 			if err != nil {
 				yield(graph.Point{}, err)
@@ -1952,13 +1958,20 @@ func listToPoints(list *value.List) graph.Points {
 					return
 				}
 			} else if p, ok := v.ToFloat(); ok {
-				if !yield(graph.Point{X: p, Y: 0}, nil) {
-					return
+				if cmplx {
+					if !yield(graph.Point{X: p, Y: 0}, nil) {
+						return
+					}
+				} else {
+					if !yield(graph.Point{X: float64(n), Y: p}, nil) {
+						return
+					}
 				}
 			} else {
 				yield(graph.Point{}, fmt.Errorf("list elements must themselves be lists containing two floats such as [x,y]"))
 				return
 			}
+			n++
 		}
 	}
 }

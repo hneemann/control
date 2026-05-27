@@ -1850,7 +1850,11 @@ func (b Bars) barWidth() float64 {
 		}
 	}
 	bars := (len(b.BarSets)+1)*(nMax-1) + 1
-	return w.Width() / float64(bars)
+	width := w.Width() / float64(bars)
+	if len(b.BarSets) == 1 {
+		width *= 1.75
+	}
+	return width
 }
 
 func (b Bars) Bounds() (Bounds, Bounds, error) {
