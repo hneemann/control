@@ -1038,8 +1038,13 @@ type BodeChartContent struct {
 	Steps   int
 
 	wMin, wMax float64
-	amplitude  []graph.Point
-	phase      []graph.Point
+	data       []bodeData
+}
+
+type bodeData struct {
+	omega     float64
+	amplitude float64
+	phase     float64
 }
 
 func (l *Linear) CreateBodeContent(style *graph.Style, title string, steps int) *BodeChartContent {
@@ -1112,8 +1117,7 @@ func (bpc *BodeChartContent) generate(wMin, wMax float64) {
 		l := bpc.Linear
 		phaseOffset, lastPhase := calculateCompletePhase(l, wMin)
 		wMult := math.Pow(wMax/wMin, 1/float64(bpc.Steps))
-		var amplitude []graph.Point
-		var phase []graph.Point
+		var data []bodeData
 		w := wMin
 		latFactor := bpc.Latency / math.Pi * 180
 		for i := 0; i <= bpc.Steps; i++ {
@@ -1128,12 +1132,14 @@ func (bpc *BodeChartContent) generate(wMin, wMax float64) {
 			}
 
 			lastPhase = pha
-			amplitude = append(amplitude, graph.Point{X: w, Y: amp})
-			phase = append(phase, graph.Point{X: w, Y: pha + phaseOffset - latFactor*w})
+			data = append(data, bodeData{
+				omega:     w,
+				amplitude: amp,
+				phase:     pha + phaseOffset - latFactor*w,
+			})
 			w *= wMult
 		}
-		bpc.amplitude = amplitude
-		bpc.phase = phase
+		bpc.data = data
 	}
 }
 
@@ -1181,8 +1187,8 @@ func (b bodePhase) Bounds() (x, y graph.Bounds, err error) {
 func (b bodePhase) DependantBounds(xGiven, _ graph.Bounds) (x, y graph.Bounds, err error) {
 	b.bodeContent.generateExp(xGiven.Min, xGiven.Max, 0.02)
 	var bounds graph.Bounds
-	for _, p := range b.bodeContent.phase {
-		bounds.Merge(p.Y)
+	for _, p := range b.bodeContent.data {
+		bounds.Merge(p.phase)
 	}
 	return graph.Bounds{}, bounds, nil
 }
@@ -1194,7 +1200,13 @@ func (b bodePhase) DrawTo(env *graph.ChartContentEnvironment) error {
 	}
 	r := env.Canvas.Rect()
 	b.bodeContent.generate(r.Min.X, r.Max.X)
-	path := graph.PointsFromSlice(b.bodeContent.phase...)
+	path := graph.Points(func(yield func(graph.Point, error) bool) {
+		for _, p := range b.bodeContent.data {
+			if !yield(graph.Point{X: p.omega, Y: p.phase}, nil) {
+				return
+			}
+		}
+	})
 	return env.Canvas.DrawPath(r.IntersectPath(path), style)
 }
 
@@ -1221,8 +1233,8 @@ func (b bodeAmplitude) Bounds() (x, y graph.Bounds, err error) {
 func (b bodeAmplitude) DependantBounds(xGiven, _ graph.Bounds) (x, y graph.Bounds, err error) {
 	b.bodeContent.generateExp(xGiven.Min, xGiven.Max, 0.02)
 	var bounds graph.Bounds
-	for _, p := range b.bodeContent.amplitude {
-		bounds.Merge(p.Y)
+	for _, p := range b.bodeContent.data {
+		bounds.Merge(p.amplitude)
 	}
 	return graph.Bounds{}, bounds, nil
 }
@@ -1230,7 +1242,13 @@ func (b bodeAmplitude) DependantBounds(xGiven, _ graph.Bounds) (x, y graph.Bound
 func (b bodeAmplitude) DrawTo(env *graph.ChartContentEnvironment) error {
 	r := env.Canvas.Rect()
 	b.bodeContent.generate(r.Min.X, r.Max.X)
-	path := graph.PointsFromSlice(b.bodeContent.amplitude...)
+	path := graph.Points(func(yield func(graph.Point, error) bool) {
+		for _, p := range b.bodeContent.data {
+			if !yield(graph.Point{X: p.omega, Y: p.amplitude}, nil) {
+				return
+			}
+		}
+	})
 	return env.Canvas.DrawPath(r.IntersectPath(path), b.bodeContent.Style)
 }
 
