@@ -317,7 +317,8 @@ func (p Chart3dValue) ToHtml(_ funcGen.Stack[value.Value], w *xmlWriter.XMLWrite
 
 type ChartValue struct {
 	Holder[*graph.Chart]
-	context graph.Context
+	context            graph.Context
+	alreadyInitialized bool
 }
 
 func (p ChartValue) Copy() ChartValue {
@@ -346,23 +347,32 @@ func (p ChartValue) DrawTo(canvas graph.Canvas) error {
 }
 
 func NewChartValue(chart *graph.Chart) ChartValue {
-	return ChartValue{Holder[*graph.Chart]{chart}, graph.DefaultContext}
+	return ChartValue{Holder[*graph.Chart]{chart}, graph.DefaultContext, false}
 }
 
 func (p ChartValue) GetType() value.Type {
 	return ChartType
 }
 
-func (p ChartValue) Add(pc value.Value) error {
+func (p *ChartValue) Add(pc value.Value) error {
 	if c, ok := pc.(ChartContentValue); ok {
+		p.initialize(&c)
 		p.Holder.Value.AddContent(c.Value, c.SecondaryAxis)
 		return nil
 	}
 	return errors.New("value is not a chart content")
 }
 
-func (p ChartValue) AddAtTop(pc value.Value) error {
+func (p *ChartValue) initialize(c *ChartContentValue) {
+	if c.Initializer != nil && !p.alreadyInitialized {
+		c.Initializer(p.Holder.Value)
+		p.alreadyInitialized = true
+	}
+}
+
+func (p *ChartValue) AddAtTop(pc value.Value) error {
 	if c, ok := pc.(ChartContentValue); ok {
+		p.initialize(&c)
 		p.Holder.Value.AddContentAtTop(c.Value, c.SecondaryAxis)
 		return nil
 	}
@@ -950,7 +960,7 @@ func CreateInsetMethod(relative bool) func(chart ChartValue, stack funcGen.Stack
 							Max:         graph.NewRelativePos(graph.Point{X: xMax, Y: yMax}, relative),
 							Chart:       chart.Value,
 							VisualGuide: visualGuide,
-						}), nil
+						}, nil), nil
 					}
 				}
 			}
@@ -964,7 +974,7 @@ func createChartContentMethods() value.MethodMap {
 		"title": value.MethodAtType(1, func(ccv ChartContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if leg, ok := stack.Get(1).(value.String); ok {
 				if sc, ok := ccv.Value.(graph.HasTitle); ok {
-					return ChartContentValue{Holder[graph.ChartContent]{sc.SetTitle(string(leg))}, ccv.SecondaryAxis}, nil
+					return ChartContentValue{Holder[graph.ChartContent]{sc.SetTitle(string(leg))}, ccv.SecondaryAxis, nil}, nil
 				} else {
 					return nil, fmt.Errorf("title can only be set for charts using a title")
 				}
@@ -991,7 +1001,7 @@ func createChartContentMethods() value.MethodMap {
 			}
 
 			if sc, ok := ccv.Value.(graph.HasShape); ok {
-				return ChartContentValue{Holder[graph.ChartContent]{sc.SetShape(marker, style.Value)}, ccv.SecondaryAxis}, nil
+				return ChartContentValue{Holder[graph.ChartContent]{sc.SetShape(marker, style.Value)}, ccv.SecondaryAxis, nil}, nil
 			} else {
 				return nil, fmt.Errorf("point type can only be set for chart contents that support points")
 			}
@@ -1016,7 +1026,7 @@ func createChartContentMethods() value.MethodMap {
 				} else {
 					return nil, fmt.Errorf("the title must be a string")
 				}
-				return ChartContentValue{Holder[graph.ChartContent]{pc}, ccv.SecondaryAxis}, nil
+				return ChartContentValue{Holder[graph.ChartContent]{pc}, ccv.SecondaryAxis, nil}, nil
 			} else {
 				return nil, fmt.Errorf("line requires a style: %w", err)
 			}
@@ -1028,13 +1038,13 @@ func createChartContentMethods() value.MethodMap {
 			} else {
 				return nil, fmt.Errorf("Close can only be called on chart contents that can be closed.")
 			}
-			return ChartContentValue{Holder[graph.ChartContent]{pc}, ccv.SecondaryAxis}, nil
+			return ChartContentValue{Holder[graph.ChartContent]{pc}, ccv.SecondaryAxis, nil}, nil
 		}).SetMethodDescription("Closes a path."),
 		"horizontal": value.MethodAtType(0, func(ccv ChartContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			pc := ccv.Value
 			if b, ok := pc.(graph.Bars); ok {
 				b.Horizontal = true
-				return ChartContentValue{Holder[graph.ChartContent]{b}, ccv.SecondaryAxis}, nil
+				return ChartContentValue{Holder[graph.ChartContent]{b}, ccv.SecondaryAxis, nil}, nil
 			}
 			return nil, errors.New("horizontal can only be called on bar chart contents")
 		}).SetMethodDescription("Draws horizontal bars"),
@@ -1050,7 +1060,7 @@ func createChartContentMethods() value.MethodMap {
 					if err != nil {
 						return nil, fmt.Errorf("error adding chart content: %w", err)
 					}
-					return ChartContentValue{Holder[graph.ChartContent]{pc}, ccv.SecondaryAxis}, nil
+					return ChartContentValue{Holder[graph.ChartContent]{pc}, ccv.SecondaryAxis, nil}, nil
 				}
 				return nil, errors.New("chart content does not allow to add something")
 			}
@@ -1058,7 +1068,7 @@ func createChartContentMethods() value.MethodMap {
 		}).SetMethodDescription("content", "Adds a chart content to another content. This is supported only for bars."),
 		"toY2": value.MethodAtType(0, func(ccv ChartContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			pc := ccv.Value
-			return ChartContentValue{Holder[graph.ChartContent]{pc}, true}, nil
+			return ChartContentValue{Holder[graph.ChartContent]{pc}, true, ccv.Initializer}, nil
 		}).SetMethodDescription("The chart content is assigned to the secondary y-axis. By default, the second " +
 			"axis is drawn on the right side of the chart. Using the 'stack' command, you can instead draw two charts " +
 			"stacked on top of each other, with both axis on the left. This is used to create bose-plots."),
@@ -1068,10 +1078,11 @@ func createChartContentMethods() value.MethodMap {
 type ChartContentValue struct {
 	Holder[graph.ChartContent]
 	SecondaryAxis bool
+	Initializer   func(*graph.Chart)
 }
 
-func NewChartContentValue(pc graph.ChartContent) ChartContentValue {
-	return ChartContentValue{Holder[graph.ChartContent]{pc}, false}
+func NewChartContentValue(pc graph.ChartContent, init func(chart *graph.Chart)) ChartContentValue {
+	return ChartContentValue{Holder: Holder[graph.ChartContent]{pc}, SecondaryAxis: false, Initializer: init}
 }
 
 func (p ChartContentValue) GetType() value.Type {
@@ -1095,7 +1106,7 @@ func listMethods() value.MethodMap {
 				if size, ok := list.SizeIfKnown(); ok && size > 200 {
 					s.LineStyle = graph.Black
 				}
-				return ChartContentValue{Holder[graph.ChartContent]{s}, false}, nil
+				return ChartContentValue{Holder[graph.ChartContent]{s}, false, nil}, nil
 			case 3:
 				if xc, ok := st.Get(1).(value.Closure); ok && xc.Args == 1 {
 					if yc, ok := st.Get(2).(value.Closure); ok && yc.Args == 1 {
@@ -1103,7 +1114,7 @@ func listMethods() value.MethodMap {
 						if size, ok := list.SizeIfKnown(); ok && size > 200 {
 							s.LineStyle = graph.Black
 						}
-						return ChartContentValue{Holder[graph.ChartContent]{s}, false}, nil
+						return ChartContentValue{Holder[graph.ChartContent]{s}, false, nil}, nil
 					}
 				}
 			default:
@@ -1173,7 +1184,7 @@ func closureMethods() value.MethodMap {
 				return 0, fmt.Errorf("the function given to graph must return a float")
 			}
 			gf := graph.Function{Function: f, Steps: steps, Style: graph.Black}
-			return ChartContentValue{Holder[graph.ChartContent]{gf}, false}, nil
+			return ChartContentValue{Holder[graph.ChartContent]{gf}, false, nil}, nil
 		}).SetMethodDescription("steps", "Creates a graph of the function (ℝ→ℝ) to be used in the plot command.").VarArgsMethod(0, 1),
 
 		"pGraph": value.MethodAtType(4, func(cl value.Closure, st funcGen.Stack[value.Value]) (value.Value, error) {
@@ -1233,7 +1244,7 @@ func closureMethods() value.MethodMap {
 						return nil, fmt.Errorf("pGraph: %w", err)
 					}
 					gf.Func = f
-					return ChartContentValue{Holder[graph.ChartContent]{gf}, false}, nil
+					return ChartContentValue{Holder[graph.ChartContent]{gf}, false, nil}, nil
 				}
 			}
 			return nil, fmt.Errorf("pGraph requires two floats as first arguments")
@@ -1294,7 +1305,7 @@ func closureMethods() value.MethodMap {
 						FuncFac: fac,
 						Steps:   steps,
 					}
-					return ChartContentValue{Holder[graph.ChartContent]{h}, false}, nil
+					return ChartContentValue{Holder[graph.ChartContent]{h}, false, nil}, nil
 				}
 			}
 			return nil, fmt.Errorf("heat requires two floats as first arguments")
@@ -1330,7 +1341,7 @@ func closureMethods() value.MethodMap {
 				FuncFac: fac,
 				Steps:   steps,
 			}
-			return ChartContentValue{Holder[graph.ChartContent]{h}, false}, nil
+			return ChartContentValue{Holder[graph.ChartContent]{h}, false, nil}, nil
 		}).SetMethodDescription("steps", "Creates a heat chart of the function. "+
 			"The function needs to have two arguments (x,y) and has to return a color, "+
 			"which is used to color a square located at the coordinate (x,y).").VarArgsMethod(0, 1),
@@ -1614,7 +1625,7 @@ func Setup(fg *value.FunctionGenerator) {
 				return nil, fmt.Errorf("graph requires a closure as first argument")
 			}
 			gf := graph.Function{Function: f, Steps: steps, Style: graph.Black}
-			return ChartContentValue{Holder[graph.ChartContent]{gf}, false}, nil
+			return ChartContentValue{Holder[graph.ChartContent]{gf}, false, nil}, nil
 		},
 		Args:   -1,
 		IsPure: true,
@@ -1627,7 +1638,7 @@ func Setup(fg *value.FunctionGenerator) {
 					return nil, fmt.Errorf("yConst: %w", err)
 				}
 				c := graph.YConst{Y: y, Style: styleVal.Value}
-				return ChartContentValue{Holder[graph.ChartContent]{c}, false}, nil
+				return ChartContentValue{Holder[graph.ChartContent]{c}, false, nil}, nil
 			}
 			return nil, fmt.Errorf("yConst requires a float")
 		},
@@ -1642,7 +1653,7 @@ func Setup(fg *value.FunctionGenerator) {
 					return nil, fmt.Errorf("xConst: %w", err)
 				}
 				c := graph.XConst{X: x, Style: styleVal.Value}
-				return ChartContentValue{Holder[graph.ChartContent]{c}, false}, nil
+				return ChartContentValue{Holder[graph.ChartContent]{c}, false, nil}, nil
 			}
 			return nil, fmt.Errorf("yConst requires a float")
 		},

@@ -21,13 +21,12 @@ import (
 )
 
 var (
-	BodeChartContentValueType value.Type
-	ComplexValueType          value.Type
-	PolynomialValueType       value.Type
-	LinearValueType           value.Type
-	BlockFactoryValueType     value.Type
-	TwoPortValueType          value.Type
-	GuiElementsType           value.Type
+	ComplexValueType      value.Type
+	PolynomialValueType   value.Type
+	LinearValueType       value.Type
+	BlockFactoryValueType value.Type
+	TwoPortValueType      value.Type
+	GuiElementsType       value.Type
 )
 
 type BlockFactoryValue struct {
@@ -331,52 +330,9 @@ func (l *Linear) GetType() value.Type {
 	return LinearValueType
 }
 
-type BodeChartContentValue struct {
-	grParser.Holder[*BodeChartContent]
-}
-
-func (b BodeChartContentValue) GetType() value.Type {
-	return BodeChartContentValueType
-}
-
-func bodeChartContentMethods() value.MethodMap {
-	return value.MethodMap{
-		"latency": value.MethodAtType(1, func(ccv BodeChartContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
-			if lat, ok := stack.Get(1).ToFloat(); ok {
-				ccv.Value.Latency = lat
-				return ccv, nil
-			} else {
-				return nil, fmt.Errorf("latency requires a float")
-			}
-		}).SetMethodDescription("latency", "Adds a latency to the bode chart."),
-		"phase": value.MethodAtType(0, func(ccv BodeChartContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
-			return grParser.ChartContentValue{Holder: grParser.Holder[graph.ChartContent]{Value: bodePhase{ccv.Value}}}, nil
-		}).SetMethodDescription("Returns the phase chart content."),
-		"amplitude": value.MethodAtType(0, func(ccv BodeChartContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
-			return grParser.ChartContentValue{Holder: grParser.Holder[graph.ChartContent]{Value: bodeAmplitude{ccv.Value}}}, nil
-		}).SetMethodDescription("Returns the amplitude chart content."),
-		"title": value.MethodAtType(1, func(ccv BodeChartContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
-			if leg, ok := stack.Get(1).(value.String); ok {
-				ccv.Value.Title = string(leg)
-				return ccv, nil
-			} else {
-				return nil, fmt.Errorf("title requires a string")
-			}
-		}).SetMethodDescription("str", "Sets a string to show in the legend."),
-		"line": value.MethodAtType(2, func(ccv BodeChartContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
-			if style, err := grParser.GetStyle(stack, 1, nil); err == nil {
-				ccv.Value.Style = style.Value
-				if title, ok := stack.GetOptional(2, value.String("")).(value.String); ok {
-					if title != "" {
-						ccv.Value.Title = string(title)
-					}
-				}
-				return ccv, nil
-			} else {
-				return nil, fmt.Errorf("line requires a style: %w", err)
-			}
-		}).SetMethodDescription("color", "title", "Sets the line style and title.").VarArgsMethod(1, 2),
-	}
+func setImReLabels(chart *graph.Chart) {
+	chart.X.Label = "Re"
+	chart.Y.Label = "Im"
 }
 
 func linMethods() value.MethodMap {
@@ -452,7 +408,7 @@ func linMethods() value.MethodMap {
 					return nil, err
 				}
 				return value.NewListConvert(func(pc graph.ChartContent) (value.Value, error) {
-					return grParser.NewChartContentValue(pc), nil
+					return grParser.NewChartContentValue(pc, setImReLabels), nil
 				}, contentList), nil
 			}
 			return nil, fmt.Errorf("evans requires a float")
@@ -482,7 +438,7 @@ func linMethods() value.MethodMap {
 				return nil, err
 			}
 			return value.NewListConvert(func(i graph.ChartContent) (value.Value, error) {
-				return grParser.NewChartContentValue(i), nil
+				return grParser.NewChartContentValue(i, setImReLabels), nil
 			}, contentList), nil
 		}).SetMethodDescription("neg", "wMax", "wMin", "steps", "Creates a nyquist chart content. If neg is true also the range -∞<ω<0 is included. "+
 			"The value wMax gives the maximum value for ω. It defaults to 1000rad/s.").VarArgsMethod(0, 4),
@@ -503,7 +459,7 @@ func linMethods() value.MethodMap {
 			if err != nil {
 				return nil, err
 			}
-			contentValue := grParser.NewChartContentValue(chartContent)
+			contentValue := grParser.NewChartContentValue(chartContent, nil)
 			return contentValue, nil
 		}).SetMethodDescription("wMax", "wMin", "steps", "Creates a nyquist chart content with positive ω. "+
 			"The value wMax gives the maximum value for ω. It defaults to 1000rad/s.").VarArgsMethod(0, 3),
@@ -524,7 +480,7 @@ func linMethods() value.MethodMap {
 			if err != nil {
 				return nil, err
 			}
-			contentValue := grParser.NewChartContentValue(chartContent)
+			contentValue := grParser.NewChartContentValue(chartContent, nil)
 			return contentValue, nil
 		}).SetMethodDescription("wMax", "wMin", "steps", "Creates a nyquist chart content with negative ω. "+
 			"The value wMax gives the maximum value for ω. It defaults to 1000rad/s.").VarArgsMethod(0, 3),
@@ -601,16 +557,19 @@ func linMethods() value.MethodMap {
 }
 
 func createBodeMethod[T value.Value](convert func(T) *Linear) funcGen.Function[value.Value] {
-	return value.MethodAtType(3, func(lin T, st funcGen.Stack[value.Value]) (value.Value, error) {
+	return value.MethodAtType(4, func(lin T, st funcGen.Stack[value.Value]) (value.Value, error) {
 		if style, err := grParser.GetStyle(st, 1, graph.Black); err == nil {
 			if title, ok := st.GetOptional(2, value.String("")).(value.String); ok {
-				if steps, ok := st.GetOptional(3, value.Int(0)).(value.Int); ok {
-					return BodeChartContentValue{Holder: grParser.Holder[*BodeChartContent]{Value: convert(lin).CreateBodeContent(style.Value, string(title), int(steps))}}, nil
+				if latency, ok := st.GetOptional(3, value.Float(0)).ToFloat(); ok {
+					if steps, ok := st.GetOptional(3, value.Int(0)).(value.Int); ok {
+						contentList := convert(lin).CreateBodeContent(style.Value, string(title), int(steps), latency)
+						return value.NewList(contentList...), nil
+					}
 				}
 			}
 		}
 		return nil, fmt.Errorf("bode requires a color, a string and an int as arguments")
-	}).SetMethodDescription("color", "title", "steps", "Creates a bode chart content.").VarArgsMethod(0, 3)
+	}).SetMethodDescription("color", "title", "latency", "steps", "Creates a bode chart content.").VarArgsMethod(0, 4)
 }
 
 func floatMethods() value.MethodMap {
@@ -1194,22 +1153,6 @@ func (ch closureHandler) ToClosure(v value.Value) (funcGen.Function[value.Value]
 	}
 }
 
-type bodeAdder struct {
-	chart grParser.ChartValue
-}
-
-func (b bodeAdder) Add(val value.Value) error {
-	if pv, ok := val.(grParser.ChartContentValue); ok {
-		return b.chart.Add(pv)
-	}
-	if bpv, ok := val.(BodeChartContentValue); ok {
-		bp := bpv.Value
-		bp.addTo(b.chart.Value)
-		return nil
-	}
-	return errors.New("not a valid chart content")
-}
-
 var Parser = value.New().
 	Modify(func(fg *value.FunctionGenerator) {
 		ComplexValueType = fg.RegisterType("complex", " A complex number")
@@ -1217,7 +1160,6 @@ var Parser = value.New().
 		LinearValueType = fg.RegisterType("linearSystem", "A linear system. The system is represented by its numerator and denominator polynomials.")
 		BlockFactoryValueType = fg.RegisterType("block", "A Simulink like simulation block. Blocks are connected by the names of the input and output signals. See the non linear simulation example for details on it's usage.")
 		TwoPortValueType = fg.RegisterType("twoPort", "A classical two-port described by a 2x2 matrix.")
-		BodeChartContentValueType = fg.RegisterType("bodeChartContent", "The two bode curves (amplitude and phase) which can be added to a chart.")
 		GuiElementsType = fg.RegisterType("gui", "The interface to gui elements able to modify the output.")
 
 		createExp(fg)
@@ -1238,7 +1180,6 @@ var Parser = value.New().
 	RegisterMethods(value.FloatTypeId, floatMethods()).
 	RegisterMethods(value.IntTypeId, intMethods()).
 	RegisterMethods(value.ListTypeId, listMethods()).
-	RegisterMethods(BodeChartContentValueType, bodeChartContentMethods()).
 	RegisterMethods(ComplexValueType, cmplxMethods()).
 	RegisterMethods(TwoPortValueType, twoPortMethods()).
 	RegisterMethods(GuiElementsType, guiMethods()).
@@ -1390,7 +1331,7 @@ var Parser = value.New().
 	}.SetDescription("period", "value1", "value2", "Returns the rectangular function.")).
 	AddStaticFunction("polar", funcGen.Function[value.Value]{
 		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
-			return grParser.NewChartContentValue(Polar{}), nil
+			return grParser.NewChartContentValue(Polar{}, nil), nil
 		},
 		Args:   0,
 		IsPure: true,
@@ -1426,7 +1367,7 @@ var Parser = value.New().
 							return nil, fmt.Errorf("rootLocus failed: %w", err)
 						}
 						return value.NewListConvert(func(i graph.ChartContent) (value.Value, error) {
-							return grParser.NewChartContentValue(i), nil
+							return grParser.NewChartContentValue(i, setImReLabels), nil
 						}, contentList), nil
 					}
 				}
@@ -1455,47 +1396,6 @@ var Parser = value.New().
 		IsPure: true,
 	}.SetDescription("k_p", "T_I", "T_D", "T_P", "Creates a PID linear system. The fourth time T_P is the time "+
 		"constant that describes the parasitic PT1 term occurring in a real differentiation.").VarArgs(2, 4)).
-	AddStaticFunction("plot", funcGen.Function[value.Value]{
-		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
-			if stack.Size() == 0 {
-				return nil, errors.New("plot requires at least one argument")
-			}
-			var add interface {
-				Add(value.Value) error
-			}
-			var res value.Value
-			for v, err := range value.FlattenStack(stack, 0) {
-				if err != nil {
-					return nil, err
-				}
-				if add == nil {
-					switch v.(type) {
-					case grParser.ChartContentValue:
-						np := grParser.NewChartValue(&graph.Chart{})
-						add = np
-						res = np
-					case BodeChartContentValue:
-						np := grParser.NewChartValue(NewBode(0.01, 100))
-						add = bodeAdder{np}
-						res = np
-					case grParser.Chart3dContentValue:
-						np := grParser.NewChart3dValue(graph.NewChart3d())
-						add = np
-						res = np
-					default:
-						return nil, fmt.Errorf("plot requires chart contentor a 3d-chart content as arguments")
-					}
-				}
-				err = add.Add(v)
-				if err != nil {
-					return nil, err
-				}
-			}
-			return res, nil
-		},
-		Args:   -1,
-		IsPure: true,
-	}.SetDescription("content...", "Creates a chart.")).
 	AddStaticFunction("nelderMead", funcGen.Function[value.Value]{
 		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
 			if fu, ok := stack.Get(0).(value.Closure); ok {

@@ -1489,6 +1489,10 @@ type ImageInset struct {
 	VisualGuide *Style
 }
 
+func (s ImageInset) String() string {
+	return "ImageInset(" + s.Chart.String() + ")"
+}
+
 func (s ImageInset) Bounds() (Bounds, Bounds, error) {
 	var x, y Bounds
 	if s.Min.Mode == AbsPos {

@@ -646,47 +646,6 @@ func (a Asymptotes) Legend() []graph.Legend {
 	return []graph.Legend{{Name: "Asymptotes", ShapeLineStyle: graph.ShapeLineStyle{LineStyle: asymptotesStyle}}}
 }
 
-// PlotPreferences allows modifying a graph.Chart after it has been created.
-// It can be used to set labels, styles, or other properties of the plot.
-// It can't modify the bounds of the plot, as the axes are already drawn when
-// the Modify function is called.
-type PlotPreferences struct {
-	// Modify is a function that modifies the plot.
-	Modify func(*graph.Chart)
-}
-
-func (p PlotPreferences) Bounds() (x, y graph.Bounds, err error) {
-	return graph.Bounds{}, graph.Bounds{}, nil
-}
-
-func (p PlotPreferences) DependantBounds(_, _ graph.Bounds) (x, y graph.Bounds, err error) {
-	return graph.Bounds{}, graph.Bounds{}, nil
-}
-
-func (p PlotPreferences) DrawTo(env *graph.ChartContentEnvironment) error {
-	p.Modify(env.Chart)
-	return nil
-}
-
-func (p PlotPreferences) Legend() []graph.Legend {
-	return nil
-}
-
-func (p PlotPreferences) String() string {
-	return "Chart Preferences"
-}
-
-func NewImReLabels() PlotPreferences {
-	return PlotPreferences{Modify: func(plot *graph.Chart) {
-		if plot.Y.Label == "" {
-			plot.Y.Label = "Im"
-		}
-		if plot.X.Label == "" {
-			plot.X.Label = "Re"
-		}
-	}}
-}
-
 func (l *Linear) CreateEvans(kMin, kMax float64) ([]graph.ChartContent, error) {
 
 	lin, err := l.Reduce()
@@ -785,8 +744,6 @@ func (l *Linear) CreateEvans(kMin, kMax float64) ([]graph.ChartContent, error) {
 	if order > 0 {
 		curveList = append(curveList, Asymptotes{Point: graph.Point{X: as, Y: 0}, Order: order})
 	}
-	curveList = append(curveList, NewImReLabels())
-
 	return curveList, nil
 }
 
@@ -1047,7 +1004,28 @@ type bodeData struct {
 	phase     float64
 }
 
-func (l *Linear) CreateBodeContent(style *graph.Style, title string, steps int) *BodeChartContent {
+func bodeInitializer(chart *graph.Chart) {
+	chart.X = graph.AxisDescription{
+		Bounds:  graph.NewBounds(0.01, 100),
+		Factory: graph.LogAxis,
+		Label:   "ω [rad/s]",
+		Grid:    grParser.GridStyle,
+	}
+	chart.Y = graph.AxisDescription{
+		Factory: graph.DBAxis,
+		Label:   "Amplitude",
+		Grid:    grParser.GridStyle,
+	}
+	chart.YSec = graph.AxisDescription{
+		Factory: graph.CreateFixedStepAxis(45, 15),
+		Label:   "Phase [°]",
+		Grid:    grParser.GridStyle,
+	}
+	chart.StackBothYAxis = true
+	chart.ProtectLabels = true
+}
+
+func (l *Linear) CreateBodeContent(style *graph.Style, title string, steps int, latency float64) []value.Value {
 	if steps == 0 {
 		steps = 200
 	} else if steps < 100 {
@@ -1055,34 +1033,24 @@ func (l *Linear) CreateBodeContent(style *graph.Style, title string, steps int) 
 	} else if steps > 2000 {
 		steps = 2000
 	}
-	return &BodeChartContent{
-		Linear: l,
-		Style:  style,
-		Title:  title,
-		Steps:  steps,
+	bcc := &BodeChartContent{
+		Linear:  l,
+		Style:   style,
+		Title:   title,
+		Steps:   steps,
+		Latency: latency,
 	}
-}
-
-func NewBode(wMin, wMax float64) *graph.Chart {
-	return &graph.Chart{
-		X: graph.AxisDescription{
-			Bounds:  graph.NewBounds(wMin, wMax),
-			Factory: graph.LogAxis,
-			Label:   "ω [rad/s]",
-			Grid:    grParser.GridStyle,
+	return []value.Value{
+		grParser.ChartContentValue{
+			Holder:        grParser.Holder[graph.ChartContent]{Value: bodeAmplitude{bcc}},
+			SecondaryAxis: false,
+			Initializer:   bodeInitializer,
 		},
-		Y: graph.AxisDescription{
-			Factory: graph.DBAxis,
-			Label:   "Amplitude",
-			Grid:    grParser.GridStyle,
+		grParser.ChartContentValue{
+			Holder:        grParser.Holder[graph.ChartContent]{Value: bodePhase{bcc}},
+			SecondaryAxis: true,
+			Initializer:   bodeInitializer,
 		},
-		YSec: graph.AxisDescription{
-			Factory: graph.CreateFixedStepAxis(45, 15),
-			Label:   "Phase [°]",
-			Grid:    grParser.GridStyle,
-		},
-		StackBothYAxis: true,
-		ProtectLabels:  true,
 	}
 }
 
@@ -1352,7 +1320,6 @@ func (l *Linear) Nyquist(sMin, sMax float64, alsoNeg bool, steps int) ([]graph.C
 	isZero := !(math.IsNaN(real(cZero)) || math.IsNaN(imag(cZero)))
 
 	var cp []graph.ChartContent
-	cp = append(cp, NewImReLabels())
 	if alsoNeg {
 		neg, err := l.NyquistNeg(sMin, sMax, steps)
 		if err != nil {

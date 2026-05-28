@@ -4,12 +4,15 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/hneemann/control/graph"
+	"github.com/hneemann/control/graph/grParser"
 	"github.com/hneemann/parser2/funcGen"
 	"github.com/hneemann/parser2/value"
 	"github.com/hneemann/parser2/value/export/xmlWriter"
 	"github.com/stretchr/testify/assert"
 	"math"
 	"math/cmplx"
+	"os"
+	"path/filepath"
 	"testing"
 )
 
@@ -329,9 +332,9 @@ func exportPlot(pl graph.Image, name string) error {
 	}
 	err = c.Close()
 
-	//f, _ := os.Create(filepath.Join(testFolder, name))
-	//defer f.Close()
-	//_, err = f.Write(w.Bytes())
+	f, _ := os.Create(filepath.Join(testFolder, name))
+	defer f.Close()
+	_, err = f.Write(w.Bytes())
 	return err
 }
 
@@ -367,10 +370,19 @@ func Test_Bode1(t *testing.T) {
 	k, err := PID(10, 2, 1, 0)
 	assert.NoError(t, err)
 
-	pl := NewBode(0.01, 100)
-	g.CreateBodeContent(graph.Green, "G", 0).addTo(pl)
-	k.CreateBodeContent(graph.Blue, "K", 0).addTo(pl)
-	k.Mul(g).CreateBodeContent(graph.Black, "G0", 0).addTo(pl)
+	pl := grParser.ChartValue{Holder: grParser.Holder[*graph.Chart]{Value: &graph.Chart{}}}
+	list := g.CreateBodeContent(graph.Green, "G", 0, 0)
+	for _, v := range list {
+		assert.NoError(t, pl.Add(v))
+	}
+	list = k.CreateBodeContent(graph.Blue, "K", 0, 0)
+	for _, v := range list {
+		assert.NoError(t, pl.Add(v))
+	}
+	list = k.Mul(g).CreateBodeContent(graph.Black, "G0", 0, 0)
+	for _, v := range list {
+		assert.NoError(t, pl.Add(v))
+	}
 
 	err = exportPlot(pl, "bode1.svg")
 	assert.NoError(t, err)
