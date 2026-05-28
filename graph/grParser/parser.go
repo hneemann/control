@@ -655,13 +655,13 @@ func createChartMethods() value.MethodMap {
 			chart.Value.Y.Grid = styleVal.Value
 			return chart, nil
 		}).SetMethodDescription("color", "Adds a grid.").VarArgsMethod(0, 1),
-		"frame": value.MethodAtType(1, func(chart ChartValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+		"frameColor": value.MethodAtType(1, func(chart ChartValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if styleVal, err := GetStyle(stack, 1, nil); err == nil {
 				chart = chart.Copy()
 				chart.Value.Frame = styleVal.Value
 				return chart, nil
 			} else {
-				return nil, fmt.Errorf("frame requires a style: %w", err)
+				return nil, fmt.Errorf("frameColor requires a style: %w", err)
 			}
 		}).SetMethodDescription("color", "Sets the frame color."),
 		"svg": value.MethodAtType(1, func(chart ChartValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
@@ -873,6 +873,14 @@ func addAxisMethods(name, uName string, aa func(chart *graph.Chart) *graph.AxisD
 		aa(chart.Value).Grid = styleVal.Value
 		return chart, nil
 	}).SetMethodDescription("color", "Adds a grid.").VarArgsMethod(0, 1)
+	mm[name+"Color"] = value.MethodAtType(1, func(chart ChartValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+		styleVal, err := GetStyle(stack, 1, GridStyle)
+		if err != nil {
+			return nil, fmt.Errorf("%sColor: %w", name, err)
+		}
+		aa(chart.Value).Style = styleVal.Value
+		return chart, nil
+	}).SetMethodDescription("color", "Sets the text style for the "+name+"-axis")
 	mm["no"+uName+"Grid"] = value.MethodAtType(0, func(chart ChartValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 		aa(chart.Value).Grid = nil
 		return chart, nil
@@ -911,7 +919,8 @@ func addAxisMethods(name, uName string, aa func(chart *graph.Chart) *graph.AxisD
 		}
 		aa(chart.Value).CustomTicks = ticks
 		return chart, nil
-	}).SetMethodDescription("listOfTicks", "Sets custom ticks to the "+name+"-axis. The list needs to contain pairs of values and strings.")
+	}).SetMethodDescription("listOfTicks", "Sets custom ticks to the "+name+"-axis. The list needs to contain pairs of values and strings like [[0,\"zero\"],[1,\"one\"]]. \n"+
+		"If an empty string is given, a small tick is drawn.")
 }
 
 func CreateInsetMethod(relative bool) func(chart ChartValue, stack funcGen.Stack[value.Value]) (value.Value, error) {

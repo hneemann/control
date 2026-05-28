@@ -81,11 +81,12 @@ type AxisDescription struct {
 	Label       string
 	HideAxis    bool
 	Grid        *Style
+	Style       *Style
 	CustomTicks Ticks
 }
 
 // GetAxis returns the Axis
-func (a AxisDescription) GetAxis(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth, expand float64) Axis {
+func (a *AxisDescription) GetAxis(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth, expand float64) Axis {
 	fac := a.Factory
 	if fac == nil {
 		fac = LinearAxis
@@ -95,6 +96,24 @@ func (a AxisDescription) GetAxis(minParent, maxParent float64, bounds Bounds, ct
 		axis.Ticks = a.CustomTicks
 	}
 	return axis
+}
+
+type axisStyles struct {
+	text      *Style
+	ticks     *Style
+	thinTicks *Style
+}
+
+func (a *AxisDescription) getTextStyle(style, frame *Style) axisStyles {
+	s := a.Style
+	if s == nil {
+		s = style
+	}
+	return axisStyles{
+		text:      s.Text(),
+		ticks:     s.SetStrokeWidth(frame.StrokeWidth),
+		thinTicks: s.SetStrokeWidth(frame.StrokeWidth / 2),
+	}
 }
 
 type PosMode int
@@ -190,26 +209,6 @@ func (pc chartContent) getBySecType(sec bool) chartContent {
 	return c
 }
 
-func (pc chartContent) singleStyle(def *Style, sec bool) *Style {
-	var found *Style
-	for _, holder := range pc {
-		if holder.secondary == sec {
-			if found != nil {
-				return def
-			} else {
-				legend := holder.content.Legend()
-				if len(legend) > 0 {
-					found = legend[0].GetStyle().Text()
-				}
-			}
-		}
-	}
-	if found != nil {
-		return found
-	}
-	return def
-}
-
 type contentHolder struct {
 	content   ChartContent
 	secondary bool
@@ -260,21 +259,18 @@ func (p *Chart) drawToInternal(canvas Canvas, fillBackground bool) (error, *Char
 	c := canvas.Context()
 	rect := canvas.Rect()
 	textStyle := Black.Text()
-	yTextStyle := textStyle
-	ySecTextStyle := textStyle
+	if p.Frame == nil {
+		p.Frame = Black.SetStrokeWidth(2)
+	}
+	xStyles := p.X.getTextStyle(textStyle, p.Frame)
+	yStyles := p.Y.getTextStyle(textStyle, p.Frame)
+	ySecStyles := p.YSec.getTextStyle(textStyle, p.Frame)
 
 	hasSecondary := p.Content.hasSecondary()
-	if hasSecondary {
-		yTextStyle = p.Content.singleStyle(textStyle, false)
-		ySecTextStyle = p.Content.singleStyle(textStyle, true)
-	}
 
 	textSize := c.TextSize
 	if textSize <= rect.Height()/200 {
 		textSize = rect.Height() / 200
-	}
-	if p.Frame == nil {
-		p.Frame = Black.SetStrokeWidth(2)
 	}
 
 	if fillBackground {
@@ -294,8 +290,6 @@ func (p *Chart) drawToInternal(canvas Canvas, fillBackground bool) (error, *Char
 
 	large := textSize / 2
 	small := textSize / 4
-
-	thinLine := p.Frame.SetStrokeWidth(p.Frame.StrokeWidth / 2)
 
 	nonCrossInner := p.calculateInnerRect(rect, textSize, hasSecondary)
 	innerRect := rect
@@ -376,10 +370,10 @@ func (p *Chart) drawToInternal(canvas Canvas, fillBackground bool) (error, *Char
 					nErr.Try(canvas.DrawPath(PointsFromSlice(Point{xp, innerRect.Min.Y}, Point{xp, innerRect.Max.Y}), p.X.Grid))
 				}
 				if tick.Label == "" {
-					nErr.Try(canvas.DrawPath(PointsFromSlice(Point{xp, yp - small*topBottom}, Point{xp, yp}), thinLine))
+					nErr.Try(canvas.DrawPath(PointsFromSlice(Point{xp, yp - small*topBottom}, Point{xp, yp}), xStyles.thinTicks))
 				} else {
-					canvas.DrawText(Point{xp, yp - (large+small)*topBottom}, tick.Label, orient, textStyle, textSize)
-					nErr.Try(canvas.DrawPath(PointsFromSlice(Point{xp, yp - large*topBottom}, Point{xp, yp}), p.Frame))
+					canvas.DrawText(Point{xp, yp - (large+small)*topBottom}, tick.Label, orient, xStyles.text, textSize)
+					nErr.Try(canvas.DrawPath(PointsFromSlice(Point{xp, yp - large*topBottom}, Point{xp, yp}), xStyles.ticks))
 				}
 			}
 		}
@@ -403,10 +397,10 @@ func (p *Chart) drawToInternal(canvas Canvas, fillBackground bool) (error, *Char
 					nErr.Try(canvas.DrawPath(PointsFromSlice(Point{innerRect.Min.X, yp}, Point{innerRect.Max.X, yp}), p.Y.Grid))
 				}
 				if tick.Label == "" {
-					nErr.Try(canvas.DrawPath(PointsFromSlice(Point{xp - small*rightLeft, yp}, Point{xp, yp}), thinLine))
+					nErr.Try(canvas.DrawPath(PointsFromSlice(Point{xp - small*rightLeft, yp}, Point{xp, yp}), yStyles.thinTicks))
 				} else {
-					canvas.DrawText(Point{xp - large*rightLeft, yp}, tick.Label, orient, yTextStyle, textSize)
-					nErr.Try(canvas.DrawPath(PointsFromSlice(Point{xp - large*rightLeft, yp}, Point{xp, yp}), p.Frame))
+					canvas.DrawText(Point{xp - large*rightLeft, yp}, tick.Label, orient, yStyles.text, textSize)
+					nErr.Try(canvas.DrawPath(PointsFromSlice(Point{xp - large*rightLeft, yp}, Point{xp, yp}), yStyles.ticks))
 				}
 			}
 		}
@@ -421,10 +415,10 @@ func (p *Chart) drawToInternal(canvas Canvas, fillBackground bool) (error, *Char
 				nErr.Try(canvas.DrawPath(PointsFromSlice(Point{innerRect.Min.X, yp}, Point{innerRect.Max.X, yp}), p.YSec.Grid))
 			}
 			if tick.Label == "" {
-				nErr.Try(canvas.DrawPath(PointsFromSlice(Point{xp + small, yp}, Point{xp, yp}), thinLine))
+				nErr.Try(canvas.DrawPath(PointsFromSlice(Point{xp + small, yp}, Point{xp, yp}), ySecStyles.thinTicks))
 			} else {
-				canvas.DrawText(Point{xp + large, yp}, tick.Label, orient, ySecTextStyle, textSize)
-				nErr.Try(canvas.DrawPath(PointsFromSlice(Point{xp + large, yp}, Point{xp, yp}), p.Frame))
+				canvas.DrawText(Point{xp + large, yp}, tick.Label, orient, ySecStyles.text, textSize)
+				nErr.Try(canvas.DrawPath(PointsFromSlice(Point{xp + large, yp}, Point{xp, yp}), ySecStyles.ticks))
 			}
 		}
 	}
@@ -512,19 +506,19 @@ func (p *Chart) drawToInternal(canvas Canvas, fillBackground bool) (error, *Char
 		if cross {
 			yp = yAxis.Trans(0)
 		}
-		canvas.DrawText(Point{innerRect.Max.X - small, yp + small}, lab, Bottom|Right, textStyle, textSize)
+		canvas.DrawText(Point{innerRect.Max.X - small, yp + small}, lab, Bottom|Right, xStyles.text, textSize)
 	}
 	if lab := yAxis.LabelFormat(p.Y.Label); lab != "" {
 		xp := innerRect.Min.X
 		if cross {
 			xp = xAxis.Trans(0)
 		}
-		canvas.DrawText(Point{xp + small, innerRect.Max.Y - small}, lab, Top|Left, yTextStyle, textSize)
+		canvas.DrawText(Point{xp + small, innerRect.Max.Y - small}, lab, Top|Left, yStyles.text, textSize)
 	}
 	if !p.YSec.HideAxis && hasSecondary {
 		if lab := ySecAxis.LabelFormat(p.YSec.Label); lab != "" {
 			xp := innerRect.Max.X
-			canvas.DrawText(Point{xp - small, innerRect.Max.Y - small}, lab, Top|Right, ySecTextStyle, textSize)
+			canvas.DrawText(Point{xp - small, innerRect.Max.Y - small}, lab, Top|Right, ySecStyles.text, textSize)
 		}
 	}
 	if p.Title != "" {
