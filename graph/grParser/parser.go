@@ -803,7 +803,7 @@ func createChartMethods() value.MethodMap {
 	}
 	addAxisMethods("x", "X", func(chart *graph.Chart) *graph.AxisDescription { return &chart.X }, mm)
 	addAxisMethods("y", "Y", func(chart *graph.Chart) *graph.AxisDescription { return &chart.Y }, mm)
-	addAxisMethods("ySec", "YSec", func(chart *graph.Chart) *graph.AxisDescription { return &chart.YSec }, mm)
+	addAxisMethods("y2", "Y2", func(chart *graph.Chart) *graph.AxisDescription { return &chart.YSec }, mm)
 	return mm
 }
 
@@ -1056,12 +1056,12 @@ func createChartContentMethods() value.MethodMap {
 			}
 			return nil, errors.New("no chart content given to add")
 		}).SetMethodDescription("content", "Adds a chart content to another content. This is supported only for bars."),
-		"toYSec": value.MethodAtType(0, func(ccv ChartContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+		"toY2": value.MethodAtType(0, func(ccv ChartContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			pc := ccv.Value
 			return ChartContentValue{Holder[graph.ChartContent]{pc}, true}, nil
 		}).SetMethodDescription("The chart content is assigned to the secondary y-axis. By default, the second " +
 			"axis is drawn on the right side of the chart. Using the 'stack' command, you can instead draw two charts " +
-			"stacked on top of each other, with both axes on the left."),
+			"stacked on top of each other, with both axis on the left. This is used to create bose-plots."),
 	}
 }
 
