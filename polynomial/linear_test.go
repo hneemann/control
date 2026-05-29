@@ -11,8 +11,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"math"
 	"math/cmplx"
-	"os"
-	"path/filepath"
 	"testing"
 )
 
@@ -332,9 +330,9 @@ func exportPlot(pl graph.Image, name string) error {
 	}
 	err = c.Close()
 
-	f, _ := os.Create(filepath.Join(testFolder, name))
-	defer f.Close()
-	_, err = f.Write(w.Bytes())
+	//f, _ := os.Create(filepath.Join(testFolder, name))
+	//defer f.Close()
+	//_, err = f.Write(w.Bytes())
 	return err
 }
 
