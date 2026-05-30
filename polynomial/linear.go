@@ -1016,7 +1016,7 @@ func bodeInitializer(chart *graph.Chart) {
 		Label:   "Amplitude",
 		Grid:    grParser.GridStyle,
 	}
-	chart.YSec = graph.AxisDescription{
+	chart.Y2 = graph.AxisDescription{
 		Factory: graph.CreateFixedStepAxis(45, 15),
 		Label:   "Phase [°]",
 		Grid:    grParser.GridStyle,
@@ -1111,11 +1111,6 @@ func (bpc *BodeChartContent) generate(wMin, wMax float64) {
 	}
 }
 
-func (bpc *BodeChartContent) addTo(plot *graph.Chart) {
-	plot.AddContent(bodeAmplitude{bpc}, false)
-	plot.AddContent(bodePhase{bpc}, true)
-}
-
 // calculateCompletePhase calculates the complete phase including all phase rotations
 // by integrating the phase changes from the given frequency down to zero.
 func calculateCompletePhase(l *Linear, w float64) (offset float64, start float64) {
@@ -1164,7 +1159,7 @@ func (b bodePhase) DependantBounds(xGiven, _ graph.Bounds) (x, y graph.Bounds, e
 func (b bodePhase) DrawTo(env *graph.ChartContentEnvironment) error {
 	style := b.bodeContent.Style
 	if !env.Chart.StackBothYAxis {
-		style = style.SetDash(5, 5)
+		style = style.SetDash(7, 7)
 	}
 	r := env.Canvas.Rect()
 	b.bodeContent.generate(r.Min.X, r.Max.X)

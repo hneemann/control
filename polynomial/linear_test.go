@@ -330,9 +330,10 @@ func exportPlot(pl graph.Image, name string) error {
 	}
 	err = c.Close()
 
-	//f, _ := os.Create(filepath.Join(testFolder, name))
-	//defer f.Close()
-	//_, err = f.Write(w.Bytes())
+	//if f, iErr := os.Create(filepath.Join(testFolder, name)); iErr == nil {
+	//	defer f.Close()
+	//	f.Write(w.Bytes())
+	//}
 	return err
 }
 

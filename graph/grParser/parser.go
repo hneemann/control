@@ -639,8 +639,8 @@ func createChartMethods() value.MethodMap {
 					chart.Value.X.Label = string(xStr)
 					chart.Value.Y.Label = string(yStr)
 					if stack.Size() == 4 {
-						if ySecStr, ok := stack.Get(3).(value.String); ok {
-							chart.Value.YSec.Label = string(ySecStr)
+						if y2Str, ok := stack.Get(3).(value.String); ok {
+							chart.Value.Y2.Label = string(y2Str)
 							return chart, nil
 						}
 					} else {
@@ -743,21 +743,21 @@ func createChartMethods() value.MethodMap {
 			}
 			return nil, fmt.Errorf("legendRelPos requires two float values")
 		}).SetMethodDescription("x", "y", "Sets the relative position of the legend. The x- and y-coordinate are given in percent."),
-		"legendPosSec": value.MethodAtType(2, func(chart ChartValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+		"legendPosY2": value.MethodAtType(2, func(chart ChartValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if x, ok := stack.Get(1).ToFloat(); ok {
 				if y, ok := stack.Get(2).ToFloat(); ok {
 					chart = chart.Copy()
-					chart.Value.LegendPosSec.Set(graph.Point{X: x, Y: y}, false)
+					chart.Value.LegendPosY2.Set(graph.Point{X: x, Y: y}, false)
 					return chart, nil
 				}
 			}
 			return nil, fmt.Errorf("legendPos requires two float values")
-		}).SetMethodDescription("x", "y", "Sets the position of the secondary legend."),
-		"legendRelPosSec": value.MethodAtType(2, func(chart ChartValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+		}).SetMethodDescription("x", "y", "Sets the position of the y2 legend."),
+		"legendRelPosY2": value.MethodAtType(2, func(chart ChartValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if x, ok := stack.Get(1).ToFloat(); ok {
 				if y, ok := stack.Get(2).ToFloat(); ok {
 					chart = chart.Copy()
-					chart.Value.LegendPosSec.Set(graph.Point{X: x, Y: y}, true)
+					chart.Value.LegendPosY2.Set(graph.Point{X: x, Y: y}, true)
 					return chart, nil
 				}
 			}
@@ -813,7 +813,7 @@ func createChartMethods() value.MethodMap {
 	}
 	addAxisMethods("x", "X", func(chart *graph.Chart) *graph.AxisDescription { return &chart.X }, mm)
 	addAxisMethods("y", "Y", func(chart *graph.Chart) *graph.AxisDescription { return &chart.Y }, mm)
-	addAxisMethods("y2", "Y2", func(chart *graph.Chart) *graph.AxisDescription { return &chart.YSec }, mm)
+	addAxisMethods("y2", "Y2", func(chart *graph.Chart) *graph.AxisDescription { return &chart.Y2 }, mm)
 	return mm
 }
 

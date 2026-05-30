@@ -166,7 +166,7 @@ func (lp *RelativePos) GetNoDef(trans Transform, rect Rect) (Point, bool) {
 }
 
 type Chart struct {
-	X, Y, YSec     AxisDescription
+	X, Y, Y2       AxisDescription
 	Square         bool
 	SquareYCenter  float64
 	LeftBorder     float64
@@ -176,33 +176,34 @@ type Chart struct {
 	Frame          *Style
 	Title          string
 	ProtectLabels  bool
-	Content        chartContent
 	StackBothYAxis bool
 	FillBackground bool
 	BoundsModifier BoundsModifier
 	HideLegend     bool
 	LegendPos      RelativePos
-	LegendPosSec   RelativePos
+	LegendPosY2    RelativePos
+
+	content chartContent
 }
 
 type chartContent []contentHolder
 
-func (pc chartContent) hasSecondary() bool {
+func (pc chartContent) hasY2Content() bool {
 	for _, holder := range pc {
-		if holder.secondary {
+		if holder.toY2 {
 			return true
 		}
 	}
 	return false
 }
 
-func (pc chartContent) getBySecType(sec bool) chartContent {
+func (pc chartContent) getByYType(toY2 bool) chartContent {
 	var c chartContent
 	for _, holder := range pc {
-		if holder.secondary == sec {
+		if holder.toY2 == toY2 {
 			c = append(c, contentHolder{
-				content:   holder.content,
-				secondary: false,
+				content: holder.content,
+				toY2:    false,
 			})
 		}
 	}
@@ -210,8 +211,8 @@ func (pc chartContent) getBySecType(sec bool) chartContent {
 }
 
 type contentHolder struct {
-	content   ChartContent
-	secondary bool
+	content ChartContent
+	toY2    bool
 }
 
 func (h contentHolder) String() string {
@@ -239,15 +240,15 @@ func (p *Chart) DrawTo(canvas Canvas) error {
 
 func (p *Chart) DrawToAsInset(canvas Canvas, fillBackground bool) (err error, env *ChartContentEnvironment) {
 	defer nErr.CatchErr(&err)
-	if p.StackBothYAxis && p.Content.hasSecondary() {
+	if p.StackBothYAxis && p.content.hasY2Content() {
 		upper := *p
-		upper.Content = p.Content.getBySecType(false)
+		upper.content = p.content.getByYType(false)
 
 		lower := *p
-		lower.Content = p.Content.getBySecType(true)
+		lower.content = p.content.getByYType(true)
 		lower.Title = ""
-		lower.Y = p.YSec
-		lower.LegendPos = p.LegendPosSec
+		lower.Y = p.Y2
+		lower.LegendPos = p.LegendPosY2
 
 		err = SplitHorizontal{&upper, &lower}.DrawTo(canvas)
 		return err, nil
@@ -264,9 +265,9 @@ func (p *Chart) drawToInternal(canvas Canvas, fillBackground bool) (error, *Char
 	}
 	xStyles := p.X.getTextStyle(textStyle, p.Frame)
 	yStyles := p.Y.getTextStyle(textStyle, p.Frame)
-	ySecStyles := p.YSec.getTextStyle(textStyle, p.Frame)
+	y2Styles := p.Y2.getTextStyle(textStyle, p.Frame)
 
-	hasSecondary := p.Content.hasSecondary()
+	hasY2Content := p.content.hasY2Content()
 
 	textSize := c.TextSize
 	if textSize <= rect.Height()/200 {
@@ -277,7 +278,7 @@ func (p *Chart) drawToInternal(canvas Canvas, fillBackground bool) (error, *Char
 		nErr.Try(canvas.DrawPath(rect.Path(), White.SetStrokeWidth(0).SetFill(White)))
 	}
 
-	xBoundsPre, yBoundsPre, ySecBoundsPre, err := p.calcBounds()
+	xBoundsPre, yBoundsPre, y2BoundsPre, err := p.calcBounds()
 	if err != nil {
 		return fmt.Errorf("error calculating chart bounds: %w", err), nil
 	}
@@ -286,12 +287,12 @@ func (p *Chart) drawToInternal(canvas Canvas, fillBackground bool) (error, *Char
 		xBoundsPre, yBoundsPre = p.BoundsModifier(xBoundsPre, yBoundsPre, p, canvas)
 	}
 
-	cross := p.Cross && xBoundsPre.Min <= 0 && xBoundsPre.Max >= 0 && yBoundsPre.Min <= 0 && yBoundsPre.Max >= 0 && !hasSecondary
+	cross := p.Cross && xBoundsPre.Min <= 0 && xBoundsPre.Max >= 0 && yBoundsPre.Min <= 0 && yBoundsPre.Max >= 0 && !hasY2Content
 
 	large := textSize / 2
 	small := textSize / 4
 
-	nonCrossInner := p.calculateInnerRect(rect, textSize, hasSecondary)
+	nonCrossInner := p.calculateInnerRect(rect, textSize, hasY2Content)
 	innerRect := rect
 	if !cross {
 		innerRect = nonCrossInner
@@ -319,16 +320,16 @@ func (p *Chart) drawToInternal(canvas Canvas, fillBackground bool) (error, *Char
 		} else {
 			yExp = 0.02
 		}
-		if p.ProtectLabels && yAutoScale && !cross && (p.X.Label != "" || p.Y.Label != "" || p.YSec.Label != "" || p.Title != "") {
+		if p.ProtectLabels && yAutoScale && !cross && (p.X.Label != "" || p.Y.Label != "" || p.Y2.Label != "" || p.Title != "") {
 			yExp = 1.8 * textSize / innerRect.Height()
 		}
 	}
-	ySecExp := 0.0
-	if !p.YSec.NoExpand {
-		yAutoScale := !p.YSec.Bounds.isSet
-		ySecExp = 0.02
-		if p.ProtectLabels && yAutoScale && !cross && (p.X.Label != "" || p.Y.Label != "" || p.YSec.Label != "" || p.Title != "") {
-			ySecExp = 1.8 * textSize / innerRect.Height()
+	y2Exp := 0.0
+	if !p.Y2.NoExpand {
+		yAutoScale := !p.Y2.Bounds.isSet
+		y2Exp = 0.02
+		if p.ProtectLabels && yAutoScale && !cross && (p.X.Label != "" || p.Y.Label != "" || p.Y2.Label != "" || p.Title != "") {
+			y2Exp = 1.8 * textSize / innerRect.Height()
 		}
 	}
 
@@ -344,9 +345,9 @@ func (p *Chart) drawToInternal(canvas Canvas, fillBackground bool) (error, *Char
 	yAxis := p.Y.GetAxis(innerRect.Min.Y, innerRect.Max.Y, yBoundsPre,
 		func(width float64, _ int) bool { return width > yTickMax }, yExp)
 
-	ySecTickMax := math.Max(1, textSize*(2+p.YSec.TickSep))
-	ySecAxis := p.YSec.GetAxis(innerRect.Min.Y, innerRect.Max.Y, ySecBoundsPre,
-		func(width float64, _ int) bool { return width > ySecTickMax }, ySecExp)
+	y2TickMax := math.Max(1, textSize*(2+p.Y2.TickSep))
+	y2Axis := p.Y2.GetAxis(innerRect.Min.Y, innerRect.Max.Y, y2BoundsPre,
+		func(width float64, _ int) bool { return width > y2TickMax }, y2Exp)
 
 	if p.Square && (!xAxis.IsLinear || !yAxis.IsLinear) {
 		return fmt.Errorf("square charts are only possible if both axis are linear"), nil
@@ -406,19 +407,19 @@ func (p *Chart) drawToInternal(canvas Canvas, fillBackground bool) (error, *Char
 		}
 	}
 
-	if !p.YSec.HideAxis && hasSecondary {
+	if !p.Y2.HideAxis && hasY2Content {
 		orient := Left | VCenter
 		xp := innerRect.Max.X
-		for _, tick := range ySecAxis.Ticks {
-			yp := ySecAxis.Trans(tick.Position)
-			if p.YSec.Grid != nil {
-				nErr.Try(canvas.DrawPath(PointsFromSlice(Point{innerRect.Min.X, yp}, Point{innerRect.Max.X, yp}), p.YSec.Grid))
+		for _, tick := range y2Axis.Ticks {
+			yp := y2Axis.Trans(tick.Position)
+			if p.Y2.Grid != nil {
+				nErr.Try(canvas.DrawPath(PointsFromSlice(Point{innerRect.Min.X, yp}, Point{innerRect.Max.X, yp}), p.Y2.Grid))
 			}
 			if tick.Label == "" {
-				nErr.Try(canvas.DrawPath(PointsFromSlice(Point{xp + small, yp}, Point{xp, yp}), ySecStyles.thinTicks))
+				nErr.Try(canvas.DrawPath(PointsFromSlice(Point{xp + small, yp}, Point{xp, yp}), y2Styles.thinTicks))
 			} else {
-				canvas.DrawText(Point{xp + large, yp}, tick.Label, orient, ySecStyles.text, textSize)
-				nErr.Try(canvas.DrawPath(PointsFromSlice(Point{xp + large, yp}, Point{xp, yp}), ySecStyles.ticks))
+				canvas.DrawText(Point{xp + large, yp}, tick.Label, orient, y2Styles.text, textSize)
+				nErr.Try(canvas.DrawPath(PointsFromSlice(Point{xp + large, yp}, Point{xp, yp}), y2Styles.ticks))
 			}
 		}
 	}
@@ -446,16 +447,16 @@ func (p *Chart) drawToInternal(canvas Canvas, fillBackground bool) (error, *Char
 		), p.Frame))
 	}
 
-	trans := func(point Point) Point {
+	transY := func(point Point) Point {
 		return Point{xAxis.Trans(point.X), yAxis.Trans(point.Y)}
 	}
-	env := &ChartContentEnvironment{
+	envY := &ChartContentEnvironment{
 		Chart:        p,
 		ParentCanvas: canvas,
 		InnerRect:    innerRect,
-		Transform:    trans,
+		Transform:    transY,
 		Canvas: TransformCanvas{
-			transform: trans,
+			transform: transY,
 			parent:    canvas,
 			size: Rect{
 				Min: Point{xAxis.Bounds.Min, yAxis.Bounds.Min},
@@ -465,39 +466,45 @@ func (p *Chart) drawToInternal(canvas Canvas, fillBackground bool) (error, *Char
 		XAxis: &xAxis,
 		YAxis: &yAxis,
 	}
-	var envYSec *ChartContentEnvironment
-	if hasSecondary {
-		transYSec := func(point Point) Point {
-			return Point{xAxis.Trans(point.X), ySecAxis.Trans(point.Y)}
+	var envY2 *ChartContentEnvironment
+	var transY2 Transform
+	if hasY2Content {
+		transY2 = func(point Point) Point {
+			return Point{xAxis.Trans(point.X), y2Axis.Trans(point.Y)}
 		}
-		envYSec = &ChartContentEnvironment{
+		envY2 = &ChartContentEnvironment{
 			Chart:        p,
 			ParentCanvas: canvas,
 			InnerRect:    innerRect,
-			Transform:    transYSec,
+			Transform:    transY2,
 			Canvas: TransformCanvas{
-				transform: transYSec,
+				transform: transY2,
 				parent:    canvas,
 				size: Rect{
-					Min: Point{xAxis.Bounds.Min, ySecAxis.Bounds.Min},
-					Max: Point{xAxis.Bounds.Max, ySecAxis.Bounds.Max},
+					Min: Point{xAxis.Bounds.Min, y2Axis.Bounds.Min},
+					Max: Point{xAxis.Bounds.Max, y2Axis.Bounds.Max},
 				},
 			},
 			XAxis: &xAxis,
-			YAxis: &ySecAxis,
+			YAxis: &y2Axis,
 		}
 	}
 
 	var legends []Legend
-	for _, holder := range slices.Backward(p.Content) {
-		if holder.secondary {
-			nErr.Try(holder.content.DrawTo(envYSec))
+	var legendsY2 []Legend
+	for _, holder := range slices.Backward(p.content) {
+		if holder.toY2 {
+			nErr.Try(holder.content.DrawTo(envY2))
 		} else {
-			nErr.Try(holder.content.DrawTo(env))
+			nErr.Try(holder.content.DrawTo(envY))
 		}
 		l := holder.content.Legend()
 		if len(l) > 0 && !p.HideLegend {
-			legends = append(legends, l...)
+			if holder.toY2 {
+				legendsY2 = append(legends, l...)
+			} else {
+				legends = append(legends, l...)
+			}
 		}
 	}
 
@@ -515,14 +522,14 @@ func (p *Chart) drawToInternal(canvas Canvas, fillBackground bool) (error, *Char
 		}
 		canvas.DrawText(Point{xp + small, innerRect.Max.Y - small}, lab, Top|Left, yStyles.text, textSize)
 	}
-	if !p.YSec.HideAxis && hasSecondary {
-		if lab := ySecAxis.LabelFormat(p.YSec.Label); lab != "" {
+	if !p.Y2.HideAxis && hasY2Content {
+		if lab := y2Axis.LabelFormat(p.Y2.Label); lab != "" {
 			xp := innerRect.Max.X
-			canvas.DrawText(Point{xp - small, innerRect.Max.Y - small}, lab, Top|Right, ySecStyles.text, textSize)
+			canvas.DrawText(Point{xp - small, innerRect.Max.Y - small}, lab, Top|Right, y2Styles.text, textSize)
 		}
 	}
 	if p.Title != "" {
-		if p.YSec.HideAxis || !hasSecondary {
+		if p.Y2.HideAxis || !hasY2Content {
 			canvas.DrawText(Point{innerRect.Max.X - small, innerRect.Max.Y - small}, p.Title, Top|Right, textStyle, textSize)
 		} else {
 			canvas.DrawText(Point{(innerRect.Max.X + innerRect.Min.X) / 2, innerRect.Max.Y - small}, p.Title, Top|HCenter, textStyle, textSize)
@@ -549,46 +556,57 @@ func (p *Chart) drawToInternal(canvas Canvas, fillBackground bool) (error, *Char
 		}
 	}
 
-	if len(legends) > 0 {
+	if len(legends) > 0 || len(legendsY2) > 0 {
 		var lp Point
-		if rp, ok := p.LegendPos.GetNoDef(trans, innerRect); ok {
+		if rp, ok := p.LegendPos.GetNoDef(transY, innerRect); ok {
 			lp = rp
 		} else {
 			lp = Point{innerRect.Min.X + textSize*3, innerRect.Min.Y + textSize*(float64(len(legends))*1.5-0.5)}
 		}
 		for _, leg := range slices.Backward(legends) {
-			canvas.DrawText(lp, leg.Name, Left|VCenter, textStyle, textSize)
-			if leg.ColorOnly {
-				nErr.Try(canvas.DrawPath(NewPath(true).
-					MoveTo(lp.Add(Point{-2*textSize - small, textSize / 2})).
-					LineTo(lp.Add(Point{-small, textSize / 2})).
-					LineTo(lp.Add(Point{-small, -textSize / 2})).
-					LineTo(lp.Add(Point{-2*textSize - small, -textSize / 2})), leg.LineStyle))
-			} else {
-				sls := leg.EnsureSomethingIsVisible()
-				if sls.IsLine() {
-					nErr.Try(canvas.DrawPath(PointsFromSlice(lp.Add(Point{-2*textSize - small, 0}), lp.Add(Point{-small, 0})), sls.LineStyle))
-				}
-				if sls.IsShape() {
-					nErr.Try(canvas.DrawShape(lp.Add(Point{-1*textSize - small, 0}), sls.Shape, sls.ShapeStyle))
-				}
-			}
-			lp = lp.Add(Point{0, -textSize * 1.5})
+			lp = p.drawLegend(canvas, lp, leg, textStyle, textSize)
+		}
+		if p.LegendPosY2.Mode != NoPos {
+			lp = p.LegendPosY2.Get(transY2, innerRect)
+		}
+		for _, leg := range slices.Backward(legendsY2) {
+			lp = p.drawLegend(canvas, lp, leg, textStyle, textSize)
 		}
 	}
-	return nil, env
+	return nil, envY
+}
+
+func (p *Chart) drawLegend(canvas Canvas, lp Point, leg Legend, textStyle *Style, textSize float64) Point {
+	small := textSize / 4
+	canvas.DrawText(lp, leg.Name, Left|VCenter, textStyle, textSize)
+	if leg.ColorOnly {
+		nErr.Try(canvas.DrawPath(NewPath(true).
+			MoveTo(lp.Add(Point{-2*textSize - small, textSize / 2})).
+			LineTo(lp.Add(Point{-small, textSize / 2})).
+			LineTo(lp.Add(Point{-small, -textSize / 2})).
+			LineTo(lp.Add(Point{-2*textSize - small, -textSize / 2})), leg.LineStyle))
+	} else {
+		sls := leg.EnsureSomethingIsVisible()
+		if sls.IsLine() {
+			nErr.Try(canvas.DrawPath(PointsFromSlice(lp.Add(Point{-2*textSize - small, 0}), lp.Add(Point{-small, 0})), sls.LineStyle))
+		}
+		if sls.IsShape() {
+			nErr.Try(canvas.DrawShape(lp.Add(Point{-1*textSize - small, 0}), sls.Shape, sls.ShapeStyle))
+		}
+	}
+	return lp.Add(Point{0, -textSize * 1.5})
 }
 
 func (p *Chart) calcBounds() (Bounds, Bounds, Bounds, error) {
 	xBounds := p.X.Bounds
 	yBounds := p.Y.Bounds
-	ySecBounds := p.YSec.Bounds
+	y2Bounds := p.Y2.Bounds
 
-	if !(xBounds.isSet && yBounds.isSet && ySecBounds.isSet) {
+	if !(xBounds.isSet && yBounds.isSet && y2Bounds.isSet) {
 		mergeX := !xBounds.isSet
 		mergeY := !yBounds.isSet
-		mergeYSec := !ySecBounds.isSet
-		for _, holder := range p.Content {
+		mergeY2 := !y2Bounds.isSet
+		for _, holder := range p.content {
 			x, y, err := holder.content.Bounds()
 			if err != nil {
 				return Bounds{}, Bounds{}, Bounds{}, err
@@ -596,19 +614,19 @@ func (p *Chart) calcBounds() (Bounds, Bounds, Bounds, error) {
 			if mergeX {
 				xBounds.MergeBounds(x)
 			}
-			if mergeY && !holder.secondary {
+			if mergeY && !holder.toY2 {
 				yBounds.MergeBounds(y)
 			}
-			if mergeYSec && holder.secondary {
-				ySecBounds.MergeBounds(y)
+			if mergeY2 && holder.toY2 {
+				y2Bounds.MergeBounds(y)
 			}
 		}
-		var xPrefBounds, yPrefBounds, ySecPrefBounds Bounds
-		for _, holder := range p.Content {
-			if holder.secondary {
-				x, y := nErr.TryArgs(holder.content.DependantBounds(xBounds, ySecBounds))
+		var xPrefBounds, yPrefBounds, y2PrefBounds Bounds
+		for _, holder := range p.content {
+			if holder.toY2 {
+				x, y := nErr.TryArgs(holder.content.DependantBounds(xBounds, y2Bounds))
 				xPrefBounds.MergeBounds(x)
-				ySecPrefBounds.MergeBounds(y)
+				y2PrefBounds.MergeBounds(y)
 			} else {
 				x, y := nErr.TryArgs(holder.content.DependantBounds(xBounds, yBounds))
 				xPrefBounds.MergeBounds(x)
@@ -621,15 +639,15 @@ func (p *Chart) calcBounds() (Bounds, Bounds, Bounds, error) {
 		if mergeY {
 			yBounds.MergeBounds(yPrefBounds)
 		}
-		if mergeYSec {
-			ySecBounds.MergeBounds(ySecPrefBounds)
+		if mergeY2 {
+			y2Bounds.MergeBounds(y2PrefBounds)
 		}
 	}
 
-	return xBounds, yBounds, ySecBounds, nil
+	return xBounds, yBounds, y2Bounds, nil
 }
 
-func (p *Chart) calculateInnerRect(rect Rect, textSize float64, hasSecondary bool) Rect {
+func (p *Chart) calculateInnerRect(rect Rect, textSize float64, hasY2Content bool) Rect {
 	rMin := rect.Min
 	rMax := rect.Max
 
@@ -647,7 +665,7 @@ func (p *Chart) calculateInnerRect(rect Rect, textSize float64, hasSecondary boo
 	}
 	rb := p.RightBorder
 	if rb <= 0 {
-		if p.YSec.HideAxis || !hasSecondary {
+		if p.Y2.HideAxis || !hasY2Content {
 			if p.X.NoExpand {
 				rb = 1
 			} else {
@@ -702,18 +720,18 @@ func (p *Chart) calculateInnerRect(rect Rect, textSize float64, hasSecondary boo
 	return Rect{Min: rMin, Max: rMax}
 }
 
-func (p *Chart) AddContent(content ChartContent, secondary bool) {
-	p.Content = append(p.Content, contentHolder{content, secondary})
+func (p *Chart) AddContent(content ChartContent, toY2 bool) {
+	p.content = append(p.content, contentHolder{content, toY2})
 }
 
-func (p *Chart) AddContentAtTop(content ChartContent, secondary bool) {
-	p.Content = append(chartContent{contentHolder{content, secondary}}, p.Content...)
+func (p *Chart) AddContentAtTop(content ChartContent, toY2 bool) {
+	p.content = append(chartContent{contentHolder{content, toY2}}, p.content...)
 }
 
 func (p *Chart) String() string {
 	bu := bytes.Buffer{}
 	bu.WriteString("Chart: ")
-	for i, content := range p.Content {
+	for i, content := range p.content {
 		if i > 0 {
 			bu.WriteString(", ")
 		}
