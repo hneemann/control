@@ -561,7 +561,7 @@ func createBodeMethod[T value.Value](convert func(T) *Linear) funcGen.Function[v
 		if style, err := grParser.GetStyle(st, 1, graph.Black); err == nil {
 			if title, ok := st.GetOptional(2, value.String("")).(value.String); ok {
 				if latency, ok := st.GetOptional(3, value.Float(0)).ToFloat(); ok {
-					if steps, ok := st.GetOptional(3, value.Int(0)).(value.Int); ok {
+					if steps, ok := st.GetOptional(4, value.Int(0)).(value.Int); ok {
 						contentList := convert(lin).CreateBodeContent(style.Value, string(title), int(steps), latency)
 						return value.NewList(contentList...), nil
 					}
