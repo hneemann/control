@@ -697,16 +697,16 @@ func createChartMethods() value.MethodMap {
 			chart.Value.Cross = true
 			return chart, nil
 		}).SetMethodDescription("Draws a coordinate cross instead of a rectangle around the chart."),
-		"stack": value.MethodAtType(1, func(chart ChartValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+		"stackYAxes": value.MethodAtType(1, func(chart ChartValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if sta, ok := stack.GetOptional(1, value.Bool(true)).(value.Bool); ok {
 				chart = chart.Copy()
-				chart.Value.StackBothYAxis = bool(sta)
+				chart.Value.StackBothYAxes = bool(sta)
 				return chart, nil
 			} else {
-				return nil, errors.New("stack requires a bool value")
+				return nil, errors.New("stackYAxes requires a bool value")
 			}
 		}).SetMethodDescription("stacking", "If this value is set to “true” and both y-axes are used, two stacked "+
-			"charts are created instead of using the left and right borders for one axis each.").VarArgsMethod(0, 1),
+			"charts are created instead of using the left and right border for one axis each.").VarArgsMethod(0, 1),
 		"ySquare": value.MethodAtType(1, func(chart ChartValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			chart = chart.Copy()
 			chart.Value.Square = true

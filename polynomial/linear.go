@@ -1021,7 +1021,7 @@ func bodeInitializer(chart *graph.Chart) {
 		Label:   "Phase [°]",
 		Grid:    grParser.GridStyle,
 	}
-	chart.StackBothYAxis = true
+	chart.StackBothYAxes = true
 	chart.ProtectLabels = true
 }
 
@@ -1158,7 +1158,7 @@ func (b bodePhase) DependantBounds(xGiven, _ graph.Bounds) (x, y graph.Bounds, e
 
 func (b bodePhase) DrawTo(env *graph.ChartContentEnvironment) error {
 	style := b.bodeContent.Style
-	if !env.Chart.StackBothYAxis {
+	if !env.Chart.StackBothYAxes {
 		style = style.SetDash(7, 7)
 	}
 	r := env.Canvas.Rect()

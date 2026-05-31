@@ -176,7 +176,7 @@ type Chart struct {
 	Frame          *Style
 	Title          string
 	ProtectLabels  bool
-	StackBothYAxis bool
+	StackBothYAxes bool
 	FillBackground bool
 	BoundsModifier BoundsModifier
 	HideLegend     bool
@@ -240,7 +240,7 @@ func (p *Chart) DrawTo(canvas Canvas) error {
 
 func (p *Chart) DrawToAsInset(canvas Canvas, fillBackground bool) (err error, env *ChartContentEnvironment) {
 	defer nErr.CatchErr(&err)
-	if p.StackBothYAxis && p.content.hasY2Content() {
+	if p.StackBothYAxes && p.content.hasY2Content() {
 		upper := *p
 		upper.content = p.content.getByYType(false)
 
