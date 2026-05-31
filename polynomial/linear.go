@@ -1030,8 +1030,8 @@ func (l *Linear) CreateBodeContent(style *graph.Style, title string, steps int, 
 		steps = 200
 	} else if steps < 100 {
 		steps = 100
-	} else if steps > 2000 {
-		steps = 2000
+	} else if steps > 5000 {
+		steps = 5000
 	}
 	bcc := &BodeChartContent{
 		Linear:  l,
