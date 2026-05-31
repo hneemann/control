@@ -500,8 +500,8 @@ func (p *Chart) drawToInternal(canvas Canvas, fillBackground bool) (error, *Char
 		}
 		l := holder.content.Legend()
 		if len(l) > 0 && !p.HideLegend {
-			if holder.toY2 {
-				legendsY2 = append(legends, l...)
+			if holder.toY2 && p.LegendPosY2.Mode != NoPos {
+				legendsY2 = append(legendsY2, l...)
 			} else {
 				legends = append(legends, l...)
 			}
