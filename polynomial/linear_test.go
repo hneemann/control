@@ -669,8 +669,32 @@ func Test_calculateStartPhase(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotOffset, _ := calculateCompletePhase(tt.l, tt.wStart)
-			assert.EqualValues(t, tt.wantOffset, gotOffset, "offset")
+			p := calculateCompletePhase(tt.l, tt.wStart)
+			assert.EqualValues(t, tt.wantOffset, p.offset, "offset")
 		})
+	}
+}
+
+func Test_phase_incTo(t *testing.T) {
+	p := fullPhase{}
+	lastP := p
+	for n := range 40 {
+		c := cmplx.Exp(complex(0, float64(n+1)*math.Pi/8))
+		p = p.advanceTo(c)
+		delta := p.fullPhase() - lastP.fullPhase()
+		assert.InDelta(t, 22.5, delta, 1e-6, fmt.Sprintf("n=%d", n))
+		lastP = p
+	}
+}
+
+func Test_phase_incToRev(t *testing.T) {
+	p := fullPhase{}
+	lastP := p
+	for n := range 40 {
+		c := cmplx.Exp(complex(0, float64(-n-1)*math.Pi/8))
+		p = p.advanceTo(c)
+		delta := p.fullPhase() - lastP.fullPhase()
+		assert.InDelta(t, -22.5, delta, 1e-6, fmt.Sprintf("n=%d", n))
+		lastP = p
 	}
 }

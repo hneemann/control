@@ -1071,6 +1071,35 @@ func (bpc *BodeChartContent) generateExp(wMin, wMax, exp float64) {
 	bpc.generate(wMin, wMax)
 }
 
+type fullPhase struct {
+	phase  float64
+	offset float64
+}
+
+func (p fullPhase) advanceTo(c complex128) fullPhase {
+	pha := cmplx.Phase(c) / math.Pi * 180
+	if p.phase-pha > 180 {
+		p.offset += 360
+	}
+	if p.phase-pha < -180 {
+		p.offset -= 360
+	}
+	p.phase = pha
+	return p
+}
+
+func (p fullPhase) fullPhase() float64 {
+	return p.phase + p.offset
+}
+
+type stepControl int
+
+const (
+	stepOk stepControl = iota
+	stepToFine
+	stepToRough
+)
+
 func (bpc *BodeChartContent) generate(wMin, wMax float64) {
 	if wMin <= 0 {
 		wMin = 0.001
@@ -1083,29 +1112,56 @@ func (bpc *BodeChartContent) generate(wMin, wMax float64) {
 		bpc.wMax = wMax
 
 		l := bpc.Linear
-		phaseOffset, lastPhase := calculateCompletePhase(l, wMin)
-		wMult := math.Pow(wMax/wMin, 1/float64(bpc.Steps))
-		var data []bodeData
 		w := wMin
+		pha := calculateCompletePhase(l, w)
+		amp := cmplx.Abs(l.EvalCplx(complex(0, w)))
 		latFactor := bpc.Latency / math.Pi * 180
-		for i := 0; i <= bpc.Steps; i++ {
-			c := l.EvalCplx(complex(0, w))
-			amp := cmplx.Abs(c)
-			pha := cmplx.Phase(c) / math.Pi * 180
-			if lastPhase-pha > 180 {
-				phaseOffset += 360
-			}
-			if lastPhase-pha < -180 {
-				phaseOffset -= 360
-			}
 
-			lastPhase = pha
+		data := []bodeData{{
+			omega:     w,
+			amplitude: amp,
+			phase:     pha.fullPhase() - latFactor*w,
+		}}
+
+		wMultMax := math.Pow(wMax/wMin, 1/float64(bpc.Steps))
+		wMult := wMultMax
+		for w < wMax {
+			var step stepControl
+		modeFor:
+			for {
+				wCalc := w * wMult
+				c := l.EvalCplx(complex(0, wCalc))
+				a := cmplx.Abs(c)
+				p := pha.advanceTo(c)
+				deltaPhase := math.Abs(pha.fullPhase() - p.fullPhase())
+				deltaAbs := math.Abs(math.Log10(amp / a))
+				isToFine := deltaPhase < 2 && deltaAbs < 0.05
+				isToRough := deltaPhase > 8 || deltaAbs > 0.15
+				var s stepControl
+				if isToRough && wMult > 1.0001 && step != stepToFine {
+					s = stepToRough
+				}
+				if isToFine && wMult < wMultMax && step != stepToRough {
+					s = stepToFine
+				}
+				switch s {
+				case stepToRough:
+					wMult = math.Sqrt(wMult)
+				case stepToFine:
+					wMult *= wMult
+				default:
+					pha = p
+					amp = a
+					w = wCalc
+					step = s
+					break modeFor
+				}
+			}
 			data = append(data, bodeData{
 				omega:     w,
 				amplitude: amp,
-				phase:     pha + phaseOffset - latFactor*w,
+				phase:     pha.fullPhase() - latFactor*w,
 			})
-			w *= wMult
 		}
 		bpc.data = data
 	}
@@ -1113,7 +1169,7 @@ func (bpc *BodeChartContent) generate(wMin, wMax float64) {
 
 // calculateCompletePhase calculates the complete phase including all phase rotations
 // by integrating the phase changes from the given frequency down to zero.
-func calculateCompletePhase(l *Linear, w float64) (offset float64, start float64) {
+func calculateCompletePhase(l *Linear, w float64) fullPhase {
 	phase := 0.0
 	if real(l.EvalCplx(complex(0, 0))) < 0 {
 		phase = -180
@@ -1136,7 +1192,10 @@ func calculateCompletePhase(l *Linear, w float64) (offset float64, start float64
 		w = w / 2
 	}
 	fullCircles := math.Round((phase - initialDirect) / 360)
-	return fullCircles * 360, initialDirect
+	return fullPhase{
+		phase:  initialDirect,
+		offset: fullCircles * 360,
+	}
 }
 
 type bodePhase struct {
