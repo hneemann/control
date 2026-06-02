@@ -90,8 +90,8 @@ func CreateMain(examples []Example) http.HandlerFunc {
 			} else {
 				byteReader := bytes.NewReader(b)
 				zlibReader, err := zlib.NewReader(byteReader)
-				defer zlibReader.Close()
 				if err == nil {
+					defer zlibReader.Close()
 					out, err := io.ReadAll(zlibReader)
 					if err == nil {
 						code = string(out)
