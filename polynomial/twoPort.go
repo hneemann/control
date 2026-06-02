@@ -611,3 +611,21 @@ func (tp *TwoPort) ParallelSeries(o *TwoPort) (*TwoPort, error) {
 	}
 	return c1.add(c2)
 }
+
+var inverter = NewTwoPort(-1, 0, 0, -1, AParam)
+
+func (tp *TwoPort) ToCollector() (*TwoPort, error) {
+	sp, err := tp.SeriesParallel(inverter)
+	if err != nil {
+		return nil, err
+	}
+	return sp.Cascade(inverter)
+}
+
+func (tp *TwoPort) ToBase() (*TwoPort, error) {
+	ps, err := tp.ParallelSeries(inverter)
+	if err != nil {
+		return nil, err
+	}
+	return inverter.Cascade(ps)
+}
