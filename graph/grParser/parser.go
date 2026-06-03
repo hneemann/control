@@ -1125,23 +1125,27 @@ func listMethods() value.MethodMap {
 			"The two functions are called with the list elements and must return the x respectively y values. "+
 			"If the functions are omitted, the list elements themselves must be lists of the form [x,y].").VarArgsMethod(0, 2),
 		"bars": value.MethodAtType(2, func(list *value.List, st funcGen.Stack[value.Value]) (value.Value, error) {
-			if style, err := GetStyle(st, 1, graph.Black); err == nil {
-				if title, ok := st.GetOptional(2, value.String("")).(value.String); ok {
-					set := graph.BarSet{
-						Points: listToPoints(list, false),
-						Style:  style.Value,
-						Title:  string(title),
+			switch st.Size() {
+			case 1:
+				set := graph.BarSet{Points: listToPoints(list, false)}
+				bars := graph.Bars{BarSets: []graph.BarSet{set}}
+				return ChartContentValue{Holder: Holder[graph.ChartContent]{bars}}, nil
+			case 3:
+				if xc, ok := st.Get(1).(value.Closure); ok && xc.Args == 1 {
+					if yc, ok := st.Get(2).(value.Closure); ok && yc.Args == 1 {
+						set := graph.BarSet{Points: listFuncToPoints(list, xc, yc)}
+						bars := graph.Bars{BarSets: []graph.BarSet{set}}
+						return ChartContentValue{Holder: Holder[graph.ChartContent]{bars}}, nil
 					}
-					bars := graph.Bars{BarSets: []graph.BarSet{set}}
-					return ChartContentValue{Holder: Holder[graph.ChartContent]{bars}}, nil
-				} else {
-					return nil, fmt.Errorf("the title must be a string")
 				}
-			} else {
-				return nil, fmt.Errorf("bars requires a style: %w", err)
+			default:
+				return nil, fmt.Errorf("bars requires either none or two arguments")
 			}
-		}).SetMethodDescription("color", "title", "Creates a bar chart content. If bar groups are required, "+
-			"the 'add' method can be used on a bar content to add an other group of bars.").VarArgsMethod(0, 2),
+			return nil, fmt.Errorf("bars requires a function as first and second argument")
+		}).SetMethodDescription("func(item) number", "func(item) value", "Creates a bar chart content. If bar groups are required, "+
+			"the 'add' method can be used on a bar content to add an other group of bars. "+
+			"The two functions are called with the list elements and must return the number and value respectively. "+
+			"If the functions are omitted, the list elements themselves must be lists of the form [number,value].").VarArgsMethod(0, 2),
 		"graph3d": value.MethodAtType(0, func(list *value.List, st funcGen.Stack[value.Value]) (value.Value, error) {
 			s := graph.ListBasedLine3d{Vectors: listToVectors(list)}
 			return Chart3dContentValue{Holder[graph.Chart3dContent]{s}}, nil

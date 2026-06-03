@@ -1839,6 +1839,22 @@ func (b Bars) String() string {
 	return "BarChart"
 }
 
+func (b Bars) SetLine(style *Style) ChartContent {
+	l := len(b.BarSets)
+	if l > 0 {
+		b.BarSets[l-1].Style = style
+	}
+	return b
+}
+
+func (b Bars) SetTitle(title string) ChartContent {
+	l := len(b.BarSets)
+	if l > 0 {
+		b.BarSets[l-1].Title = title
+	}
+	return b
+}
+
 func (b Bars) Add(cc ChartContent) (ChartContent, error) {
 	if other, ok := cc.(Bars); ok {
 		return Bars{
