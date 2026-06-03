@@ -206,10 +206,10 @@ func twoPortMethods() value.MethodMap {
 		"string": value.MethodAtType(0, func(tp *TwoPort, st funcGen.Stack[value.Value]) (value.Value, error) {
 			return value.String(tp.String()), nil
 		}).SetMethodDescription("Returns a string representation of the two-port."),
-		"toCollector": value.MethodAtType(0, func(tp *TwoPort, st funcGen.Stack[value.Value]) (value.Value, error) {
+		"emitterToCollector": value.MethodAtType(0, func(tp *TwoPort, st funcGen.Stack[value.Value]) (value.Value, error) {
 			return tp.ToCollector()
 		}).SetMethodDescription("Converts a common emitter two-port to a common collector two-port."),
-		"toBase": value.MethodAtType(0, func(tp *TwoPort, st funcGen.Stack[value.Value]) (value.Value, error) {
+		"emitterToBase": value.MethodAtType(0, func(tp *TwoPort, st funcGen.Stack[value.Value]) (value.Value, error) {
 			return tp.ToBase()
 		}).SetMethodDescription("Converts a common emitter two-port to a common base two-port."),
 	}
