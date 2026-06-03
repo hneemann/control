@@ -1080,7 +1080,7 @@ func guiMethods() value.MethodMap {
 				return nil, fmt.Errorf("select requires at least two items")
 			}
 			return r.newSelect(items), nil
-		}).SetMethodDescription("strings...", "Creates a new select box. The entries must be strings and the "+
+		}).SetMethodDescription("name", "strings...", "Creates a new select box. The entries must be strings and the "+
 			"first entry is the default entry. The return value of this method call is the selected entry.").Pure(false),
 		"check": value.MethodAtType(2, func(r *GuiElements, st funcGen.Stack[value.Value]) (value.Value, error) {
 			if name, ok := st.Get(1).(value.String); ok {
@@ -1493,7 +1493,7 @@ var Parser = value.New().
 		},
 		Args:   -1,
 		IsPure: true,
-	}.SetDescription("tp1", "tp2", "Cascades the given two-ports.")).
+	}.SetDescription("tp...", "Cascades the given two-ports.")).
 	AddStaticFunction("tpSeries", funcGen.Function[value.Value]{
 		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
 			z, err := getComplex(stack, 0)
@@ -2005,7 +2005,7 @@ func createTwoPort(typ TpType) funcGen.Function[value.Value] {
 		},
 		Args:   4,
 		IsPure: true,
-	}.SetDescription("m11", "m12", "m21", "m21", "Creates a new two-port of type "+typ.String()+".")
+	}.SetDescription("m11", "m12", "m21", "m22", "Creates a new two-port of type "+typ.String()+".")
 }
 
 func toUniCode(str string) string {
