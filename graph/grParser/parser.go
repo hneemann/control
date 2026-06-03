@@ -1127,13 +1127,13 @@ func listMethods() value.MethodMap {
 		"bars": value.MethodAtType(2, func(list *value.List, st funcGen.Stack[value.Value]) (value.Value, error) {
 			switch st.Size() {
 			case 1:
-				set := graph.BarSet{Points: listToPoints(list, false)}
+				set := graph.BarSet{Points: listToPoints(list, false), Style: graph.Blue}
 				bars := graph.Bars{BarSets: []graph.BarSet{set}}
 				return ChartContentValue{Holder: Holder[graph.ChartContent]{bars}}, nil
 			case 3:
 				if xc, ok := st.Get(1).(value.Closure); ok && xc.Args == 1 {
 					if yc, ok := st.Get(2).(value.Closure); ok && yc.Args == 1 {
-						set := graph.BarSet{Points: listFuncToPoints(list, xc, yc)}
+						set := graph.BarSet{Points: listFuncToPoints(list, xc, yc), Style: graph.Blue}
 						bars := graph.Bars{BarSets: []graph.BarSet{set}}
 						return ChartContentValue{Holder: Holder[graph.ChartContent]{bars}}, nil
 					}
