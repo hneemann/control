@@ -2026,7 +2026,7 @@ func toUniCode(str string) string {
 				inCommand = true
 			}
 		default:
-			if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == '^' {
+			if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || (r == '^' && command.Len() == 0) {
 				if inCommand {
 					command.WriteRune(r)
 				} else {
@@ -2037,7 +2037,9 @@ func toUniCode(str string) string {
 					writeUnicodeTo(&out, command.String())
 					command.Reset()
 					inCommand = false
-					if r != ' ' {
+					if r == '~' {
+						out.WriteRune(' ')
+					} else if r != ' ' {
 						out.WriteRune(r)
 					}
 				} else {

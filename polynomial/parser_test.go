@@ -385,6 +385,7 @@ func Test_toUniCode(t *testing.T) {
 		{name: "#Omega s", want: "Ωs"},
 		{name: "#Omega#i", want: "Ωᵢ"},
 		{name: "#Omega  s", want: "Ω s"},
+		{name: "#Omega~s", want: "Ω s"},
 		{name: "#alpha#beta", want: "⍺β"},
 		{name: "#Phi#0", want: "Φ₀"},
 	}
