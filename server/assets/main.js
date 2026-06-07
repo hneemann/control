@@ -162,7 +162,11 @@ function sourceLink() {
     let source = document.getElementById('source').value;
 
     compressAndEncode(source)
-        .then(base64 =>  window.open("/?c=" + base64, "_blank"))
+        .then(base64 => {
+            let newUrl = window.location.origin + "/?c=" + base64;
+            return navigator.clipboard.writeText(newUrl);
+        })
+        .then(() => showPopUpById('linkCopied'))
         .catch(err => console.error(err));
 }
 
