@@ -1189,7 +1189,9 @@ func closureMethods() value.MethodMap {
 			}
 			gf := graph.Function{Function: f, Steps: steps, Style: graph.Black}
 			return ChartContentValue{Holder[graph.ChartContent]{gf}, false, nil}, nil
-		}).SetMethodDescription("steps", "Creates a graph of the function (ℝ→ℝ) to be used in the plot command.").VarArgsMethod(0, 1),
+		}).SetMethodDescription("steps", "Creates a graph of the function (ℝ→ℝ) to be used in the plot command. "+
+			"Although adaptive step size control is used, in rare cases it may still be necessary to set the step size manually. "+
+			"This is done using the method's argument.").VarArgsMethod(0, 1),
 
 		"pGraph": value.MethodAtType(4, func(cl value.Closure, st funcGen.Stack[value.Value]) (value.Value, error) {
 			if tMin, ok := st.Get(1).ToFloat(); ok {
