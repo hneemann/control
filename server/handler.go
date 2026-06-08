@@ -144,7 +144,7 @@ func Execute(writer http.ResponseWriter, request *http.Request) {
 		userData := session.GetData[data.UserData](request)
 		fu := userData.GetLastFu(src)
 		if fu == nil {
-			fu, err = polynomial.Parser.Generate(src, "gui")
+			fu, _, err = polynomial.Parser.Generate(src, "gui")
 			if err == nil {
 				userData.SetLastFu(src, fu)
 			}
