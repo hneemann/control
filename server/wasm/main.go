@@ -39,7 +39,7 @@ func parserWrapper() js.Func {
 		if source == lastSource && lastFunc != nil {
 			fu = lastFunc
 		} else {
-			fu, err = polynomial.Parser.Generate(source, "gui")
+			fu, _, err = polynomial.Parser.Generate(source, "gui")
 			if err == nil {
 				lastSource = source
 				lastFunc = fu

@@ -108,7 +108,8 @@ func TestLinear(t *testing.T) {
 	for _, test := range tests {
 		test := test
 		t.Run(test.name, func(t *testing.T) {
-			fu, err := Parser.Generate(test.exp)
+			fu, pure, err := Parser.Generate(test.exp)
+			assert.True(t, pure, "expected pure function for expression: %s", test.exp)
 			assert.NoError(t, err, test.exp)
 			if fu != nil {
 				res, err := fu(funcGen.NewEmptyStack[value.Value]())
@@ -161,7 +162,8 @@ gw
 	for _, test := range tests {
 		test := test
 		t.Run(test.name, func(t *testing.T) {
-			fu, err := Parser.Generate(test.exp)
+			fu, pure, err := Parser.Generate(test.exp)
+			assert.True(t, pure, "expected pure function for expression: %s", test.exp)
 			assert.NoError(t, err, test.exp)
 			if fu != nil {
 				res, err := fu(funcGen.NewEmptyStack[value.Value]())
@@ -213,7 +215,8 @@ func TestComplex(t *testing.T) {
 	for _, test := range tests {
 		test := test
 		t.Run(test.name, func(t *testing.T) {
-			fu, err := Parser.Generate(test.exp)
+			fu, pure, err := Parser.Generate(test.exp)
+			assert.True(t, pure, "expected pure function for expression: %s", test.exp)
 			assert.NoError(t, err, test.exp)
 			if fu != nil {
 				res, err := fu(funcGen.NewEmptyStack[value.Value]())
@@ -311,7 +314,8 @@ plot(
 	for _, test := range tests {
 		test := test
 		t.Run(test.name, func(t *testing.T) {
-			fu, err := Parser.Generate(test.exp)
+			fu, pure, err := Parser.Generate(test.exp)
+			assert.True(t, pure, "expected pure function for expression: %s", test.exp)
 			assert.NoError(t, err, test.exp)
 			if fu != nil {
 				res, err := fu(funcGen.NewEmptyStack[value.Value]())
@@ -341,7 +345,8 @@ func TestNelderMead(t *testing.T) {
 	for _, test := range tests {
 		test := test
 		t.Run(test.name, func(t *testing.T) {
-			fu, err := Parser.Generate(test.exp)
+			fu, pure, err := Parser.Generate(test.exp)
+			assert.True(t, pure, "expected pure function for expression: %s", test.exp)
 			assert.NoError(t, err, test.exp)
 			if fu != nil {
 				stack := funcGen.NewEmptyStack[value.Value]()
@@ -416,7 +421,8 @@ func TestErrorBandEntrance(t *testing.T) {
 	for _, test := range tests {
 		test := test
 		t.Run(test.name, func(t *testing.T) {
-			fu, err := Parser.Generate(test.exp)
+			fu, pure, err := Parser.Generate(test.exp)
+			assert.True(t, pure, "expected pure function for expression: %s", test.exp)
 			assert.NoError(t, err, test.exp)
 			if fu != nil {
 				res, err := fu(funcGen.NewEmptyStack[value.Value]())
