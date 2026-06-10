@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/hneemann/control/graph/grParser/mathml"
 	"github.com/hneemann/parser2/value/export/xmlWriter"
+	"html/template"
 	img "image"
 	"image/png"
 	"math"
@@ -206,22 +207,25 @@ func (s *SVG) DrawText(a Point, text string, orientation Orientation, style *Sty
 			Attr("x", fmt.Sprintf("%0.2f", a.X)).
 			Attr("y", fmt.Sprintf("%0.2f", s.rect.Max.Y-a.Y)).
 			Attr("style", styleString(style)+st)
-		parseSupSub(s.w, text)
+		s.w.WriteHTML(template.HTML(parseSupSub(text, "tspan")))
 		s.w.Close()
 	}
 }
 
-// parseSupSub parses subscript and superscript in the text.
+// ParseSupSub parses subscript and superscript in the text.
 // It recognizes the following patterns:
 // - G_{0} -> G<tspan style="font-size:70%;baseline-shift:sub">0</tspan>
 // - G^{0} -> G<tspan style="font-size:70%;baseline-shift:super">0</tspan>
-// If the text contains LaTeX math mode (indicated by '$'), it will not parse
-// the text and write it as is.
-func parseSupSub(w *xmlWriter.XMLWriter, text string) {
+// If the text contains LaTeX math mode (indicated by '$'), it does not parse
+// the text and return it unchanged.
+func ParseSupSub(text string) string {
+	return parseSupSub(text, "span")
+}
+
+func parseSupSub(text string, tag string) string {
 	if strings.IndexRune(text, '$') >= 0 {
-		// LaTeX math mode, do not parse
-		w.Write(text)
-		return
+		// LaTeX math mode detected, do not parse
+		return text
 	}
 
 	const (
@@ -231,6 +235,7 @@ func parseSupSub(w *xmlWriter.XMLWriter, text string) {
 		subscriptFirst
 		subscript
 	)
+	var w strings.Builder
 	mode := normal
 	arg := ""
 	for i, r := range text {
@@ -241,16 +246,20 @@ func parseSupSub(w *xmlWriter.XMLWriter, text string) {
 			} else if r == '^' && i+1 < len(text) && text[i+1] == '{' {
 				mode = superscriptFirst
 			} else {
-				w.Write(string(r))
+				w.WriteRune(r)
 			}
 		case subscriptFirst:
 			mode = subscript
 		case subscript:
 			if r == '}' {
 				mode = normal
-				w.WriteHTML("<tspan style=\"font-size:70%;baseline-shift:sub\">")
-				w.Write(arg)
-				w.WriteHTML("</tspan>")
+				w.WriteString("<")
+				w.WriteString(tag)
+				w.WriteString(" style=\"font-size:70%;baseline-shift:sub\">")
+				w.WriteString(arg)
+				w.WriteString("</")
+				w.WriteString(tag)
+				w.WriteString(">")
 				arg = ""
 			} else {
 				arg += string(r)
@@ -260,9 +269,13 @@ func parseSupSub(w *xmlWriter.XMLWriter, text string) {
 		case superscript:
 			if r == '}' {
 				mode = normal
-				w.WriteHTML("<tspan style=\"font-size:70%;baseline-shift:super\">")
-				w.Write(arg)
-				w.WriteHTML("</tspan>")
+				w.WriteString("<")
+				w.WriteString(tag)
+				w.WriteString(" style=\"font-size:70%;baseline-shift:super\">")
+				w.WriteString(arg)
+				w.WriteString("</")
+				w.WriteString(tag)
+				w.WriteString(">")
 				arg = ""
 			} else {
 				arg += string(r)
@@ -270,8 +283,9 @@ func parseSupSub(w *xmlWriter.XMLWriter, text string) {
 		}
 	}
 	if (mode == subscript || mode == superscript) && len(arg) > 0 {
-		w.Write(arg)
+		w.WriteString(arg)
 	}
+	return w.String()
 }
 
 func (s *SVG) Context() *Context {

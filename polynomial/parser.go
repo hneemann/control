@@ -831,7 +831,7 @@ func (s Slider) Html(val string, elements, n int) string {
 		val = strconv.Itoa(int((s.def-s.min)/(s.max-s.min)*1000 + 0.5))
 	}
 	sb := strings.Builder{}
-	sb.WriteString(fmt.Sprintf("<label for=\"guiElement-%d\">%s:</label>", n, template.HTMLEscapeString(s.name)))
+	sb.WriteString(fmt.Sprintf("<label style=\"white-space: nowrap;\" for=\"guiElement-%d\">%s</label>", n, graph.ParseSupSub(template.HTMLEscapeString(s.name))))
 	sb.WriteString(fmt.Sprintf(`<input oninput="updateByGui(%d)" type="range" min="0" max="1000" value="%s" id="guiElement-%d" class="range-slider"/>`, elements, val, n))
 	return sb.String()
 }
@@ -865,7 +865,7 @@ func (s Check) Html(val string, elements, n int) string {
 		}
 	}
 	sb := strings.Builder{}
-	sb.WriteString(fmt.Sprintf(`<label for="guiElement-%d">%s:</label><div>`, n, template.HTMLEscapeString(s.name)))
+	sb.WriteString(fmt.Sprintf(`<label style="white-space: nowrap;" for="guiElement-%d">%s</label><div>`, n, graph.ParseSupSub(template.HTMLEscapeString(s.name))))
 	sb.WriteString(fmt.Sprintf(`<input oninput="updateByGui(%d)" type="checkbox" id="guiElement-%d"`, elements, n))
 	if bo {
 		sb.WriteString(` checked="checked"`)
@@ -896,11 +896,11 @@ func (s Select) Html(val string, elements, n int) string {
 		val = s.items[0]
 	}
 	sb := strings.Builder{}
-	sb.WriteString(fmt.Sprintf("<label for=\"guiElement-%d\">%s:</label><div>", n, template.HTMLEscapeString(s.name)))
+	sb.WriteString(fmt.Sprintf("<label style=\"white-space: nowrap;\" for=\"guiElement-%d\">%s</label><div>", n, graph.ParseSupSub(template.HTMLEscapeString(s.name))))
 	sb.WriteString(fmt.Sprintf("<select onchange=\"updateByGui(%d)\" id=\"guiElement-%d\">", elements, n))
 	for _, item := range s.items {
 		ei := template.HTMLEscapeString(item)
-		sb.WriteString(fmt.Sprintf("<option value=\"%s\">%s</option>", ei, ei))
+		sb.WriteString(fmt.Sprintf("<option value=\"%s\">%s</option>", ei, graph.ParseSupSub(ei)))
 	}
 	sb.WriteString("</select></div>")
 	return sb.String()
