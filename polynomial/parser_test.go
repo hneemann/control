@@ -1,12 +1,14 @@
 package polynomial
 
 import (
+	"github.com/hneemann/control/graph/grParser"
 	"github.com/hneemann/parser2/funcGen"
 	"github.com/hneemann/parser2/value"
-	"github.com/hneemann/parser2/value/export"
+	"github.com/hneemann/parser2/value/export/xmlWriter"
 	"github.com/stretchr/testify/assert"
 	"math"
-	"strings"
+	"os"
+	"path/filepath"
 	"testing"
 )
 
@@ -245,12 +247,12 @@ func TestSVGExport(t *testing.T) {
 		exp  string
 		file string
 	}{
-		{name: "nyquist", exp: "let g=(s+1)/(s^2+4*s+5); [\"Nyquist\",plot(g.nyquist())]", file: "z.html"},
-		{name: "nyquist2", exp: "plot(pid(1,1,1).nyquist())", file: "z.html"},
-		{name: "nyquist3", exp: "let g=60/((s+1)*(s+2)*(s+3)*(s+4));plot(g.nyquist()).zoom(0,0,10)", file: "z.html"},
-		{name: "bode", exp: "let g=(1.5*s+1)/((2*s+1)*(s+1)*(s^2+3*s+3.1));\nlet k=pid(12,1.5,1);\nplot(\n  g.bode(green,\"g\"),\n  k.bode(blue,\"k\"),\n  (k*g).bode(black,\"k*g\") )", file: "z.html"},
-		{name: "test", exp: "let p=numbers(10).map(i->[i,i*i]); plot(p.graph(),p.graph().line(green.darker(20).dash(10,10,2,10)))", file: "z.html"},
-		{name: "func", exp: "plot(graph(x->sin(x)).line(black).title(\"sin\"),graph(x->cos(x)).line(red).title(\"cos\")).xBounds(0,2*pi)", file: "z.html"},
+		{name: "nyquist", exp: "let g=(s+1)/(s^2+4*s+5); plot(g.nyquist())"},
+		{name: "nyquist2", exp: "plot(pid(1,1,1).nyquist())"},
+		{name: "nyquist3", exp: "let g=60/((s+1)*(s+2)*(s+3)*(s+4));plot(g.nyquist()).zoom(0,0,10)"},
+		{name: "bode", exp: "let g=(1.5*s+1)/((2*s+1)*(s+1)*(s^2+3*s+3.1));\nlet k=pid(12,1.5,1);\nplot(\n  g.bode(green,\"g\"),\n  k.bode(blue,\"k\"),\n  (k*g).bode(black,\"k*g\") )"},
+		{name: "test", exp: "let p=numbers(10).map(i->[i,i*i]); plot(p.graph(),p.graph().line(green.darker(20).dash(10,10,2,10)))"},
+		{name: "func", exp: "plot(graph(x->sin(x)).line(black).title(\"sin\"),graph(x->cos(x)).line(red).title(\"cos\")).xBounds(0,2*pi)"},
 		{name: "evans-zoom", exp: `
 let g = (s^2+2.5*s+2.234)/((s+1)*(s+2)*(s)*(s+3)*(s+4));
 
@@ -262,54 +264,40 @@ plot(
   g.evans(24),
   r.graph(c->c.real(),c->c.imag())
 ).zoom(cr.real(),cr.imag(),20)
-`, file: "z.html"},
+`},
+
 		// If modified, also modify the README.md
 		{name: "bodeExample", exp: `
 let g  = 70/((s+1)*(s+2)*(s+2.5));
 let kp = 0.11;
 let Ti = 2.0;
 let k  = pid(kp,Ti);
-let g0 = k*g;
-let pm = g0.pMargin();
-let lineColor=red.dash(5,5);
 
 plot(
   g.bode(green, "G"),
-  k.bode(blue, sprintf("K, k#p=%.2f, T#i=%.1f",kp,Ti)),
-  g0.bode(black, sprintf("G#0, #Phi#r=%.1f°, #omega#s=%.2f rad/s",
-                         pm.pMargin, pm.w0) ),
-  xConst(pm.w0, lineColor),
-  xConst(pm.w0, lineColor).toY2(),
-  yConst(-180+50, lineColor).toY2(),
-  yConst(-180+70, lineColor).toY2(),
+  k.bode(blue, "K"),
+  (k*g).bode(black, "G_{0}")
 )
-`, file: "z.html"},
+`, file: "bode.svg"},
 		// If modified, also modify the README.md
 		{name: "evansExample", exp: `
-let g = (s^2+2.5*s+2.225)/((s+1)*(s+2)*(s)*(s+3)*(s+4));
-
-let mp = g.derivative().zeros();
+let g = (s^2+2.5*s+2.225)/(s*(s+1)*(s+2)*(s+3)*(s+4));
 
 plot(
-  mp.graph(r->r.real(), r->r.imag())
-    .points(2, red.stroke(2))
-    .title("Merge Points"),
   g.evans(150),
 ).xBounds(-4.5, 0.2)
  .yBounds(-2, 2)
-`, file: "z.html"},
+`, file: "evans.svg"},
+
 		// If modified, also modify the README.md
 		{name: "rootLocusExample", exp: `
 let G = 70/((s+1)*(s+2)*(s+2.5));
 
-func getLinear(Ti)
-  (pid(0.1,Ti)*G).loop();
-
 plot(
-  text(-2.2, 1.9, "Root Locus Chart varying T#i"),
-  rootLocus(getLinear, 0.1, 10, "T#i"),
+  text(-2.2, 1.9, "Root Locus Plot varying T_{I}"),
+  rootLocus(Ti->(pid(0.1,Ti)*G).loop(), 0.1, 10, "T_{I}"),
 ).legendPos(-2.7,-1.4)
-`, file: "z.html"},
+`, file: "rootLocus.svg"},
 	}
 	for _, test := range tests {
 		test := test
@@ -321,13 +309,19 @@ plot(
 				res, err := fu(funcGen.NewEmptyStack[value.Value]())
 				assert.NoError(t, err, test.exp)
 
-				expHtml, _, err := export.ToHtml(res, 50, nil, true)
+				chart, ok := res.(grParser.ChartValue)
+				assert.True(t, ok, "expected chart value for expression: %s", test.exp)
+
+				xml := xmlWriter.New().PrettyPrint()
+				err = chart.ToHtml(funcGen.NewEmptyStack[value.Value](), xml)
 				assert.NoError(t, err, test.exp)
 
-				// needs to contain a svg image
-				assert.True(t, strings.Contains(string(expHtml), "<svg class=\"svg\""), test.exp)
-
-				//fmt.Println(expHtml)
+				if test.file != "" {
+					if f, iErr := os.Create(filepath.Join(testFolder, test.file)); iErr == nil {
+						defer f.Close()
+						f.Write(xml.Bytes())
+					}
+				}
 			}
 		})
 	}

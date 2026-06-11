@@ -18,7 +18,7 @@ If the application is operated with a backend, there are the functions
 # Usage #
 
 Go to this [page](https://hneemann.github.io/control/), click the help 
-icon <img src="/server/assets/help.svg" width="20"> and choose one of the examples
+icon <img src="/server/assets/help.svg" width="15"> and choose one of the examples
 
 # Implementation #
 
@@ -57,6 +57,7 @@ sufficient for simulating more complex systems.
 
 The script for the Bode plot looks like this: 
 
+<!-- if modified, also modify the test in polynomial/parser_test.go -->
 ```
 let g  = 70/((s+1)*(s+2)*(s+2.5));
 let kp = 0.11;
@@ -66,7 +67,7 @@ let k  = pid(kp,Ti);
 plot(
   g.bode(green, "G"),
   k.bode(blue, "K"),
-  (k*g).bode(black, "G#0")
+  (k*g).bode(black, "G_{0}")
 )
 ```
 The result looks like this
@@ -79,6 +80,7 @@ This script shows how to create an Evans plot. The `evans` method creates a list
 multiple plot contents, containing the root locus itself, the zeros, the poles and 
 also the polar grid and the asymptotes. 
 
+<!-- if modified, also modify the test in polynomial/parser_test.go -->
 ```
 let g = (s^2+2.5*s+2.225)/(s*(s+1)*(s+2)*(s+3)*(s+4));
 
@@ -96,12 +98,13 @@ This example shows, how to plot a root locus. In this case the parameter Tᵢ of
 PID controller is varied. The `rootLocus` function is used to create the root 
 locus in between the given bounds.
 
+<!-- if modified, also modify the test in polynomial/parser_test.go -->
 ```
 let G = 70/((s+1)*(s+2)*(s+2.5));
 
 plot(
-  text(-2.2, 1.9, "Root Locus Plot varying T#i"),
-  rootLocus(Ti->(pid(0.1,Ti)*G).loop(), 0.1, 10, "T#i"),
+  text(-2.2, 1.9, "Root Locus Plot varying T_{I}"),
+  rootLocus(Ti->(pid(0.1,Ti)*G).loop(), 0.1, 10, "T_{I}"),
 ).legendPos(-2.7,-1.4)
 ```
 

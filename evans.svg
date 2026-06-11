@@ -1,59 +1,58 @@
-<?xml version="1.0" encoding="utf-8"?>
 <svg class="svg" style="stroke-linejoin:round;stroke-linecap:round" xmlns:svg="http://www.w3.org/2000/svg" xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600">
 	<text x="70.53" y="594.75" style="stroke:none;fill:#000000;font-size:15.00px;text-anchor:middle">-4.5</text>
-	<path d="M 70.53,577.50 L 70.53,570.00 " style="stroke:#000000;stroke-width:2;fill:none"/>
+	<path d="M 70.53,577.50 L 70.53,570.00 " style="stroke:#000000;stroke-width:2;fill:#000000"/>
 	<text x="146.51" y="594.75" style="stroke:none;fill:#000000;font-size:15.00px;text-anchor:middle">-4.0</text>
-	<path d="M 146.51,577.50 L 146.51,570.00 " style="stroke:#000000;stroke-width:2;fill:none"/>
+	<path d="M 146.51,577.50 L 146.51,570.00 " style="stroke:#000000;stroke-width:2;fill:#000000"/>
 	<text x="222.49" y="594.75" style="stroke:none;fill:#000000;font-size:15.00px;text-anchor:middle">-3.5</text>
-	<path d="M 222.49,577.50 L 222.49,570.00 " style="stroke:#000000;stroke-width:2;fill:none"/>
+	<path d="M 222.49,577.50 L 222.49,570.00 " style="stroke:#000000;stroke-width:2;fill:#000000"/>
 	<text x="298.46" y="594.75" style="stroke:none;fill:#000000;font-size:15.00px;text-anchor:middle">-3.0</text>
-	<path d="M 298.46,577.50 L 298.46,570.00 " style="stroke:#000000;stroke-width:2;fill:none"/>
+	<path d="M 298.46,577.50 L 298.46,570.00 " style="stroke:#000000;stroke-width:2;fill:#000000"/>
 	<text x="374.44" y="594.75" style="stroke:none;fill:#000000;font-size:15.00px;text-anchor:middle">-2.5</text>
-	<path d="M 374.44,577.50 L 374.44,570.00 " style="stroke:#000000;stroke-width:2;fill:none"/>
+	<path d="M 374.44,577.50 L 374.44,570.00 " style="stroke:#000000;stroke-width:2;fill:#000000"/>
 	<text x="450.42" y="594.75" style="stroke:none;fill:#000000;font-size:15.00px;text-anchor:middle">-2.0</text>
-	<path d="M 450.42,577.50 L 450.42,570.00 " style="stroke:#000000;stroke-width:2;fill:none"/>
+	<path d="M 450.42,577.50 L 450.42,570.00 " style="stroke:#000000;stroke-width:2;fill:#000000"/>
 	<text x="526.39" y="594.75" style="stroke:none;fill:#000000;font-size:15.00px;text-anchor:middle">-1.5</text>
-	<path d="M 526.39,577.50 L 526.39,570.00 " style="stroke:#000000;stroke-width:2;fill:none"/>
+	<path d="M 526.39,577.50 L 526.39,570.00 " style="stroke:#000000;stroke-width:2;fill:#000000"/>
 	<text x="602.37" y="594.75" style="stroke:none;fill:#000000;font-size:15.00px;text-anchor:middle">-1.0</text>
-	<path d="M 602.37,577.50 L 602.37,570.00 " style="stroke:#000000;stroke-width:2;fill:none"/>
+	<path d="M 602.37,577.50 L 602.37,570.00 " style="stroke:#000000;stroke-width:2;fill:#000000"/>
 	<text x="678.35" y="594.75" style="stroke:none;fill:#000000;font-size:15.00px;text-anchor:middle">-0.5</text>
-	<path d="M 678.35,577.50 L 678.35,570.00 " style="stroke:#000000;stroke-width:2;fill:none"/>
+	<path d="M 678.35,577.50 L 678.35,570.00 " style="stroke:#000000;stroke-width:2;fill:#000000"/>
 	<text x="754.33" y="594.75" style="stroke:none;fill:#000000;font-size:15.00px;text-anchor:middle">0.0</text>
-	<path d="M 754.33,577.50 L 754.33,570.00 " style="stroke:#000000;stroke-width:2;fill:none"/>
+	<path d="M 754.33,577.50 L 754.33,570.00 " style="stroke:#000000;stroke-width:2;fill:#000000"/>
 	<text x="45.00" y="564.06" style="stroke:none;fill:#000000;font-size:15.00px;text-anchor:end">-2.00</text>
-	<path d="M 48.75,559.06 L 56.25,559.06 " style="stroke:#000000;stroke-width:2;fill:none"/>
+	<path d="M 48.75,559.06 L 56.25,559.06 " style="stroke:#000000;stroke-width:2;fill:#000000"/>
 	<text x="45.00" y="529.86" style="stroke:none;fill:#000000;font-size:15.00px;text-anchor:end">-1.75</text>
-	<path d="M 48.75,524.86 L 56.25,524.86 " style="stroke:#000000;stroke-width:2;fill:none"/>
+	<path d="M 48.75,524.86 L 56.25,524.86 " style="stroke:#000000;stroke-width:2;fill:#000000"/>
 	<text x="45.00" y="495.67" style="stroke:none;fill:#000000;font-size:15.00px;text-anchor:end">-1.50</text>
-	<path d="M 48.75,490.67 L 56.25,490.67 " style="stroke:#000000;stroke-width:2;fill:none"/>
+	<path d="M 48.75,490.67 L 56.25,490.67 " style="stroke:#000000;stroke-width:2;fill:#000000"/>
 	<text x="45.00" y="461.47" style="stroke:none;fill:#000000;font-size:15.00px;text-anchor:end">-1.25</text>
-	<path d="M 48.75,456.47 L 56.25,456.47 " style="stroke:#000000;stroke-width:2;fill:none"/>
+	<path d="M 48.75,456.47 L 56.25,456.47 " style="stroke:#000000;stroke-width:2;fill:#000000"/>
 	<text x="45.00" y="427.28" style="stroke:none;fill:#000000;font-size:15.00px;text-anchor:end">-1.00</text>
-	<path d="M 48.75,422.28 L 56.25,422.28 " style="stroke:#000000;stroke-width:2;fill:none"/>
+	<path d="M 48.75,422.28 L 56.25,422.28 " style="stroke:#000000;stroke-width:2;fill:#000000"/>
 	<text x="45.00" y="393.08" style="stroke:none;fill:#000000;font-size:15.00px;text-anchor:end">-0.75</text>
-	<path d="M 48.75,388.08 L 56.25,388.08 " style="stroke:#000000;stroke-width:2;fill:none"/>
+	<path d="M 48.75,388.08 L 56.25,388.08 " style="stroke:#000000;stroke-width:2;fill:#000000"/>
 	<text x="45.00" y="358.89" style="stroke:none;fill:#000000;font-size:15.00px;text-anchor:end">-0.50</text>
-	<path d="M 48.75,353.89 L 56.25,353.89 " style="stroke:#000000;stroke-width:2;fill:none"/>
+	<path d="M 48.75,353.89 L 56.25,353.89 " style="stroke:#000000;stroke-width:2;fill:#000000"/>
 	<text x="45.00" y="324.69" style="stroke:none;fill:#000000;font-size:15.00px;text-anchor:end">-0.25</text>
-	<path d="M 48.75,319.69 L 56.25,319.69 " style="stroke:#000000;stroke-width:2;fill:none"/>
+	<path d="M 48.75,319.69 L 56.25,319.69 " style="stroke:#000000;stroke-width:2;fill:#000000"/>
 	<text x="45.00" y="290.50" style="stroke:none;fill:#000000;font-size:15.00px;text-anchor:end">0.00</text>
-	<path d="M 48.75,285.50 L 56.25,285.50 " style="stroke:#000000;stroke-width:2;fill:none"/>
+	<path d="M 48.75,285.50 L 56.25,285.50 " style="stroke:#000000;stroke-width:2;fill:#000000"/>
 	<text x="45.00" y="256.31" style="stroke:none;fill:#000000;font-size:15.00px;text-anchor:end">0.25</text>
-	<path d="M 48.75,251.31 L 56.25,251.31 " style="stroke:#000000;stroke-width:2;fill:none"/>
+	<path d="M 48.75,251.31 L 56.25,251.31 " style="stroke:#000000;stroke-width:2;fill:#000000"/>
 	<text x="45.00" y="222.11" style="stroke:none;fill:#000000;font-size:15.00px;text-anchor:end">0.50</text>
-	<path d="M 48.75,217.11 L 56.25,217.11 " style="stroke:#000000;stroke-width:2;fill:none"/>
+	<path d="M 48.75,217.11 L 56.25,217.11 " style="stroke:#000000;stroke-width:2;fill:#000000"/>
 	<text x="45.00" y="187.92" style="stroke:none;fill:#000000;font-size:15.00px;text-anchor:end">0.75</text>
-	<path d="M 48.75,182.92 L 56.25,182.92 " style="stroke:#000000;stroke-width:2;fill:none"/>
+	<path d="M 48.75,182.92 L 56.25,182.92 " style="stroke:#000000;stroke-width:2;fill:#000000"/>
 	<text x="45.00" y="153.72" style="stroke:none;fill:#000000;font-size:15.00px;text-anchor:end">1.00</text>
-	<path d="M 48.75,148.72 L 56.25,148.72 " style="stroke:#000000;stroke-width:2;fill:none"/>
+	<path d="M 48.75,148.72 L 56.25,148.72 " style="stroke:#000000;stroke-width:2;fill:#000000"/>
 	<text x="45.00" y="119.53" style="stroke:none;fill:#000000;font-size:15.00px;text-anchor:end">1.25</text>
-	<path d="M 48.75,114.53 L 56.25,114.53 " style="stroke:#000000;stroke-width:2;fill:none"/>
+	<path d="M 48.75,114.53 L 56.25,114.53 " style="stroke:#000000;stroke-width:2;fill:#000000"/>
 	<text x="45.00" y="85.33" style="stroke:none;fill:#000000;font-size:15.00px;text-anchor:end">1.50</text>
-	<path d="M 48.75,80.33 L 56.25,80.33 " style="stroke:#000000;stroke-width:2;fill:none"/>
+	<path d="M 48.75,80.33 L 56.25,80.33 " style="stroke:#000000;stroke-width:2;fill:#000000"/>
 	<text x="45.00" y="51.14" style="stroke:none;fill:#000000;font-size:15.00px;text-anchor:end">1.75</text>
-	<path d="M 48.75,46.14 L 56.25,46.14 " style="stroke:#000000;stroke-width:2;fill:none"/>
+	<path d="M 48.75,46.14 L 56.25,46.14 " style="stroke:#000000;stroke-width:2;fill:#000000"/>
 	<text x="45.00" y="16.94" style="stroke:none;fill:#000000;font-size:15.00px;text-anchor:end">2.00</text>
-	<path d="M 48.75,11.94 L 56.25,11.94 " style="stroke:#000000;stroke-width:2;fill:none"/>
+	<path d="M 48.75,11.94 L 56.25,11.94 " style="stroke:#000000;stroke-width:2;fill:#000000"/>
 	<path d="M 374.44,285.50 L 556.92,1.00 " style="stroke:#bebebe;stroke-width:2;fill:none"/>
 	<path d="M 374.44,285.50 L 56.25,285.50 " style="stroke:#bebebe;stroke-width:2;fill:none"/>
 	<path d="M 374.44,285.50 L 556.92,570.00 " style="stroke:#bebebe;stroke-width:2;fill:none"/>
