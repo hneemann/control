@@ -22,8 +22,8 @@ plot(
 ];
 
 plot(
-  data.graph(p->p.x, p->p.a).points(1,blue) .line(blue.dash(),"a"),
-  data.graph(p->p.x, p->p.b).points(2,green).line(green.dash(),"b"),
+  data.graph(p->p.x, p->p.a).points(1, blue) .line(blue.dash(), "a"),
+  data.graph(p->p.x, p->p.b).points(2, green).line(green.dash(), "b"),
 ).legendPos(0.2,15)</example>
     <example name="Graph" desc="Funktionsplot"
              name-en="Graph" desc-en="Function plot">plot(
@@ -35,8 +35,8 @@ plot(
  graph( x->cos(x) ).line(blue, "cos(x)"),
  graph( x->tan(x) ).line(red, "tan(x)")
 ).cross()
- .xBounds(-pi,pi)
- .yBounds(-2,2)</example>
+ .xBounds(-pi, pi)
+ .yBounds(-2, 2)</example>
     <example name="Ortskurve" desc="Darstellung der Ortskurve"
              name-en="Nyquist plot" desc-en="Nyquist plot">let g = 3/((s+1)*(s+2));
 
@@ -49,7 +49,7 @@ plot(
 func h(w)
   let c1 = G( j*w );
   let c2 = G( j*w*0.99 );
-  hintDir(c1.real(),c1.imag(),c2.real(),c2.imag(),"#omega="+w);
+  hintDir(c1.real(), c1.imag(), c2.real(), c2.imag(), "#omega="+w);
 
 plot(
   G.nyquist(),
@@ -74,7 +74,7 @@ let G0 = K*G;
 
 plot(
   G.bode(green, "G(s)"),
-  K.bode(blue,  "K(s)"),
+  K.bode(blue, "K(s)"),
   G0.bode(black, "G_{0}(s)")
 )</example>
     <example name="WOK" desc="Darstellung einer Wurzelortskurve"
@@ -95,20 +95,20 @@ plot(
     <example name="Simulation" desc="Simulation des Systems"
              name-en="Simulation" desc-en="Simulation of a linear system">let G = 70/((s+1)*(s+2)*(s+2.5));
 let K1 = 0.2*(0.6*s+1)/(0.002*s+1);
-let K2 = pid(0.1,1.8);
-let K3 = pid(0.3,1.8,0.5);
+let K2 = pid(0.1, 1.8);
+let K3 = pid(0.3, 1.8, 0.5);
 
 plot(
   (K1*G).loop().simStep(10).graph().line(blue,  "Phase-lead Compensator"),
   (K2*G).loop().simStep(10).graph().line(black, "PI"),
   (K3*G).loop().simStep(10).graph().line(green, "PID"),
   yConst(1)
-).labels("t / s","h(t)").legendPos(5,0.87)</example>
+).labels("t / s", "h(t)").legendPos(5, 0.87)</example>
 
         <example name="Simulation interaktiv" desc="interaktive Simulation"
                  name-en="Simulation Interactive" desc-en="interactive simulation">let G = 1/((s+1)*(s+2)*(s+3));
 
-let kp = 10^gui.slider("k",     0, -1, 2);
+let kp = 10^gui.slider("k_{P}", 0, -1, 2);
 let Ti = 10^gui.slider("T_{I}", 2, -1, 2);
 let Td =    gui.slider("T_{D}", 0,  0, 4);
 
@@ -119,9 +119,9 @@ plot(
   yConst(0.95),
   yConst(1),
   yConst(1.05),
-).labels("t / s","h(t)")
+).labels("t / s", "h(t)")
  .protectLabels()
- .title(sprintf("k_{P}=%.3g, T_{I}=%ss, T_{D}=%ss",kp,Ti.unitPrefix(),Td.unitPrefix()))</example>
+ .title(sprintf("k_{P}=%.3g, T_{I}=%ss, T_{D}=%ss", kp, Ti.unitPrefix(), Td.unitPrefix()))</example>
 
 <example name="Simulation nicht linear" desc="Simulation eines nicht linearen Systems"
          name-en="Simulation non linear" desc-en="Simulation of a non linear system">let G = 70/((s+1)*(s+2)*(s+2.5));
@@ -131,7 +131,7 @@ let Ti = 1.05;
 let Td = 0.82;
 let Tp = 0.05;
 
-let K = pid(kp,Ti,Td,Tp);
+let K = pid(kp, Ti, Td, Tp);
 
 // Simulation of a Simulink-like model in the form of a netlist.
 // The blocks are connected by the names of inputs
@@ -215,12 +215,12 @@ func sor(u,v)
 
 plot3d(
   sor.solid3d()
-     .uBounds(0,2)
-     .vBounds(0,2*pi)
-     .color(black.fill(red.darker(50)),red)
-).xBounds(-3,3)
- .yBounds(-3,3)
- .zBounds(0,4)
+     .uBounds(0, 2)
+     .vBounds(0, 2*pi)
+     .color(black.fill(red.darker(50)), red)
+).xBounds(-3, 3)
+ .yBounds(-3, 3)
+ .zBounds(0, 4)
  .addSliderTo(gui)
 </example>
 
