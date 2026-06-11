@@ -105,6 +105,24 @@ plot(
   yConst(1)
 ).labels("t / s","h(t)").legendPos(5,0.87)</example>
 
+        <example name="Simulation interaktiv" desc="interaktive Simulation"
+                 name-en="Simulation Interactive" desc-en="interactive simulation">let G = 1/((s+1)*(s+2)*(s+3));
+
+let kp = 10^gui.slider("k",     0, -1, 2);
+let Ti = 10^gui.slider("T_{I}", 2, -1, 2);
+let Td =    gui.slider("T_{D}", 0,  0, 4);
+
+let K = pid(kp, Ti, Td);
+
+plot(
+  (K*G).loop().simStep(10).graph(),
+  yConst(0.95),
+  yConst(1),
+  yConst(1.05),
+).labels("t / s","h(t)")
+ .protectLabels()
+ .title(sprintf("k_{P}=%.3g, T_{I}=%ss, T_{D}=%ss",kp,Ti.unitPrefix(),Td.unitPrefix()))</example>
+
 <example name="Simulation nicht linear" desc="Simulation eines nicht linearen Systems"
          name-en="Simulation non linear" desc-en="Simulation of a non linear system">let G = 70/((s+1)*(s+2)*(s+2.5));
 
@@ -146,7 +164,7 @@ plot(
 ).legendPos(2,0.7)
  .labels("t / s", "h(t)")
  .title("Effect of a Limiter")</example>
-    <example name="Zweitor Travo" desc="Berechnung realer Travo"
+    <!--example name="Zweitor Travo" desc="Berechnung realer Travo"
              name-en="Two-Port Transformer" desc-en="Two-Port real transformer">let Rin   = 2000;
 let Lh    =   10;
 let ueber =   10;
@@ -169,7 +187,7 @@ let gain=transformer.voltageGain(Rload).abs();
  ["Transformer:",transformer],
  ["Voltage Gain:",gain],
  ["Uout:",gain*240]
-]</example>
+]</example-->
     <example name="Zweitor Transistor" desc="Berechnung Transistorschaltung"
              name-en="Two-Port Transistor" desc-en="Two-Port Transistor">let tr=tpH(2700, 1.5e-4,
             220,  18e-6);
