@@ -2127,6 +2127,7 @@ var unicodeMap = map[string]rune{
 	"div":     '÷',
 	"cdot":    '⋅',
 	"circ":    '∘',
+	"approx":  '≈',
 	"a":       'ₐ',
 	"e":       'ₑ',
 	"h":       'ₕ',
