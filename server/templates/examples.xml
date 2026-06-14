@@ -46,14 +46,14 @@ plot(
     <example name="Ortskurve 2" desc="Darstellung der Ortskurve"
              name-en="Nyquist plot 2" desc-en="Nyquist plot">let G = 3/((s+1)*(s+1.5)*(s+2));
 
-func h(w)
+func createHintAt(w)
   let c1 = G( j*w );
   let c2 = G( j*w*0.99 );
   hintDir(c1.real(), c1.imag(), c2.real(), c2.imag(), "#omega="+w);
 
 plot(
   G.nyquist(),
-  [0.1, 0.25, 0.5, 1, 2, 5].map(h)
+  [0.1, 0.25, 0.5, 1, 2, 5].map(createHintAt)
 )</example>
     <example name="Nyquist-Kriterium" desc="Anwendung des Nyquist-Kriteriums"
              name-en="Nyquist stability criterion">let G = 6*(s+1)/((s-1)*(s-3));
@@ -105,7 +105,7 @@ plot(
   yConst(1)
 ).labels("t / s", "h(t)").legendPos(5, 0.87)</example>
 
-        <example name="Simulation interaktiv" desc="interaktive Simulation"
+        <!--example name="Simulation interaktiv" desc="interaktive Simulation"
                  name-en="Simulation Interactive" desc-en="interactive simulation">let G = 1/((s+1)*(s+2)*(s+3));
 
 let kp = 10^gui.slider("k_{P}", 0, -1, 2);
@@ -121,7 +121,7 @@ plot(
   yConst(1.05),
 ).labels("t / s", "h(t)")
  .protectLabels()
- .title(sprintf("k_{P}=%.3g, T_{I}=%ss, T_{D}=%ss", kp, Ti.unitPrefix(), Td.unitPrefix()))</example>
+ .title(sprintf("k_{P}=%.3g, T_{I}=%ss, T_{D}=%ss", kp, Ti.unitPrefix(), Td.unitPrefix()))</example-->
 
 <example name="Simulation nicht linear" desc="Simulation eines nicht linearen Systems"
          name-en="Simulation non linear" desc-en="Simulation of a non linear system">let G = 70/((s+1)*(s+2)*(s+2.5));

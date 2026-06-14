@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"github.com/hneemann/parser2/value/export"
 	"math"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -77,7 +79,13 @@ func LinearAxis(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth,
 	if eMax > max {
 		eMax = max
 	}
-	l := linTickCreator{min: eMin, max: eMax}
+	c := math.Max(math.Abs(bounds.Min), math.Abs(bounds.Max))
+	var l tickCreator
+	if c < 1e5 && c > 1e-5 {
+		l = &linTickCreator{min: eMin, max: eMax}
+	} else {
+		l = &linExpTickCreator{linTickCreator{min: eMin, max: eMax}}
+	}
 	return Axis{
 		Trans: func(v float64) float64 {
 			return (v-eMin)/(eMax-eMin)*(maxParent-minParent) + minParent
@@ -90,6 +98,10 @@ func LinearAxis(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth,
 		IsLinear:    true,
 		LabelFormat: noLabelFormat,
 	}
+}
+
+type tickCreator interface {
+	ticks(minParent, maxParent float64, ctw CheckTextWidth) []Tick
 }
 
 type linTickCreator struct {
@@ -169,6 +181,81 @@ func (l *linTickCreator) dec() {
 		l.log++
 		l.fineStep = len(FINER) - 1
 	}
+}
+
+type linExpTickCreator struct {
+	linTickCreator
+}
+
+func (l *linExpTickCreator) ticks(minParent, maxParent float64, ctw CheckTextWidth) []Tick {
+	l.log = int(math.Log10(l.max - l.min))
+	l.delta = exp10(l.log)
+	l.fineStep = 0
+
+	vks := 1
+	if l.min < 0 {
+		vks++
+	}
+
+	l.delta *= 10
+	l.log++ // sicher zu klein starten!
+
+	for ctw(l.getPixels(maxParent-minParent), vks+LOG_CORR[l.fineStep]+5) {
+		l.inc()
+	}
+	l.dec()
+
+	l.delta *= FINER[l.fineStep]
+
+	const eps = 1e-10
+
+	format := fmt.Sprintf("%%.%df⋅10%s", LOG_CORR[l.fineStep], toExpStr(l.log))
+
+	tick := math.Ceil(l.min/l.delta) * l.delta
+	v := exp10(l.log)
+	var ticks []Tick
+	for tick <= l.max+eps {
+		if math.Abs(tick) < eps {
+			tick = 0
+		}
+		ticks = append(ticks, Tick{tick, fmt.Sprintf(format, tick/v)})
+		tick += l.delta
+	}
+	return ticks
+}
+
+func toExpStr(log int) string {
+	s := strconv.Itoa(log)
+	var sb strings.Builder
+	for _, c := range s {
+		switch c {
+		case '-':
+			sb.WriteRune('⁻')
+		case '0':
+			sb.WriteRune('⁰')
+		case '1':
+			sb.WriteRune('¹')
+		case '2':
+			sb.WriteRune('²')
+		case '3':
+			sb.WriteRune('³')
+		case '4':
+			sb.WriteRune('⁴')
+		case '5':
+			sb.WriteRune('⁵')
+		case '6':
+			sb.WriteRune('⁶')
+		case '7':
+			sb.WriteRune('⁷')
+		case '8':
+			sb.WriteRune('⁸')
+		case '9':
+			sb.WriteRune('⁹')
+		default:
+			sb.WriteRune(c)
+		}
+	}
+	return sb.String()
 }
 
 func exp10(log int) float64 {
