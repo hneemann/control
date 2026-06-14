@@ -79,13 +79,26 @@ func LinearAxis(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth,
 	if eMax > max {
 		eMax = max
 	}
-	c := math.Max(math.Abs(bounds.Min), math.Abs(bounds.Max))
-	var l tickCreator
-	if c < 1e5 && c > 1e-5 {
-		l = &linTickCreator{min: eMin, max: eMax}
+
+	labelFormat := noLabelFormat
+	var l linTickCreator
+	c := math.Max(math.Abs(eMin), math.Abs(eMax))
+	fac := 1.0
+	if c < 1e-4 || c > 1e5 {
+		log := int(math.Log10(c)) - 1
+		fac = exp10(log)
+		l = linTickCreator{min: eMin / fac, max: eMax / fac}
+		labStr := "10" + toExpStr(log)
+		labelFormat = func(label string) string {
+			if label != "" {
+				return label + " ÷ " + labStr
+			}
+			return "÷" + labStr
+		}
 	} else {
-		l = &linExpTickCreator{linTickCreator{min: eMin, max: eMax}}
+		l = linTickCreator{min: eMin, max: eMax}
 	}
+
 	return Axis{
 		Trans: func(v float64) float64 {
 			return (v-eMin)/(eMax-eMin)*(maxParent-minParent) + minParent
@@ -93,15 +106,11 @@ func LinearAxis(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth,
 		Reverse: func(v float64) float64 {
 			return (v-minParent)/(maxParent-minParent)*(eMax-eMin) + eMin
 		},
-		Ticks:       l.ticks(minParent, maxParent, ctw),
+		Ticks:       l.ticks(minParent, maxParent, ctw, fac),
 		Bounds:      Bounds{bounds.isSet, eMin, eMax},
 		IsLinear:    true,
-		LabelFormat: noLabelFormat,
+		LabelFormat: labelFormat,
 	}
-}
-
-type tickCreator interface {
-	ticks(minParent, maxParent float64, ctw CheckTextWidth) []Tick
 }
 
 type linTickCreator struct {
@@ -114,7 +123,7 @@ type linTickCreator struct {
 var FINER = []float64{1, 0.5, 0.25, 0.2}
 var LOG_CORR = []int{0, 1, 2, 1}
 
-func (l *linTickCreator) ticks(minParent, maxParent float64, ctw CheckTextWidth) []Tick {
+func (l *linTickCreator) ticks(minParent, maxParent float64, ctw CheckTextWidth, fac float64) []Tick {
 	l.log = int(math.Log10(l.max - l.min))
 	l.delta = exp10(l.log)
 	l.fineStep = 0
@@ -147,7 +156,7 @@ func (l *linTickCreator) ticks(minParent, maxParent float64, ctw CheckTextWidth)
 		if math.Abs(tick) < eps {
 			tick = 0
 		}
-		ticks = append(ticks, Tick{tick, fmt.Sprintf(format, tick)})
+		ticks = append(ticks, Tick{tick * fac, fmt.Sprintf(format, tick)})
 		tick += l.delta
 	}
 	return ticks
@@ -181,47 +190,6 @@ func (l *linTickCreator) dec() {
 		l.log++
 		l.fineStep = len(FINER) - 1
 	}
-}
-
-type linExpTickCreator struct {
-	linTickCreator
-}
-
-func (l *linExpTickCreator) ticks(minParent, maxParent float64, ctw CheckTextWidth) []Tick {
-	l.log = int(math.Log10(l.max - l.min))
-	l.delta = exp10(l.log)
-	l.fineStep = 0
-
-	vks := 1
-	if l.min < 0 {
-		vks++
-	}
-
-	l.delta *= 10
-	l.log++ // sicher zu klein starten!
-
-	for ctw(l.getPixels(maxParent-minParent), vks+LOG_CORR[l.fineStep]+5) {
-		l.inc()
-	}
-	l.dec()
-
-	l.delta *= FINER[l.fineStep]
-
-	const eps = 1e-10
-
-	format := fmt.Sprintf("%%.%df⋅10%s", LOG_CORR[l.fineStep], toExpStr(l.log))
-
-	tick := math.Ceil(l.min/l.delta) * l.delta
-	v := exp10(l.log)
-	var ticks []Tick
-	for tick <= l.max+eps {
-		if math.Abs(tick) < eps {
-			tick = 0
-		}
-		ticks = append(ticks, Tick{tick, fmt.Sprintf(format, tick/v)})
-		tick += l.delta
-	}
-	return ticks
 }
 
 func toExpStr(log int) string {
