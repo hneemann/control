@@ -992,7 +992,7 @@ func createChartContentMethods() value.MethodMap {
 			} else {
 				return nil, err
 			}
-		}).SetMethodDescription("str", "data...", "Sets a string to show as title in the legend. Uses arguments in sprint style."),
+		}).SetMethodDescription("str", "data...", "Sets a string to show as title in the legend. Uses arguments in sprintf style."),
 		"points": value.MethodAtType(3, func(ccv ChartContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			style, err := GetStyle(stack, 2, graph.Black)
 			if err != nil {
