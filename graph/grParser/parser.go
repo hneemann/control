@@ -1031,6 +1031,27 @@ func createChartContentMethods() value.MethodMap {
 				return nil, fmt.Errorf("line requires a style: %w", err)
 			}
 		}).SetMethodDescription("color", "title", "Sets the line style and title.").VarArgsMethod(1, 2),
+		"color": value.MethodAtType(1, func(ccv ChartContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			if style, err := GetStyle(stack, 1, nil); err == nil {
+				pc := ccv.Value
+				somethingSet := false
+				if sc, ok := pc.(graph.HasLine); ok {
+					pc = sc.SetLine(style.Value.SetFill(nil))
+					somethingSet = true
+				}
+				if sc, ok := pc.(graph.HasShape); ok {
+					pc = sc.SetShape(graph.NewCircleMarker(3), style.Value.SetDash())
+					somethingSet = true
+				}
+				if !somethingSet {
+					return nil, fmt.Errorf("color can only be set for charts using a line or points")
+				}
+
+				return ChartContentValue{Holder[graph.ChartContent]{pc}, ccv.SecondaryAxis, nil}, nil
+			} else {
+				return nil, fmt.Errorf("color requires a style: %w", err)
+			}
+		}).SetMethodDescription("color", "Shortcut to set the line and points style."),
 		"close": value.MethodAtType(0, func(ccv ChartContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			pc := ccv.Value
 			if sc, ok := pc.(graph.IsCloseable); ok {
@@ -1047,7 +1068,7 @@ func createChartContentMethods() value.MethodMap {
 				return ChartContentValue{Holder[graph.ChartContent]{b}, ccv.SecondaryAxis, nil}, nil
 			}
 			return nil, errors.New("horizontal can only be called on bar chart contents")
-		}).SetMethodDescription("Draws horizontal bars"),
+		}).SetMethodDescription("Draws horizontal bars. This is supported only for bar charts."),
 		"add": value.MethodAtType(1, func(ccv ChartContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			toAdd := stack.Get(1)
 			if toAddContent, ok := toAdd.(ChartContentValue); ok {
@@ -1065,13 +1086,13 @@ func createChartContentMethods() value.MethodMap {
 				return nil, errors.New("chart content does not allow to add something")
 			}
 			return nil, errors.New("no chart content given to add")
-		}).SetMethodDescription("content", "Adds a chart content to another content. This is supported only for bars."),
+		}).SetMethodDescription("content", "Adds a chart content to another content. This is supported only for bar charts."),
 		"toY2": value.MethodAtType(0, func(ccv ChartContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			pc := ccv.Value
 			return ChartContentValue{Holder[graph.ChartContent]{pc}, true, ccv.Initializer}, nil
 		}).SetMethodDescription("The chart content is assigned to the secondary y-axis. By default, the second " +
-			"axis is drawn on the right side of the chart. Using the 'stack' command, you can instead draw two charts " +
-			"stacked on top of each other, with both axis on the left. This is used to create bose-plots."),
+			"axis is drawn on the right side of the chart. Using the 'stackYAxes' command, you can instead draw two charts " +
+			"stacked on top of each other, with both y-axes on the left. This is used, for example, to create Bode plots."),
 	}
 }
 

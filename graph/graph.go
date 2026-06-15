@@ -386,8 +386,12 @@ func (s *Style) Text() *Style {
 func (s *Style) SetFill(other *Style) *Style {
 	var style Style
 	style = *s
-	style.Fill = true
-	style.FillColor = other.Color
+	if other == nil {
+		style.Fill = false
+	} else {
+		style.Fill = true
+		style.FillColor = other.Color
+	}
 	return &style
 }
 
