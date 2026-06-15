@@ -982,6 +982,17 @@ func createChartContentMethods() value.MethodMap {
 				return nil, fmt.Errorf("title requires a string")
 			}
 		}).SetMethodDescription("str", "Sets a string to show as title in the legend."),
+		"titlef": value.MethodAtType(-1, func(ccv ChartContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			if leg, err := sprinfArguments(stack); err == nil {
+				if sc, ok := ccv.Value.(graph.HasTitle); ok {
+					return ChartContentValue{Holder[graph.ChartContent]{sc.SetTitle(string(leg))}, ccv.SecondaryAxis, nil}, nil
+				} else {
+					return nil, fmt.Errorf("title can only be set for charts using a title")
+				}
+			} else {
+				return nil, err
+			}
+		}).SetMethodDescription("str", "data...", "Sets a string to show as title in the legend. Uses the sprintf method."),
 		"points": value.MethodAtType(3, func(ccv ChartContentValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			style, err := GetStyle(stack, 2, graph.Black)
 			if err != nil {
@@ -1094,6 +1105,36 @@ func createChartContentMethods() value.MethodMap {
 			"axis is drawn on the right side of the chart. Using the 'stackYAxes' command, you can instead draw two charts " +
 			"stacked on top of each other, with both y-axes on the left. This is used, for example, to create Bode plots."),
 	}
+}
+
+func sprinfArguments(stack funcGen.Stack[value.Value]) (value.String, error) {
+	switch stack.Size() {
+	case 1:
+		return "", nil
+	case 2:
+		v := stack.Get(1)
+		if st, ok := v.(value.String); ok {
+			return value.String(fmt.Sprint(string(st))), nil
+		} else {
+			return value.String(fmt.Sprint(v)), nil
+		}
+	default:
+		if s, ok := stack.Get(1).(value.String); ok {
+			values := make([]any, stack.Size()-2)
+			for i := 2; i < stack.Size(); i++ {
+				v := stack.Get(i)
+				if st, ok := v.(value.String); ok {
+					values[i-2] = string(st)
+				} else {
+					values[i-2] = v
+				}
+			}
+			return value.String(fmt.Sprintf(string(s), values...)), nil
+		} else {
+			return "", fmt.Errorf("method requires a string as first argument")
+		}
+	}
+
 }
 
 type ChartContentValue struct {
