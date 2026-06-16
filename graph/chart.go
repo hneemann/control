@@ -1189,16 +1189,16 @@ func drawArrow(env *ChartContentEnvironment, from, to Point, style *Style, mode 
 
 func orientationByDelta(delta Point) Orientation {
 	var o Orientation
-	if delta.X > 0 {
+	if delta.X > 1 {
 		o = Left
-	} else if delta.X < 0 {
+	} else if delta.X < -1 {
 		o = Right
 	} else {
 		o = HCenter
 	}
-	if delta.Y > 0 {
+	if delta.Y > 1 {
 		o |= Bottom
-	} else if delta.Y < 0 {
+	} else if delta.Y < -1 {
 		o |= Top
 	} else {
 		o |= VCenter

@@ -632,6 +632,15 @@ func createChartMethods() value.MethodMap {
 			}
 			return chart, nil
 		}).SetMethodDescription("title", "Sets the title."),
+		"titlef": value.MethodAtType(-1, func(chart ChartValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			if str, err := sprinfArguments(stack); err == nil {
+				chart = chart.Copy()
+				chart.Value.Title = string(str)
+			} else {
+				return nil, err
+			}
+			return chart, nil
+		}).SetMethodDescription("str", "data...", "Sets the title. Uses arguments in sprintf style."),
 		"labels": value.MethodAtType(3, func(chart ChartValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if xStr, ok := stack.Get(1).(value.String); ok {
 				if yStr, ok := stack.Get(2).(value.String); ok {
@@ -1804,6 +1813,32 @@ func Setup(fg *value.FunctionGenerator) {
 		Args:   4,
 		IsPure: true,
 	}.SetDescription("x", "y", "text", "color", "Adds an arbitrary text to the chart.").VarArgs(3, 4))
+	fg.AddStaticFunction("text3d", funcGen.Function[value.Value]{
+		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
+			if p1, ok := st.Get(0).(graph.Vector3d); ok {
+				if p2, ok := st.Get(1).(graph.Vector3d); ok {
+					if text, ok := st.Get(2).(value.String); ok {
+						t := graph.Text3d{
+							Text: string(text),
+							Pos1: p1,
+							Pos2: p2,
+						}
+						styleVal, err := GetStyle(st, 3, graph.Black)
+						if err != nil {
+							return nil, fmt.Errorf("text: %w", err)
+						}
+						t.Style = styleVal.Value
+						return Chart3dContentValue{Holder: Holder[graph.Chart3dContent]{t}}, nil
+					}
+				}
+			}
+			return nil, fmt.Errorf("text3d requires two vectors and a string")
+		},
+		Args:   4,
+		IsPure: true,
+	}.SetDescription("pos1", "pos2", "text", "color", "Adds an arbitrary text to the chart. "+
+		"Imagine the two positions as a line drawn from pos1 to pos2. The text is drawn at position "+
+		"pos2 with an alignment that prevents it from overlapping the imaginary line.").VarArgs(3, 4))
 	fg.AddStaticFunction("arrow", funcGen.Function[value.Value]{
 		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
 			if x1, ok := st.Get(0).ToFloat(); ok {

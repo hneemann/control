@@ -905,6 +905,30 @@ func (g *Line3d) Legend() Legend {
 	return Legend{Name: g.Title, ShapeLineStyle: ShapeLineStyle{LineStyle: g.Style}}
 }
 
+type Text3d struct {
+	Pos1, Pos2 Vector3d
+	Style      *Style
+	Text       string
+}
+
+func (t Text3d) DrawTo(d *Chart3d, cube Cube) error {
+	cube.DrawText(t.Pos1, t.Pos2, t.Text, t.Style.Text())
+	return nil
+}
+
+func (t Text3d) Legend() Legend {
+	return Legend{Name: "", ShapeLineStyle: ShapeLineStyle{LineStyle: t.Style}}
+}
+
+func (t Text3d) SetStyle(s *Style) Chart3dContent {
+	t.Style = s
+	return t
+}
+
+func (t Text3d) RequiresHiddenLineRemoval() bool {
+	return false
+}
+
 type Arrow3d struct {
 	From, To    Vector3d
 	PlaneDefVec Vector3d
