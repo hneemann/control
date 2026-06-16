@@ -911,7 +911,7 @@ type Text3d struct {
 	Text       string
 }
 
-func (t Text3d) DrawTo(d *Chart3d, cube Cube) error {
+func (t Text3d) DrawTo(_ *Chart3d, cube Cube) error {
 	cube.DrawText(t.Pos1, t.Pos2, t.Text, t.Style.Text())
 	return nil
 }
@@ -937,7 +937,7 @@ type Arrow3d struct {
 	Mode        int
 }
 
-func (g Arrow3d) RequiresHiddenLineRemoval() bool {
+func (a Arrow3d) RequiresHiddenLineRemoval() bool {
 	return false
 }
 

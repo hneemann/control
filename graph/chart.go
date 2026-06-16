@@ -810,7 +810,7 @@ func (b *Bounds) Limit(x float64) float64 {
 type ChartContent interface {
 	// Bounds returns the fixed bounds of the content.
 	// There may be non. For example, if the content is a function
-	// that has by definition no bounds because it is defined for all x
+	// that has by definition, no bounds because it is defined for all x
 	// and the corresponding y=f(x) depends on the x bounds.
 	// A set of given data points on the other hand has fixed bounds.
 	Bounds() (x, y Bounds, err error)
