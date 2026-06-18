@@ -93,7 +93,7 @@ func LinearAxis(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth,
 			if label != "" {
 				return label + " ÷ " + labStr
 			}
-			return "÷" + labStr
+			return labStr
 		}
 	} else {
 		l = linTickCreator{min: eMin, max: eMax}
