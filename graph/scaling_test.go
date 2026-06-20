@@ -107,3 +107,24 @@ func Test_FixedStepIsInf(t *testing.T) {
 	assert.False(t, math.IsNaN(ad.Bounds.Max) || math.IsInf(ad.Bounds.Max, -1) || math.IsInf(ad.Bounds.Max, 1))
 	assert.False(t, math.IsNaN(ad.Bounds.Min) || math.IsInf(ad.Bounds.Min, -1) || math.IsInf(ad.Bounds.Min, 1))
 }
+
+func Test_toExpStr(t *testing.T) {
+	tests := []struct {
+		name string
+		log  int
+		want string
+	}{ // ⁰¹²³⁴⁵⁶⁷⁸⁹
+		{"0", 0, "⁰"},
+		{"1", 1, "¹"},
+		{"-1", -1, "⁻¹"},
+		{"102", 102, "¹⁰²"},
+		{"12", 12, "¹²"},
+		{"99", 99, "⁹⁹"},
+		{"-12", -12, "⁻¹²"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equalf(t, tt.want, iToAExp(tt.log), "toExpStr(%v)", tt.log)
+		})
+	}
+}

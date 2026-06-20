@@ -4,9 +4,8 @@ import (
 	"fmt"
 	"github.com/hneemann/parser2/value/export"
 	"math"
-	"strconv"
-	"strings"
 	"time"
+	"unicode"
 )
 
 // CheckTextWidth returns true if a number with the given number of digits fits in the given width.
@@ -88,10 +87,14 @@ func LinearAxis(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth,
 		log := int(math.Log10(c)) - 1
 		fac = exp10(log)
 		l = linTickCreator{min: eMin / fac, max: eMax / fac}
-		labStr := "10" + toExpStr(log)
+		labStr := "10" + iToAExp(log)
 		labelFormat = func(label string) string {
 			if label != "" {
-				return label + " ÷ " + labStr
+				if onlyLetters(label) {
+					return label + " / " + labStr
+				} else {
+					return "(" + label + ") / " + labStr
+				}
 			}
 			return labStr
 		}
@@ -111,6 +114,15 @@ func LinearAxis(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth,
 		IsLinear:    true,
 		LabelFormat: labelFormat,
 	}
+}
+
+func onlyLetters(label string) bool {
+	for _, letter := range label {
+		if !unicode.IsLetter(letter) {
+			return false
+		}
+	}
+	return true
 }
 
 type linTickCreator struct {
@@ -192,38 +204,27 @@ func (l *linTickCreator) dec() {
 	}
 }
 
-func toExpStr(log int) string {
-	s := strconv.Itoa(log)
-	var sb strings.Builder
-	for _, c := range s {
-		switch c {
-		case '-':
-			sb.WriteRune('⁻')
-		case '0':
-			sb.WriteRune('⁰')
-		case '1':
-			sb.WriteRune('¹')
-		case '2':
-			sb.WriteRune('²')
-		case '3':
-			sb.WriteRune('³')
-		case '4':
-			sb.WriteRune('⁴')
-		case '5':
-			sb.WriteRune('⁵')
-		case '6':
-			sb.WriteRune('⁶')
-		case '7':
-			sb.WriteRune('⁷')
-		case '8':
-			sb.WriteRune('⁸')
-		case '9':
-			sb.WriteRune('⁹')
-		default:
-			sb.WriteRune(c)
+var expDigit = [...]rune{'⁰', '¹', '²', '³', '⁴', '⁵', '⁶', '⁷', '⁸', '⁹'}
+
+func iToAExp(log int) string {
+	neg := false
+	if log < 0 {
+		neg = true
+		log = -log
+	}
+	s := ""
+	for {
+		d := log % 10
+		s = string(expDigit[d]) + s
+		log = log / 10
+		if log == 0 {
+			if neg {
+				return "⁻" + s
+			} else {
+				return s
+			}
 		}
 	}
-	return sb.String()
 }
 
 func exp10(log int) float64 {
