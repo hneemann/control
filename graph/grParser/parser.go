@@ -415,26 +415,26 @@ func createStyleMethods() value.MethodMap {
 			return value.Int(styleValue.Value.Color.A), nil
 		}).SetMethodDescription("Returns the alpha color value."),
 		"darker": value.MethodAtType(1, func(styleValue StyleValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
-			if p, ok := stack.Get(1).ToFloat(); ok {
+			if p, ok := stack.GetOptional(1, value.Float(25)).ToFloat(); ok {
 				style := styleValue.Value
 				return StyleValue{Holder[*graph.Style]{style.Darker(p)}}, nil
 			}
 			return nil, fmt.Errorf("darker requires a float")
-		}).SetMethodDescription("percent", "Makes the color darker."),
+		}).SetMethodDescription("percent", "Makes the color darker.").VarArgsMethod(0, 1),
 		"softer": value.MethodAtType(1, func(styleValue StyleValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
-			if p, ok := stack.Get(1).ToFloat(); ok {
+			if p, ok := stack.GetOptional(1, value.Float(25)).ToFloat(); ok {
 				style := styleValue.Value
 				return StyleValue{Holder[*graph.Style]{style.Softer(p)}}, nil
 			}
 			return nil, fmt.Errorf("softer requires a float")
-		}).SetMethodDescription("percent", "Makes the color softer by adding more white."),
+		}).SetMethodDescription("percent", "Makes the color softer by adding more white.").VarArgsMethod(0, 1),
 		"brighter": value.MethodAtType(1, func(styleValue StyleValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
-			if p, ok := stack.Get(1).ToFloat(); ok {
+			if p, ok := stack.GetOptional(1, value.Float(25)).ToFloat(); ok {
 				style := styleValue.Value
 				return StyleValue{Holder[*graph.Style]{style.Brighter(p)}}, nil
 			}
 			return nil, fmt.Errorf("brighter requires a float")
-		}).SetMethodDescription("percent", "Makes the color brighter."),
+		}).SetMethodDescription("percent", "Makes the color brighter.").VarArgsMethod(0, 1),
 		"stroke": value.MethodAtType(1, func(styleValue StyleValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			style := styleValue.Value
 			sw, ok := stack.Get(1).ToFloat()
