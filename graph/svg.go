@@ -14,10 +14,11 @@ import (
 )
 
 type SVG struct {
-	rect    Rect
-	w       *xmlWriter.XMLWriter
-	context *Context
-	err     error
+	rect             Rect
+	w                *xmlWriter.XMLWriter
+	context          *Context
+	err              error
+	strokeCorrection float64
 }
 
 func NewSVG(context *Context, w *xmlWriter.XMLWriter) *SVG {
@@ -26,7 +27,7 @@ func NewSVG(context *Context, w *xmlWriter.XMLWriter) *SVG {
 	s := &SVG{rect: Rect{
 		Point{0, 0},
 		Point{width, height},
-	}, w: w, context: context}
+	}, w: w, context: context, strokeCorrection: context.Correction}
 
 	w.Open("svg").
 		Attr("class", "svg").
@@ -61,7 +62,7 @@ func (s *SVG) DrawPath(path Path, style *Style) error {
 		}
 		s.w.Open("path").
 			Attr("d", buf.String()).
-			Attr("style", styleString(style)).
+			Attr("style", s.styleString(style)).
 			Close()
 	}
 	return nil
@@ -73,7 +74,7 @@ func (s *SVG) DrawTriangle(p1, p2, p3 Point, style *Style) error {
 			p1.X, s.rect.Max.Y-p1.Y,
 			p2.X, s.rect.Max.Y-p2.Y,
 			p3.X, s.rect.Max.Y-p3.Y)).
-		Attr("style", styleString(style)).
+		Attr("style", s.styleString(style)).
 		Close()
 	return nil
 }
@@ -82,7 +83,7 @@ func (s *SVG) DrawShape(a Point, shape Shape, style *Style) error {
 	return shape.DrawTo(TransformCanvas{transform: Translate(a), parent: s, size: s.rect}, style)
 }
 
-func styleString(style *Style) string {
+func (s *SVG) styleString(style *Style) string {
 	if style == nil {
 		style = Black
 	}
@@ -95,14 +96,14 @@ func styleString(style *Style) string {
 			buf.WriteString(style.Color.Opacity())
 		}
 		buf.WriteString(";stroke-width:")
-		buf.WriteString(fmt.Sprintf("%0.2g", style.StrokeWidth))
+		buf.WriteString(fmt.Sprintf("%0.2g", style.StrokeWidth*s.strokeCorrection))
 		if len(style.Dash) > 0 {
 			buf.WriteString(";stroke-dasharray:")
 			for i, d := range style.Dash {
 				if i > 0 {
 					buf.WriteString(",")
 				}
-				buf.WriteString(fmt.Sprintf("%0.2f", d))
+				buf.WriteString(fmt.Sprintf("%0.2f", d*s.strokeCorrection))
 			}
 		}
 	} else {
@@ -127,7 +128,7 @@ func (s *SVG) DrawCircle(a Point, b Point, style *Style) {
 		Attr("cy", fmt.Sprintf("%0.2f", s.rect.Max.Y-(a.Y+b.Y)/2)).
 		Attr("rx", fmt.Sprintf("%0.2f", math.Abs(a.X-b.X)/2)).
 		Attr("ry", fmt.Sprintf("%0.2f", math.Abs(a.Y-b.Y)/2)).
-		Attr("style", styleString(style)).
+		Attr("style", s.styleString(style)).
 		Close()
 }
 
@@ -185,7 +186,7 @@ func (s *SVG) DrawText(a Point, text string, orientation Orientation, style *Sty
 				a.X -= float64(len(text)-3) * textSize / 3
 			}
 			s.w.Open("foreignObject").
-				Attr("style", styleString(style)+st).
+				Attr("style", s.styleString(style)+st).
 				Attr("x", fmt.Sprintf("%0.2f", a.X)).
 				Attr("y", fmt.Sprintf("%0.2f", s.rect.Max.Y-a.Y)).
 				Attr("width", fmt.Sprintf("%0.2f", textSize*float64(len(text)))).
@@ -206,7 +207,7 @@ func (s *SVG) DrawText(a Point, text string, orientation Orientation, style *Sty
 		s.w.Open("text").
 			Attr("x", fmt.Sprintf("%0.2f", a.X)).
 			Attr("y", fmt.Sprintf("%0.2f", s.rect.Max.Y-a.Y)).
-			Attr("style", styleString(style)+st)
+			Attr("style", s.styleString(style)+st)
 		s.w.WriteHTML(template.HTML(parseSupSub(text, "tspan")))
 		s.w.Close()
 	}

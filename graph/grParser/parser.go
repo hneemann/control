@@ -14,7 +14,23 @@ import (
 	"strings"
 )
 
-const LaTeXTextSize = 20
+func SetLaTeXTextSize(c *graph.Context, st funcGen.Stack[value.Value]) error {
+	if widthInCm, ok := st.GetOptional(1, value.Float(8)).ToFloat(); ok {
+		widthInPx := widthInCm / 2.54 * 96
+		heightInPx := c.Height / c.Width * widthInPx
+
+		c.Correction = widthInPx / c.Width
+
+		c.Width = widthInPx
+		c.Height = heightInPx
+
+		imgHeightInCm := c.Height / c.Width * widthInCm
+		fontHeightInCm := 11.0 / 72.27 * 2.54 //assuming 11 pt LaTeX font size
+		c.TextSize = fontHeightInCm / imgHeightInCm * c.Height
+		return nil
+	}
+	return fmt.Errorf("LaTeX requires a float value")
+}
 
 type Holder[T any] struct {
 	Value T
@@ -130,10 +146,10 @@ func createImageMethods() value.MethodMap {
 			}
 			return nil, fmt.Errorf("textSize requires a float values")
 		}).SetMethodDescription("size", "Sets the text size."),
-		"LaTeX": value.MethodAtType(0, func(im ImageValue, st funcGen.Stack[value.Value]) (value.Value, error) {
-			im.context.TextSize = LaTeXTextSize
-			return im, nil
-		}).SetMethodDescription(fmt.Sprintf("Sets the text size to %d.", LaTeXTextSize)),
+		"LaTeX": value.MethodAtType(1, func(im ImageValue, st funcGen.Stack[value.Value]) (value.Value, error) {
+			err := SetLaTeXTextSize(&im.context, st)
+			return im, err
+		}).SetMethodDescription("width", "Sets the LaTeX image width in cm.").VarArgsMethod(0, 1),
 		"outputSize": value.MethodAtType(2, func(im ImageValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if width, ok := stack.Get(1).ToFloat(); ok {
 				if height, ok := stack.Get(2).ToFloat(); ok {
@@ -784,10 +800,10 @@ func createChartMethods() value.MethodMap {
 			}
 			return nil, fmt.Errorf("textSize requires a float values")
 		}).SetMethodDescription("size", "Sets the text size."),
-		"LaTeX": value.MethodAtType(0, func(chart ChartValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
-			chart.context.TextSize = LaTeXTextSize
-			return chart, nil
-		}).SetMethodDescription(fmt.Sprintf("Sets the text size to %d.", LaTeXTextSize)),
+		"LaTeX": value.MethodAtType(1, func(chart ChartValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			err := SetLaTeXTextSize(&chart.context, stack)
+			return chart, err
+		}).SetMethodDescription("width", "Sets the LaTeX image width in cm.").VarArgsMethod(0, 1),
 		"outputSize": value.MethodAtType(2, func(chart ChartValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if width, ok := stack.Get(1).ToFloat(); ok {
 				if height, ok := stack.Get(2).ToFloat(); ok {
