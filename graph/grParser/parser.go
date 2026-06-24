@@ -14,8 +14,44 @@ import (
 	"strings"
 )
 
+var normalSize = [...]float64{10, 10.9, 12}
+
+var defLaTeXSizes = map[string][3]float64{
+	"tiny":         {5, 6, 6},
+	"scriptsize":   {7, 8, 8},
+	"footnotesize": {9, 9, 10},
+	"small":        {9, 10, 10.9},
+	"normalsize":   normalSize,
+	"large":        {12, 12, 14.4},
+	"Large":        {14.4, 14.4, 17.28},
+	"LARGE":        {17.28, 17.28, 20.74},
+	"huge":         {20.74, 20.74, 24.88},
+	"Huge":         {24.88, 24.88, 24.88},
+}
+
 func SetLaTeXTextSize(c *graph.Context, st funcGen.Stack[value.Value]) error {
 	if widthInCm, ok := st.GetOptional(1, value.Float(8)).ToFloat(); ok {
+		sizes := normalSize
+		if sizeTxt, ok := st.GetOptional(2, value.String("")).(value.String); ok {
+			if sizeTxt != "" {
+				if s, ok := defLaTeXSizes[string(sizeTxt)]; ok {
+					sizes = s
+				} else {
+					return fmt.Errorf("unknown LaTeX font size: %s", sizeTxt)
+				}
+			}
+		} else {
+			return fmt.Errorf("LaTeX requires a string value for the font size")
+		}
+
+		defSize := 1
+		if defSizeFl, ok := st.GetOptional(3, value.Int(11)).ToFloat(); ok {
+			defSize = int(defSizeFl) - 10
+			if defSize < 0 || defSize > 2 {
+				return errors.New("invalid default size, needs to be 10,11 or 12")
+			}
+		}
+
 		widthInPx := widthInCm / 2.54 * 96
 		heightInPx := c.Height / c.Width * widthInPx
 
@@ -25,7 +61,7 @@ func SetLaTeXTextSize(c *graph.Context, st funcGen.Stack[value.Value]) error {
 		c.Height = heightInPx
 
 		imgHeightInCm := c.Height / c.Width * widthInCm
-		fontHeightInCm := 11.0 / 72.27 * 2.54 //assuming 11 pt LaTeX font size
+		fontHeightInCm := sizes[defSize] / 72.27 * 2.54
 		c.TextSize = fontHeightInCm / imgHeightInCm * c.Height
 		return nil
 	}
@@ -146,10 +182,11 @@ func createImageMethods() value.MethodMap {
 			}
 			return nil, fmt.Errorf("textSize requires a float values")
 		}).SetMethodDescription("size", "Sets the text size."),
-		"LaTeX": value.MethodAtType(1, func(im ImageValue, st funcGen.Stack[value.Value]) (value.Value, error) {
+		"LaTeX": value.MethodAtType(3, func(im ImageValue, st funcGen.Stack[value.Value]) (value.Value, error) {
 			err := SetLaTeXTextSize(&im.context, st)
 			return im, err
-		}).SetMethodDescription("width", "Sets the LaTeX image width in cm.").VarArgsMethod(0, 1),
+		}).SetMethodDescription("width", "fontsize", "defSize", "Sets the LaTeX image width in cm. "+
+			"The fontsize is given in a LaTeX command like 'scriptsize' or 'small'. The defSize is the LaTeX font size. Only 10,11 and 12 are allowed.").VarArgsMethod(0, 3),
 		"outputSize": value.MethodAtType(2, func(im ImageValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if width, ok := stack.Get(1).ToFloat(); ok {
 				if height, ok := stack.Get(2).ToFloat(); ok {
@@ -245,8 +282,8 @@ func createChart3dContentMethods() value.MethodMap {
 				return nil, err
 			}
 
-			var size float64 = defSize
-			if s, ok := stack.GetOptional(3, value.Float(defSize)).ToFloat(); ok {
+			var size float64 = defMarkerSize
+			if s, ok := stack.GetOptional(3, value.Float(defMarkerSize)).ToFloat(); ok {
 				size = s
 			} else {
 				return nil, fmt.Errorf("the size must be a float")
@@ -800,10 +837,11 @@ func createChartMethods() value.MethodMap {
 			}
 			return nil, fmt.Errorf("textSize requires a float values")
 		}).SetMethodDescription("size", "Sets the text size."),
-		"LaTeX": value.MethodAtType(1, func(chart ChartValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+		"LaTeX": value.MethodAtType(3, func(chart ChartValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			err := SetLaTeXTextSize(&chart.context, stack)
 			return chart, err
-		}).SetMethodDescription("width", "Sets the LaTeX image width in cm.").VarArgsMethod(0, 1),
+		}).SetMethodDescription("width", "fontsize", "defSize", "Sets the LaTeX image width in cm. "+
+			"The fontsize is given in a LaTeX command like 'scriptsize' or 'small'. The defSize is the LaTeX font size. Only 10,11 and 12 are allowed.").VarArgsMethod(0, 3),
 		"outputSize": value.MethodAtType(2, func(chart ChartValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if width, ok := stack.Get(1).ToFloat(); ok {
 				if height, ok := stack.Get(2).ToFloat(); ok {
@@ -1024,8 +1062,8 @@ func createChartContentMethods() value.MethodMap {
 				return nil, err
 			}
 
-			var size float64 = defSize
-			if s, ok := stack.GetOptional(3, value.Float(defSize)).ToFloat(); ok {
+			var size float64 = defMarkerSize
+			if s, ok := stack.GetOptional(3, value.Float(defMarkerSize)).ToFloat(); ok {
 				size = s
 			} else {
 				return nil, fmt.Errorf("the size must be a float")
@@ -1566,7 +1604,7 @@ func create3dFuncLine(cl value.Closure, st funcGen.Stack[value.Value]) (int, fun
 	return steps, f, nil
 }
 
-const defSize = 4
+const defMarkerSize = 4
 
 func Setup(fg *value.FunctionGenerator) {
 	ChartType = fg.RegisterType("chart", "Represents a chart. It is possible ta add different content types to it. The chart is visualized as an embedded SVG graphic.")
