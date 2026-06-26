@@ -173,6 +173,7 @@ type Chart struct {
 	RightBorder    float64
 	NoBorder       bool
 	Cross          bool
+	NoFrame        bool
 	Frame          *Style
 	Title          string
 	ProtectLabels  bool
@@ -536,7 +537,7 @@ func (p *Chart) drawToInternal(canvas Canvas, fillBackground bool) (error, *Char
 		}
 	}
 
-	if !cross {
+	if !cross && !p.NoFrame {
 		nErr.Try(canvas.DrawPath(innerRect.Path(), p.Frame))
 	}
 
@@ -1322,9 +1323,6 @@ func (p *ParameterFunc) Close() ChartContent {
 func NewLinearParameterFunc(tMin, tMax float64, steps int) (*ParameterFunc, error) {
 	if steps <= 0 {
 		steps = functionSteps
-	}
-	if tMax <= tMin {
-		return nil, fmt.Errorf("invalid parameters for lin parameter function: tMin=%f, tMax=%f", tMin, tMax)
 	}
 	delta := (tMax - tMin) / float64(steps)
 	return &ParameterFunc{

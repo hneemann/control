@@ -759,6 +759,11 @@ func createChartMethods() value.MethodMap {
 			chart.Value.Cross = true
 			return chart, nil
 		}).SetMethodDescription("Draws a coordinate cross instead of a rectangle around the chart."),
+		"noFrame": value.MethodAtType(0, func(chart ChartValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			chart = chart.Copy()
+			chart.Value.NoFrame = true
+			return chart, nil
+		}).SetMethodDescription("Hides the outer rectangle around the chart."),
 		"stackYAxes": value.MethodAtType(1, func(chart ChartValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if sta, ok := stack.GetOptional(1, value.Bool(true)).(value.Bool); ok {
 				chart = chart.Copy()
