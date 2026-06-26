@@ -1858,15 +1858,20 @@ func Setup(fg *value.FunctionGenerator) {
 							return nil, fmt.Errorf("text: %w", err)
 						}
 						t.Style = styleVal.Value
+						if oStr, ok := st.GetOptional(4, value.String("")).(value.String); ok {
+							t.Orientation = graph.NewOrientation(string(oStr))
+						}
+
 						return ChartContentValue{Holder: Holder[graph.ChartContent]{t}}, nil
 					}
 				}
 			}
 			return nil, fmt.Errorf("text requires two floats and a string")
 		},
-		Args:   4,
+		Args:   5,
 		IsPure: true,
-	}.SetDescription("x", "y", "text", "color", "Adds an arbitrary text to the chart.").VarArgs(3, 4))
+	}.SetDescription("x", "y", "text", "color", "orientation", "Adds an arbitrary text to the chart. The orientation is a string containing "+
+		"'top', 'hcenter', 'bottom', 'left', 'right' or 'vcenter'").VarArgs(3, 5))
 	fg.AddStaticFunction("text3d", funcGen.Function[value.Value]{
 		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
 			if p1, ok := st.Get(0).(graph.Vector3d); ok {

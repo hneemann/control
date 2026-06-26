@@ -6,6 +6,7 @@ import (
 	img "image"
 	col "image/color"
 	"math"
+	"strings"
 )
 
 type Point struct {
@@ -408,6 +409,28 @@ func (s *Style) String() string {
 }
 
 type Orientation int
+
+func NewOrientation(o string) Orientation {
+	var ori Orientation
+	o = strings.ToLower(o)
+	if strings.Contains(o, "left") {
+		ori |= Left
+	} else if strings.Contains(o, "right") {
+		ori |= Right
+	} else if strings.Contains(o, "hcenter") {
+		ori |= HCenter
+	}
+
+	if strings.Contains(o, "top") {
+		ori |= Top
+	} else if strings.Contains(o, "bottom") {
+		ori |= Bottom
+	} else if strings.Contains(o, "vcenter") {
+		ori |= VCenter
+	}
+
+	return ori
+}
 
 const (
 	Left    Orientation = 0

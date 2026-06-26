@@ -1688,9 +1688,10 @@ func (xc XConst) Legend() []Legend {
 }
 
 type Text struct {
-	Pos   Point
-	Text  string
-	Style *Style
+	Pos         Point
+	Orientation Orientation
+	Text        string
+	Style       *Style
 }
 
 func (t Text) Bounds() (x, y Bounds, err error) {
@@ -1702,7 +1703,7 @@ func (t Text) DependantBounds(_, _ Bounds) (x, y Bounds, err error) {
 }
 
 func (t Text) DrawTo(env *ChartContentEnvironment) error {
-	env.Canvas.DrawText(t.Pos, t.Text, Left|Bottom, t.Style.Text(), env.Canvas.Context().TextSize)
+	env.Canvas.DrawText(t.Pos, t.Text, t.Orientation, t.Style.Text(), env.Canvas.Context().TextSize)
 	return nil
 }
 
