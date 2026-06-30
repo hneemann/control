@@ -146,6 +146,10 @@ func (r Rect) Height() float64 {
 	return r.Max.Y - r.Min.Y
 }
 
+func (r Rect) Square() float64 {
+	return math.Sqrt(sqr(r.Max.X-r.Min.X) + sqr(r.Max.Y-r.Min.Y))
+}
+
 func (r Rect) MaxDistance(p Point) float64 {
 	d := math.Max(p.DistTo(r.Min), p.DistTo(r.Max))
 	d = math.Max(d, p.DistTo(Point{X: r.Min.X, Y: r.Max.Y}))

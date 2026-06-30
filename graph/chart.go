@@ -234,6 +234,20 @@ func (p *ChartContentEnvironment) Dist(p1, p2 Point) float64 {
 	return p.Transform(p1).DistTo(p.Transform(p2))
 }
 
+const (
+	arrowLenFactor   = 0.7
+	arrowWidthFactor = 0.2
+)
+
+func (p *ChartContentEnvironment) getArrowHeadSize() (len, width float64) {
+	textSize := p.ParentCanvas.Context().TextSize
+	maxTextHeight := p.ParentCanvas.Rect().Square() / 32
+	if textSize > maxTextHeight {
+		textSize = maxTextHeight
+	}
+	return textSize * arrowLenFactor, textSize * arrowWidthFactor
+}
+
 func (p *Chart) DrawTo(canvas Canvas) error {
 	err, _ := p.DrawToAsInset(canvas, p.FillBackground)
 	return err
@@ -425,29 +439,6 @@ func (p *Chart) drawToInternal(canvas Canvas, fillBackground bool) (error, *Char
 		}
 	}
 
-	if cross {
-		xp := xAxis.Trans(0)
-		yp := yAxis.Trans(0)
-		cs := p.Frame.StrokeWidth / 2
-		al := textSize * 0.8
-		nErr.Try(canvas.DrawPath(PointsFromSlice(
-			Point{xp, innerRect.Min.Y},
-			Point{xp, innerRect.Max.Y - cs}), p.Frame))
-		nErr.Try(canvas.DrawPath(PointsFromSlice(
-			Point{xp - al/4, innerRect.Max.Y - al},
-			Point{xp, innerRect.Max.Y - cs},
-			Point{xp + al/4, innerRect.Max.Y - al},
-		), p.Frame))
-		nErr.Try(canvas.DrawPath(PointsFromSlice(
-			Point{innerRect.Min.X, yp},
-			Point{innerRect.Max.X - cs, yp}), p.Frame))
-		nErr.Try(canvas.DrawPath(PointsFromSlice(
-			Point{innerRect.Max.X - al, yp + al/4},
-			Point{innerRect.Max.X - cs, yp},
-			Point{innerRect.Max.X - al, yp - al/4},
-		), p.Frame))
-	}
-
 	transY := func(point Point) Point {
 		return Point{xAxis.Trans(point.X), yAxis.Trans(point.Y)}
 	}
@@ -489,6 +480,29 @@ func (p *Chart) drawToInternal(canvas Canvas, fillBackground bool) (error, *Char
 			XAxis: &xAxis,
 			YAxis: &y2Axis,
 		}
+	}
+
+	if cross {
+		xp := xAxis.Trans(0)
+		yp := yAxis.Trans(0)
+		cs := p.Frame.StrokeWidth / 2
+		headLen, headWidth := envY.getArrowHeadSize()
+		nErr.Try(canvas.DrawPath(PointsFromSlice(
+			Point{xp, innerRect.Min.Y},
+			Point{xp, innerRect.Max.Y - cs}), p.Frame))
+		nErr.Try(canvas.DrawPath(PointsFromSlice(
+			Point{xp - headWidth, innerRect.Max.Y - headLen},
+			Point{xp, innerRect.Max.Y - cs},
+			Point{xp + headWidth, innerRect.Max.Y - headLen},
+		), p.Frame))
+		nErr.Try(canvas.DrawPath(PointsFromSlice(
+			Point{innerRect.Min.X, yp},
+			Point{innerRect.Max.X - cs, yp}), p.Frame))
+		nErr.Try(canvas.DrawPath(PointsFromSlice(
+			Point{innerRect.Max.X - headLen, yp + headWidth},
+			Point{innerRect.Max.X - cs, yp},
+			Point{innerRect.Max.X - headLen, yp - headWidth},
+		), p.Frame))
 	}
 
 	var legends []Legend
@@ -1151,17 +1165,13 @@ func (a Arrow) Legend() []Legend {
 	return nil
 }
 
-const (
-	arrowLenFactor   = 0.75
-	arrowWidthFactor = 0.25
-)
-
 func drawArrow(env *ChartContentEnvironment, from, to Point, style *Style, mode int, label string) error {
 	textSize := env.ParentCanvas.Context().TextSize
-	w := textSize * arrowLenFactor
+	headLen, headWidth := env.getArrowHeadSize()
 
-	dif := to.Sub(from).Norm().Mul(w)
-	norm := dif.Rot90().Mul(arrowWidthFactor)
+	d := to.Sub(from).Norm()
+	dif := d.Mul(headLen)
+	norm := d.Rot90().Mul(headWidth)
 
 	var textPos Point
 	var o Orientation
@@ -1267,15 +1277,16 @@ func (a Arc) DrawTo(env *ChartContentEnvironment) error {
 	pos := env.Transform(a.Pos)
 	path := NewPath(false)
 	path = drawArcTo(path, pos, r, r, a.Alpha0, a.Alpha1, 0)
+	headLen, headWidth := env.getArrowHeadSize()
 	if a.Mode&1 != 0 {
-		da := math.Atan((textSize * arrowLenFactor) / r)
-		path = drawArcTo(path, pos, r+textSize*arrowWidthFactor, r, a.Alpha1-da, a.Alpha1, 4)
-		path = drawArcTo(path, pos, r-textSize*arrowWidthFactor, r, a.Alpha1-da, a.Alpha1, 4)
+		da := math.Atan(headLen / r)
+		path = drawArcTo(path, pos, r+headWidth, r, a.Alpha1-da, a.Alpha1, 4)
+		path = drawArcTo(path, pos, r-headWidth, r, a.Alpha1-da, a.Alpha1, 4)
 	}
 	if a.Mode&2 != 0 {
-		da := math.Atan((textSize * arrowLenFactor) / r)
-		path = drawArcTo(path, pos, r, r+textSize*arrowWidthFactor, a.Alpha0, a.Alpha0+da, 4)
-		path = drawArcTo(path, pos, r, r-textSize*arrowWidthFactor, a.Alpha0, a.Alpha0+da, 4)
+		da := math.Atan(headLen / r)
+		path = drawArcTo(path, pos, r, r+headWidth, a.Alpha0, a.Alpha0+da, 4)
+		path = drawArcTo(path, pos, r, r-headWidth, a.Alpha0, a.Alpha0+da, 4)
 	}
 	err := env.ParentCanvas.DrawPath(path, a.Style)
 	if err != nil {
