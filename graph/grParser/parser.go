@@ -1913,18 +1913,8 @@ func Setup(fg *value.FunctionGenerator) {
 								From: graph.Point{X: x1, Y: y1},
 								To:   graph.Point{X: x2, Y: y2},
 							}
-							if text, ok := st.GetOptional(4, value.String("")).(value.String); ok {
-								arrow.Label = string(text)
-							} else {
-								return nil, fmt.Errorf("arrow requires a string as fifth argument")
-							}
-							styleVal, err := GetStyle(st, 5, graph.Black)
-							if err != nil {
-								return nil, fmt.Errorf("arrow: %w", err)
-							}
-							arrow.Style = styleVal.Value
 
-							if mode, ok := st.GetOptional(6, value.Int(1)).(value.Int); ok {
+							if mode, ok := st.GetOptional(4, value.Int(1)).(value.Int); ok {
 								arrow.Mode = int(mode)
 							} else {
 								return nil, fmt.Errorf("arrow requires an int as fifth argument")
@@ -1936,10 +1926,44 @@ func Setup(fg *value.FunctionGenerator) {
 			}
 			return nil, fmt.Errorf("arrow requires four floats and a string")
 		},
-		Args:   7,
+		Args:   5,
 		IsPure: true,
-	}.SetDescription("x1", "y1", "x2", "y2", "text", "color", "mode", "Creates an arrow chart content. "+
-		"The mode flag defines which arrow heads to draw (0: none, 1: at the tip (default), 2: at the tail, 3: at both ends).").VarArgs(4, 7))
+	}.SetDescription("x1", "y1", "x2", "y2", "mode", "Creates an arrow chart content. "+
+		"The mode flag defines which arrow heads to draw (0: none, 1: at the tip (default), 2: at the tail, 3: at both ends).").VarArgs(4, 5))
+	fg.AddStaticFunction("arc", funcGen.Function[value.Value]{
+		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
+			if x, ok := st.Get(0).ToFloat(); ok {
+				if y, ok := st.Get(1).ToFloat(); ok {
+					if r, ok := st.Get(2).ToFloat(); ok {
+						if a0, ok := st.Get(3).ToFloat(); ok {
+							if a1, ok := st.Get(4).ToFloat(); ok {
+								arrow := graph.Arc{
+									Pos:    graph.Point{X: x, Y: y},
+									Alpha0: a0,
+									Alpha1: a1,
+									Radius: r,
+									Style:  graph.Gray,
+									Mode:   1,
+								}
+
+								if mode, ok := st.GetOptional(5, value.Int(1)).(value.Int); ok {
+									arrow.Mode = int(mode)
+								} else {
+									return nil, fmt.Errorf("arc requires an int as fifth argument")
+								}
+								return ChartContentValue{Holder: Holder[graph.ChartContent]{arrow}}, nil
+							}
+						}
+					}
+				}
+			}
+			return nil, fmt.Errorf("arc requires five floats and a string")
+		},
+		Args:   6,
+		IsPure: true,
+	}.SetDescription("x", "y", "alpha0", "alpha1", "radius", "mode", "Creates an arc chart content. It's especially useful for drawing an angle. "+
+		"The radius is specified in units of text size. "+
+		"The mode flag defines which arrow heads to draw (0: none, 1: at the tip (default), 2: at the tail, 3: at both ends).").VarArgs(5, 6))
 	fg.AddStaticFunction("arrow3d", funcGen.Function[value.Value]{
 		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
 			if v1, ok := st.Get(0).(graph.Vector3d); ok {

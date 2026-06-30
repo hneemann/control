@@ -1118,6 +1118,16 @@ func (a Arrow) String() string {
 	return fmt.Sprintf("Arrow from %s to %s", a.From, a.To)
 }
 
+func (a Arrow) SetLine(s *Style) ChartContent {
+	a.Style = s
+	return a
+}
+
+func (a Arrow) SetTitle(s string) ChartContent {
+	a.Label = s
+	return a
+}
+
 func (a Arrow) Bounds() (Bounds, Bounds, error) {
 	var x, y Bounds
 	x.Merge(a.From.X)
@@ -1141,12 +1151,17 @@ func (a Arrow) Legend() []Legend {
 	return nil
 }
 
+const (
+	arrowLenFactor   = 0.75
+	arrowWidthFactor = 0.25
+)
+
 func drawArrow(env *ChartContentEnvironment, from, to Point, style *Style, mode int, label string) error {
 	textSize := env.ParentCanvas.Context().TextSize
-	w := textSize * 0.75
+	w := textSize * arrowLenFactor
 
 	dif := to.Sub(from).Norm().Mul(w)
-	norm := dif.Rot90().Mul(0.25)
+	norm := dif.Rot90().Mul(arrowWidthFactor)
 
 	var textPos Point
 	var o Orientation
@@ -1189,22 +1204,114 @@ func drawArrow(env *ChartContentEnvironment, from, to Point, style *Style, mode 
 }
 
 func orientationByDelta(delta Point) Orientation {
+	const f = 0.41
 	var o Orientation
-	if delta.X > 1 {
+	if delta.X > math.Abs(delta.Y*f) {
 		o = Left
-	} else if delta.X < -1 {
+	} else if delta.X < -math.Abs(delta.Y*f) {
 		o = Right
 	} else {
 		o = HCenter
 	}
-	if delta.Y > 1 {
+	if delta.Y > math.Abs(delta.X*f) {
 		o |= Bottom
-	} else if delta.Y < -1 {
+	} else if delta.Y < -math.Abs(delta.X*f) {
 		o |= Top
 	} else {
 		o |= VCenter
 	}
 	return o
+}
+
+type Arc struct {
+	Pos            Point
+	Radius         float64
+	Alpha0, Alpha1 float64
+	Style          *Style
+	Label          string
+	Mode           int
+}
+
+func (a Arc) String() string {
+	if a.Label != "" {
+		return fmt.Sprintf("Arc at %s: %s", a.Pos, a.Label)
+	}
+	return fmt.Sprintf("Arc at %s", a.Pos)
+}
+
+func (a Arc) SetLine(s *Style) ChartContent {
+	a.Style = s
+	return a
+}
+
+func (a Arc) SetTitle(s string) ChartContent {
+	a.Label = s
+	return a
+}
+
+func (a Arc) Bounds() (Bounds, Bounds, error) {
+	var x, y Bounds
+	x.Merge(a.Pos.X)
+	y.Merge(a.Pos.Y)
+	return x, y, nil
+}
+
+func (a Arc) DependantBounds(_, _ Bounds) (Bounds, Bounds, error) {
+	return Bounds{}, Bounds{}, nil
+}
+
+func (a Arc) DrawTo(env *ChartContentEnvironment) error {
+	textSize := env.ParentCanvas.Context().TextSize
+	r := a.Radius * textSize
+
+	pos := env.Transform(a.Pos)
+	n := int(math.Abs(a.Alpha1-a.Alpha0) / (2 * math.Pi) * 60)
+	path := NewPath(false)
+	if n > 0 {
+		dAlpha := (a.Alpha1 - a.Alpha0) / float64(n)
+		for i := 0; i <= n; i++ {
+			alpha := a.Alpha0 + dAlpha*float64(i)
+			p := Point{X: pos.X + r*math.Cos(alpha), Y: pos.Y + r*math.Sin(alpha)}
+			path = path.Add(p)
+		}
+	}
+	if a.Mode&1 != 0 {
+		rad := Point{X: r * math.Cos(a.Alpha1), Y: r * math.Sin(a.Alpha1)}
+		da := math.Atan((textSize * arrowLenFactor) / r)
+		rad2 := Point{X: r * math.Cos(a.Alpha1-da), Y: r * math.Sin(a.Alpha1-da)}
+		norm := rad2.Norm().Mul(textSize * arrowWidthFactor)
+		dif := rad.Sub(rad2)
+		to := pos.Add(rad)
+		path = path.MoveTo(to.Sub(dif).Add(norm))
+		path = path.LineTo(to)
+		path = path.LineTo(to.Sub(dif).Sub(norm))
+	}
+	if a.Mode&2 != 0 {
+		rad := Point{X: r * math.Cos(a.Alpha0), Y: r * math.Sin(a.Alpha0)}
+		da := math.Atan((textSize * arrowLenFactor) / r)
+		rad2 := Point{X: r * math.Cos(a.Alpha0+da), Y: r * math.Sin(a.Alpha0+da)}
+		norm := rad2.Norm().Mul(textSize * arrowWidthFactor)
+		dif := rad2.Sub(rad)
+		from := pos.Add(rad)
+		path = path.MoveTo(from.Add(dif).Add(norm))
+		path = path.LineTo(from)
+		path = path.LineTo(from.Add(dif).Sub(norm))
+	}
+	err := env.ParentCanvas.DrawPath(path, a.Style)
+	if err != nil {
+		return err
+	}
+
+	if a.Label != "" {
+		alpha := (a.Alpha0 + a.Alpha1) / 2
+		p := Point{X: math.Cos(alpha), Y: math.Sin(alpha)}.Mul(r)
+		env.ParentCanvas.DrawText(pos.Add(p), a.Label, orientationByDelta(p), a.Style.Text(), textSize)
+	}
+	return nil
+}
+
+func (a Arc) Legend() []Legend {
+	return nil
 }
 
 type circleMarker struct {
