@@ -1266,16 +1266,16 @@ func (a Arc) DrawTo(env *ChartContentEnvironment) error {
 
 	pos := env.Transform(a.Pos)
 	path := NewPath(false)
-	path = drawArcTo(path, pos, r, r, a.Alpha0, a.Alpha1)
+	path = drawArcTo(path, pos, r, r, a.Alpha0, a.Alpha1, 0)
 	if a.Mode&1 != 0 {
 		da := math.Atan((textSize * arrowLenFactor) / r)
-		path = drawArcTo(path, pos, r+textSize*arrowWidthFactor, r, a.Alpha1-da, a.Alpha1)
-		path = drawArcTo(path, pos, r-textSize*arrowWidthFactor, r, a.Alpha1-da, a.Alpha1)
+		path = drawArcTo(path, pos, r+textSize*arrowWidthFactor, r, a.Alpha1-da, a.Alpha1, 4)
+		path = drawArcTo(path, pos, r-textSize*arrowWidthFactor, r, a.Alpha1-da, a.Alpha1, 4)
 	}
 	if a.Mode&2 != 0 {
 		da := math.Atan((textSize * arrowLenFactor) / r)
-		path = drawArcTo(path, pos, r, r+textSize*arrowWidthFactor, a.Alpha0, a.Alpha0+da)
-		path = drawArcTo(path, pos, r, r-textSize*arrowWidthFactor, a.Alpha0, a.Alpha0+da)
+		path = drawArcTo(path, pos, r, r+textSize*arrowWidthFactor, a.Alpha0, a.Alpha0+da, 4)
+		path = drawArcTo(path, pos, r, r-textSize*arrowWidthFactor, a.Alpha0, a.Alpha0+da, 4)
 	}
 	err := env.ParentCanvas.DrawPath(path, a.Style)
 	if err != nil {
@@ -1290,8 +1290,11 @@ func (a Arc) DrawTo(env *ChartContentEnvironment) error {
 	return nil
 }
 
-func drawArcTo(path SlicePath, pos Point, r0, r1, a0, a1 float64) SlicePath {
-	n := int(math.Abs(a1-a0) / (2 * math.Pi) * 60)
+func drawArcTo(path SlicePath, pos Point, r0, r1, a0, a1 float64, nMin int) SlicePath {
+	n := int(math.Abs(a1-a0) / (2 * math.Pi) * 90)
+	if nMin > n {
+		n = nMin
+	}
 	if n > 0 {
 		dAlpha := (a1 - a0) / float64(n)
 		dR := (r1 - r0) / float64(n)
