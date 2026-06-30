@@ -1265,37 +1265,17 @@ func (a Arc) DrawTo(env *ChartContentEnvironment) error {
 	r := a.Radius * textSize
 
 	pos := env.Transform(a.Pos)
-	n := int(math.Abs(a.Alpha1-a.Alpha0) / (2 * math.Pi) * 60)
 	path := NewPath(false)
-	if n > 0 {
-		dAlpha := (a.Alpha1 - a.Alpha0) / float64(n)
-		for i := 0; i <= n; i++ {
-			alpha := a.Alpha0 + dAlpha*float64(i)
-			p := Point{X: pos.X + r*math.Cos(alpha), Y: pos.Y + r*math.Sin(alpha)}
-			path = path.Add(p)
-		}
-	}
+	path = drawArcTo(path, pos, r, r, a.Alpha0, a.Alpha1)
 	if a.Mode&1 != 0 {
-		rad := Point{X: r * math.Cos(a.Alpha1), Y: r * math.Sin(a.Alpha1)}
 		da := math.Atan((textSize * arrowLenFactor) / r)
-		rad2 := Point{X: r * math.Cos(a.Alpha1-da), Y: r * math.Sin(a.Alpha1-da)}
-		norm := rad2.Norm().Mul(textSize * arrowWidthFactor)
-		dif := rad.Sub(rad2)
-		to := pos.Add(rad)
-		path = path.MoveTo(to.Sub(dif).Add(norm))
-		path = path.LineTo(to)
-		path = path.LineTo(to.Sub(dif).Sub(norm))
+		path = drawArcTo(path, pos, r+textSize*arrowWidthFactor, r, a.Alpha1-da, a.Alpha1)
+		path = drawArcTo(path, pos, r-textSize*arrowWidthFactor, r, a.Alpha1-da, a.Alpha1)
 	}
 	if a.Mode&2 != 0 {
-		rad := Point{X: r * math.Cos(a.Alpha0), Y: r * math.Sin(a.Alpha0)}
 		da := math.Atan((textSize * arrowLenFactor) / r)
-		rad2 := Point{X: r * math.Cos(a.Alpha0+da), Y: r * math.Sin(a.Alpha0+da)}
-		norm := rad2.Norm().Mul(textSize * arrowWidthFactor)
-		dif := rad2.Sub(rad)
-		from := pos.Add(rad)
-		path = path.MoveTo(from.Add(dif).Add(norm))
-		path = path.LineTo(from)
-		path = path.LineTo(from.Add(dif).Sub(norm))
+		path = drawArcTo(path, pos, r, r+textSize*arrowWidthFactor, a.Alpha0, a.Alpha0+da)
+		path = drawArcTo(path, pos, r, r-textSize*arrowWidthFactor, a.Alpha0, a.Alpha0+da)
 	}
 	err := env.ParentCanvas.DrawPath(path, a.Style)
 	if err != nil {
@@ -1308,6 +1288,25 @@ func (a Arc) DrawTo(env *ChartContentEnvironment) error {
 		env.ParentCanvas.DrawText(pos.Add(p), a.Label, orientationByDelta(p), a.Style.Text(), textSize)
 	}
 	return nil
+}
+
+func drawArcTo(path SlicePath, pos Point, r0, r1, a0, a1 float64) SlicePath {
+	n := int(math.Abs(a1-a0) / (2 * math.Pi) * 60)
+	if n > 0 {
+		dAlpha := (a1 - a0) / float64(n)
+		dR := (r1 - r0) / float64(n)
+		for i := 0; i <= n; i++ {
+			alpha := a0 + dAlpha*float64(i)
+			r := r0 + dR*float64(i)
+			p := Point{X: pos.X + r*math.Cos(alpha), Y: pos.Y + r*math.Sin(alpha)}
+			if i == 0 {
+				path = path.MoveTo(p)
+			} else {
+				path = path.LineTo(p)
+			}
+		}
+	}
+	return path
 }
 
 func (a Arc) Legend() []Legend {
