@@ -31,9 +31,9 @@ plot(
 ).cross()</example>
     <example name="Graph 2" desc="Funktionsplotter"
              name-en="Graph 2" desc-en="Function plot">plot(
- graph( x->sin(x) ).line(black, "sin(x)"),
- graph( x->cos(x) ).line(blue, "cos(x)"),
- graph( x->tan(x) ).line(red, "tan(x)")
+ graph( x->sin(x) ).line(black, "sin($x$)"),
+ graph( x->cos(x) ).line(blue, "cos($x$)"),
+ graph( x->tan(x) ).line(red, "tan($x$)")
 ).cross()
  .xBounds(-pi, pi)
  .yBounds(-2, 2)</example>
@@ -73,9 +73,9 @@ let K  = 1.6*(1+1/(1.7*s));
 let G0 = K*G;
 
 plot(
-  G.bode(green, "G(s)"),
-  K.bode(blue, "K(s)"),
-  G0.bode(black, "G_{0}(s)")
+  G.bode(green, "$G(s)$"),
+  K.bode(blue, "$K(s)$"),
+  G0.bode(black, "$G_{0}(s)$")
 )</example>
     <example name="WOK" desc="Darstellung einer Wurzelortskurve"
              name-en="Root locus analysis" desc-en="Root locus analysis">let G = 1/((s+1)*(s-1));
@@ -157,12 +157,12 @@ let simLimited = simulateBlocks(systemDescription,6);
 let simNormal  = (K*G).loop().simStep(6);
 
 plot(
-  simNormal.graph().      line(green, "y (u unlimited)"),
-  simLimited.uLim.graph().line(blue,  "u limited"),
-  simLimited.y.graph().   line(black, "y (u limited)"),
+  simNormal.graph().      line(green, "$y$ ($u$ unlimited)"),
+  simLimited.uLim.graph().line(blue,  "$u$ limited"),
+  simLimited.y.graph().   line(black, "$y$ ($u$ limited)"),
   yConst(1)
 ).legendPos(2,0.7)
- .labels("t / s", "h(t)")
+ .labels("$t / s$", "$h(t)$")
  .title("Effect of a Limiter")</example>
     <!--example name="Zweitor Travo" desc="Berechnung realer Travo"
              name-en="Two-Port Transformer" desc-en="Two-Port real transformer">let Rin   = 2000;

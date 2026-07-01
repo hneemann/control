@@ -29,7 +29,7 @@ var defLaTeXSizes = map[string][3]float64{
 	"Huge":         {24.88, 24.88, 24.88},
 }
 
-func SetLaTeXTextSize(c *graph.Context, st funcGen.Stack[value.Value]) error {
+func SetLaTeX(c *graph.Context, st funcGen.Stack[value.Value]) error {
 	if widthInCm, ok := st.GetOptional(1, value.Float(8)).ToFloat(); ok {
 		sizes := normalSize
 		if sizeTxt, ok := st.GetOptional(2, value.String("")).(value.String); ok {
@@ -63,6 +63,7 @@ func SetLaTeXTextSize(c *graph.Context, st funcGen.Stack[value.Value]) error {
 		imgHeightInCm := c.Height / c.Width * widthInCm
 		fontHeightInCm := sizes[defSize] / 72.27 * 2.54
 		c.TextSize = fontHeightInCm / imgHeightInCm * c.Height
+		c.LaTeX = true
 		return nil
 	}
 	return fmt.Errorf("LaTeX requires a float value")
@@ -183,7 +184,7 @@ func createImageMethods() value.MethodMap {
 			return nil, fmt.Errorf("textSize requires a float values")
 		}).SetMethodDescription("size", "Sets the text size."),
 		"LaTeX": value.MethodAtType(3, func(im ImageValue, st funcGen.Stack[value.Value]) (value.Value, error) {
-			err := SetLaTeXTextSize(&im.context, st)
+			err := SetLaTeX(&im.context, st)
 			return im, err
 		}).SetMethodDescription("width", "fontsize", "defSize", "Sets the LaTeX image width in cm. "+
 			"The fontsize is given in a LaTeX command like 'scriptsize' or 'small'. The defSize is the LaTeX font size. Only 10,11 and 12 are allowed.").VarArgsMethod(0, 3),
@@ -843,10 +844,11 @@ func createChartMethods() value.MethodMap {
 			return nil, fmt.Errorf("textSize requires a float values")
 		}).SetMethodDescription("size", "Sets the text size."),
 		"LaTeX": value.MethodAtType(3, func(chart ChartValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
-			err := SetLaTeXTextSize(&chart.context, stack)
+			err := SetLaTeX(&chart.context, stack)
 			return chart, err
 		}).SetMethodDescription("width", "fontsize", "defSize", "Sets the LaTeX image width in cm. "+
-			"The fontsize is given in a LaTeX command like 'scriptsize' or 'small'. The defSize is the LaTeX font size. Only 10,11 and 12 are allowed.").VarArgsMethod(0, 3),
+			"The fontsize is given in a LaTeX command like 'tiny', 'scriptsize', 'footnotesize' or 'small'. "+
+			"The defSize is the LaTeX font size. Only 10,11 and 12 are allowed.").VarArgsMethod(0, 3),
 		"outputSize": value.MethodAtType(2, func(chart ChartValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if width, ok := stack.Get(1).ToFloat(); ok {
 				if height, ok := stack.Get(2).ToFloat(); ok {

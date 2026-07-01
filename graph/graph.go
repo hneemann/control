@@ -447,6 +447,7 @@ type Context struct {
 	Height     float64
 	TextSize   float64
 	Correction float64
+	LaTeX      bool
 }
 
 var DefaultContext = Context{

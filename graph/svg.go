@@ -19,15 +19,22 @@ type SVG struct {
 	context          *Context
 	err              error
 	strokeCorrection float64
+	latex            bool
 }
 
 func NewSVG(context *Context, w *xmlWriter.XMLWriter) *SVG {
 	width := context.Width
 	height := context.Height
-	s := &SVG{rect: Rect{
-		Point{0, 0},
-		Point{width, height},
-	}, w: w, context: context, strokeCorrection: context.Correction}
+	s := &SVG{
+		rect: Rect{
+			Point{0, 0},
+			Point{width, height},
+		},
+		w:                w,
+		context:          context,
+		strokeCorrection: context.Correction,
+		latex:            context.LaTeX,
+	}
 
 	w.Open("svg").
 		Attr("class", "svg").
@@ -37,7 +44,11 @@ func NewSVG(context *Context, w *xmlWriter.XMLWriter) *SVG {
 		Attr("width", fmt.Sprintf("%g", width)).
 		Attr("height", fmt.Sprintf("%g", height)).
 		Attr("viewBox", fmt.Sprintf("0 0 %g %g", width, height))
-
+	/*	w.Open("style");
+		w.Write(".math {font-style: italic;font-family: 'Times New Roman', Times, serif;}\n");
+		w.Write(".sub {font-size:70%;baseline-shift:sub;}\n");
+		w.Write(".super {font-size:70%;baseline-shift:super}\n");
+		w.Close()*/
 	return s
 }
 
@@ -208,27 +219,97 @@ func (s *SVG) DrawText(a Point, text string, orientation Orientation, style *Sty
 			Attr("x", fmt.Sprintf("%0.2f", a.X)).
 			Attr("y", fmt.Sprintf("%0.2f", s.rect.Max.Y-a.Y)).
 			Attr("style", s.styleString(style)+st)
-		s.w.WriteHTML(template.HTML(parseSupSub(text, "tspan")))
+		if s.latex {
+			s.w.WriteHTML(template.HTML(unicodeToLaTeX(text)))
+		} else {
+			s.w.WriteHTML(template.HTML(parseSupSub(text, "tspan")))
+		}
 		s.w.Close()
 	}
+}
+
+var unicodeMap = map[rune]string{
+	'α': `\alpha`,
+	'β': `\beta`,
+	'γ': `\gamma`,
+	'δ': `\delta`,
+	'ε': `\epsilon`,
+	'ζ': `\zeta`,
+	'η': `\eta`,
+	'θ': `\theta`,
+	'ι': `\iota`,
+	'κ': `\kappa`,
+	'λ': `\lambda`,
+	'μ': `\mu`,
+	'ν': `\nu`,
+	'ξ': `\xi`,
+	'ο': `o`,
+	'π': `\pi`,
+	'ρ': `\rho`,
+	'σ': `\sigma`,
+	'τ': `\tau`,
+	'υ': `\upsilon`,
+	'φ': `\varphi`,
+	'χ': `\chi`,
+	'ψ': `\psi`,
+	'ω': `\omega`,
+	'Γ': `\Gamma`,
+	'Δ': `\Delta`,
+	'Θ': `\Theta`,
+	'Λ': `\Lambda`,
+	'Ξ': `\Xi`,
+	'Π': `\Pi`,
+	'Σ': `\Sigma`,
+	'Υ': `\Upsilon`,
+	'Φ': `\Phi`,
+	'Ψ': `\Psi`,
+	'Ω': `\Omega`,
+	'≈': `\approx`,
+	'≠': `\neq`,
+	'≤': `\leq`,
+	'≥': `\geq`,
+	'∞': `\infty`,
+	'∑': `\sum`,
+	'∏': `\prod`,
+	'∫': `\int`,
+	'∂': `\partial`,
+	'∇': `\nabla`,
+	'∝': `\propto`,
+}
+
+func unicodeToLaTeX(text string) string {
+	var w strings.Builder
+	inMath := false
+	for _, r := range text {
+		if c, ok := unicodeMap[r]; ok {
+			if !inMath {
+				w.WriteRune('$')
+			}
+			w.WriteString(c)
+			if !inMath {
+				w.WriteRune('$')
+			}
+		} else {
+			if r == '$' {
+				inMath = !inMath
+			}
+			w.WriteRune(r)
+		}
+	}
+	return w.String()
 }
 
 // ParseSupSub parses subscript and superscript in the text.
 // It recognizes the following patterns:
 // - G_{0} -> G<tspan style="font-size:70%;baseline-shift:sub">0</tspan>
 // - G^{0} -> G<tspan style="font-size:70%;baseline-shift:super">0</tspan>
-// If the text contains LaTeX math mode (indicated by '$'), it does not parse
-// the text and return it unchanged.
+// If the text contains the LaTeX math mode character '$', a Times New Roman
+// font with italic font style is used.
 func ParseSupSub(text string) string {
 	return parseSupSub(text, "span")
 }
 
 func parseSupSub(text string, tag string) string {
-	if strings.IndexRune(text, '$') >= 0 {
-		// LaTeX math mode detected, do not parse
-		return text
-	}
-
 	const (
 		normal = iota
 		superscriptFirst
@@ -238,54 +319,75 @@ func parseSupSub(text string, tag string) string {
 	)
 	var w strings.Builder
 	mode := normal
+	inMath := false
 	arg := ""
 	for i, r := range text {
-		switch mode {
-		case normal:
-			if r == '_' && i+1 < len(text) && text[i+1] == '{' {
-				mode = subscriptFirst
-			} else if r == '^' && i+1 < len(text) && text[i+1] == '{' {
-				mode = superscriptFirst
-			} else {
-				w.WriteRune(r)
-			}
-		case subscriptFirst:
-			mode = subscript
-		case subscript:
-			if r == '}' {
-				mode = normal
-				w.WriteString("<")
-				w.WriteString(tag)
-				w.WriteString(" style=\"font-size:70%;baseline-shift:sub\">")
-				w.WriteString(arg)
+		if r == '$' {
+			if inMath {
+				inMath = false
 				w.WriteString("</")
 				w.WriteString(tag)
 				w.WriteString(">")
-				arg = ""
 			} else {
-				arg += string(r)
-			}
-		case superscriptFirst:
-			mode = superscript
-		case superscript:
-			if r == '}' {
-				mode = normal
 				w.WriteString("<")
 				w.WriteString(tag)
-				w.WriteString(" style=\"font-size:70%;baseline-shift:super\">")
-				w.WriteString(arg)
-				w.WriteString("</")
-				w.WriteString(tag)
-				w.WriteString(">")
-				arg = ""
-			} else {
-				arg += string(r)
+				w.WriteString(" style=\"font-style: italic;font-family: 'Times New Roman', Times, serif;\">")
+				inMath = true
+			}
+		} else {
+			switch mode {
+			case normal:
+				if r == '_' && i+1 < len(text) && text[i+1] == '{' {
+					mode = subscriptFirst
+				} else if r == '^' && i+1 < len(text) && text[i+1] == '{' {
+					mode = superscriptFirst
+				} else {
+					w.WriteRune(r)
+				}
+			case subscriptFirst:
+				mode = subscript
+			case subscript:
+				if r == '}' {
+					mode = normal
+					w.WriteString("<")
+					w.WriteString(tag)
+					w.WriteString(" style=\"font-size:70%;baseline-shift:sub\">")
+					w.WriteString(arg)
+					w.WriteString("</")
+					w.WriteString(tag)
+					w.WriteString(">")
+					arg = ""
+				} else {
+					arg += string(r)
+				}
+			case superscriptFirst:
+				mode = superscript
+			case superscript:
+				if r == '}' {
+					mode = normal
+					w.WriteString("<")
+					w.WriteString(tag)
+					w.WriteString(" style=\"font-size:70%;baseline-shift:super\">")
+					w.WriteString(arg)
+					w.WriteString("</")
+					w.WriteString(tag)
+					w.WriteString(">")
+					arg = ""
+				} else {
+					arg += string(r)
+				}
 			}
 		}
 	}
 	if (mode == subscript || mode == superscript) && len(arg) > 0 {
 		w.WriteString(arg)
 	}
+	if inMath {
+		w.WriteString("</")
+		w.WriteString(tag)
+		w.WriteString(">")
+	}
+
 	return w.String()
 }
 
