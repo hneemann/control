@@ -21,7 +21,8 @@ func Test_parseSupSub(t *testing.T) {
 		{name: "subErr", text: "G_{min", expected: "Gmin"},
 		{name: "supErr", text: "G^{min", expected: "Gmin"},
 
-		{name: "LaTeX", text: "Test: $G^{0}$", expected: "Test: <i>G<tspan style=\"font-size:70%;baseline-shift:super\">0</tspan></i>"},
+		{name: "LaTeX", text: "Test: G^{0}", expected: "Test: G<tspan style=\"font-size:70%;baseline-shift:super\">0</tspan>"},
+		{name: "LaTeX2", text: "Test: $G$", expected: "Test: <tspan style=\"font-style: italic;font-family: 'Times New Roman', Times, serif;\">G</tspan>"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
