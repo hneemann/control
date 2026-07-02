@@ -235,16 +235,12 @@ func (p *ChartContentEnvironment) Dist(p1, p2 Point) float64 {
 }
 
 const (
-	arrowLenFactor   = 0.7
-	arrowWidthFactor = 0.2
+	arrowLenFactor   = 0.5
+	arrowWidthFactor = arrowLenFactor / 4
 )
 
 func (p *ChartContentEnvironment) getArrowHeadSize() (len, width float64) {
 	textSize := p.ParentCanvas.Context().TextSize
-	maxTextHeight := p.ParentCanvas.Rect().Square() / 32
-	if textSize > maxTextHeight {
-		textSize = maxTextHeight
-	}
 	return textSize * arrowLenFactor, textSize * arrowWidthFactor
 }
 
