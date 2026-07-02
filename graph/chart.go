@@ -1197,6 +1197,9 @@ func drawArrow(env *ChartContentEnvironment, from, to Point, style *Style, mode 
 	}
 
 	if label != "" {
+		if mode > 3 {
+			mode >>= 2
+		}
 		switch mode & 3 {
 		case 1:
 			textPos = from
