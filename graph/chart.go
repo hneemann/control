@@ -1275,7 +1275,9 @@ func (a Arc) DrawTo(env *ChartContentEnvironment) error {
 
 	pos := env.Transform(a.Pos)
 	path := NewPath(false)
-	path = drawArcTo(path, pos, r, r, a.Alpha0, a.Alpha1, 0)
+	if math.Abs(a.Alpha0-a.Alpha1) > 1e-6 {
+		path = drawArcTo(path, pos, r, r, a.Alpha0, a.Alpha1, 4)
+	}
 	headLen, headWidth := env.getArrowHeadSize()
 	if a.Mode&1 != 0 {
 		da := math.Atan(headLen / r)
