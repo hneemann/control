@@ -870,7 +870,7 @@ func (s Check) Html(val string, elements, n int) string {
 	if bo {
 		sb.WriteString(` checked="checked"`)
 	}
-	sb.WriteString(`"/></div>`)
+	sb.WriteString(`/></div>`)
 	return sb.String()
 }
 
