@@ -68,6 +68,12 @@ func main() {
 
 	log.Println("Folder:", *dataFolder)
 
+	if *onServer {
+		log.Println("Execution on server")
+	} else {
+		log.Println("Execution in browser")
+	}
+
 	var dm session.Manager[data.UserData]
 	dm = session.NewFileManager[data.UserData](
 		session.NewHashUser(
@@ -108,10 +114,9 @@ func main() {
 	}
 
 	examples := server.ReadExamples()
-	mux.HandleFunc("/", sc.CheckSessionFunc(server.CreateMain(examples)))
+	mux.HandleFunc("/", sc.CheckSessionFunc(server.CreateMain(examples, *onServer)))
 	mux.HandleFunc("/help.html", server.CreateHelp())
 	mux.Handle("/assets/", Cache(http.FileServer(http.FS(server.Assets)), 180, !*debug))
-	mux.Handle("/js/execute.js", Cache(server.RunMode(*onServer), 180, !*debug))
 	if *onServer {
 		mux.HandleFunc("/execute/", sc.CheckSessionRestFunc(server.Execute))
 	}

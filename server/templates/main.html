@@ -6,19 +6,31 @@
   <title>Control</title>
   <link rel="icon" type="image/svg" href="/assets/icon.svg">
   <link rel="stylesheet" type="text/css" href="/assets/main.css"/>
+  {{if .InBrowser}}
   <script src="/assets/wasm_exec.js"></script>
   <script>
     const go = new Go();
-	WebAssembly.instantiateStreaming(fetch("/assets/generate.wasm"), go.importObject).then((result) => {
-	  go.run(result.instance);
-	});
+   	WebAssembly.instantiateStreaming(fetch("/assets/generate.wasm"), go.importObject).then((result) => {
+      go.run(result.instance);
+      let source = document.getElementById('source')
+      if (source!=null) {
+          if (source.value != "") {
+              runSource();
+          }
+      }
+    });
   </script>
+  {{end}}
   <script type="text/javascript" src="/assets/main.js"></script>
-  <script type="text/javascript" src="/js/execute.js"></script>
+  {{if .InBrowser}}
+  <script type="text/javascript" src="/assets/runInBrowser.js"></script>
+  {{else}}
+  <script type="text/javascript" src="/assets/runOnServer.js"></script>
+  {{end}}
 </head>
 <body onload="init();">
 <div class="main">
-  <div id="result"></div>
+  <div id="result">{{.Result}}</div>
   <div class="window">
     <div class="mainHead">
       <label for="source" id="filenameLabel"></label><br>

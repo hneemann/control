@@ -103,7 +103,8 @@ plot(
   (K2*G).loop().simStep(10).graph().line(black, "PI"),
   (K3*G).loop().simStep(10).graph().line(green, "PID"),
   yConst(1)
-).labels("t / s", "h(t)").legendPos(5, 0.87)</example>
+).labels("t / s", "h(t)")
+ .legendPos(5, 0.87)</example>
 
         <!--example name="Simulation interaktiv" desc="interaktive Simulation"
                  name-en="Simulation Interactive" desc-en="interactive simulation">let G = 1/((s+1)*(s+2)*(s+3));

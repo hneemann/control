@@ -77,9 +77,10 @@ func GetBuildInfo() string {
 	return info
 }
 
-func CreateMain(examples []Example) http.HandlerFunc {
+func CreateMain(examples []Example, runOnServer bool) http.HandlerFunc {
 	info := GetBuildInfo()
 	return func(writer http.ResponseWriter, request *http.Request) {
+		var result template.HTML
 		query := request.URL.Query()
 		b64Source := query.Get("c")
 		code := ""
@@ -95,6 +96,30 @@ func CreateMain(examples []Example) http.HandlerFunc {
 					out, err := io.ReadAll(zlibReader)
 					if err == nil {
 						code = string(out)
+						if runOnServer {
+							var fu funcGen.Func[value.Value]
+							fu, _, err = polynomial.Parser.Generate(code, "gui")
+							if err == nil {
+								var res value.Value
+								gui := polynomial.NewGuiElements("")
+								res, err = fu(funcGen.NewStack[value.Value](gui))
+								if err == nil {
+									result, _, err = export.ToHtml(res, 50, customHtml, true)
+									if err == nil {
+										if gui.IsGui() {
+											result = gui.Wrap(result, code)
+										}
+									} else {
+										result = ""
+										log.Println("error exporting to html:", err)
+									}
+								} else {
+									log.Println("error executing code:", err)
+								}
+							} else {
+								log.Println("error generating code:", err)
+							}
+						}
 					} else {
 						log.Println("error deflate code:", err)
 					}
@@ -105,13 +130,17 @@ func CreateMain(examples []Example) http.HandlerFunc {
 		}
 
 		data := struct {
-			Examples []Example
-			InfoText string
-			Code     string
+			Examples  []Example
+			InBrowser bool
+			InfoText  string
+			Result    template.HTML
+			Code      string
 		}{
-			Examples: examples,
-			InfoText: info,
-			Code:     code,
+			Examples:  examples,
+			InBrowser: !runOnServer,
+			InfoText:  info,
+			Result:    result,
+			Code:      code,
 		}
 		err := mainViewTemp.Execute(writer, data)
 		if err != nil {
@@ -245,25 +274,6 @@ func writeOk(writer http.ResponseWriter, ok bool) {
 	} else {
 		writer.Write([]byte("false"))
 	}
-}
-
-func RunMode(onServer bool) http.Handler {
-	var name string
-	if onServer {
-		log.Println("execution on server")
-		name = "assets/runOnServer.js"
-	} else {
-		log.Println("execution in browser")
-		name = "assets/runInBrowser.js"
-	}
-	data, err := Assets.ReadFile(name)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		writer.Header().Set("Content-Type", "text/javascript; charset=utf-8")
-		writer.Write(data)
-	})
 }
 
 var helpTemp = Templates.Lookup("help.html")
