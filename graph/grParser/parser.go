@@ -737,6 +737,15 @@ func createChartMethods() value.MethodMap {
 				return nil, fmt.Errorf("frameColor requires a style: %w", err)
 			}
 		}).SetMethodDescription("color", "Sets the frame color."),
+		"color": value.MethodAtType(1, func(chart ChartValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			if styleVal, err := GetStyle(stack, 1, nil); err == nil {
+				chart = chart.Copy()
+				chart.Value.Background = styleVal.Value
+				return chart, nil
+			} else {
+				return nil, fmt.Errorf("color requires a style: %w", err)
+			}
+		}).SetMethodDescription("color", "Sets the background color."),
 		"svg": value.MethodAtType(1, func(chart ChartValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if str, ok := stack.Get(1).(value.String); ok {
 				return ImageToSvg(chart, &chart.context, string(str))
