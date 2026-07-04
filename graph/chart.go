@@ -178,7 +178,7 @@ type Chart struct {
 	Title          string
 	ProtectLabels  bool
 	StackBothYAxes bool
-	FillBackground bool
+	Background     *Style
 	BoundsModifier BoundsModifier
 	HideLegend     bool
 	LegendPos      RelativePos
@@ -245,11 +245,11 @@ func (p *ChartContentEnvironment) getArrowHeadSize() (len, width float64) {
 }
 
 func (p *Chart) DrawTo(canvas Canvas) error {
-	err, _ := p.DrawToAsInset(canvas, p.FillBackground)
+	err, _ := p.DrawToAsInset(canvas)
 	return err
 }
 
-func (p *Chart) DrawToAsInset(canvas Canvas, fillBackground bool) (err error, env *ChartContentEnvironment) {
+func (p *Chart) DrawToAsInset(canvas Canvas) (err error, env *ChartContentEnvironment) {
 	defer nErr.CatchErr(&err)
 	if p.StackBothYAxes && p.content.hasY2Content() {
 		upper := *p
@@ -264,10 +264,10 @@ func (p *Chart) DrawToAsInset(canvas Canvas, fillBackground bool) (err error, en
 		err = SplitHorizontal{&upper, &lower}.DrawTo(canvas)
 		return err, nil
 	}
-	return p.drawToInternal(canvas, fillBackground)
+	return p.drawToInternal(canvas)
 }
 
-func (p *Chart) drawToInternal(canvas Canvas, fillBackground bool) (error, *ChartContentEnvironment) {
+func (p *Chart) drawToInternal(canvas Canvas) (error, *ChartContentEnvironment) {
 	c := canvas.Context()
 	rect := canvas.Rect()
 	textStyle := Black.Text()
@@ -285,8 +285,8 @@ func (p *Chart) drawToInternal(canvas Canvas, fillBackground bool) (error, *Char
 		textSize = rect.Height() / 200
 	}
 
-	if fillBackground {
-		nErr.Try(canvas.DrawPath(rect.Path(), White.SetStrokeWidth(0).SetFill(White)))
+	if p.Background != nil && p.Background.Color.A > 0 {
+		nErr.Try(canvas.DrawPath(rect.Path(), p.Background.SetStrokeWidth(0).SetFill(p.Background)))
 	}
 
 	xBoundsPre, yBoundsPre, y2BoundsPre, err := p.calcBounds()
@@ -1626,6 +1626,11 @@ type ImageInset struct {
 	VisualGuide *Style
 }
 
+func (s ImageInset) SetLine(style *Style) ChartContent {
+	s.Chart.Background = style
+	return s
+}
+
 func (s ImageInset) String() string {
 	return "ImageInset(" + s.Chart.String() + ")"
 }
@@ -1656,7 +1661,7 @@ func (s ImageInset) DrawTo(env *ChartContentEnvironment) (cErr error) {
 			Max: s.Max.Get(env.Transform, env.InnerRect),
 		},
 	}
-	err, ie := s.Chart.DrawToAsInset(inner, true)
+	err, ie := s.Chart.DrawToAsInset(inner)
 	if err != nil {
 		return fmt.Errorf("error drawing image inset: %w", err)
 	}

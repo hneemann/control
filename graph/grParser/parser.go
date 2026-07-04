@@ -1025,10 +1025,12 @@ func CreateInsetMethod(relative bool) func(chart ChartValue, stack funcGen.Stack
 							visualGuide = vsv.Value
 						}
 
+						c := *chart.Value
+						c.Background = graph.White
 						return NewChartContentValue(graph.ImageInset{
 							Min:         graph.NewRelativePos(graph.Point{X: xMin, Y: yMin}, relative),
 							Max:         graph.NewRelativePos(graph.Point{X: xMax, Y: yMax}, relative),
-							Chart:       chart.Value,
+							Chart:       &c,
 							VisualGuide: visualGuide,
 						}, nil), nil
 					}
