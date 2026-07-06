@@ -15,6 +15,7 @@
       let source = document.getElementById('source')
       if (source!=null) {
           if (source.value != "") {
+              window.history.replaceState({}, document.title, window.location.pathname);
               runSource();
           }
       }
