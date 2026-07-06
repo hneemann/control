@@ -1272,6 +1272,9 @@ func (a Arc) DependantBounds(_, _ Bounds) (Bounds, Bounds, error) {
 func (a Arc) DrawTo(env *ChartContentEnvironment) error {
 	textSize := env.ParentCanvas.Context().TextSize
 	r := a.Radius * textSize
+	if r <= 0 {
+		return nil
+	}
 
 	pos := env.Transform(a.Pos)
 	path := NewPath(false)
@@ -1279,13 +1282,15 @@ func (a Arc) DrawTo(env *ChartContentEnvironment) error {
 		path = drawArcTo(path, pos, r, r, a.Alpha0, a.Alpha1, 4)
 	}
 	headLen, headWidth := env.getArrowHeadSize()
+	da := math.Atan(headLen / r)
+	if a.Alpha1 < a.Alpha0 {
+		da = -da
+	}
 	if a.Mode&1 != 0 {
-		da := math.Atan(headLen / r)
 		path = drawArcTo(path, pos, r+headWidth, r, a.Alpha1-da, a.Alpha1, 4)
 		path = drawArcTo(path, pos, r-headWidth, r, a.Alpha1-da, a.Alpha1, 4)
 	}
 	if a.Mode&2 != 0 {
-		da := math.Atan(headLen / r)
 		path = drawArcTo(path, pos, r, r+headWidth, a.Alpha0, a.Alpha0+da, 4)
 		path = drawArcTo(path, pos, r, r-headWidth, a.Alpha0, a.Alpha0+da, 4)
 	}
