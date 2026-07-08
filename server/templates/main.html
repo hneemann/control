@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang='{{tr "lang"}}'>
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
@@ -37,17 +37,17 @@
       <label for="source" id="filenameLabel"></label><br>
     </div>
     <div class="toolbar">
-        <button id="new" onclick="newScript();" title="Neu"><img class="icon" src="/assets/new.svg"/></button>
-        <button id="load" onclick="showLoad();" title="Öffnen"><img class="icon" src="/assets/open.svg"/></button>
-        <button id="save" onclick="save();" title="Speichern"><img class="icon" src="/assets/save.svg"/></button>
-        <button id="saveAs" onclick="showSaveAs();" title="Speichern unter"><img class="icon" src="/assets/save-as.svg"/></button>
-        <button id="run" onclick="runSource();" title="Ausführen und Ausgabe aktualisieren (F9)"><img class="icon" src="/assets/refresh.svg"/></button>
-        <button id="runInWindow" class="hideOnMobile" onclick="runSourceInWindow();" title="Ausführen und Ausgabe in Fenster aktualisieren" style="margin-left:1em;"><img class="icon" src="/assets/refreshWindow.svg"/></button>
-        <button id="newWin" class="hideOnMobile" onclick="newWindow();" title="Neues Fenster"><img class="icon" src="/assets/window-new.svg"/></button>
-        <button id="example" style="margin-left:auto" onclick="showPopUpById('examples');" title="Beispiele"><img class="icon" src="/assets/help.svg"/></button>
+        <button id="new" onclick="newScript();" title='{{tr "new" }}'><img class="icon" src="/assets/new.svg"/></button>
+        <button id="load" onclick="showLoad();" title='{{tr "open" }}'><img class="icon" src="/assets/open.svg"/></button>
+        <button id="save" onclick="save();" title='{{tr "save" }}'><img class="icon" src="/assets/save.svg"/></button>
+        <button id="saveAs" onclick="showSaveAs();" title='{{tr "saveAs" }}'><img class="icon" src="/assets/save-as.svg"/></button>
+        <button id="run" onclick="runSource();" title='{{tr "execute" }}'><img class="icon" src="/assets/refresh.svg"/></button>
+        <button id="runInWindow" class="hideOnMobile" onclick="runSourceInWindow();" title='{{tr "executeW" }}' style="margin-left:1em;"><img class="icon" src="/assets/refreshWindow.svg"/></button>
+        <button id="newWin" class="hideOnMobile" onclick="newWindow();" title='{{tr "newWindow" }}'><img class="icon" src="/assets/window-new.svg"/></button>
+        <button id="example" style="margin-left:auto" onclick="showPopUpById('examples');" title='{{tr "example" }}'><img class="icon" src="/assets/help.svg"/></button>
     </div>
     <div style="display:flex;">
-      <textarea class="source" rows="2" autocorrect="off" id="source" placeholder="Enter script or select an example." onkeyup="updateRow()" onclick="updateRow()">{{.Code}}</textarea>
+      <textarea class="source" rows="2" autocorrect="off" id="source" placeholder='{{tr "placeholder" }}' onkeyup="updateRow()" onclick="updateRow()">{{.Code}}</textarea>
     </div>
     <div class="footer">
         <span style="display:inline-block;width:3em;text-align:center;" id="row">1</span>
@@ -57,109 +57,109 @@
 
 <nav class="menu-content" id="examples">
     {{range .Examples}}
-    <a class="menu-item" onclick="loadExample('{{.Name}}')" title="{{.Desc}}">{{.Name}}</a>
+    <a class="menu-item" onclick="loadExample('{{.Name}}','{{tr .I18N}}')" >{{tr .I18N}}</a>
     {{end}}
-    <a class="menu-item" onclick="hidePopUp()" href="help.html" target="_blank">Help</a>
-    <a class="menu-item" onclick="sourceLink()" title="Kopiert einen Link zu diesem Quellcode in die Zwischenablage.">Source-Link</a>
-    <a class="menu-item" onclick="showPopUpById('info')">Info</a>
+    <a class="menu-item" onclick="hidePopUp()" href="help.html" target="_blank">{{tr "help"}}</a>
+    <a class="menu-item" onclick="sourceLink()" title='{{tr "copyLink" }}'>{{tr "sourceLink"}}</a>
+    <a class="menu-item" onclick="showPopUpById('info')">{{tr "info"}}</a>
 </nav>
 
 <div class="fileDialog" id="saveDiv">
     <div class="head">
-        Datei Speichern
+        {{tr "save"}}
     </div>
     <div style="display:flex; margin-bottom:0.5em;">
-        <label for="filename">Dateiname:</label>
+        <label for="filename">{{tr "filename"}}:</label>
         <input class="file" size="25" type="text" id="saveDialogFilename"/>
     </div>
     <div class="fileList" id="saveFileList">
     </div>
     <div class="buttons" style="margin-top:0.5em;">
-        <button onclick="deleteFileConfirm();" title="Löschen"><img class="icon" src="/assets/delete.svg"/></button>
-        <button style="margin-left:auto" onclick="hidePopUp();" title="Abbrechen"><img class="icon" src="/assets/cancel.svg"/></button>
-        <button onclick="saveSource();" title="Speichern"><img class="icon" src="/assets/ok.svg"/></button>
+        <button onclick="deleteFileConfirm();" title='{{tr "delete" }}'><img class="icon" src="/assets/delete.svg"/></button>
+        <button style="margin-left:auto" onclick="hidePopUp();" title='{{tr "cancel" }}'><img class="icon" src="/assets/cancel.svg"/></button>
+        <button onclick="saveSource();" title='{{tr "ok" }}'><img class="icon" src="/assets/ok.svg"/></button>
     </div>
 </div>
 
 <div class="fileDialog" id="loadDiv">
     <div class="head">
-        Datei Öffnen
+        {{tr "open"}}
     </div>
     <div style="margin-bottom:0.5em;">
-        Vorhandene Dateien:
+        {{tr "available"}}:
     </div>
     <div class="fileList" id="loadFileList">
     </div>
     <div class="buttons" style="margin-top:0.5em;">
-        <button style="margin-left:auto" onclick="hidePopUp();" title="Abbrechen"><img class="icon" src="/assets/cancel.svg"/></button>
+        <button style="margin-left:auto" onclick="hidePopUp();" title='{{tr "cancel" }}'><img class="icon" src="/assets/cancel.svg"/></button>
     </div>
 </div>
 
 <div class="fileDialog" id="overwriteConfirm">
     <div>
-    Soll das aktuelle Skript wirklich verworfen werden?
+    {{tr "discardConfirm" }}
     </div>
     <div style="text-align:right;margin-top:0.5em;">
-        <button onclick="hidePopUp();">Abbrechen</button>
-        <button onclick="overwriteConfirmed();">Verwerfen</button>
+        <button onclick="hidePopUp();">{{tr "cancel" }}</button>
+        <button onclick="overwriteConfirmed();">{{tr "discard" }}</button>
     </div>
 </div>
 
 <div class="fileDialog" id="deleteError">
     <div>
-    Datei konnte nicht gelöscht werden!
+    {{tr "deleteError" }}
     </div>
     <div style="text-align:right;margin-top:0.5em;">
-        <button onclick="hidePopUp();">Ok</button>
+        <button onclick="hidePopUp();">{{tr "ok" }}</button>
     </div>
 </div>
 
 <div class="fileDialog" id="linkCopied">
     <div>
-    Ein Link zu diesem Quellcode wurde in die Zwischenablage kopiert.
+        {{tr "linkCopied" }}
     </div>
     <div style="text-align:right;margin-top:0.5em;">
-        <button onclick="hidePopUp();">Ok</button>
+        <button onclick="hidePopUp();">{{tr "ok" }}</button>
     </div>
 </div>
 
 <div class="fileDialog" id="saveConfirm">
     <div>
-    Datei "<span id="confirmName"></span>" existiert bereits!
+    "<span id="confirmName"></span>": {{tr "alreadyExists"}}
     </div>
     <div style="text-align:right;margin-top:0.5em;">
-        <button onclick="hidePopUp();">Abbrechen</button>
-        <button onclick="overwriteSource();">Überschreiben</button>
+        <button onclick="hidePopUp();">{{tr "cancel" }}</button>
+        <button onclick="overwriteSource();">{{tr "overwrite" }}</button>
     </div>
 </div>
 
 <div class="fileDialog" id="deleteConfirm">
     <div>
-    Datei "<span id="confirmDeleteName"></span>" wirklich löschen?
+    "<span id="confirmDeleteName"></span>": {{tr "deleteConfirm" }}
     </div>
     <div style="text-align:right;margin-top:0.5em;">
-        <button onclick="hidePopUp();">Abbrechen</button>
-        <button onclick="deleteFile();">Löschen</button>
+        <button onclick="hidePopUp();">{{tr "cancel" }}</button>
+        <button onclick="deleteFile();">{{tr "delete" }}</button>
     </div>
 </div>
 
 <div class="fileDialog" id="networkError">
     <div>
-    Es ist ein Netzwerkfehler aufgetreten!<br>
-    Der Server konnte nicht erreicht werden!
+    {{tr "networkError"}}<br>
+    {{tr "serverNotReachable"}}
     </div>
     <div style="text-align:right;margin-top:0.5em;">
-        <button onclick="hidePopUp();">Ok</button>
+        <button onclick="hidePopUp();">{{tr "ok" }}</button>
     </div>
 </div>
 
 <div class="fileDialog" id="info">
-    <div class="head">Info</div>
+    <div class="head">{{tr "info" }}</div>
     <div>
         <pre>{{.InfoText}}</pre>
     </div>
     <div style="text-align:right;margin-top:0.5em;">
-        <button onclick="hidePopUp();">Ok</button>
+        <button onclick="hidePopUp();">{{tr "ok" }}</button>
     </div>
 </div>
 

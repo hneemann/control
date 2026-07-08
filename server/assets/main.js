@@ -134,11 +134,11 @@ function newScript() {
     })
 }
 
-function loadExample(name) {
+function loadExample(name, title) {
     hidePopUp();
     checkOverwrite(() => {
         fetchHelper("/example/", name, function (code) {
-            setSource(name, code);
+            setSource(title, code);
         });
     });
 }

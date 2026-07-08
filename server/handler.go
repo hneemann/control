@@ -29,20 +29,23 @@ var Assets embed.FS
 //go:embed templates/*
 var templateFS embed.FS
 
-var Templates = template.Must(template.New("").ParseFS(templateFS, "templates/*.html"))
+var Templates = template.Must(template.New("").Funcs(template.FuncMap{
+	"tr": func(key string, args ...interface{}) string {
+		return ""
+	},
+}).ParseFS(templateFS, "templates/*.html"))
 
 var mainViewTemp = Templates.Lookup("main.html")
 
 type Example struct {
-	Name   string `xml:"name,attr"`
-	Desc   string `xml:"desc,attr"`
-	NameEn string `xml:"name-en,attr"`
-	DescEn string `xml:"desc-en,attr"`
-	Code   string `xml:",chardata"`
+	Name string `xml:"name,attr"`
+	Desc string `xml:"desc,attr"`
+	I18N string `xml:"i18n,attr"`
+	Code string `xml:",chardata"`
 }
 
 func (e Example) NameEnSave() string {
-	return strings.ReplaceAll(e.NameEn, " ", "_")
+	return strings.ReplaceAll(e.Name, " ", "_")
 }
 
 type Examples struct {
@@ -65,6 +68,7 @@ func ReadExamples() []Example {
 
 	return examples.Examples
 }
+
 func GetBuildInfo() string {
 	var info = "Written by H.Neemann in 2025\n\nBuild info: "
 	if bi, ok := debug.ReadBuildInfo(); ok {
@@ -142,7 +146,8 @@ func CreateMain(examples []Example, runOnServer bool) http.HandlerFunc {
 			Result:    result,
 			Code:      code,
 		}
-		err := mainViewTemp.Execute(writer, data)
+
+		err := mainViewTemp.Funcs(I18nFuncs(request)).Execute(writer, data)
 		if err != nil {
 			log.Println(err)
 		}

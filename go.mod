@@ -7,8 +7,9 @@ toolchain go1.25.2
 require (
 	github.com/hneemann/iterator v0.0.0-20251109064800-e5580abbfb13
 	github.com/hneemann/parser2 v0.0.0-20260707174115-725ce2dc5277
-	github.com/hneemann/session v0.0.0-20260507100810-7ceff168b2d9
+	github.com/hneemann/session v0.0.0-20260708085937-b0e0ff60bec6
 	github.com/stretchr/testify v1.11.1
+	golang.org/x/text v0.39.0
 )
 
 require (
@@ -33,6 +34,5 @@ require (
 	golang.org/x/crypto v0.53.0 // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect
 	golang.org/x/sys v0.46.0 // indirect
-	golang.org/x/text v0.38.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

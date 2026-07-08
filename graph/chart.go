@@ -1301,8 +1301,13 @@ func (a Arc) DrawTo(env *ChartContentEnvironment) error {
 
 	if a.Label != "" {
 		alpha := (a.Alpha0 + a.Alpha1) / 2
-		p := Point{X: math.Cos(alpha), Y: math.Sin(alpha)}.Mul(r)
-		env.ParentCanvas.DrawText(pos.Add(p), a.Label, orientationByDelta(p), a.Style.Text(), textSize)
+		if a.Mode&4 == 0 {
+			p := Point{X: math.Cos(alpha), Y: math.Sin(alpha)}.Mul(r)
+			env.ParentCanvas.DrawText(pos.Add(p), a.Label, orientationByDelta(p), a.Style.Text(), textSize)
+		} else {
+			p := Point{X: math.Cos(alpha), Y: math.Sin(alpha)}.Mul(r + textSize)
+			env.ParentCanvas.DrawText(pos.Add(p), a.Label, VCenter|HCenter, a.Style.Text(), textSize)
+		}
 	}
 	return nil
 }

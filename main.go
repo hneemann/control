@@ -9,6 +9,7 @@ import (
 	"github.com/hneemann/session"
 	"github.com/hneemann/session/fileSys"
 	"github.com/hneemann/session/myOidc"
+	"html/template"
 	"log"
 	"net/http"
 	"os"
@@ -66,6 +67,11 @@ func main() {
 	oidc := flag.Bool("oidc", false, "oidc mode")
 	flag.Parse()
 
+	err := server.LoadJSONTranslations()
+	if err != nil {
+		panic(err)
+	}
+
 	log.Println("Folder:", *dataFolder)
 
 	if *onServer {
@@ -105,8 +111,14 @@ func main() {
 			log.Fatal("oidc not available!")
 		}
 	} else {
-		mux.HandleFunc("/login", sc.LoginHandler(server.Templates.Lookup("login.html")))
-		mux.HandleFunc("/register", sc.RegisterHandler(server.Templates.Lookup("register.html")))
+		login := server.Templates.Lookup("login.html")
+		mux.HandleFunc("/login", sc.LoginHandlerFactory(func(request *http.Request) *template.Template {
+			return login.Funcs(server.I18nFuncs(request))
+		}))
+		register := server.Templates.Lookup("register.html")
+		mux.HandleFunc("/register", sc.RegisterHandlerFactory(func(request *http.Request) *template.Template {
+			return register.Funcs(server.I18nFuncs(request))
+		}))
 	}
 
 	if *debug {
@@ -140,7 +152,6 @@ func main() {
 		}
 	}()
 
-	var err error
 	if *cert != "" && *key != "" {
 		log.Printf("Starting server with TLS at port %d and cert %s", *port, *cert)
 		err = serv.ListenAndServeTLS(*cert, *key)
