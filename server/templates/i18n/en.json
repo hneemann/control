@@ -9,8 +9,8 @@
   "newWindow": "New Window",
   "examples": "Examples",
   "placeholder": "Enter script or select an example.",
-  "copyLink": "Copies a link to this source code to the clipboard.",
-  "linkCopied": "A link to this source code has been copied to the clipboard.",
+  "copyLink": "Copies a link to this script to the clipboard.",
+  "linkCopied": "A link to the current script has been copied to the clipboard and can now be pasted into an LMS, for example.",
   "help": "Help",
   "sourceLink": "Link to Script",
   "info": "Info",
@@ -51,5 +51,5 @@
   "login_register": "Register",
   "login_username": "Username",
   "login_password": "Password",
-  "login_repeat": "Repeat"
+  "login_repeat": "Repeat Password"
 }

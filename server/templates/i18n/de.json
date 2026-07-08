@@ -9,8 +9,8 @@
   "newWindow": "Neues Fenster",
   "examples": "Beispiele",
   "placeholder": "Script eingeben oder Beispiel auswählen.",
-  "copyLink": "Kopiert einen Link zum aktuellen Quellcode in die Zwischenablage.",
-  "linkCopied": "Ein Link zum aktuellen Quellcode wurde in die Zwischenablage kopiert und kann jetzt z.B. in Moodle eingefügt werden.",
+  "copyLink": "Kopiert einen Link zum aktuellen Skript in die Zwischenablage.",
+  "linkCopied": "Ein Link zum aktuellen Skript wurde in die Zwischenablage kopiert und kann jetzt z.B. in Moodle eingefügt werden.",
   "help": "Hilfe",
   "sourceLink": "Link zum Skript",
   "info": "Info",
@@ -51,5 +51,5 @@
   "login_register": "Registrieren",
   "login_username": "Benutzername",
   "login_password": "Passwort",
-  "login_repeat": "Wiederholung"
+  "login_repeat": "Passwort wiederholen"
 }
