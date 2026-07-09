@@ -152,7 +152,7 @@ func shade(s1, s2 *Style, a float64) Style {
 		R: uint8(float64(s1.FillColor.R)*(1-a) + float64(s2.Color.R)*a),
 		G: uint8(float64(s1.FillColor.G)*(1-a) + float64(s2.Color.G)*a),
 		B: uint8(float64(s1.FillColor.B)*(1-a) + float64(s2.Color.B)*a),
-		A: 255,
+		A: s1.FillColor.A,
 	}
 	s := *s1
 	s.FillColor = col
