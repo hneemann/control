@@ -1,5 +1,5 @@
 {
-  "lang": "en",
+  "langID": "en",
   "new": "New",
   "open": "Open",
   "save": "Save",
@@ -9,7 +9,7 @@
   "newWindow": "New Window",
   "examples": "Examples",
   "placeholder": "Enter script or select an example.",
-  "copyLink": "Copies a link to this script to the clipboard.",
+  "copyLink": "Copies a link to the current script to the clipboard.",
   "linkCopied": "A link to the current script has been copied to the clipboard and can now be pasted into an LMS, for example.",
   "help": "Help",
   "sourceLink": "Link to Script",

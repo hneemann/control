@@ -1,51 +1,85 @@
 package server
 
 import (
+	"embed"
 	"encoding/json"
 	"fmt"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
 	"html/template"
 	"net/http"
+	"path/filepath"
 )
 
-var matcher = language.NewMatcher([]language.Tag{
-	language.English, // Fallback
-	language.German,
-})
+type I18nFuncs func(request *http.Request) template.FuncMap
 
-func I18nFuncs(request *http.Request) template.FuncMap {
-	accept := request.Header.Get("Accept-Language")
-	tag, _ := language.MatchStrings(matcher, accept)
-	p := message.NewPrinter(tag)
-	return template.FuncMap{
-		"tr": func(key string, args ...interface{}) string {
-			return p.Sprintf(key, args...)
-		},
+func LoadJSONTranslations(f embed.FS, path string, defLang language.Tag) (I18nFuncs, error) {
+	entries, err := f.ReadDir(path)
+	if err != nil {
+		return nil, err
 	}
-}
-
-func LoadJSONTranslations() error {
-	// Wir definieren, welche Sprachen wir erwarten und wie die Dateien heißen
-	files := map[string]language.Tag{
-		"templates/i18n/de.json": language.German,
-		"templates/i18n/en.json": language.English,
+	if len(entries) < 1 {
+		return nil, fmt.Errorf("expected at least one files in %s", path)
 	}
 
-	for path, tag := range files {
-		data, err := templateFS.ReadFile(path)
+	var tags []language.Tag
+	for _, entry := range entries {
+		data, err := TemplateFS.ReadFile(filepath.Join(path, entry.Name()))
 		if err != nil {
-			return fmt.Errorf("could not read file %s: %w", path, err)
+			return nil, fmt.Errorf("could not read file %s: %w", entry.Name(), err)
 		}
 
 		var translations map[string]string
-		if err := json.Unmarshal(data, &translations); err != nil {
-			return fmt.Errorf("could not parse JSON file %s: %w", path, err)
+		if err = json.Unmarshal(data, &translations); err != nil {
+			return nil, fmt.Errorf("could not parse JSON file %s: %w", entry.Name(), err)
 		}
 
+		id, ok := translations["langID"]
+		if !ok {
+			return nil, fmt.Errorf("could not find key langID in file %s", entry.Name())
+		}
+		tag, err := language.Parse(id)
+		if err != nil {
+			return nil, fmt.Errorf("could not parse language id %s: %w", id, err)
+		}
+		tags = append(tags, tag)
+
 		for key, value := range translations {
-			message.SetString(tag, key, value)
+			err = message.SetString(tag, key, value)
+			if err != nil {
+				return nil, fmt.Errorf("could not set translation field %s: %w", key, err)
+			}
 		}
 	}
-	return nil
+
+	// set english as the default language
+	found := -1
+	for i, tag := range tags {
+		if tag == defLang {
+			found = i
+			break
+		}
+	}
+	if found == -1 {
+		return nil, fmt.Errorf("could not find a translation tag for the default language")
+	}
+	if found != 0 {
+		tags[0], tags[found] = tags[found], tags[0]
+	}
+
+	return createI18nFuncs(tags)
+}
+
+func createI18nFuncs(tags []language.Tag) (I18nFuncs, error) {
+	matcher := language.NewMatcher(tags)
+	return func(request *http.Request) template.FuncMap {
+		accept := request.Header.Get("Accept-Language")
+		tag, _ := language.MatchStrings(matcher, accept)
+		p := message.NewPrinter(tag)
+		return template.FuncMap{
+			"tr": func(key string, args ...interface{}) string {
+				return p.Sprintf(key, args...)
+			},
+		}
+	}, nil
 }

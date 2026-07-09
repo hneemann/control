@@ -27,13 +27,13 @@ import (
 var Assets embed.FS
 
 //go:embed templates/*
-var templateFS embed.FS
+var TemplateFS embed.FS
 
 var Templates = template.Must(template.New("").Funcs(template.FuncMap{
 	"tr": func(key string, args ...interface{}) string {
 		return ""
 	},
-}).ParseFS(templateFS, "templates/*.html"))
+}).ParseFS(TemplateFS, "templates/*.html"))
 
 var mainViewTemp = Templates.Lookup("main.html")
 
@@ -53,7 +53,7 @@ type Examples struct {
 }
 
 func ReadExamples() []Example {
-	file, err := templateFS.ReadFile("templates/examples.xml")
+	file, err := TemplateFS.ReadFile("templates/examples.xml")
 	if err != nil {
 		panic(err)
 	}
@@ -81,7 +81,7 @@ func GetBuildInfo() string {
 	return info
 }
 
-func CreateMain(examples []Example, runOnServer bool) http.HandlerFunc {
+func CreateMain(examples []Example, runOnServer bool, i18nFuncs I18nFuncs) http.HandlerFunc {
 	info := GetBuildInfo()
 	return func(writer http.ResponseWriter, request *http.Request) {
 		var result template.HTML
@@ -147,7 +147,7 @@ func CreateMain(examples []Example, runOnServer bool) http.HandlerFunc {
 			Code:      code,
 		}
 
-		err := mainViewTemp.Funcs(I18nFuncs(request)).Execute(writer, data)
+		err := mainViewTemp.Funcs(i18nFuncs(request)).Execute(writer, data)
 		if err != nil {
 			log.Println(err)
 		}

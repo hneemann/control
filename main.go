@@ -9,6 +9,7 @@ import (
 	"github.com/hneemann/session"
 	"github.com/hneemann/session/fileSys"
 	"github.com/hneemann/session/myOidc"
+	"golang.org/x/text/language"
 	"html/template"
 	"log"
 	"net/http"
@@ -67,7 +68,7 @@ func main() {
 	oidc := flag.Bool("oidc", false, "oidc mode")
 	flag.Parse()
 
-	err := server.LoadJSONTranslations()
+	i18nFunc, err := server.LoadJSONTranslations(server.TemplateFS, "templates/i18n", language.English)
 	if err != nil {
 		panic(err)
 	}
@@ -113,11 +114,11 @@ func main() {
 	} else {
 		login := server.Templates.Lookup("login.html")
 		mux.HandleFunc("/login", sc.LoginHandlerFactory(func(request *http.Request) *template.Template {
-			return login.Funcs(server.I18nFuncs(request))
+			return login.Funcs(i18nFunc(request))
 		}))
 		register := server.Templates.Lookup("register.html")
 		mux.HandleFunc("/register", sc.RegisterHandlerFactory(func(request *http.Request) *template.Template {
-			return register.Funcs(server.I18nFuncs(request))
+			return register.Funcs(i18nFunc(request))
 		}))
 	}
 
@@ -126,7 +127,7 @@ func main() {
 	}
 
 	examples := server.ReadExamples()
-	mux.HandleFunc("/", sc.CheckSessionFunc(server.CreateMain(examples, *onServer)))
+	mux.HandleFunc("/", sc.CheckSessionFunc(server.CreateMain(examples, *onServer, i18nFunc)))
 	mux.HandleFunc("/help.html", server.CreateHelp())
 	mux.Handle("/assets/", Cache(http.FileServer(http.FS(server.Assets)), 180, !*debug))
 	if *onServer {
