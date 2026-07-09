@@ -44,7 +44,7 @@
         <button id="run" onclick="runSource();" title='{{tr "execute" }}'><img class="icon" src="/assets/refresh.svg"/></button>
         <button id="runInWindow" class="hideOnMobile" onclick="runSourceInWindow();" title='{{tr "executeW" }}' style="margin-left:1em;"><img class="icon" src="/assets/refreshWindow.svg"/></button>
         <button id="newWin" class="hideOnMobile" onclick="newWindow();" title='{{tr "newWindow" }}'><img class="icon" src="/assets/window-new.svg"/></button>
-        <button id="example" style="margin-left:auto" onclick="showPopUpById('examples');" title='{{tr "example" }}'><img class="icon" src="/assets/help.svg"/></button>
+        <button id="example" style="margin-left:auto" onclick="showPopUpById('examples');" title='{{tr "examples" }}'><img class="icon" src="/assets/help.svg"/></button>
     </div>
     <div style="display:flex;">
       <textarea class="source" rows="2" autocorrect="off" id="source" placeholder='{{tr "placeholder" }}' onkeyup="updateRow()" onclick="updateRow()">{{.Code}}</textarea>
@@ -57,11 +57,11 @@
 
 <nav class="menu-content" id="examples">
     {{range .Examples}}
-    <a class="menu-item" onclick="loadExample('{{.Name}}','{{tr .I18N}}')" >{{tr .I18N}}</a>
+    <a onclick="loadExample('{{.Name}}','{{tr .I18N}}')" >{{tr .I18N}}</a>
     {{end}}
-    <a class="menu-item" onclick="hidePopUp()" href="help.html" target="_blank">{{tr "help"}}</a>
-    <a class="menu-item" onclick="sourceLink()" title='{{tr "copyLink" }}'>{{tr "sourceLink"}}</a>
-    <a class="menu-item" onclick="showPopUpById('info')">{{tr "info"}}</a>
+    <a style="border-top: 2px solid white;" onclick="hidePopUp()" href="help.html" target="_blank">{{tr "help"}}</a>
+    <a onclick="sourceLink()" title='{{tr "copyLink" }}'>{{tr "sourceLink"}}</a>
+    <a onclick="showPopUpById('info')">{{tr "info"}}</a>
 </nav>
 
 <div class="fileDialog" id="saveDiv">
