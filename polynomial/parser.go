@@ -836,6 +836,37 @@ func (s Slider) Html(val string, elements, n int) string {
 	return sb.String()
 }
 
+type SliderInt struct {
+	name          string
+	def, min, max int
+}
+
+func (s SliderInt) Name() string {
+	return s.name
+}
+
+func (s SliderInt) FromValue(val string) value.Value {
+	v, err := strconv.Atoi(val)
+	if err != nil {
+		return value.Int(s.def)
+	}
+	return value.Int(v)
+}
+
+func (s SliderInt) Def() value.Value {
+	return value.Int(s.def)
+}
+
+func (s SliderInt) Html(val string, elements, n int) string {
+	if val == "" {
+		val = strconv.Itoa(s.def)
+	}
+	sb := strings.Builder{}
+	sb.WriteString(fmt.Sprintf("<label style=\"white-space: nowrap;\" for=\"guiElement-%d\">%s</label>", n, graph.ParseSupSub(template.HTMLEscapeString(s.name))))
+	sb.WriteString(fmt.Sprintf(`<input oninput="updateByGui(%d)" type="range" min="%d" max="%d" value="%s" id="guiElement-%d" class="range-slider"/>`, elements, s.min, s.max, val, n))
+	return sb.String()
+}
+
 type Check struct {
 	name string
 	def  bool
@@ -972,6 +1003,31 @@ func (r *GuiElements) newSlider(name string, def, min, max float64) value.Value 
 	return slider.Def()
 }
 
+func (r *GuiElements) newSliderInt(name string, def, min, max int) value.Value {
+	for i, el := range r.elements {
+		if el.Name() == name {
+			if i < len(r.values) {
+				return el.FromValue(r.values[i])
+			}
+			return el.Def()
+		}
+	}
+
+	i := len(r.elements)
+	if min > max {
+		min, max = max, min
+	}
+	if def < min || def > max {
+		def = (min + max) / 2
+	}
+	slider := SliderInt{name: name, def: def, min: min, max: max}
+	r.elements = append(r.elements, slider)
+	if i < len(r.values) {
+		return slider.FromValue(r.values[i])
+	}
+	return slider.Def()
+}
+
 func (r *GuiElements) newCheck(name string, def bool) value.Value {
 	for i, el := range r.elements {
 		if el.Name() == name {
@@ -1063,10 +1119,24 @@ func guiMethods() value.MethodMap {
 				}
 			}
 			return nil, fmt.Errorf("slider requires a string and three floats as arguments")
-		}).SetMethodDescription("name", "initial", "min", "max", "Creates a new slider and returns the slider value. "+
+		}).SetMethodDescription("name", "initial", "min", "max", "Creates a new slider and returns the sliders value. "+
 			"The name is used to identify the slider. The initial value is the default value of the slider. "+
 			"The min and max values are the bounds of the slider. "+
 			"If min and max are missing, min is set to zero and max is set to two times initial.").VarArgsMethod(2, 4).Pure(false),
+		"sliderInt": value.MethodAtType(4, func(r *GuiElements, st funcGen.Stack[value.Value]) (value.Value, error) {
+			if name, ok := st.Get(1).(value.String); ok {
+				if def, ok := st.Get(2).ToFloat(); ok {
+					if sMin, ok := st.Get(3).ToFloat(); ok {
+						if sMax, ok := st.Get(4).ToFloat(); ok {
+							return r.newSliderInt(string(name), int(def), int(sMin), int(sMax)), nil
+						}
+					}
+				}
+			}
+			return nil, fmt.Errorf("slider requires a string and three floats as arguments")
+		}).SetMethodDescription("name", "initial", "min", "max", "Creates a new slider and returns the sliders integer value. "+
+			"The name is used to identify the slider. The initial value is the default value of the slider. "+
+			"The min and max values are the bounds of the slider.").Pure(false),
 		"select": value.MethodAtType(-1, func(r *GuiElements, st funcGen.Stack[value.Value]) (value.Value, error) {
 			var items []string
 			for i := 1; i < st.Size(); i++ {
