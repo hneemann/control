@@ -10,7 +10,6 @@ import (
 	"github.com/hneemann/session/fileSys"
 	"github.com/hneemann/session/myOidc"
 	"golang.org/x/text/language"
-	"html/template"
 	"log"
 	"net/http"
 	"os"
@@ -113,12 +112,12 @@ func main() {
 		}
 	} else {
 		login := server.Templates.Lookup("login.html")
-		mux.HandleFunc("/login", sc.LoginHandlerFactory(func(request *http.Request) *template.Template {
-			return login.Funcs(i18nFunc(request))
+		mux.HandleFunc("/login", sc.LoginHandlerFactory(login, func(request *http.Request) any {
+			return i18nFunc(request)
 		}))
 		register := server.Templates.Lookup("register.html")
-		mux.HandleFunc("/register", sc.RegisterHandlerFactory(func(request *http.Request) *template.Template {
-			return register.Funcs(i18nFunc(request))
+		mux.HandleFunc("/register", sc.RegisterHandlerFactory(register, func(request *http.Request) any {
+			return i18nFunc(request)
 		}))
 	}
 

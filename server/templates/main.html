@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<html lang='{{tr "langID"}}'>
+{{$tr := .Translator}}
+<html lang='{{$tr.T "langID"}}'>
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
@@ -37,17 +38,17 @@
       <label for="source" id="filenameLabel"></label><br>
     </div>
     <div class="toolbar">
-        <button id="new" onclick="newScript();" title='{{tr "new" }}'><img class="icon" src="/assets/new.svg"/></button>
-        <button id="load" onclick="showLoad();" title='{{tr "open" }}'><img class="icon" src="/assets/open.svg"/></button>
-        <button id="save" onclick="save();" title='{{tr "save" }}'><img class="icon" src="/assets/save.svg"/></button>
-        <button id="saveAs" onclick="showSaveAs();" title='{{tr "saveAs" }}'><img class="icon" src="/assets/save-as.svg"/></button>
-        <button id="run" onclick="runSource();" title='{{tr "execute" }}'><img class="icon" src="/assets/refresh.svg"/></button>
-        <button id="runInWindow" class="hideOnMobile" onclick="runSourceInWindow();" title='{{tr "executeW" }}' style="margin-left:1em;"><img class="icon" src="/assets/refreshWindow.svg"/></button>
-        <button id="newWin" class="hideOnMobile" onclick="newWindow();" title='{{tr "newWindow" }}'><img class="icon" src="/assets/window-new.svg"/></button>
-        <button id="example" style="margin-left:auto" onclick="showPopUpById('examples');" title='{{tr "examples" }}'><img class="icon" src="/assets/help.svg"/></button>
+        <button id="new" onclick="newScript();" title='{{$tr.T "new" }}'><img class="icon" src="/assets/new.svg"/></button>
+        <button id="load" onclick="showLoad();" title='{{$tr.T "open" }}'><img class="icon" src="/assets/open.svg"/></button>
+        <button id="save" onclick="save();" title='{{$tr.T "save" }}'><img class="icon" src="/assets/save.svg"/></button>
+        <button id="saveAs" onclick="showSaveAs();" title='{{$tr.T "saveAs" }}'><img class="icon" src="/assets/save-as.svg"/></button>
+        <button id="run" onclick="runSource();" title='{{$tr.T "execute" }}'><img class="icon" src="/assets/refresh.svg"/></button>
+        <button id="runInWindow" class="hideOnMobile" onclick="runSourceInWindow();" title='{{$tr.T "executeW" }}' style="margin-left:1em;"><img class="icon" src="/assets/refreshWindow.svg"/></button>
+        <button id="newWin" class="hideOnMobile" onclick="newWindow();" title='{{$tr.T "newWindow" }}'><img class="icon" src="/assets/window-new.svg"/></button>
+        <button id="example" style="margin-left:auto" onclick="showPopUpById('examples');" title='{{$tr.T "examples" }}'><img class="icon" src="/assets/help.svg"/></button>
     </div>
     <div style="display:flex;">
-      <textarea class="source" rows="2" autocorrect="off" id="source" placeholder='{{tr "placeholder" }}' onkeyup="updateRow()" onclick="updateRow()">{{.Code}}</textarea>
+      <textarea class="source" rows="2" autocorrect="off" id="source" placeholder='{{$tr.T "placeholder" }}' onkeyup="updateRow()" onclick="updateRow()">{{.Code}}</textarea>
     </div>
     <div class="footer">
         <span style="display:inline-block;width:3em;text-align:center;" id="row">1</span>
@@ -57,109 +58,109 @@
 
 <nav class="menu-content" id="examples">
     {{range .Examples}}
-    <a onclick="loadExample('{{.Name}}','{{tr .I18N}}')" >{{tr .I18N}}</a>
+    <a onclick="loadExample('{{.Name}}','{{$tr.T .I18N}}')" >{{$tr.T .I18N}}</a>
     {{end}}
-    <a style="border-top: 2px solid white;" onclick="hidePopUp()" href="help.html" target="_blank">{{tr "help"}}</a>
-    <a onclick="sourceLink()" title='{{tr "copyLink" }}'>{{tr "sourceLink"}}</a>
-    <a onclick="showPopUpById('info')">{{tr "info"}}</a>
+    <a style="border-top: 2px solid white;" onclick="hidePopUp()" href="help.html" target="_blank">{{$tr.T "help"}}</a>
+    <a onclick="sourceLink()" title='{{$tr.T "copyLink" }}'>{{$tr.T "sourceLink"}}</a>
+    <a onclick="showPopUpById('info')">{{$tr.T "info"}}</a>
 </nav>
 
 <div class="fileDialog" id="saveDiv">
     <div class="head">
-        {{tr "save"}}
+        {{$tr.T "save"}}
     </div>
     <div style="display:flex; margin-bottom:0.5em;">
-        <label for="filename">{{tr "filename"}}:</label>
+        <label for="filename">{{$tr.T "filename"}}:</label>
         <input class="file" size="25" type="text" id="saveDialogFilename"/>
     </div>
     <div class="fileList" id="saveFileList">
     </div>
     <div class="buttons" style="margin-top:0.5em;">
-        <button onclick="deleteFileConfirm();" title='{{tr "delete" }}'><img class="icon" src="/assets/delete.svg"/></button>
-        <button style="margin-left:auto" onclick="hidePopUp();" title='{{tr "cancel" }}'><img class="icon" src="/assets/cancel.svg"/></button>
-        <button onclick="saveSource();" title='{{tr "ok" }}'><img class="icon" src="/assets/ok.svg"/></button>
+        <button onclick="deleteFileConfirm();" title='{{$tr.T "delete" }}'><img class="icon" src="/assets/delete.svg"/></button>
+        <button style="margin-left:auto" onclick="hidePopUp();" title='{{$tr.T "cancel" }}'><img class="icon" src="/assets/cancel.svg"/></button>
+        <button onclick="saveSource();" title='{{$tr.T "ok" }}'><img class="icon" src="/assets/ok.svg"/></button>
     </div>
 </div>
 
 <div class="fileDialog" id="loadDiv">
     <div class="head">
-        {{tr "open"}}
+        {{$tr.T "open"}}
     </div>
     <div style="margin-bottom:0.5em;">
-        {{tr "available"}}:
+        {{$tr.T "available"}}:
     </div>
     <div class="fileList" id="loadFileList">
     </div>
     <div class="buttons" style="margin-top:0.5em;">
-        <button style="margin-left:auto" onclick="hidePopUp();" title='{{tr "cancel" }}'><img class="icon" src="/assets/cancel.svg"/></button>
+        <button style="margin-left:auto" onclick="hidePopUp();" title='{{$tr.T "cancel" }}'><img class="icon" src="/assets/cancel.svg"/></button>
     </div>
 </div>
 
 <div class="fileDialog" id="overwriteConfirm">
     <div>
-    {{tr "discardConfirm" }}
+    {{$tr.T "discardConfirm" }}
     </div>
     <div style="text-align:right;margin-top:0.5em;">
-        <button onclick="hidePopUp();">{{tr "cancel" }}</button>
-        <button onclick="overwriteConfirmed();">{{tr "discard" }}</button>
+        <button onclick="hidePopUp();">{{$tr.T "cancel" }}</button>
+        <button onclick="overwriteConfirmed();">{{$tr.T "discard" }}</button>
     </div>
 </div>
 
 <div class="fileDialog" id="deleteError">
     <div>
-    {{tr "deleteError" }}
+    {{$tr.T "deleteError" }}
     </div>
     <div style="text-align:right;margin-top:0.5em;">
-        <button onclick="hidePopUp();">{{tr "ok" }}</button>
+        <button onclick="hidePopUp();">{{$tr.T "ok" }}</button>
     </div>
 </div>
 
 <div class="fileDialog" id="linkCopied">
     <div>
-        {{tr "linkCopied" }}
+        {{$tr.T "linkCopied" }}
     </div>
     <div style="text-align:right;margin-top:0.5em;">
-        <button onclick="hidePopUp();">{{tr "ok" }}</button>
+        <button onclick="hidePopUp();">{{$tr.T "ok" }}</button>
     </div>
 </div>
 
 <div class="fileDialog" id="saveConfirm">
     <div>
-    "<span id="confirmName"></span>": {{tr "alreadyExists"}}
+    "<span id="confirmName"></span>": {{$tr.T "alreadyExists"}}
     </div>
     <div style="text-align:right;margin-top:0.5em;">
-        <button onclick="hidePopUp();">{{tr "cancel" }}</button>
-        <button onclick="overwriteSource();">{{tr "overwrite" }}</button>
+        <button onclick="hidePopUp();">{{$tr.T "cancel" }}</button>
+        <button onclick="overwriteSource();">{{$tr.T "overwrite" }}</button>
     </div>
 </div>
 
 <div class="fileDialog" id="deleteConfirm">
     <div>
-    "<span id="confirmDeleteName"></span>": {{tr "deleteConfirm" }}
+    "<span id="confirmDeleteName"></span>": {{$tr.T "deleteConfirm" }}
     </div>
     <div style="text-align:right;margin-top:0.5em;">
-        <button onclick="hidePopUp();">{{tr "cancel" }}</button>
-        <button onclick="deleteFile();">{{tr "delete" }}</button>
+        <button onclick="hidePopUp();">{{$tr.T "cancel" }}</button>
+        <button onclick="deleteFile();">{{$tr.T "delete" }}</button>
     </div>
 </div>
 
 <div class="fileDialog" id="networkError">
     <div>
-    {{tr "networkError"}}<br>
-    {{tr "serverNotReachable"}}
+    {{$tr.T "networkError"}}<br>
+    {{$tr.T "serverNotReachable"}}
     </div>
     <div style="text-align:right;margin-top:0.5em;">
-        <button onclick="hidePopUp();">{{tr "ok" }}</button>
+        <button onclick="hidePopUp();">{{$tr.T "ok" }}</button>
     </div>
 </div>
 
 <div class="fileDialog" id="info">
-    <div class="head">{{tr "info" }}</div>
+    <div class="head">{{$tr.T "info" }}</div>
     <div>
         <pre>{{.InfoText}}</pre>
     </div>
     <div style="text-align:right;margin-top:0.5em;">
-        <button onclick="hidePopUp();">{{tr "ok" }}</button>
+        <button onclick="hidePopUp();">{{$tr.T "ok" }}</button>
     </div>
 </div>
 

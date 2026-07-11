@@ -6,14 +6,21 @@ import (
 	"fmt"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
-	"html/template"
 	"net/http"
 	"path/filepath"
 )
 
-type I18nFuncs func(request *http.Request) template.FuncMap
+type Translator struct {
+	*message.Printer
+}
 
-func LoadJSONTranslations(f embed.FS, path string, defLang language.Tag) (I18nFuncs, error) {
+func (t Translator) T(key string, args ...any) string {
+	return t.Sprintf(key, args...)
+}
+
+type TranslatorFactory func(request *http.Request) Translator
+
+func LoadJSONTranslations(f embed.FS, path string, defLang language.Tag) (TranslatorFactory, error) {
 	entries, err := f.ReadDir(path)
 	if err != nil {
 		return nil, err
@@ -67,19 +74,15 @@ func LoadJSONTranslations(f embed.FS, path string, defLang language.Tag) (I18nFu
 		tags[0], tags[found] = tags[found], tags[0]
 	}
 
-	return createI18nFuncs(tags)
+	return createTranslatorFactory(tags)
 }
 
-func createI18nFuncs(tags []language.Tag) (I18nFuncs, error) {
+func createTranslatorFactory(tags []language.Tag) (TranslatorFactory, error) {
 	matcher := language.NewMatcher(tags)
-	return func(request *http.Request) template.FuncMap {
+	return func(request *http.Request) Translator {
 		accept := request.Header.Get("Accept-Language")
 		tag, _ := language.MatchStrings(matcher, accept)
 		p := message.NewPrinter(tag)
-		return template.FuncMap{
-			"tr": func(key string, args ...interface{}) string {
-				return p.Sprintf(key, args...)
-			},
-		}
+		return Translator{p}
 	}, nil
 }

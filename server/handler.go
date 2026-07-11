@@ -29,11 +29,7 @@ var Assets embed.FS
 //go:embed templates/*
 var TemplateFS embed.FS
 
-var Templates = template.Must(template.New("").Funcs(template.FuncMap{
-	"tr": func(key string, args ...interface{}) string {
-		return ""
-	},
-}).ParseFS(TemplateFS, "templates/*.html"))
+var Templates = template.Must(template.New("").ParseFS(TemplateFS, "templates/*.html"))
 
 var mainViewTemp = Templates.Lookup("main.html")
 
@@ -81,7 +77,7 @@ func GetBuildInfo() string {
 	return info
 }
 
-func CreateMain(examples []Example, runOnServer bool, i18nFuncs I18nFuncs) http.HandlerFunc {
+func CreateMain(examples []Example, runOnServer bool, translatorFactory TranslatorFactory) http.HandlerFunc {
 	info := GetBuildInfo()
 	return func(writer http.ResponseWriter, request *http.Request) {
 		var result template.HTML
@@ -134,20 +130,22 @@ func CreateMain(examples []Example, runOnServer bool, i18nFuncs I18nFuncs) http.
 		}
 
 		data := struct {
-			Examples  []Example
-			InBrowser bool
-			InfoText  string
-			Result    template.HTML
-			Code      string
+			Examples   []Example
+			InBrowser  bool
+			InfoText   string
+			Result     template.HTML
+			Code       string
+			Translator Translator
 		}{
-			Examples:  examples,
-			InBrowser: !runOnServer,
-			InfoText:  info,
-			Result:    result,
-			Code:      code,
+			Examples:   examples,
+			InBrowser:  !runOnServer,
+			InfoText:   info,
+			Result:     result,
+			Code:       code,
+			Translator: translatorFactory(request),
 		}
 
-		err := mainViewTemp.Funcs(i18nFuncs(request)).Execute(writer, data)
+		err := mainViewTemp.Execute(writer, data)
 		if err != nil {
 			log.Println(err)
 		}

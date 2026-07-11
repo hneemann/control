@@ -1,8 +1,9 @@
 <!DOCTYPE html>
-<html lang='{{tr "langID" }}'>
+{{$tr := .Translator}}
+<html lang='{{$tr.T "langID" }}'>
 <head>
   <meta charset="UTF-8">
-  <title>{{tr "login_login"}}</title>
+  <title>{{$tr.T "login_login"}}</title>
   <link rel="icon" type="image/svg" href="/assets/icon.svg">
   <link rel="stylesheet" type="text/css" href="/assets/main.css"/>
 </head>
@@ -10,25 +11,25 @@
   <form action="/login" method="post">
     <table class="loginTable" style="margin-top:3em">
     <tr>
-      <td colspan="2" style="font-size:115%;font-weight:bold;text-align:center">{{tr "login_login"}} Control</td>
+      <td colspan="2" style="font-size:115%;font-weight:bold;text-align:center">{{$tr.T "login_login"}} Control</td>
     </tr>
     <tr>
-      <td><label for="username">{{tr "login_username"}}</label></td>
-      <td><input type="text" name="username" id="username" placeholder='{{tr "login_username"}}' autocomplete="username" required></td>
+      <td><label for="username">{{$tr.T "login_username"}}</label></td>
+      <td><input type="text" name="username" id="username" placeholder='{{$tr.T "login_username"}}' autocomplete="username" required></td>
     </tr>
     <tr>
-      <td><label for="password">{{tr "login_password"}}</label></td>
-      <td><input type="password" name="password" id="password" placeholder='{{tr "login_password"}}' autocomplete="current-password" required></td>
+      <td><label for="password">{{$tr.T "login_password"}}</label></td>
+      <td><input type="password" name="password" id="password" placeholder='{{$tr.T "login_password"}}' autocomplete="current-password" required></td>
     </tr>
     <tr>
       <td></td>
-      <td style="text-align:right"><input type="submit" value='{{tr "login_login"}}'></td>
+      <td style="text-align:right"><input type="submit" value='{{$tr.T "login_login"}}'></td>
     </tr>
     {{if .Error}}
       <tr><td colspan="2" style="color:red">{{.Error}}</td></tr>
     {{end}}
     <tr>
-      <td colspan="2"><a href="/register?t={{.Target}}">{{tr "login_register"}}</a></td>
+      <td colspan="2"><a href="/register?t={{.Target}}">{{$tr.T "login_register"}}</a></td>
     </tr>
     </table>
     <input type="hidden" name="target" value="{{.Target}}">
