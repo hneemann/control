@@ -130,12 +130,12 @@ func CreateMain(examples []Example, runOnServer bool, translatorFactory Translat
 		}
 
 		data := struct {
-			Examples   []Example
-			InBrowser  bool
-			InfoText   string
-			Result     template.HTML
-			Code       string
-			Translator Translator
+			Translator
+			Examples  []Example
+			InBrowser bool
+			InfoText  string
+			Result    template.HTML
+			Code      string
 		}{
 			Examples:   examples,
 			InBrowser:  !runOnServer,

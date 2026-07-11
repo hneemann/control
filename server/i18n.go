@@ -14,7 +14,7 @@ type Translator struct {
 	*message.Printer
 }
 
-func (t Translator) T(key string, args ...any) string {
+func (t Translator) MsgID(key string, args ...any) string {
 	return t.Sprintf(key, args...)
 }
 
