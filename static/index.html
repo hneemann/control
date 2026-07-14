@@ -24,10 +24,10 @@
       <label for="source" id="filenameLabel"></label><br>
     </div>
     <div class="toolbar">
-        <button id="new" onclick="newScript();" title="New"><img class="icon" src="new.svg"/></button>
-        <button id="run" onclick="runSource();" title="Execute and Update Output"><img class="icon" src="refresh.svg"/></button>
-        <button id="runInWindow" onclick="runSourceInWindow();" title="Execute and Update Output in Window" style="margin-left:1em;"><img class="icon" src="refreshWindow.svg"/></button>
-        <button id="example" style="margin-left:auto" onclick="showPopUpById('examples');" title="Examples"><img class="icon" src="help.svg"/></button>
+        <button class="toolbar" id="new" onclick="newScript();" title="New"><img class="icon" src="new.svg"/></button>
+        <button class="toolbar" id="run" onclick="runSource();" title="Execute and Update Output"><img class="icon" src="refresh.svg"/></button>
+        <button class="toolbar" id="runInWindow" onclick="runSourceInWindow();" title="Execute and Update Output in Window" style="margin-left:1em;"><img class="icon" src="refreshWindow.svg"/></button>
+        <button class="toolbar" id="example" style="margin-left:auto" onclick="showPopUpById('examples');" title="Examples"><img class="icon" src="help.svg"/></button>
     </div>
     <div style="display:flex;">
       <textarea class="source" rows="10" autocorrect="off" id="source" placeholder="Enter script" onkeyup="updateRow()" onclick="updateRow()"></textarea>
@@ -42,7 +42,7 @@
     {{range .Examples}}
     <a class="menu-item" onclick="loadExample('{{.NameEnSave}}')" title="{{.Desc}}">{{.Name}}</a>
     {{end}}
-    <a class="menu-item" onclick="hidePopUp()" href="help.html" target="_blank">Help</a>
+    <a style="border-top: 2px solid white;" class="menu-item" onclick="hidePopUp()" href="help.html" target="_blank">Help</a>
     <a class="menu-item" onclick="showPopUpById('info')">Info</a>
 </nav>
 
