@@ -59,7 +59,7 @@ func LoadJSONTranslations(f embed.FS, path string, defLang language.Tag) (Transl
 		}
 	}
 
-	// set english as the default language
+	// set the default language
 	found := -1
 	for i, tag := range tags {
 		if tag == defLang {

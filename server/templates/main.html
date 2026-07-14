@@ -37,14 +37,14 @@
       <label for="source" id="filenameLabel"></label><br>
     </div>
     <div class="toolbar">
-        <button id="new" onclick="newScript();" title='{{$.MsgID "new" }}'><img class="icon" src="/assets/new.svg"/></button>
-        <button id="load" onclick="showLoad();" title='{{$.MsgID "open" }}'><img class="icon" src="/assets/open.svg"/></button>
-        <button id="save" onclick="save();" title='{{$.MsgID "save" }}'><img class="icon" src="/assets/save.svg"/></button>
-        <button id="saveAs" onclick="showSaveAs();" title='{{$.MsgID "saveAs" }}'><img class="icon" src="/assets/save-as.svg"/></button>
-        <button id="run" onclick="runSource();" title='{{$.MsgID "execute" }}'><img class="icon" src="/assets/refresh.svg"/></button>
-        <button id="runInWindow" class="hideOnMobile" onclick="runSourceInWindow();" title='{{$.MsgID "executeW" }}' style="margin-left:1em;"><img class="icon" src="/assets/refreshWindow.svg"/></button>
-        <button id="newWin" class="hideOnMobile" onclick="newWindow();" title='{{$.MsgID "newWindow" }}'><img class="icon" src="/assets/window-new.svg"/></button>
-        <button id="example" style="margin-left:auto" onclick="showPopUpById('examples');" title='{{$.MsgID "examples" }}'><img class="icon" src="/assets/help.svg"/></button>
+        <button class="toolbar" id="new" onclick="newScript();" title='{{$.MsgID "new" }}'><img class="icon" src="/assets/new.svg"/></button>
+        <button class="toolbar" id="load" onclick="showLoad();" title='{{$.MsgID "open" }}'><img class="icon" src="/assets/open.svg"/></button>
+        <button class="toolbar" id="save" onclick="save();" title='{{$.MsgID "save" }}'><img class="icon" src="/assets/save.svg"/></button>
+        <button class="toolbar" id="saveAs" onclick="showSaveAs();" title='{{$.MsgID "saveAs" }}'><img class="icon" src="/assets/save-as.svg"/></button>
+        <button class="toolbar" id="run" onclick="runSource();" title='{{$.MsgID "execute" }}'><img class="icon" src="/assets/refresh.svg"/></button>
+        <button class="toolbar hideOnMobile" id="runInWindow" onclick="runSourceInWindow();" title='{{$.MsgID "executeW" }}' style="margin-left:1em;"><img class="icon" src="/assets/refreshWindow.svg"/></button>
+        <button class="toolbar hideOnMobile" id="newWin" onclick="newWindow();" title='{{$.MsgID "newWindow" }}'><img class="icon" src="/assets/window-new.svg"/></button>
+        <button class="toolbar" id="example" style="margin-left:auto" onclick="showPopUpById('examples');" title='{{$.MsgID "examples" }}'><img class="icon" src="/assets/help.svg"/></button>
     </div>
     <div style="display:flex;">
       <textarea class="source" rows="2" autocorrect="off" id="source" placeholder='{{$.MsgID "placeholder" }}' onkeyup="updateRow()" onclick="updateRow()">{{.Code}}</textarea>
@@ -69,7 +69,7 @@
         {{$.MsgID "save"}}
     </div>
     <div style="display:flex; margin-bottom:0.5em;align-items: center;">
-        <label for="filename">{{$.MsgID "filename"}}:</label>
+        <label for="saveDialogFilename">{{$.MsgID "filename"}}:</label>
         <input class="file" size="25" type="text" id="saveDialogFilename"/>
     </div>
     <div class="fileList" id="saveFileList">
