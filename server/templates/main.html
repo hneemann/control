@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <title>Control</title>
-  <link rel="icon" type="image/svg" href="/assets/icon.svg">
+  <link rel="icon" type="image/svg+xml" href="/assets/icon.svg">
   <link rel="stylesheet" type="text/css" href="/assets/main.css"/>
   {{if .InBrowser}}
   <script src="/assets/wasm_exec.js"></script>
@@ -12,9 +12,9 @@
     const go = new Go();
    	WebAssembly.instantiateStreaming(fetch("/assets/generate.wasm"), go.importObject).then((result) => {
       go.run(result.instance);
-      let source = document.getElementById('source')
-      if (source!=null) {
-          if (source.value != "") {
+      let source = document.getElementById('source');
+      if (source!==null) {
+          if (source.value !== "") {
               window.history.replaceState({}, document.title, window.location.pathname);
               runSource();
           }
