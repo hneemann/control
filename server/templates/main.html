@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <title>Control</title>
   <link rel="icon" type="image/svg+xml" href="/assets/icon.svg">
-  <link rel="stylesheet" type="text/css" href="/assets/main.css"/>
+  <link rel="stylesheet" type="text/css" href="/assets/main.css">
   {{if .InBrowser}}
   <script src="/assets/wasm_exec.js"></script>
   <script>
@@ -22,11 +22,11 @@
     });
   </script>
   {{end}}
-  <script type="text/javascript" src="/assets/main.js"></script>
+  <script src="/assets/main.js"></script>
   {{if .InBrowser}}
-  <script type="text/javascript" src="/assets/runInBrowser.js"></script>
+  <script src="/assets/runInBrowser.js"></script>
   {{else}}
-  <script type="text/javascript" src="/assets/runOnServer.js"></script>
+  <script src="/assets/runOnServer.js"></script>
   {{end}}
 </head>
 <body onload="init();">
@@ -37,14 +37,14 @@
       <label for="source" id="filenameLabel"></label><br>
     </div>
     <div class="toolbar">
-        <button class="toolbar" id="new" onclick="newScript();" title='{{$.MsgID "new" }}'><img class="icon" src="/assets/new.svg"/></button>
-        <button class="toolbar" id="load" onclick="showLoad();" title='{{$.MsgID "open" }}'><img class="icon" src="/assets/open.svg"/></button>
-        <button class="toolbar" id="save" onclick="save();" title='{{$.MsgID "save" }}'><img class="icon" src="/assets/save.svg"/></button>
-        <button class="toolbar" id="saveAs" onclick="showSaveAs();" title='{{$.MsgID "saveAs" }}'><img class="icon" src="/assets/save-as.svg"/></button>
-        <button class="toolbar" id="run" onclick="runSource();" title='{{$.MsgID "execute" }}'><img class="icon" src="/assets/refresh.svg"/></button>
-        <button class="toolbar hideOnMobile" id="runInWindow" onclick="runSourceInWindow();" title='{{$.MsgID "executeW" }}' style="margin-left:1em;"><img class="icon" src="/assets/refreshWindow.svg"/></button>
-        <button class="toolbar hideOnMobile" id="newWin" onclick="newWindow();" title='{{$.MsgID "newWindow" }}'><img class="icon" src="/assets/window-new.svg"/></button>
-        <button class="toolbar" id="example" style="margin-left:auto" onclick="showPopUpById('examples');" title='{{$.MsgID "examples" }}'><img class="icon" src="/assets/help.svg"/></button>
+        <button class="toolbar" id="new" onclick="newScript();" title='{{$.MsgID "new" }}'><img class="icon" src="/assets/new.svg" alt='{{$.MsgID "new" }}'></button>
+        <button class="toolbar" id="load" onclick="showLoad();" title='{{$.MsgID "open" }}'><img class="icon" src="/assets/open.svg" alt='{{$.MsgID "open" }}'></button>
+        <button class="toolbar" id="save" onclick="save();" title='{{$.MsgID "save" }}'><img class="icon" src="/assets/save.svg" alt='{{$.MsgID "save" }}'></button>
+        <button class="toolbar" id="saveAs" onclick="showSaveAs();" title='{{$.MsgID "saveAs" }}'><img class="icon" src="/assets/save-as.svg" alt='{{$.MsgID "saveAs" }}'></button>
+        <button class="toolbar" id="run" onclick="runSource();" title='{{$.MsgID "execute" }}'><img class="icon" src="/assets/refresh.svg" alt='{{$.MsgID "execute" }}'></button>
+        <button class="toolbar hideOnMobile" id="runInWindow" onclick="runSourceInWindow();" title='{{$.MsgID "executeW" }}' style="margin-left:1em;"><img class="icon" src="/assets/refreshWindow.svg" alt='{{$.MsgID "executeW" }}'></button>
+        <button class="toolbar hideOnMobile" id="newWin" onclick="newWindow();" title='{{$.MsgID "newWindow" }}'><img class="icon" src="/assets/window-new.svg" alt='{{$.MsgID "newWindow" }}'></button>
+        <button class="toolbar" id="example" style="margin-left:auto" onclick="showPopUpById('examples');" title='{{$.MsgID "examples" }}'><img class="icon" src="/assets/help.svg" alt='{{$.MsgID "examples" }}'></button>
     </div>
     <div style="display:flex;">
       <textarea class="source" rows="2" autocorrect="off" id="source" placeholder='{{$.MsgID "placeholder" }}' onkeyup="updateRow()" onclick="updateRow()">{{.Code}}</textarea>
@@ -70,14 +70,14 @@
     </div>
     <div style="display:flex; margin-bottom:0.5em;align-items: center;">
         <label for="saveDialogFilename">{{$.MsgID "filename"}}:</label>
-        <input class="file" size="25" type="text" id="saveDialogFilename"/>
+        <input class="file" size="25" type="text" id="saveDialogFilename">
     </div>
     <div class="fileList" id="saveFileList">
     </div>
     <div class="buttons" style="margin-top:0.5em;">
-        <button onclick="deleteFileConfirm();" title='{{$.MsgID "delete" }}'><img class="icon" src="/assets/delete.svg"/></button>
-        <button style="margin-left:auto" onclick="hidePopUp();" title='{{$.MsgID "cancel" }}'><img class="icon" src="/assets/cancel.svg"/></button>
-        <button onclick="saveSource();" title='{{$.MsgID "ok" }}'><img class="icon" src="/assets/ok.svg"/></button>
+        <button onclick="deleteFileConfirm();" title='{{$.MsgID "delete" }}'><img class="icon" src="/assets/delete.svg" alt='{{$.MsgID "delete" }}'></button>
+        <button style="margin-left:auto" onclick="hidePopUp();" title='{{$.MsgID "cancel" }}'><img class="icon" src="/assets/cancel.svg" alt='{{$.MsgID "cancel" }}'></button>
+        <button onclick="saveSource();" title='{{$.MsgID "ok" }}'><img class="icon" src="/assets/ok.svg" alt='{{$.MsgID "ok" }}'></button>
     </div>
 </div>
 
@@ -91,7 +91,7 @@
     <div class="fileList" id="loadFileList">
     </div>
     <div class="buttons" style="margin-top:0.5em;">
-        <button style="margin-left:auto" onclick="hidePopUp();" title='{{$.MsgID "cancel" }}'><img class="icon" src="/assets/cancel.svg"/></button>
+        <button style="margin-left:auto" onclick="hidePopUp();" title='{{$.MsgID "cancel" }}'><img class="icon" src="/assets/cancel.svg" alt='{{$.MsgID "cancel" }}'></button>
     </div>
 </div>
 
