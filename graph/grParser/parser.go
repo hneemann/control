@@ -55,7 +55,7 @@ func SetLaTeX(c *graph.Context, st funcGen.Stack[value.Value]) error {
 		widthInPx := widthInCm / 2.54 * 96
 		heightInPx := c.Height / c.Width * widthInPx
 
-		c.Correction = widthInPx / c.Width
+		c.StrokeCorrection = widthInPx / c.Width
 
 		c.Width = widthInPx
 		c.Height = heightInPx
@@ -850,8 +850,16 @@ func createChartMethods() value.MethodMap {
 				chart.context.TextSize = si
 				return chart, nil
 			}
-			return nil, fmt.Errorf("textSize requires a float values")
+			return nil, fmt.Errorf("textSize requires a float value")
 		}).SetMethodDescription("size", "Sets the text size."),
+		"textRatio": value.MethodAtType(1, func(chart ChartValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			if si, ok := stack.Get(1).ToFloat(); ok {
+				chart = chart.Copy()
+				chart.context.TextSize = chart.context.Width / si
+				return chart, nil
+			}
+			return nil, fmt.Errorf("textRatio requires a float value")
+		}).SetMethodDescription("ratio", "Sets the text size to the output width divided by the given ratio."),
 		"LaTeX": value.MethodAtType(3, func(chart ChartValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			err := SetLaTeX(&chart.context, stack)
 			return chart, err

@@ -32,7 +32,7 @@ func NewSVG(context *Context, w *xmlWriter.XMLWriter) *SVG {
 		},
 		w:                w,
 		context:          context,
-		strokeCorrection: context.Correction,
+		strokeCorrection: context.StrokeCorrection,
 		latex:            context.LaTeX,
 	}
 

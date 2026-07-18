@@ -24,14 +24,18 @@ func parserWrapper() js.Func {
 		if len(args) < 1 {
 			return "Invalid, at least one argument needed"
 		}
-		if len(args) > 2 {
-			return "Invalid, at most two arguments possible"
+		if len(args) > 3 {
+			return "Invalid, at most three arguments possible"
 		}
 
 		source := args[0].String()
 		guiValues := ""
 		if len(args) > 1 {
 			guiValues = args[1].String()
+		}
+		ratio := ""
+		if len(args) > 2 {
+			ratio = args[2].String()
 		}
 
 		var err error
@@ -49,7 +53,7 @@ func parserWrapper() js.Func {
 		var expHtml template.HTML
 		if fu != nil {
 			// call the source
-			gui := polynomial.NewGuiElements(guiValues)
+			gui := polynomial.NewGuiElements(guiValues).SetTextSizeRatio(ratio)
 			var res value.Value
 			res, err = fu(funcGen.NewStack[value.Value](gui))
 			if err == nil {

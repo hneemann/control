@@ -443,18 +443,18 @@ const (
 )
 
 type Context struct {
-	Width      float64
-	Height     float64
-	TextSize   float64
-	Correction float64
-	LaTeX      bool
+	Width            float64
+	Height           float64
+	TextSize         float64
+	StrokeCorrection float64
+	LaTeX            bool
 }
 
 var DefaultContext = Context{
-	Width:      800,
-	Height:     600,
-	TextSize:   15,
-	Correction: 1,
+	Width:            800,
+	Height:           600,
+	TextSize:         15,
+	StrokeCorrection: 1,
 }
 
 type Image interface {

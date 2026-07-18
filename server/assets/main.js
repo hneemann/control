@@ -275,6 +275,14 @@ function deleteFile() {
     })
 }
 
+function getRatio(source, result) {
+    const computedStyle = window.getComputedStyle(source);
+    const fontSizeWithUnit = computedStyle.fontSize;
+    const fontSize = parseFloat(fontSizeWithUnit);
+    const resultWidth= result.clientWidth;
+    return resultWidth/fontSize;
+}
+
 function fetchHelper(url, data, target) {
     let formData = new FormData();
     formData.append('data', data);

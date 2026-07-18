@@ -20,6 +20,7 @@ function updateByGui(n) {
     let formData = new FormData();
     formData.append('data', source.value);
     formData.append('gui', slValues);
+    formData.append('ratio', getRatio(document.getElementById('source'), document.getElementById('result')).toString());
 
     fetchHelperFormTimed("/execute/", formData, (a,t) => {
         if (t>lastUpdateTime) {
@@ -59,7 +60,10 @@ function runSource() {
 
     checkSource(source);
 
-    fetchHelper("/execute/", source.value, a => {
+    let formData = new FormData();
+    formData.append('data', source.value);
+    formData.append('ratio', getRatio(source, result).toString());
+    fetchHelperForm("/execute/", formData, a => {
         result.innerHTML = a;
         result.scrollTop = result.scrollHeight;
         source.focus();

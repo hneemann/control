@@ -230,9 +230,16 @@ img.icon {
     height: 1.7em;
 }
 
-input.range-slider {
-    width: calc( 100% - 0.5em);
+input.gui-slider {
+    font-size: inherit;
 }
+input.gui-select {
+    font-size: inherit;
+}
+input.gui-check {
+    font-size: inherit;
+}
+
 div.gui-container {
     display: grid;
     grid-template-columns: min-content 1fr;

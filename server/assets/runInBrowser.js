@@ -14,8 +14,9 @@ function updateByGui(n) {
 
     let source = document.getElementById('gui-source');
     let result = document.getElementById('gui-inner');
+    let ratio = getRatio(document.getElementById('source'), document.getElementById('result'));
 
-    result.innerHTML = generateOutput(source.value, slValues);
+    result.innerHTML = generateOutput(source.value, slValues, ratio.toString());
 }
 
 function runSource() {
@@ -24,7 +25,7 @@ function runSource() {
 
     checkSource(source);
 
-    result.innerHTML = generateOutput(source.value);
+    result.innerHTML = generateOutput(source.value, "", getRatio(source, result).toString());
     result.scrollTop = result.scrollHeight;
     source.focus();
 }

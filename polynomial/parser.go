@@ -832,7 +832,7 @@ func (s Slider) Html(val string, elements, n int) string {
 	}
 	sb := strings.Builder{}
 	sb.WriteString(fmt.Sprintf("<label style=\"white-space: nowrap;\" for=\"guiElement-%d\">%s</label>", n, graph.ParseSupSub(template.HTMLEscapeString(s.name))))
-	sb.WriteString(fmt.Sprintf(`<input oninput="updateByGui(%d)" type="range" min="0" max="1000" value="%s" id="guiElement-%d" class="range-slider"/>`, elements, val, n))
+	sb.WriteString(fmt.Sprintf(`<input oninput="updateByGui(%d)" type="range" min="0" max="1000" value="%s" id="guiElement-%d" class="gui-slider"/>`, elements, val, n))
 	return sb.String()
 }
 
@@ -863,7 +863,7 @@ func (s SliderInt) Html(val string, elements, n int) string {
 	}
 	sb := strings.Builder{}
 	sb.WriteString(fmt.Sprintf("<label style=\"white-space: nowrap;\" for=\"guiElement-%d\">%s</label>", n, graph.ParseSupSub(template.HTMLEscapeString(s.name))))
-	sb.WriteString(fmt.Sprintf(`<input oninput="updateByGui(%d)" type="range" min="%d" max="%d" value="%s" id="guiElement-%d" class="range-slider"/>`, elements, s.min, s.max, val, n))
+	sb.WriteString(fmt.Sprintf(`<input oninput="updateByGui(%d)" type="range" min="%d" max="%d" value="%s" id="guiElement-%d" class="gui-slider"/>`, elements, s.min, s.max, val, n))
 	return sb.String()
 }
 
@@ -901,7 +901,7 @@ func (s Check) Html(val string, elements, n int) string {
 	if bo {
 		sb.WriteString(` checked="checked"`)
 	}
-	sb.WriteString(`/></div>`)
+	sb.WriteString(` class="gui-check"/></div>`)
 	return sb.String()
 }
 
@@ -928,7 +928,7 @@ func (s Select) Html(val string, elements, n int) string {
 	}
 	sb := strings.Builder{}
 	sb.WriteString(fmt.Sprintf("<label style=\"white-space: nowrap;\" for=\"guiElement-%d\">%s</label><div>", n, graph.ParseSupSub(template.HTMLEscapeString(s.name))))
-	sb.WriteString(fmt.Sprintf("<select onchange=\"updateByGui(%d)\" id=\"guiElement-%d\">", elements, n))
+	sb.WriteString(fmt.Sprintf("<select onchange=\"updateByGui(%d)\" id=\"guiElement-%d\" class=\"gui-select\">", elements, n))
 	for _, item := range s.items {
 		ei := template.HTMLEscapeString(item)
 		sb.WriteString(fmt.Sprintf("<option value=\"%s\">%s</option>", ei, graph.ParseSupSub(ei)))
@@ -938,8 +938,9 @@ func (s Select) Html(val string, elements, n int) string {
 }
 
 type GuiElements struct {
-	elements []GuiElement
-	values   []string
+	elements      []GuiElement
+	values        []string
+	textSizeRatio float64
 }
 
 func NewGuiElements(def string) *GuiElements {
@@ -1103,6 +1104,14 @@ func (r *GuiElements) IsGui() bool {
 	return len(r.elements) > 0
 }
 
+func (r *GuiElements) SetTextSizeRatio(str string) *GuiElements {
+	ratio, err := strconv.ParseFloat(str, 64)
+	if err == nil {
+		r.textSizeRatio = ratio
+	}
+	return r
+}
+
 func guiMethods() value.MethodMap {
 	return value.MethodMap{
 		"slider": value.MethodAtType(4, func(r *GuiElements, st funcGen.Stack[value.Value]) (value.Value, error) {
@@ -1160,6 +1169,9 @@ func guiMethods() value.MethodMap {
 			}
 			return nil, fmt.Errorf("check requires a string and a boolean as arguments")
 		}).SetMethodDescription("name", "checked", "Creates a new check box. The default state is 'not checked'.").VarArgsMethod(1, 2).Pure(false),
+		"textRatio": value.MethodAtType(0, func(r *GuiElements, st funcGen.Stack[value.Value]) (value.Value, error) {
+			return value.Float(r.textSizeRatio), nil
+		}).SetMethodDescription("Returns the clients output width to fontsize ratio. It may be zero if unknown."),
 	}
 }
 

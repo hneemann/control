@@ -169,6 +169,7 @@ func Execute(writer http.ResponseWriter, request *http.Request) {
 	src := strings.TrimSpace(request.FormValue("data"))
 	guiDef := strings.TrimSpace(request.FormValue("gui"))
 	time := strings.TrimSpace(request.FormValue("time"))
+	ratioStr := strings.TrimSpace(request.FormValue("ratio"))
 	var resHtml template.HTML
 	if src != "" {
 
@@ -184,7 +185,7 @@ func Execute(writer http.ResponseWriter, request *http.Request) {
 
 		if err == nil {
 			var res value.Value
-			gui := polynomial.NewGuiElements(guiDef)
+			gui := polynomial.NewGuiElements(guiDef).SetTextSizeRatio(ratioStr)
 			res, err = fu(funcGen.NewStack[value.Value](gui))
 			if err == nil {
 				resHtml, _, err = export.ToHtml(res, 50, customHtml, true)
