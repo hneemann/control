@@ -14,15 +14,16 @@ function updateByGui(n) {
 
     let source = document.getElementById('gui-source');
     let result = document.getElementById('gui-inner');
+    let ratio = getRatio(document.getElementById('source'), document.getElementById('result'));
 
-    result.innerHTML = generateOutput(source.value, slValues);
+    result.innerHTML = generateOutput(source.value, slValues, ratio.toString());
 }
 
 function runSource() {
     let source = document.getElementById('source');
     let result = document.getElementById('result');
 
-    result.innerHTML = generateOutput(source.value);
+    result.innerHTML = generateOutput(source.value, "", getRatio(source, result).toString());
     result.scrollTop = result.scrollHeight;
     source.focus();
 }

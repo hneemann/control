@@ -125,6 +125,14 @@ function loadExample(name) {
     });
 }
 
+function getRatio(source, result) {
+    const computedStyle = window.getComputedStyle(source);
+    const fontSizeWithUnit = computedStyle.fontSize;
+    const fontSize = parseFloat(fontSizeWithUnit);
+    const resultWidth= result.clientWidth;
+    return resultWidth/fontSize;
+}
+
 function fetchHelper(url, target) {
     fetch(url)
         .then(function (response) {
