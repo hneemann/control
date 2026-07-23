@@ -333,7 +333,7 @@ func valueToMarker(val value.Value, size float64) (graph.Shape, error) {
 			return graph.NewCrossMarker(size), nil
 		}
 	}
-	return nil, fmt.Errorf("marker must be defined by an int or a string")
+	return nil, fmt.Errorf("the symbol must be defined by an int or a string")
 }
 
 type Chart3dValue struct {
@@ -1982,7 +1982,7 @@ func Setup(fg *value.FunctionGenerator) {
 		},
 		Args:   6,
 		IsPure: true,
-	}.SetDescription("x", "y", "alpha0", "alpha1", "radius", "mode", "Creates an arc chart content. It's especially useful for drawing an angle. "+
+	}.SetDescription("x", "y", "radius", "alpha0", "alpha1", "mode", "Creates an arc chart content. It's especially useful for drawing an angle. "+
 		"The radius is specified in units of text size. "+
 		"The mode flag defines which arrow heads to draw (0: none, 1: at the tip (default), 2: at the tail, 3: at both ends).").VarArgs(5, 6))
 	fg.AddStaticFunction("arrow3d", funcGen.Function[value.Value]{
