@@ -49,7 +49,7 @@ plot(
 func createHintAt(w)
   let c1 = G( j*w );
   let c2 = G( j*w*0.99 );
-  hintDir(c1.real(), c1.imag(), c2.real(), c2.imag(), "#omega="+w);
+  hintDir(c1, c2, "#omega="+w);
 
 plot(
   G.nyquist(),

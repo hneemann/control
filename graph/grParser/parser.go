@@ -1819,85 +1819,85 @@ func Setup(fg *value.FunctionGenerator) {
 	}.SetDescription("y", "color", "Creates a constant line chart content.").VarArgs(1, 2))
 	fg.AddStaticFunction("hint", funcGen.Function[value.Value]{
 		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
-			if x, ok := st.Get(0).ToFloat(); ok {
-				if y, ok := st.Get(1).ToFloat(); ok {
-					if text, ok := st.Get(2).(value.String); ok {
-						hint := graph.Hint{
-							Text: string(text),
-							Pos:  graph.Point{X: x, Y: y},
-						}
-						styleVal, err := GetStyle(st, 3, graph.Black)
-						if err != nil {
-							return nil, fmt.Errorf("hint: %w", err)
-						}
-						hint.Style = styleVal.Value
-						return ChartContentValue{Holder: Holder[graph.ChartContent]{hint}}, nil
-					}
+			x, y, sp, err := getXYFromStack(st, 0, "hint")
+			if err != nil {
+				return nil, err
+			}
+			if text, ok := st.Get(sp).(value.String); ok {
+				hint := graph.Hint{
+					Text: string(text),
+					Pos:  graph.Point{X: x, Y: y},
 				}
+				styleVal, err := GetStyle(st, sp+1, graph.Black)
+				if err != nil {
+					return nil, fmt.Errorf("hint: %w", err)
+				}
+				hint.Style = styleVal.Value
+				return ChartContentValue{Holder: Holder[graph.ChartContent]{hint}}, nil
 			}
 			return nil, fmt.Errorf("hint requires two floats and a string")
 		},
 		Args:   4,
 		IsPure: true,
-	}.SetDescription("x", "y", "text", "color", "Creates a new hint chart content.").VarArgs(3, 4))
+	}.SetDescription("x", "y", "text", "color", "Creates a new hint chart content.").VarArgs(2, 4))
 	fg.AddStaticFunction("hintDir", funcGen.Function[value.Value]{
 		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
-			if x1, ok := st.Get(0).ToFloat(); ok {
-				if y1, ok := st.Get(1).ToFloat(); ok {
-					if x2, ok := st.Get(2).ToFloat(); ok {
-						if y2, ok := st.Get(3).ToFloat(); ok {
-							if text, ok := st.Get(4).(value.String); ok {
-								hint := graph.HintDir{
-									Hint: graph.Hint{
-										Text: string(text),
-										Pos:  graph.Point{X: x1, Y: y1},
-									},
-									PosDir: graph.Point{X: x2, Y: y2},
-								}
-								styleVal, err := GetStyle(st, 5, graph.Black)
-								if err != nil {
-									return nil, fmt.Errorf("hintDir: %w", err)
-								}
-								hint.Style = styleVal.Value
-								return ChartContentValue{Holder: Holder[graph.ChartContent]{hint}}, nil
-							}
-						}
-					}
+			x1, y1, sp, err := getXYFromStack(st, 0, "hintDir")
+			if err != nil {
+				return nil, err
+			}
+			x2, y2, sp, err := getXYFromStack(st, sp, "hintDir")
+			if err != nil {
+				return nil, err
+			}
+			if text, ok := st.Get(sp).(value.String); ok {
+				hint := graph.HintDir{
+					Hint: graph.Hint{
+						Text: string(text),
+						Pos:  graph.Point{X: x1, Y: y1},
+					},
+					PosDir: graph.Point{X: x2, Y: y2},
 				}
+				styleVal, err := GetStyle(st, sp+1, graph.Black)
+				if err != nil {
+					return nil, fmt.Errorf("hintDir: %w", err)
+				}
+				hint.Style = styleVal.Value
+				return ChartContentValue{Holder: Holder[graph.ChartContent]{hint}}, nil
 			}
 			return nil, fmt.Errorf("hintDir requires four floats and a string")
 		},
 		Args:   6,
 		IsPure: true,
-	}.SetDescription("x1", "y1", "x2", "y2", "text", "color", "Creates a new directional hint chart content.").VarArgs(5, 6))
+	}.SetDescription("x1", "y1", "x2", "y2", "text", "color", "Creates a new directional hint chart content.").VarArgs(3, 6))
 	fg.AddStaticFunction("text", funcGen.Function[value.Value]{
 		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
-			if x, ok := st.Get(0).ToFloat(); ok {
-				if y, ok := st.Get(1).ToFloat(); ok {
-					if text, ok := st.Get(2).(value.String); ok {
-						t := graph.Text{
-							Text: string(text),
-							Pos:  graph.Point{X: x, Y: y},
-						}
-						styleVal, err := GetStyle(st, 3, graph.Black)
-						if err != nil {
-							return nil, fmt.Errorf("text: %w", err)
-						}
-						t.Style = styleVal.Value
-						if oStr, ok := st.GetOptional(4, value.String("")).(value.String); ok {
-							t.Orientation = graph.NewOrientation(string(oStr))
-						}
-
-						return ChartContentValue{Holder: Holder[graph.ChartContent]{t}}, nil
-					}
+			x, y, sp, err := getXYFromStack(st, 0, "text")
+			if err != nil {
+				return nil, err
+			}
+			if text, ok := st.Get(sp).(value.String); ok {
+				t := graph.Text{
+					Text: string(text),
+					Pos:  graph.Point{X: x, Y: y},
 				}
+				styleVal, err := GetStyle(st, sp+1, graph.Black)
+				if err != nil {
+					return nil, fmt.Errorf("text: %w", err)
+				}
+				t.Style = styleVal.Value
+				if oStr, ok := st.GetOptional(sp+2, value.String("")).(value.String); ok {
+					t.Orientation = graph.NewOrientation(string(oStr))
+				}
+
+				return ChartContentValue{Holder: Holder[graph.ChartContent]{t}}, nil
 			}
 			return nil, fmt.Errorf("text requires two floats and a string")
 		},
 		Args:   5,
 		IsPure: true,
 	}.SetDescription("x", "y", "text", "color", "orientation", "Adds an arbitrary text to the chart. The orientation is a string containing "+
-		"'top', 'hcenter', 'bottom', 'left', 'right' or 'vcenter'").VarArgs(3, 5))
+		"'top', 'hcenter', 'bottom', 'left', 'right' or 'vcenter'").VarArgs(2, 5))
 	fg.AddStaticFunction("text3d", funcGen.Function[value.Value]{
 		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
 			if p1, ok := st.Get(0).(graph.Vector3d); ok {
@@ -1926,65 +1926,64 @@ func Setup(fg *value.FunctionGenerator) {
 		"pos2 with an alignment that prevents it from overlapping the imaginary line.").VarArgs(3, 4))
 	fg.AddStaticFunction("arrow", funcGen.Function[value.Value]{
 		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
-			if x1, ok := st.Get(0).ToFloat(); ok {
-				if y1, ok := st.Get(1).ToFloat(); ok {
-					if x2, ok := st.Get(2).ToFloat(); ok {
-						if y2, ok := st.Get(3).ToFloat(); ok {
-							arrow := graph.Arrow{
-								From: graph.Point{X: x1, Y: y1},
-								To:   graph.Point{X: x2, Y: y2},
-							}
-
-							if mode, ok := st.GetOptional(4, value.Int(1)).(value.Int); ok {
-								arrow.Mode = int(mode)
-							} else {
-								return nil, fmt.Errorf("arrow requires an int as fifth argument")
-							}
-							return ChartContentValue{Holder: Holder[graph.ChartContent]{arrow}}, nil
-						}
-					}
-				}
+			x1, y1, sp, err := getXYFromStack(st, 0, "arrow")
+			if err != nil {
+				return nil, err
 			}
-			return nil, fmt.Errorf("arrow requires four floats and a string")
+			x2, y2, sp, err := getXYFromStack(st, sp, "arrow")
+			if err != nil {
+				return nil, err
+			}
+			arrow := graph.Arrow{
+				From: graph.Point{X: x1, Y: y1},
+				To:   graph.Point{X: x2, Y: y2},
+			}
+
+			if mode, ok := st.GetOptional(sp, value.Int(1)).(value.Int); ok {
+				arrow.Mode = int(mode)
+			} else {
+				return nil, fmt.Errorf("arrow requires an int as fifth argument")
+			}
+			return ChartContentValue{Holder: Holder[graph.ChartContent]{arrow}}, nil
 		},
 		Args:   5,
 		IsPure: true,
 	}.SetDescription("x1", "y1", "x2", "y2", "mode", "Creates an arrow chart content. "+
-		"The mode flag defines which arrow heads to draw (0: none, 1: at the tip (default), 2: at the tail, 3: at both ends).").VarArgs(4, 5))
+		"The mode flag defines which arrow heads to draw (0: none, 1: at the tip (default), 2: at the tail, 3: at both ends).").VarArgs(2, 5))
 	fg.AddStaticFunction("arc", funcGen.Function[value.Value]{
 		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
-			if x, ok := st.Get(0).ToFloat(); ok {
-				if y, ok := st.Get(1).ToFloat(); ok {
-					if r, ok := st.Get(2).ToFloat(); ok {
-						if a0, ok := st.Get(3).ToFloat(); ok {
-							if a1, ok := st.Get(4).ToFloat(); ok {
-								arrow := graph.Arc{
-									Pos:    graph.Point{X: x, Y: y},
-									Alpha0: a0,
-									Alpha1: a1,
-									Radius: r,
-									Style:  graph.Gray,
-									Mode:   1,
-								}
-
-								if mode, ok := st.GetOptional(5, value.Int(1)).(value.Int); ok {
-									arrow.Mode = int(mode)
-								} else {
-									return nil, fmt.Errorf("arc requires an int as fifth argument")
-								}
-								return ChartContentValue{Holder: Holder[graph.ChartContent]{arrow}}, nil
-							}
+			x, y, sp, err := getXYFromStack(st, 0, "arc")
+			if err != nil {
+				return nil, err
+			}
+			if r, ok := st.Get(sp).ToFloat(); ok {
+				if a0, ok := st.Get(sp + 1).ToFloat(); ok {
+					if a1, ok := st.Get(sp + 2).ToFloat(); ok {
+						arrow := graph.Arc{
+							Pos:    graph.Point{X: x, Y: y},
+							Alpha0: a0,
+							Alpha1: a1,
+							Radius: r,
+							Style:  graph.Gray,
+							Mode:   1,
 						}
+
+						if mode, ok := st.GetOptional(sp+3, value.Int(1)).(value.Int); ok {
+							arrow.Mode = int(mode)
+						} else {
+							return nil, fmt.Errorf("arc requires an int as fifth argument")
+						}
+						return ChartContentValue{Holder: Holder[graph.ChartContent]{arrow}}, nil
 					}
 				}
 			}
-			return nil, fmt.Errorf("arc requires five floats and a string")
+			return nil, fmt.Errorf("arc requires five floats and an int")
 		},
 		Args:   6,
 		IsPure: true,
 	}.SetDescription("x", "y", "radius", "alpha0", "alpha1", "mode", "Creates an arc chart content. It's especially useful for drawing an angle. "+
 		"The radius is specified in units of text size. "+
-		"The mode flag defines which arrow heads to draw (0: none, 1: at the tip (default), 2: at the tail, 3: at both ends).").VarArgs(5, 6))
+		"The mode flag defines which arrow heads to draw (0: none, 1: at the tip (default), 2: at the tail, 3: at both ends).").VarArgs(4, 6))
 	fg.AddStaticFunction("arrow3d", funcGen.Function[value.Value]{
 		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
 			if v1, ok := st.Get(0).(graph.Vector3d); ok {
@@ -2080,6 +2079,20 @@ func Setup(fg *value.FunctionGenerator) {
 	createSub(fg)
 	createAdd(fg)
 	createNeg(fg)
+}
+
+func getXYFromStack(st funcGen.Stack[value.Value], sp int, name string) (float64, float64, int, error) {
+	v := st.Get(sp)
+	if tp, ok := v.(ToPoint); ok {
+		p := tp.ToPoint()
+		return p.X, p.Y, sp + 1, nil
+	}
+	if x, ok := v.ToFloat(); ok {
+		if y, ok := st.Get(sp + 1).ToFloat(); ok {
+			return x, y, sp + 2, nil
+		}
+	}
+	return 0, 0, sp, fmt.Errorf("%s: expected a point or two floats as arguments at position %d", name, sp)
 }
 
 func createNeg(fg *value.FunctionGenerator) {
