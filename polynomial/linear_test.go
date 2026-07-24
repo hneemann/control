@@ -6,6 +6,7 @@ import (
 	"github.com/hneemann/control/graph"
 	"github.com/hneemann/control/graph/grParser"
 	"github.com/hneemann/parser2/funcGen"
+	"github.com/hneemann/parser2/listMap"
 	"github.com/hneemann/parser2/value"
 	"github.com/hneemann/parser2/value/export/xmlWriter"
 	"github.com/stretchr/testify/assert"
@@ -173,6 +174,19 @@ func testFunc(t *testing.T, a *Linear, op func(a *Linear) *Linear, expected *Lin
 	assert.True(t, expected.Equals(op(a4)))
 }
 
+func MustMapToList(listMap listMap.ListMap[value.Value], err error) []graph.ChartContent {
+	if err != nil {
+		panic(err)
+	}
+	var list = make([]graph.ChartContent, 0, 5)
+	for _, cv := range listMap.Iter {
+		if cc, ok := cv.(grParser.ChartContentValue); ok {
+			list = append(list, cc.Value)
+		}
+	}
+	return list
+}
+
 func Must[T any](t T, err error) T {
 	if err != nil {
 		panic(err)
@@ -209,7 +223,7 @@ func Test_Evans1(t *testing.T) {
 	d := NewRoots(complex(-2, 0), complex(-1, 0))
 	g0 := FromRoots(n, d)
 
-	pl := createPlot(Must(g0.CreateEvans(0.01, 15)))
+	pl := createPlot(MustMapToList(g0.CreateEvans(0.01, 15)))
 	pl.X.Bounds = graph.NewBounds(-4, 0.1)
 	if pl != nil {
 		err := exportPlot(pl, "wok1.svg")
@@ -230,7 +244,7 @@ func Test_Evans2(t *testing.T) {
 	d := NewRoots(complex(1, 0), complex(2, 0))
 	g0 := FromRoots(n, d)
 
-	pl := createPlot(Must(g0.CreateEvans(0.01, 25)))
+	pl := createPlot(MustMapToList(g0.CreateEvans(0.01, 25)))
 	fmt.Println(pl)
 	if pl != nil {
 		pl.X.Bounds = graph.NewBounds(-1, 3)
@@ -251,7 +265,7 @@ func Test_Evans3(t *testing.T) {
 
 	g0 := g.Mul(pid)
 
-	pl := createPlot(Must(g0.CreateEvans(0.01, 100)))
+	pl := createPlot(MustMapToList(g0.CreateEvans(0.01, 100)))
 	if pl != nil {
 		pl.X.Bounds = graph.NewBounds(-6, 3)
 		pl.Y.Bounds = graph.NewBounds(-4, 4)
@@ -271,7 +285,7 @@ func Test_Evans4(t *testing.T) {
 
 	g0 := g.Mul(pid)
 
-	pl := createPlot(Must(g0.CreateEvans(0.01, 10)))
+	pl := createPlot(MustMapToList(g0.CreateEvans(0.01, 10)))
 	if pl != nil {
 		pl.X.Bounds = graph.NewBounds(-2, 0.5)
 		pl.Y.Bounds = graph.NewBounds(-3, 3)
@@ -286,7 +300,7 @@ func Test_Evans5(t *testing.T) {
 	d := Must(Must(Must(NewRoots().Real(2, 1)).Real(1, 1)).Complex(1, 3, 3.1))
 	g0 := FromRoots(n, d)
 
-	pl := createPlot(Must(g0.CreateEvans(0.01, 10)))
+	pl := createPlot(MustMapToList(g0.CreateEvans(0.01, 10)))
 	if pl != nil {
 		pl.X.Bounds = graph.NewBounds(-2, 0.5)
 		pl.Y.Bounds = graph.NewBounds(-2, 2)
@@ -301,7 +315,7 @@ func Test_Evans6(t *testing.T) {
 	d := NewRoots(complex(0, 0), complex(1, 0), complex(-2, 0))
 	g0 := FromRoots(n, d)
 
-	pl := createPlot(Must(g0.CreateEvans(0.01, 50)))
+	pl := createPlot(MustMapToList(g0.CreateEvans(0.01, 50)))
 	if pl != nil {
 		err := exportPlot(pl, "wok6.svg")
 		assert.NoError(t, err)
@@ -313,7 +327,7 @@ func Test_Evans7(t *testing.T) {
 	d := NewRoots(complex(-1, 1))
 	g0 := FromRoots(n, d)
 
-	pl := createPlot(Must(g0.CreateEvans(0.01, 5)))
+	pl := createPlot(MustMapToList(g0.CreateEvans(0.01, 5)))
 	pl.X.Bounds = graph.NewBounds(-2, 0.2)
 	if pl != nil {
 		err := exportPlot(pl, "wok7.svg")

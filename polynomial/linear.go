@@ -8,6 +8,7 @@ import (
 	"github.com/hneemann/control/graph/grParser"
 	"github.com/hneemann/iterator"
 	"github.com/hneemann/parser2/funcGen"
+	"github.com/hneemann/parser2/listMap"
 	"github.com/hneemann/parser2/value"
 	"github.com/hneemann/parser2/value/export"
 	"github.com/hneemann/parser2/value/export/xmlWriter"
@@ -646,7 +647,12 @@ func (a Asymptotes) Legend() []graph.Legend {
 	return []graph.Legend{{Name: "Asymptotes", ShapeLineStyle: graph.ShapeLineStyle{LineStyle: asymptotesStyle}}}
 }
 
-func (l *Linear) CreateEvans(kMin, kMax float64) ([]graph.ChartContent, error) {
+func setImReLabels(chart *graph.Chart) {
+	chart.X.Label = "Re"
+	chart.Y.Label = "Im"
+}
+
+func (l *Linear) CreateEvans(kMin, kMax float64) (listMap.ListMap[value.Value], error) {
 
 	lin, err := l.Reduce()
 	if err != nil {
@@ -704,12 +710,12 @@ func (l *Linear) CreateEvans(kMin, kMax float64) ([]graph.ChartContent, error) {
 		}
 	}
 
-	curveList := make([]graph.ChartContent, 0, 5)
+	contentMap := listMap.New[value.Value](5)
 
 	markerStyle := graph.Black.SetStrokeWidth(2)
 	if p.Count() > 0 {
 		polesMarker := graph.NewCrossMarker(4)
-		curveList = append(curveList,
+		contentMap = contentMap.Append("poles", grParser.NewChartContentValue(
 			graph.Scatter{
 				Points: graph.PointsFromSlice(p.ToPoints()...),
 				ShapeLineStyle: graph.ShapeLineStyle{
@@ -717,12 +723,12 @@ func (l *Linear) CreateEvans(kMin, kMax float64) ([]graph.ChartContent, error) {
 					ShapeStyle: markerStyle,
 				},
 				Title: "Poles",
-			},
+			}, nil),
 		)
 	}
 	if z.Count() > 0 {
 		zeroMarker := graph.NewCircleMarker(4)
-		curveList = append(curveList,
+		contentMap = contentMap.Append("zeros", grParser.NewChartContentValue(
 			graph.Scatter{
 				Points: graph.PointsFromSlice(z.ToPoints()...),
 				ShapeLineStyle: graph.ShapeLineStyle{
@@ -730,21 +736,21 @@ func (l *Linear) CreateEvans(kMin, kMax float64) ([]graph.ChartContent, error) {
 					ShapeStyle: markerStyle,
 				},
 				Title: "Zeros",
-			},
+			}, nil),
 		)
 	}
 
-	curveList = append(curveList, &ecs)
+	contentMap = contentMap.Append("evans", grParser.NewChartContentValue(&ecs, setImReLabels))
 
-	curveList = append(curveList, Polar{})
+	contentMap = contentMap.Append("polar", grParser.NewChartContentValue(Polar{}, nil))
 	as, order, err := lin.EvansAsymptotesIntersect()
 	if err != nil {
 		return nil, err
 	}
 	if order > 0 {
-		curveList = append(curveList, Asymptotes{Point: graph.Point{X: as, Y: 0}, Order: order})
+		contentMap = contentMap.Append("asymptotes", grParser.NewChartContentValue(Asymptotes{Point: graph.Point{X: as, Y: 0}, Order: order}, nil))
 	}
-	return curveList, nil
+	return contentMap, nil
 }
 
 func (l *Linear) EvansAsymptotesIntersect() (float64, int, error) {

@@ -336,11 +336,6 @@ func (l *Linear) GetType() value.Type {
 	return LinearValueType
 }
 
-func setImReLabels(chart *graph.Chart) {
-	chart.X.Label = "Re"
-	chart.Y.Label = "Im"
-}
-
 func linMethods() value.MethodMap {
 	return value.MethodMap{
 		"graph": value.MethodAtType(0, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
@@ -409,13 +404,11 @@ func linMethods() value.MethodMap {
 					kMin = 0
 					kMax = k
 				}
-				contentList, err := lin.CreateEvans(kMin, kMax)
+				contentMap, err := lin.CreateEvans(kMin, kMax)
 				if err != nil {
 					return nil, err
 				}
-				return value.NewListConvert(func(pc graph.ChartContent) (value.Value, error) {
-					return grParser.NewChartContentValue(pc, setImReLabels), nil
-				}, contentList), nil
+				return value.NewMap(contentMap), nil
 			}
 			return nil, fmt.Errorf("evans requires a float")
 		}).SetMethodDescription("kMin", "kMax", "Creates an evans chart content. This is the root locus curve "+
