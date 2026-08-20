@@ -66,28 +66,23 @@ func (c Complex) ToFloat() (float64, bool) {
 }
 
 func (c Complex) String() string {
-	re := strconv.FormatFloat(real(c), 'g', 5, 64)
+	re := strconv.FormatFloat(real(c), 'g', 6, 64)
 	if imag(c) == 0 {
 		return re
 	}
-	im := strconv.FormatFloat(imag(c), 'g', 5, 64)
+	im := strconv.FormatFloat(imag(c), 'g', 6, 64)
 	if imag(c) < 0 {
-		return re + im + "j"
+		return re + im + "⋅j"
 	} else {
-		return re + "+" + im + "j"
+		return re + "+" + im + "⋅j"
 	}
 }
 
 func (c Complex) PolarString() string {
-	if imag(c) == 0 {
-		return strconv.FormatFloat(real(c), 'g', 5, 64)
-	}
-
 	amp := cmplx.Abs(complex128(c))
 	pha := cmplx.Phase(complex128(c)) / math.Pi * 180
-
-	ampStr := strconv.FormatFloat(amp, 'g', 5, 64)
-	phaStr := strconv.FormatFloat(pha, 'g', 5, 64)
+	ampStr := strconv.FormatFloat(amp, 'g', 6, 64)
+	phaStr := strconv.FormatFloat(pha, 'g', 6, 64)
 	return ampStr + "∠" + phaStr + "°"
 }
 
