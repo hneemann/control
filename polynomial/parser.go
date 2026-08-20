@@ -66,16 +66,29 @@ func (c Complex) ToFloat() (float64, bool) {
 }
 
 func (c Complex) String() string {
-	re := strconv.FormatFloat(real(c), 'g', -1, 64)
+	re := strconv.FormatFloat(real(c), 'g', 5, 64)
 	if imag(c) == 0 {
 		return re
 	}
-	im := strconv.FormatFloat(imag(c), 'g', -1, 64)
+	im := strconv.FormatFloat(imag(c), 'g', 5, 64)
 	if imag(c) < 0 {
 		return re + im + "j"
 	} else {
 		return re + "+" + im + "j"
 	}
+}
+
+func (c Complex) PolarString() string {
+	if imag(c) == 0 {
+		return strconv.FormatFloat(real(c), 'g', 5, 64)
+	}
+
+	amp := cmplx.Abs(complex128(c))
+	pha := cmplx.Phase(complex128(c)) / math.Pi * 180
+
+	ampStr := strconv.FormatFloat(amp, 'g', 5, 64)
+	phaStr := strconv.FormatFloat(pha, 'g', 5, 64)
+	return ampStr + "∠" + phaStr + "°"
 }
 
 func (c Complex) ToString(_ funcGen.Stack[value.Value]) (string, error) {
@@ -113,6 +126,9 @@ func cmplxMethods() value.MethodMap {
 		"string": value.MethodAtType(0, func(c Complex, st funcGen.Stack[value.Value]) (value.Value, error) {
 			return value.String(c.String()), nil
 		}).SetMethodDescription("Returns a string representation of the complex number."),
+		"pString": value.MethodAtType(0, func(c Complex, st funcGen.Stack[value.Value]) (value.Value, error) {
+			return value.String(c.PolarString()), nil
+		}).SetMethodDescription("Returns a string representation of the complex number in polar form."),
 	}
 }
 
