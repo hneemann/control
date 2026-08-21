@@ -71,19 +71,41 @@ func (c Complex) String() string {
 		return re
 	}
 	im := strconv.FormatFloat(imag(c), 'g', 6, 64)
-	if imag(c) < 0 {
-		return re + im + "⋅j"
+	if im == "1" {
+		return re + "+j"
+	} else if im == "-1" {
+		return re + "-j"
 	} else {
-		return re + "+" + im + "⋅j"
+		if imag(c) < 0 {
+			return re + im + "⋅j"
+		} else {
+			return re + "+" + im + "⋅j"
+		}
 	}
 }
 
-func (c Complex) PolarString() string {
+func (c Complex) PolarString(precision int) string {
 	amp := cmplx.Abs(complex128(c))
 	pha := cmplx.Phase(complex128(c)) / math.Pi * 180
-	ampStr := strconv.FormatFloat(amp, 'g', 6, 64)
-	phaStr := strconv.FormatFloat(pha, 'g', 6, 64)
+	ampStr := strconv.FormatFloat(amp, 'g', precision, 64)
+	phaStr := strconv.FormatFloat(pha, 'g', precision, 64)
 	return ampStr + "∠" + phaStr + "°"
+}
+
+func (c Complex) PolarLatex(precision int) string {
+	amp := cmplx.Abs(complex128(c))
+	pha := cmplx.Phase(complex128(c)) / math.Pi * 180
+	neg := false
+	if pha < 0 {
+		neg = true
+		pha = -pha
+	}
+	ampStr := strconv.FormatFloat(amp, 'g', precision, 64)
+	phaStr := strconv.FormatFloat(pha, 'g', precision, 64)
+	if neg {
+		return ampStr + "\\cdot e^{-j" + phaStr + "^{\\circ}}"
+	}
+	return ampStr + "\\cdot e^{j" + phaStr + "^{\\circ}}"
 }
 
 func (c Complex) ToString(_ funcGen.Stack[value.Value]) (string, error) {
@@ -121,9 +143,20 @@ func cmplxMethods() value.MethodMap {
 		"string": value.MethodAtType(0, func(c Complex, st funcGen.Stack[value.Value]) (value.Value, error) {
 			return value.String(c.String()), nil
 		}).SetMethodDescription("Returns a string representation of the complex number."),
-		"pString": value.MethodAtType(0, func(c Complex, st funcGen.Stack[value.Value]) (value.Value, error) {
-			return value.String(c.PolarString()), nil
-		}).SetMethodDescription("Returns a string representation of the complex number in polar form."),
+		"pString": value.MethodAtType(1, func(c Complex, st funcGen.Stack[value.Value]) (value.Value, error) {
+			precision := 6
+			if p, ok := st.GetOptional(1, value.Int(6)).(value.Int); ok {
+				precision = int(p)
+			}
+			return value.String(c.PolarString(precision)), nil
+		}).SetMethodDescription("precision", "Returns a string representation of the complex number in polar form.").VarArgsMethod(0, 1),
+		"pLaTeX": value.MethodAtType(1, func(c Complex, st funcGen.Stack[value.Value]) (value.Value, error) {
+			precision := 6
+			if p, ok := st.GetOptional(1, value.Int(6)).(value.Int); ok {
+				precision = int(p)
+			}
+			return value.String(c.PolarLatex(precision)), nil
+		}).SetMethodDescription("precision", "Returns a LaTeX representation of the complex number in polar form.").VarArgsMethod(0, 1),
 	}
 }
 
