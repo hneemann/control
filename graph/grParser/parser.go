@@ -726,6 +726,7 @@ func createChartMethods() value.MethodMap {
 			chart = chart.Copy()
 			chart.Value.X.Grid = styleVal.Value
 			chart.Value.Y.Grid = styleVal.Value
+			chart.Value.Y2.Grid = styleVal.Value
 			return chart, nil
 		}).SetMethodDescription("color", "Adds a grid.").VarArgsMethod(0, 1),
 		"frameColor": value.MethodAtType(1, func(chart ChartValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
