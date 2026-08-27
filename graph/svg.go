@@ -229,6 +229,7 @@ func (s *SVG) DrawText(a Point, text string, orientation Orientation, style *Sty
 }
 
 var unicodeMap = map[rune]string{
+	' ': `\,`,
 	'α': `\alpha`,
 	'β': `\beta`,
 	'γ': `\gamma`,
