@@ -229,6 +229,28 @@ func (s *SVG) DrawText(a Point, text string, orientation Orientation, style *Sty
 }
 
 var unicodeMap = map[rune]string{
+	'°': `^{\circ}`,
+	'±': `\pm`,
+	'⁰': `^{0}`,
+	'¹': `^{1}`,
+	'²': `^{2}`,
+	'³': `^{3}`,
+	'⁴': `^{4}`,
+	'⁵': `^{5}`,
+	'⁶': `^{6}`,
+	'⁷': `^{7}`,
+	'⁸': `^{8}`,
+	'⁹': `^{9}`,
+	'₀': `_{0}`,
+	'₁': `_{1}`,
+	'₂': `_{2}`,
+	'₃': `_{3}`,
+	'₄': `_{4}`,
+	'₅': `_{5}`,
+	'₆': `_{6}`,
+	'₇': `_{7}`,
+	'₈': `_{8}`,
+	'₉': `_{9}`,
 	' ': `\,`,
 	'α': `\alpha`,
 	'β': `\beta`,
@@ -280,22 +302,30 @@ var unicodeMap = map[rune]string{
 
 func unicodeToLaTeX(text string) string {
 	var w strings.Builder
-	inMath := false
+	inUserMath := false
+	lastWasMath := false
 	for _, r := range text {
 		if c, ok := unicodeMap[r]; ok {
-			if !inMath {
-				w.WriteRune('$')
+			if !inUserMath {
+				if !lastWasMath {
+					w.WriteRune('$')
+					lastWasMath = true
+				}
 			}
 			w.WriteString(c)
-			if !inMath {
-				w.WriteRune('$')
-			}
 		} else {
 			if r == '$' {
-				inMath = !inMath
+				inUserMath = !inUserMath
+			}
+			if lastWasMath {
+				w.WriteRune('$')
+				lastWasMath = false
 			}
 			w.WriteRune(r)
 		}
+	}
+	if lastWasMath {
+		w.WriteRune('$')
 	}
 	return w.String()
 }
