@@ -428,6 +428,13 @@ func linMethods() value.MethodMap {
 			return lin.Normalize()
 		}).SetMethodDescription("Normalizes the linear system. The denominator is divided by its leading coefficient, " +
 			"so that the leading coefficient of the denominator becomes 1. The numerator is then divided by the same value."),
+		"timeScale": value.MethodAtType(1, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
+			if f, ok := st.Get(1).ToFloat(); ok {
+				return lin.Scale(f), nil
+			}
+			return nil, fmt.Errorf("timeScale requires a float as argument")
+		}).SetMethodDescription("factor", "Scales the argument of the linear system. "+
+			"The argument s is replaced by s/factor. This is equivalent to a time scaling of the system."),
 		"normalizeTail": value.MethodAtType(0, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
 			return lin.NormalizeTail()
 		}).SetMethodDescription("Normalizes the linear system. The denominator is divided by its lowest coefficient, " +

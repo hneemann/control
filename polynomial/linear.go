@@ -51,6 +51,13 @@ func (l *Linear) PZForm() (*Linear, error) {
 	return &pz, nil
 }
 
+func (l *Linear) Scale(f float64) *Linear {
+	return &Linear{
+		Numerator:   l.Numerator.Scale(f),
+		Denominator: l.Denominator.Scale(f),
+	}
+}
+
 func (l *Linear) Normalize() (*Linear, error) {
 	den, dif := l.Denominator.Normalize()
 	num := l.Numerator.DivFloat(dif)

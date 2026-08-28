@@ -273,6 +273,18 @@ func (p Polynomial) Normalize() (Polynomial, float64) {
 	return mp, dif
 }
 
+func (p Polynomial) Scale(f float64) Polynomial {
+	poly := p.Canonical()
+	mp := make(Polynomial, len(poly))
+
+	s := 1.0
+	for i := range poly {
+		mp[i] = poly[i] * s
+		s *= f
+	}
+	return mp
+}
+
 // NormalizeTail returns a normalized polynomial, which is the same polynomial
 // divided by its lowest non-zero coefficient.
 func (p Polynomial) NormalizeTail() (Polynomial, float64) {
