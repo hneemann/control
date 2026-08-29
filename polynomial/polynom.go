@@ -339,7 +339,7 @@ func (p Polynomial) Pow(n int) Polynomial {
 // is the same polynomial without leading zeros.
 func (p Polynomial) Canonical() Polynomial {
 	for i := len(p) - 1; i >= 0; i-- {
-		if math.Abs(p[i]) > eps {
+		if math.Abs(p[i]) > 1e-15 {
 			return p[:i+1]
 		}
 	}
