@@ -926,6 +926,17 @@ func addAxisMethods(name, uName string, aa func(chart *graph.Chart) *graph.AxisD
 		}
 		return nil, fmt.Errorf("%sBounds requires two float values", name)
 	}).SetMethodDescription(name+"Min", name+"Max", "Sets the "+name+"-bounds.")
+	mm[name+"Scale"] = value.MethodAtType(1, func(chart ChartValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+		if scaler, ok := stack.Get(1).ToFloat(); ok {
+			chart = chart.Copy()
+			aa(chart.Value).ScaleFactor = scaler
+			return chart, nil
+		}
+		return nil, fmt.Errorf("%sScale requires a float value", name)
+	}).SetMethodDescription("factor", "Sets the "+name+"-axis scale factor. This setting effects only the axis ticks and labels, but not the data. "+
+		"The data is always drawn in the original scale. Also methods like the bounds methods still refer to the original scale. "+
+		"This is useful, e.g. to create a Bode plot with respect to the cutoff frequency, so that the cutoff "+
+		"frequency on the axis has a value of one, or to change units from amps to milliamps. ")
 	mm[name+"Log"] = value.MethodAtType(0, func(chart ChartValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 		chart = chart.Copy()
 		aa(chart.Value).Factory = graph.LogAxis

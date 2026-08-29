@@ -83,6 +83,7 @@ type AxisDescription struct {
 	Grid        *Style
 	Style       *Style
 	CustomTicks Ticks
+	ScaleFactor float64
 }
 
 // GetAxis returns the Axis
@@ -321,6 +322,13 @@ func (p *Chart) drawToInternal(canvas Canvas) (error, *ChartContentEnvironment) 
 		func(width float64, digits int) bool {
 			return width > math.Max(1, textSize*(float64(digits)+2+p.X.TickSep)*0.5)
 		}, xExp)
+	xAxisScaled := xAxis
+	if p.X.ScaleFactor != 0 {
+		xAxisScaled = p.X.GetAxis(innerRect.Min.X, innerRect.Max.X, xBoundsPre.Scale(p.X.ScaleFactor),
+			func(width float64, digits int) bool {
+				return width > math.Max(1, textSize*(float64(digits)+2+p.X.TickSep)*0.5)
+			}, xExp)
+	}
 
 	yExp := 0.0
 	if !p.Y.NoExpand {
@@ -355,10 +363,20 @@ func (p *Chart) drawToInternal(canvas Canvas) (error, *ChartContentEnvironment) 
 	yTickMax := math.Max(1, textSize*(2+p.Y.TickSep))
 	yAxis := p.Y.GetAxis(innerRect.Min.Y, innerRect.Max.Y, yBoundsPre,
 		func(width float64, _ int) bool { return width > yTickMax }, yExp)
+	yAxisScaled := yAxis
+	if p.Y.ScaleFactor != 0 {
+		yAxisScaled = p.Y.GetAxis(innerRect.Min.Y, innerRect.Max.Y, yBoundsPre.Scale(p.Y.ScaleFactor),
+			func(width float64, _ int) bool { return width > yTickMax }, yExp)
+	}
 
 	y2TickMax := math.Max(1, textSize*(2+p.Y2.TickSep))
 	y2Axis := p.Y2.GetAxis(innerRect.Min.Y, innerRect.Max.Y, y2BoundsPre,
 		func(width float64, _ int) bool { return width > y2TickMax }, y2Exp)
+	y2AxisScaled := y2Axis
+	if p.Y2.ScaleFactor != 0 {
+		y2AxisScaled = p.Y2.GetAxis(innerRect.Min.Y, innerRect.Max.Y, y2BoundsPre.Scale(p.Y2.ScaleFactor),
+			func(width float64, _ int) bool { return width > y2TickMax }, y2Exp)
+	}
 
 	if p.Square && (!xAxis.IsLinear || !yAxis.IsLinear) {
 		return fmt.Errorf("square charts are only possible if both axis are linear"), nil
@@ -375,9 +393,9 @@ func (p *Chart) drawToInternal(canvas Canvas) (error, *ChartContentEnvironment) 
 				orient = Bottom | HCenter
 			}
 		}
-		for _, tick := range xAxis.Ticks {
+		for _, tick := range xAxisScaled.Ticks {
 			if !cross || math.Abs(tick.Position) > 1e-8 {
-				xp := xAxis.Trans(tick.Position)
+				xp := xAxisScaled.Trans(tick.Position)
 				if p.X.Grid != nil {
 					nErr.Try(canvas.DrawPath(PointsFromSlice(Point{xp, innerRect.Min.Y}, Point{xp, innerRect.Max.Y}), p.X.Grid))
 				}
@@ -402,9 +420,9 @@ func (p *Chart) drawToInternal(canvas Canvas) (error, *ChartContentEnvironment) 
 				orient = Left | VCenter
 			}
 		}
-		for _, tick := range yAxis.Ticks {
+		for _, tick := range yAxisScaled.Ticks {
 			if !cross || math.Abs(tick.Position) > 1e-8 {
-				yp := yAxis.Trans(tick.Position)
+				yp := yAxisScaled.Trans(tick.Position)
 				if p.Y.Grid != nil {
 					nErr.Try(canvas.DrawPath(PointsFromSlice(Point{innerRect.Min.X, yp}, Point{innerRect.Max.X, yp}), p.Y.Grid))
 				}
@@ -421,8 +439,8 @@ func (p *Chart) drawToInternal(canvas Canvas) (error, *ChartContentEnvironment) 
 	if !p.Y2.HideAxis && hasY2Content {
 		orient := Left | VCenter
 		xp := innerRect.Max.X
-		for _, tick := range y2Axis.Ticks {
-			yp := y2Axis.Trans(tick.Position)
+		for _, tick := range y2AxisScaled.Ticks {
+			yp := y2AxisScaled.Trans(tick.Position)
 			if p.Y2.Grid != nil {
 				nErr.Try(canvas.DrawPath(PointsFromSlice(Point{innerRect.Min.X, yp}, Point{innerRect.Max.X, yp}), p.Y2.Grid))
 			}
@@ -479,8 +497,8 @@ func (p *Chart) drawToInternal(canvas Canvas) (error, *ChartContentEnvironment) 
 	}
 
 	if cross {
-		xp := xAxis.Trans(0)
-		yp := yAxis.Trans(0)
+		xp := xAxisScaled.Trans(0)
+		yp := yAxisScaled.Trans(0)
 		cs := p.Frame.StrokeWidth / 2
 		headLen, headWidth := envY.getArrowHeadSize()
 		nErr.Try(canvas.DrawPath(PointsFromSlice(
@@ -522,14 +540,14 @@ func (p *Chart) drawToInternal(canvas Canvas) (error, *ChartContentEnvironment) 
 	if lab := xAxis.LabelFormat(p.X.Label); lab != "" {
 		yp := innerRect.Min.Y
 		if cross {
-			yp = yAxis.Trans(0)
+			yp = yAxisScaled.Trans(0)
 		}
 		canvas.DrawText(Point{innerRect.Max.X - small, yp + small}, lab, Bottom|Right, xStyles.text, textSize)
 	}
 	if lab := yAxis.LabelFormat(p.Y.Label); lab != "" {
 		xp := innerRect.Min.X
 		if cross {
-			xp = xAxis.Trans(0)
+			xp = xAxisScaled.Trans(0)
 		}
 		canvas.DrawText(Point{xp + small, innerRect.Max.Y - small}, lab, Top|Left, yStyles.text, textSize)
 	}
@@ -554,13 +572,13 @@ func (p *Chart) drawToInternal(canvas Canvas) (error, *ChartContentEnvironment) 
 	// user wants a cross but origin is not visible, so cross could not be plotted
 	if p.Cross && !cross {
 		if xAxis.Bounds.Min < 0 && xAxis.Bounds.Max > 0 {
-			xp := xAxis.Trans(0)
+			xp := xAxisScaled.Trans(0)
 			nErr.Try(canvas.DrawPath(PointsFromSlice(
 				Point{xp, innerRect.Min.Y},
 				Point{xp, innerRect.Max.Y}), p.Frame))
 		}
 		if yAxis.Bounds.Min < 0 && yAxis.Bounds.Max > 0 {
-			yp := yAxis.Trans(0)
+			yp := yAxisScaled.Trans(0)
 			nErr.Try(canvas.DrawPath(PointsFromSlice(
 				Point{innerRect.Min.X, yp},
 				Point{innerRect.Max.X, yp}), p.Frame))
@@ -812,6 +830,14 @@ func (b *Bounds) Limit(x float64) float64 {
 		}
 	}
 	return x
+}
+
+func (b *Bounds) Scale(scaler float64) Bounds {
+	return Bounds{
+		isSet: b.isSet,
+		Min:   b.Min * scaler,
+		Max:   b.Max * scaler,
+	}
 }
 
 // ChartContent is the interface that all chart contents must implement.
