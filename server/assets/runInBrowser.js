@@ -41,7 +41,7 @@ function runSourceInWindow() {
         myWindow = window.open("", "", "width=810,height=620");
     }
 
-    myWindow.document.write("<head>\n" +
+    myWindow.document.write("<!DOCTYPE html>\n<head>\n" +
         "  <meta charset=\"UTF-8\">\n" +
         "  <title>Control</title>\n" +
         "  <link rel=\"icon\" type=\"image/svg\" href=\"/assets/icon.svg\">\n" +

@@ -276,6 +276,9 @@ function deleteFile() {
 }
 
 function getRatio(source, result) {
+    if (source == null || result == null) {
+        return 50;
+    }
     const computedStyle = window.getComputedStyle(source);
     const fontSizeWithUnit = computedStyle.fontSize;
     const fontSize = parseFloat(fontSizeWithUnit);
