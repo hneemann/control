@@ -212,7 +212,7 @@ let ges=tpCascade(
     <example i18n="ex-sor"
              name="Solid of Revolution" desc="interactive Solid of Revolution">
 func sor(u,v)
-  vec(u*sin(v),u*cos(v),u^2);
+  vec(u*cos(v), u*sin(v), u^2);
 
 plot3d(
   sor.solid3d()
