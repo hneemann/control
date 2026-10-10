@@ -210,19 +210,20 @@ let ges=tpCascade(
  ["Rin:",   ges.inputImp(15000)],
 ]</example>
     <example i18n="ex-sor"
-             name="Solid of Revolution" desc="interactive Solid of Revolution">
-func sor(u,v)
-  vec(u*cos(v), u*sin(v), u^2);
+             name="Solid of Revolution" desc="interactive Solid of Revolution">let phi   = gui.slider("#phi",   0.1, 0 ,2*pi);
+let alpha = gui.slider("#alpha", 0.2, 0 ,2*pi);
+let beta  = gui.slider("#beta",  0.3, 0 ,2*pi);
+
+func sor(r, phi)
+  vec(r*cos(phi), r*sin(phi), r^2);
 
 plot3d(
-  sor.solid3d()
-     .uBounds(0, 2)
-     .vBounds(0, 2*pi)
+  sor.solid3d(41, 41*phi/(2*pi))
+     .uBounds(0, 3)
+     .vBounds(0, phi)
      .color(black.fill(red.darker(50)), red)
-).xBounds(-3, 3)
- .yBounds(-3, 3)
- .zBounds(0, 4)
- .addSliderTo(gui)
-</example>
-
+).xBounds(-4.5, 4.5)
+ .yBounds(-4.5, 4.5)
+ .zBounds( 0  , 9  )
+ .angles(alpha, beta)</example>>
 </Examples>
