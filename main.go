@@ -105,7 +105,14 @@ func main() {
 
 	if *oidc {
 		isOidc := retry(3, time.Second*3, func() bool {
-			return myOidc.RegisterLogin(mux, "/login", "/auth/callback", myOidc.CreateOidcSession(sc))
+			sessionCreator := myOidc.CreateOidcSession(sc)
+			return myOidc.RegisterLogin(mux, "/login", "/auth/callback", func(idToken map[string]any, w http.ResponseWriter) (string, error) {
+				id, err := sessionCreator(idToken, w)
+				if err == nil {
+					log.Println("login from oidc with course", idToken["course"])
+				}
+				return id, err
+			})
 		})
 		if !isOidc {
 			log.Fatal("oidc not available!")
