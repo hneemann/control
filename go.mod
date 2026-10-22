@@ -5,9 +5,9 @@ go 1.26.0
 require (
 	github.com/hneemann/iterator v0.0.0-20260903075249-841afed57942
 	github.com/hneemann/parser2 v0.0.0-20260903130757-6aff110bb41b
-	github.com/hneemann/session v0.0.0-20260711060126-730503435d91
+	github.com/hneemann/session v0.0.0-20261022084928-8fdf90d0c18b
 	github.com/stretchr/testify v1.12.1
-	golang.org/x/text v0.41.0
+	golang.org/x/text v0.43.0
 )
 
 require (
@@ -26,6 +26,6 @@ require (
 	go.opentelemetry.io/otel/metric v1.46.0 // indirect
 	go.opentelemetry.io/otel/trace v1.46.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
-	golang.org/x/crypto v0.56.0 // indirect
+	golang.org/x/crypto v0.58.0 // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect
 )
