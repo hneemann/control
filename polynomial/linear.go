@@ -747,7 +747,7 @@ func (l *Linear) CreateEvans(kMin, kMax float64) (listMap.ListMap[value.Value], 
 		)
 	}
 
-	contentMap = contentMap.Append("evans", grParser.NewChartContentValue(&ecs, setImReLabels))
+	contentMap = contentMap.Append("rootLocus", grParser.NewChartContentValue(&ecs, setImReLabels))
 
 	contentMap = contentMap.Append("polar", grParser.NewChartContentValue(Polar{}, nil))
 	as, order, err := lin.EvansAsymptotesIntersect()
@@ -835,7 +835,7 @@ type evansCurves struct {
 }
 
 func (ec *evansCurves) String() string {
-	return "Evans Curves"
+	return "Root Locus"
 }
 
 func (ec *evansCurves) addPolesFor(k float64) error {
@@ -962,7 +962,7 @@ func (ec *evansCurves) Legend() []graph.Legend {
 	return nil
 }
 
-func RootLocus(cpp PolynomialProvider, kMin, kMax float64, parName string) ([]graph.ChartContent, error) {
+func RootLocus(cpp PolynomialProvider, kMin, kMax float64, parName string) (listMap.ListMap[value.Value], error) {
 	ecs := evansCurves{
 		polyProvider:        cpp,
 		useComplexNumRefine: true,
@@ -977,6 +977,10 @@ func RootLocus(cpp PolynomialProvider, kMin, kMax float64, parName string) ([]gr
 		}
 	}
 
+	contentMap := listMap.New[value.Value](5)
+	contentMap = contentMap.Append("rootLocus", grParser.NewChartContentValue(&ecs, setImReLabels))
+	contentMap = contentMap.Append("polar", grParser.NewChartContentValue(Polar{}, nil))
+
 	if parName != "" {
 		minMarker := graph.Scatter{
 			Points: graph.PointsFromSlice(ecs.evPoints[0].points...),
@@ -986,6 +990,7 @@ func RootLocus(cpp PolynomialProvider, kMin, kMax float64, parName string) ([]gr
 			},
 			Title: fmt.Sprintf("%s = %g", parName, kMin),
 		}
+		contentMap = contentMap.Append("min", grParser.NewChartContentValue(minMarker, nil))
 		maxMarker := graph.Scatter{
 			Points: graph.PointsFromSlice(ecs.evPoints[len(ecs.evPoints)-1].points...),
 			ShapeLineStyle: graph.ShapeLineStyle{
@@ -994,10 +999,9 @@ func RootLocus(cpp PolynomialProvider, kMin, kMax float64, parName string) ([]gr
 			},
 			Title: fmt.Sprintf("%s = %g", parName, kMax),
 		}
-		return []graph.ChartContent{minMarker, maxMarker, &ecs, Polar{}}, nil
-	} else {
-		return []graph.ChartContent{&ecs, Polar{}}, nil
+		contentMap = contentMap.Append("max", grParser.NewChartContentValue(maxMarker, nil))
 	}
+	return contentMap, nil
 }
 
 type BodeChartContent struct {

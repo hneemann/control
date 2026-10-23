@@ -94,7 +94,7 @@ func TestLinear(t *testing.T) {
 		{name: "pid", exp: "let kp=12;let ti=1.5;let td=2;let p=pid(kp,ti,td); string(p)", res: value.String("(36*s^2+18*s+12)/(1.5*s)")},
 
 		{name: "loop", exp: "let g=(s+1)/(s^2+4*s+5); string(g.loop())", res: value.String("(s+1)/(s^2+5*s+6)")},
-		{name: "evans", exp: "let g=(s+1)/(s^2+4*s+5); string(plot(g.evans(10)))", res: value.String("Chart: Scatter: Poles, Scatter: Zeros, Evans Curves, Polar Grid, Asymptotes")},
+		{name: "evans", exp: "let g=(s+1)/(s^2+4*s+5); string(plot(g.evans(10)))", res: value.String("Chart: Scatter: Poles, Scatter: Zeros, Root Locus, Polar Grid, Asymptotes")},
 		{name: "nyquist", exp: "let g=(s+1)/(s^2+4*s+5); string(plot(g.nyquist()))", res: value.String("Chart: Scatter: ω=0, Parameter curve, coordinate cross")},
 
 		{name: "gMargin", exp: "let g=(s+0.2)/((s^2+2*s+10)*(s+4)*(s^2+0.2*s+0.1));10^(g.gMargin().gMargin/20)", res: value.Float(74.45626527211962)},

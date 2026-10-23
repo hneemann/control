@@ -1494,13 +1494,11 @@ var Parser = value.New().
 							return nil, fmt.Errorf("rootLocus requires a string as fourth argument")
 						}
 
-						contentList, err := RootLocus(cpp, kMin, kMax, parName)
+						contentMap, err := RootLocus(cpp, kMin, kMax, parName)
 						if err != nil {
 							return nil, fmt.Errorf("rootLocus failed: %w", err)
 						}
-						return value.NewListConvert(func(i graph.ChartContent) (value.Value, error) {
-							return grParser.NewChartContentValue(i, setImReLabels), nil
-						}, contentList), nil
+						return value.NewMap(contentMap), nil
 					}
 				}
 			}
