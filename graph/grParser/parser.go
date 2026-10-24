@@ -1480,7 +1480,8 @@ func closureMethods() value.MethodMap {
 			return nil, fmt.Errorf("heat requires two floats as first arguments")
 		}).SetMethodDescription("zMin", "zMax", "listOfColors", "steps", "Creates a heat chart of the function. "+
 			"The function needs to have two arguments (x,y) and has to return a float (z). "+
-			"The z-value is used to calculate a color, which is used to color a square located at the coordinate (x,y).").VarArgsMethod(2, 4),
+			"The z-value is used to calculate a color by mapping the z-value in the interval [zMin,zMax] to the list of colors given as third argument. "+
+			"The color is then used to color a square located at the coordinate (x,y).").VarArgsMethod(2, 4),
 
 		"heatCol": value.MethodAtType(1, func(cl value.Closure, st funcGen.Stack[value.Value]) (value.Value, error) {
 			steps := 0

@@ -749,6 +749,68 @@ func (d directAccess) getY(st funcGen.Stack[value.Value], i int) (float64, error
 	_, y, err := d.getSlice(st, i)
 	return y, err
 }
+func closureMethods() value.MethodMap {
+	return value.MethodMap{
+		"nelderMead": value.MethodAtType(3, func(f value.Closure, st funcGen.Stack[value.Value]) (value.Value, error) {
+			if initial, ok := st.Get(1).ToList(); ok {
+				if delta, ok := st.GetOptional(2, value.NewList()).ToList(); ok {
+					if iter, ok := st.GetOptional(3, value.Int(1000)).(value.Int); ok {
+						return NelderMead(f, initial, delta, int(iter))
+					}
+				}
+			}
+			return nil, fmt.Errorf("nelderMead requires a function, two lists and an int")
+		}).SetMethodDescription("initial", "delta", "iterations", "Calculates a Nelder&Mead optimization (https://en.wikipedia.org/wiki/Nelder%E2%80%93Mead_method). "+
+			"The arguments initial and delta are lists that have as many entries as the function has arguments. "+
+			"The values in the initial list are used as arguments for the function, and the values in the "+
+			"delta list are used to determine the additional vectors for the search algorithm. To do this, "+
+			"a component from the delta vector is added to the initial vector to determine as many additional "+
+			"vectors as the function has arguments. "+
+			"If the delta list is not specified, the components of the initial list are changed by 10% each. "+
+			"The value iterations specifies the number of iterations after which the search should be terminated "+
+			"if the search vectors do not converge. The default is 1000.").VarArgsMethod(1, 3),
+		"rootLocus": value.MethodAtType(3, func(f value.Closure, st funcGen.Stack[value.Value]) (value.Value, error) {
+			if f.Args != 1 {
+				return nil, fmt.Errorf("rootLocus requires a function with one argument")
+			}
+			if kMin, ok := st.Get(1).ToFloat(); ok {
+				if kMax, ok := st.Get(2).ToFloat(); ok {
+					stack := funcGen.NewEmptyStack[value.Value]()
+					cpp := func(k float64) (Polynomial, error) {
+						poly, err := f.Eval(stack, value.Float(k))
+						if err != nil {
+							return Polynomial{}, fmt.Errorf("error creating polynomial: %w", err)
+						}
+						if p, ok := poly.(Polynomial); ok {
+							return p, nil
+						}
+						if l, ok := poly.(*Linear); ok {
+							return l.Denominator, nil
+						}
+						return Polynomial{}, fmt.Errorf("the function needs to return a polynomial or a linear system")
+					}
+					var parName string
+					if parNameVal, ok := st.GetOptional(3, value.String("")).(value.String); ok {
+						parName = string(parNameVal)
+					} else {
+						return nil, fmt.Errorf("rootLocus requires a string as fourth argument")
+					}
+
+					contentMap, err := RootLocus(cpp, kMin, kMax, parName)
+					if err != nil {
+						return nil, fmt.Errorf("rootLocus failed: %w", err)
+					}
+					return value.NewMap(contentMap), nil
+				}
+			}
+			return nil, fmt.Errorf("rootLocus requires two floats and a string")
+		}).SetMethodDescription("kMin", "kMax", "parName", "Creates a root locus chart content. "+
+			"The function must have one argument and return either a polynomial or a linear system. "+
+			"If the function returns a polynomial, the roots of that polynomial are calculated. "+
+			"If a linear system is returned, the poles are calculated. "+
+			"If the parName is given, this parameter name is used to create a legend.").Pure(true).VarArgsMethod(2, 3),
+	}
+}
 
 func listMethods() value.MethodMap {
 	return value.MethodMap{
@@ -1312,6 +1374,7 @@ var Parser = value.New().
 	RegisterMethods(value.FloatTypeId, floatMethods()).
 	RegisterMethods(value.IntTypeId, intMethods()).
 	RegisterMethods(value.ListTypeId, listMethods()).
+	RegisterMethods(value.ClosureTypeId, closureMethods()).
 	RegisterMethods(ComplexValueType, cmplxMethods()).
 	RegisterMethods(TwoPortValueType, twoPortMethods()).
 	RegisterMethods(GuiElementsType, guiMethods()).
@@ -1468,47 +1531,6 @@ var Parser = value.New().
 		Args:   0,
 		IsPure: true,
 	}.SetDescription("Returns a polar grid to be added to a chart.")).
-	AddStaticFunction("rootLocus", funcGen.Function[value.Value]{
-		Func: func(st funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
-			if cppClosure, ok := st.Get(0).(value.Closure); ok {
-				if kMin, ok := st.Get(1).ToFloat(); ok {
-					if kMax, ok := st.Get(2).ToFloat(); ok {
-						stack := funcGen.NewEmptyStack[value.Value]()
-						cpp := func(k float64) (Polynomial, error) {
-							poly, err := cppClosure.Eval(stack, value.Float(k))
-							if err != nil {
-								return Polynomial{}, fmt.Errorf("error creating polynomial: %w", err)
-							}
-							if p, ok := poly.(Polynomial); ok {
-								return p, nil
-							}
-							if l, ok := poly.(*Linear); ok {
-								return l.Denominator, nil
-							}
-							return Polynomial{}, fmt.Errorf("the function needs to return a polynomial or a linear system")
-						}
-						var parName string
-						if parNameVal, ok := st.GetOptional(3, value.String("")).(value.String); ok {
-							parName = string(parNameVal)
-						} else {
-							return nil, fmt.Errorf("rootLocus requires a string as fourth argument")
-						}
-
-						contentMap, err := RootLocus(cpp, kMin, kMax, parName)
-						if err != nil {
-							return nil, fmt.Errorf("rootLocus failed: %w", err)
-						}
-						return value.NewMap(contentMap), nil
-					}
-				}
-			}
-			return nil, fmt.Errorf("rootLocus requires a function and two floats")
-		},
-		Args:   4,
-		IsPure: true,
-	}.SetDescription("func(k) value", "kMin", "kMax", "parName", "Creates a root locus chart content. "+
-		"If the function returns a polynomial for the given k, the roots of that polynomial are calculated. "+
-		"If a linear system is returned, the poles are calculated.").VarArgs(3, 4)).
 	AddStaticFunction("pid", funcGen.Function[value.Value]{
 		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
 			if kp, ok := stack.Get(0).ToFloat(); ok {
@@ -1526,30 +1548,6 @@ var Parser = value.New().
 		IsPure: true,
 	}.SetDescription("k_p", "T_I", "T_D", "T_P", "Creates a PID linear system. The fourth time T_P is the time "+
 		"constant that describes the parasitic PT1 term occurring in a real differentiation.").VarArgs(2, 4)).
-	AddStaticFunction("nelderMead", funcGen.Function[value.Value]{
-		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
-			if fu, ok := stack.Get(0).(value.Closure); ok {
-				if initial, ok := stack.Get(1).ToList(); ok {
-					if delta, ok := stack.GetOptional(2, value.NewList()).ToList(); ok {
-						if iter, ok := stack.GetOptional(3, value.Int(1000)).(value.Int); ok {
-							return NelderMead(fu, initial, delta, int(iter))
-						}
-					}
-				}
-			}
-			return nil, fmt.Errorf("nelderMead requires a function, two lists and an int")
-		},
-		Args:   4,
-		IsPure: true,
-	}.SetDescription("func", "initial", "delta", "iterations", "Calculates a Nelder&Mead optimization. "+
-		"The arguments initial and delta are lists that have as many entries as the function has arguments. "+
-		"The values in the initial list are used as arguments for the function, and the values in the "+
-		"delta list are used to determine the additional vectors for the search algorithm. To do this, "+
-		"a component from the delta vector is added to the initial vector to determine as many additional "+
-		"vectors as the function has arguments. "+
-		"If the delta list is not specified, the components of the initial list are changed by 10% each. "+
-		"The value iterations specifies the number of iterations after which the search should be terminated "+
-		"if the search vectors do not converge. The default is 1000.").VarArgs(2, 4)).
 	AddStaticFunction("blockDelay", funcGen.Function[value.Value]{
 		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
 			if delay, ok := stack.Get(0).ToFloat(); ok {

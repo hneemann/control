@@ -295,7 +295,7 @@ let G = 70/((s+1)*(s+2)*(s+2.5));
 
 plot(
   text(-2.2, 1.9, "Root Locus Plot varying T_{I}"),
-  rootLocus(Ti->(pid(0.1,Ti)*G).loop(), 0.1, 10, "T_{I}"),
+  (Ti->(pid(0.1,Ti)*G).loop()).rootLocus(0.1, 10, "T_{I}"),
 ).legendPos(-2.7,-1.4)
 `, file: "rootLocus.svg"},
 	}
@@ -333,7 +333,7 @@ func TestNelderMead(t *testing.T) {
 		exp  string
 		res  []float64
 	}{
-		{name: "simple", exp: "nelderMead((x,y)->sqr(x-2)+sqr(y-1),[0.1,0.1])", res: []float64{2, 1}},
+		{name: "simple", exp: "( (x,y)->sqr(x-2)+sqr(y-1) ).nelderMead([0.1,0.1])", res: []float64{2, 1}},
 	}
 
 	for _, test := range tests {
