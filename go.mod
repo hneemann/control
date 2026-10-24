@@ -4,7 +4,7 @@ go 1.26.0
 
 require (
 	github.com/hneemann/iterator v0.0.0-20260903075249-841afed57942
-	github.com/hneemann/parser2 v0.0.0-20260903130757-6aff110bb41b
+	github.com/hneemann/parser2 v0.0.0-20261024100926-bbbe858ceeaa
 	github.com/hneemann/session v0.0.0-20261022084928-8fdf90d0c18b
 	github.com/stretchr/testify v1.12.1
 	golang.org/x/text v0.43.0
