@@ -413,6 +413,13 @@ func (p *ChartValue) Add(pc value.Value) error {
 		p.initialize(&c)
 		p.Holder.Value.AddContent(c.Value, c.SecondaryAxis)
 		return nil
+	} else if cl, ok := pc.(value.Closure); ok {
+		fu, err := closureToGraph(cl, 0)
+		if err != nil {
+			return err
+		}
+		p.Holder.Value.AddContent(fu, false)
+		return nil
 	}
 	return errors.New("value is not a chart content")
 }
@@ -1333,24 +1340,10 @@ func closureMethods() value.MethodMap {
 			} else {
 				return nil, fmt.Errorf("graph requires a number as argument")
 			}
-
-			var f func(x float64) (float64, error)
-			if cl.Args != 1 {
-				return nil, fmt.Errorf("graph requires the function to have one argument")
+			gf, err := closureToGraph(cl, steps)
+			if err != nil {
+				return nil, err
 			}
-			stack := funcGen.NewEmptyStack[value.Value]()
-			f = func(x float64) (float64, error) {
-				stack.Push(value.Float(x))
-				y, err := cl.Func(stack.CreateFrame(1), nil)
-				if err != nil {
-					return 0, err
-				}
-				if fl, ok := y.ToFloat(); ok {
-					return fl, nil
-				}
-				return 0, fmt.Errorf("the function given to graph must return a float")
-			}
-			gf := graph.Function{Function: f, Steps: steps, Style: graph.Black}
 			return ChartContentValue{Holder[graph.ChartContent]{gf}, false, nil}, nil
 		}).SetMethodDescription("steps", "Creates a graph of the function (ℝ→ℝ) to be used in the plot command. "+
 			"Although adaptive step size control is used, in rare cases it may still be necessary to set the step size manually. "+
@@ -1561,6 +1554,26 @@ func closureMethods() value.MethodMap {
 	}
 }
 
+func closureToGraph(cl value.Closure, steps int) (graph.Function, error) {
+	var f func(x float64) (float64, error)
+	if cl.Args != 1 {
+		return graph.Function{}, fmt.Errorf("graph requires the function to have one argument")
+	}
+	stack := funcGen.NewEmptyStack[value.Value]()
+	f = func(x float64) (float64, error) {
+		stack.Push(value.Float(x))
+		y, err := cl.Func(stack.CreateFrame(1), nil)
+		if err != nil {
+			return 0, err
+		}
+		if fl, ok := y.ToFloat(); ok {
+			return fl, nil
+		}
+		return 0, fmt.Errorf("the function given to graph must return a float")
+	}
+	return graph.Function{Function: f, Steps: steps, Style: graph.Black}, nil
+}
+
 func getColorFromZ(z float64, colList []graph.Color) col.RGBA {
 	f := math.Floor(z)
 	p := z - f
@@ -1748,7 +1761,10 @@ func Setup(fg *value.FunctionGenerator) {
 		},
 		Args:   -1,
 		IsPure: true,
-	}.SetDescription("content...", "Creates a new chart."))
+	}.SetDescription("content...", "Creates a new chart. The arguments are the chart contents to be added to the chart. "+
+		"On lists and functions are methods available to create a chart content. For example, the 'graph' method can be used to create a graph of a function. "+
+		"The created plot content values have methods to modify them, for example to change the color or to assign them to the second y-axis. "+
+		"If a simple ℝ→ℝ function is given as argument, it is automatically converted to a chart content."))
 	fg.AddStaticFunction("plot3d", funcGen.Function[value.Value]{
 		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
 			p := NewChart3dValue(graph.NewChart3d())

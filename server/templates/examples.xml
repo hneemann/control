@@ -27,7 +27,7 @@ plot(
 ).legendPos(0.2,15)</example>
     <example i18n="ex-graph"
              name="Graph" desc="Function plot">plot(
- ( x->sin(pi*x) ).graph()
+  x->sin(pi*x)
 ).cross()</example>
     <example i18n="ex-graph2"
              name="Graph 2" desc="Function plot">plot(
