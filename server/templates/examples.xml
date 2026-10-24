@@ -27,13 +27,13 @@ plot(
 ).legendPos(0.2,15)</example>
     <example i18n="ex-graph"
              name="Graph" desc="Function plot">plot(
- graph( x->sin(pi*x) )
+ ( x->sin(pi*x) ).graph()
 ).cross()</example>
     <example i18n="ex-graph2"
              name="Graph 2" desc="Function plot">plot(
- graph( x->sin(x) ).line(black, "sin($x$)"),
- graph( x->cos(x) ).line(blue, "cos($x$)"),
- graph( x->tan(x) ).line(red, "tan($x$)")
+ ( x->sin(x) ).graph().line(black, "sin($x$)"),
+ ( x->cos(x) ).graph().line(blue, "cos($x$)"),
+ ( x->tan(x) ).graph().line(red, "tan($x$)")
 ).cross()
  .xBounds(-pi, pi)
  .yBounds(-2, 2)</example>
