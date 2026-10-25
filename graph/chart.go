@@ -1708,6 +1708,16 @@ func (s ImageInset) DrawTo(env *ChartContentEnvironment) (cErr error) {
 	}
 
 	if s.VisualGuide != nil {
+		if s.Chart.Cross {
+			nErr.Try(
+				inner.DrawPath(SlicePath{Closed: true}.
+					Add(inner.size.Min).
+					Add(Point{X: inner.size.Max.X, Y: inner.size.Min.Y}).
+					Add(inner.size.Max).
+					Add(Point{X: inner.size.Min.X, Y: inner.size.Max.Y}), s.VisualGuide),
+			)
+		}
+
 		ir := ie.Canvas.Rect()
 		sMin := env.Transform(ir.Min)
 		sMax := env.Transform(ir.Max)
