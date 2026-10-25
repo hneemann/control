@@ -1782,40 +1782,6 @@ func Setup(fg *value.FunctionGenerator) {
 		Args:   -1,
 		IsPure: true,
 	}.SetDescription("content...", "Creates a new 3d chart."))
-	fg.AddStaticFunction("graph", funcGen.Function[value.Value]{
-		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
-			steps := 0
-			if s, ok := st.GetOptional(1, value.Int(0)).ToFloat(); ok {
-				steps = int(s)
-			} else {
-				return nil, fmt.Errorf("graph requires a number as second argument")
-			}
-
-			var f func(x float64) (float64, error)
-			if cl, ok := st.Get(0).(value.Closure); ok {
-				if cl.Args != 1 {
-					return nil, fmt.Errorf("graph requires a function with one argument")
-				}
-				stack := funcGen.NewEmptyStack[value.Value]()
-				f = func(x float64) (float64, error) {
-					y, err := cl.Eval(stack, value.Float(x))
-					if err != nil {
-						return 0, err
-					}
-					if fl, ok := y.ToFloat(); ok {
-						return fl, nil
-					}
-					return 0, fmt.Errorf("the function given to graph must return a float")
-				}
-			} else {
-				return nil, fmt.Errorf("graph requires a closure as first argument")
-			}
-			gf := graph.Function{Function: f, Steps: steps, Style: graph.Black}
-			return ChartContentValue{Holder[graph.ChartContent]{gf}, false, nil}, nil
-		},
-		Args:   -1,
-		IsPure: true,
-	}.SetDescription("func(float) float", "steps", "Creates a graph of the function to be used in the plot command.").VarArgs(1, 2))
 	fg.AddStaticFunction("yConst", funcGen.Function[value.Value]{
 		Func: func(st funcGen.Stack[value.Value], args []value.Value) (value.Value, error) {
 			if y, ok := st.Get(0).ToFloat(); ok {

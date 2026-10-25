@@ -252,7 +252,7 @@ func TestSVGExport(t *testing.T) {
 		{name: "nyquist3", exp: "let g=60/((s+1)*(s+2)*(s+3)*(s+4));plot(g.nyquist()).zoom(0,0,10)"},
 		{name: "bode", exp: "let g=(1.5*s+1)/((2*s+1)*(s+1)*(s^2+3*s+3.1));\nlet k=pid(12,1.5,1);\nplot(\n  g.bode(green,\"g\"),\n  k.bode(blue,\"k\"),\n  (k*g).bode(black,\"k*g\") )"},
 		{name: "test", exp: "let p=numbers(10).map(i->[i,i*i]); plot(p.graph(),p.graph().line(green.darker(20).dash(10,10,2,10)))"},
-		{name: "func", exp: "plot(graph(x->sin(x)).line(black).title(\"sin\"),graph(x->cos(x)).line(red).title(\"cos\")).xBounds(0,2*pi)"},
+		{name: "func", exp: "plot((x->sin(x)).graph().line(black).title(\"sin\"),(x->cos(x)).graph().line(red).title(\"cos\")).xBounds(0,2*pi)"},
 		{name: "evans-zoom", exp: `
 let g = (s^2+2.5*s+2.234)/((s+1)*(s+2)*(s)*(s+3)*(s+4));
 
