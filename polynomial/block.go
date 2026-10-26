@@ -406,60 +406,7 @@ func (s *System) Run(tMax, dt float64, pointsExported int) (*dataSet, error) {
 	return resultData, nil
 }
 
-func SimulateBlock(st funcGen.Stack[value.Value], def *value.List, tMax, dt float64, pointsExported int) (value.Value, error) {
-	sys := NewSystem()
-	for v, err := range def.Iterate(st) {
-		if err != nil {
-			return nil, err
-		}
-		if m, ok := v.(value.Map); ok {
-			in, err := getStringList(st, m, "in")
-			if err != nil {
-				return nil, err
-			}
-			out, err := getStringList(st, m, "out")
-			if err != nil {
-				return nil, err
-			}
-			if len(out) != 1 {
-				return nil, fmt.Errorf("output must be a single value")
-			}
-
-			blockValue, ok := m.Get("block")
-			if !ok {
-				return nil, fmt.Errorf("block not found %w", err)
-			}
-			f, err := valueToBlock(blockValue, in)
-			if err != nil {
-				return nil, fmt.Errorf("block not valid %w", err)
-			}
-			sys.AddBlock(in, out[0], f)
-		} else {
-			return nil, fmt.Errorf("invalid block definition %v", v)
-		}
-	}
-
-	err := sys.Initialize()
-	if err != nil {
-		return nil, err
-	}
-
-	resultData, err := sys.Run(tMax, dt, pointsExported)
-	if err != nil {
-		return nil, err
-	}
-	rm := make(map[string]value.Value)
-	for i, name := range sys.outputs {
-		rm[name] = resultData.toPointList(0, i+1)
-	}
-
-	return value.NewMap(value.RealMap(rm)), nil
-}
-
 func valueToBlock(blockValue value.Value, in []string) (BlockFactory, error) {
-	if fac, ok := blockValue.(BlockFactoryValue); ok {
-		return fac.Value, nil
-	}
 	if lin, ok := blockValue.(*Linear); ok {
 		return BlockLinear(lin), nil
 	}
@@ -483,7 +430,11 @@ func valueToBlock(blockValue value.Value, in []string) (BlockFactory, error) {
 		}
 	}
 	if c, ok := blockValue.ToFloat(); ok {
-		return Const(c), nil
+		if len(in) == 0 {
+			return Const(c), nil
+		} else {
+			return Gain(c), nil
+		}
 	}
 
 	if c, ok := blockValue.(value.Closure); ok {
@@ -497,12 +448,212 @@ func valueToBlock(blockValue value.Value, in []string) (BlockFactory, error) {
 	return BlockFactory{}, fmt.Errorf("invalid block type %v", blockValue)
 }
 
-func getStringList(st funcGen.Stack[value.Value], m value.Map, key string) ([]string, error) {
-	v, ok := m.Get(key)
-	if !ok {
-		return nil, nil
+func isIdent(s string) bool {
+	if len(s) == 0 {
+		return false
 	}
+	for i, c := range s {
+		if i == 0 {
+			if !unicode.IsLetter(c) || c == '_' {
+				return false
+			}
+		} else {
+			if !(unicode.IsLetter(c) || unicode.IsDigit(c) || c == '_') {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+type NonLinDescription struct {
+	blocks []SystemBlock
+}
+
+func NewNonLinSystem() NonLinDescription {
+	return NonLinDescription{}
+}
+
+func (s NonLinDescription) ToList() (*value.List, bool) {
+	return nil, false
+}
+
+func (s NonLinDescription) ToMap() (value.Map, bool) {
+	return value.Map{}, false
+}
+
+func (s NonLinDescription) ToFloat() (float64, bool) {
+	return 0, false
+}
+
+func (s NonLinDescription) ToString(_ funcGen.Stack[value.Value]) (string, error) {
+	return "non linear system", nil
+}
+
+func (s NonLinDescription) GetType() value.Type {
+	return NonLinValueType
+}
+
+func nonLinMethods() value.MethodMap {
+	return value.MethodMap{
+		"in": value.MethodAtType(2, func(s NonLinDescription, st funcGen.Stack[value.Value]) (value.Value, error) {
+			val := st.Get(1)
+			bf, err := valueToBlock(val, []string{})
+			if err != nil {
+				return nil, fmt.Errorf("only a function or a constant can be used as an input block: %w", err)
+			}
+			if out, err := st.Get(2).ToString(st); err == nil {
+				return NonLinDescription{append(s.blocks, SystemBlock{
+					factory: bf,
+					inputs:  []string{},
+					output:  out,
+				})}, nil
+			} else {
+				return nil, fmt.Errorf("invalid output name %v", st.Get(2))
+			}
+		}).SetMethodDescription("input", "out", "Adds a constant or a function of time as an input to the system. "+
+			"Most often used as a constant input signal 1 if a step response is desired."),
+		"block": value.MethodAtType(3, func(s NonLinDescription, st funcGen.Stack[value.Value]) (value.Value, error) {
+			inList, err := getInputList(st, st.Get(1))
+			if err != nil {
+				return nil, err
+			}
+			val := st.Get(2)
+			bf, err := valueToBlock(val, inList)
+			if err != nil {
+				return nil, err
+			}
+			if out, err := st.Get(3).ToString(st); err == nil {
+				return NonLinDescription{append(s.blocks, SystemBlock{
+					factory: bf,
+					inputs:  inList,
+					output:  out,
+				})}, nil
+			} else {
+				return nil, fmt.Errorf("invalid output name %v", st.Get(3))
+			}
+		}).SetMethodDescription("in", "type", "out", "Adds a block to the system. The type can be a string representing a basic "+
+			"operation (\"+\", \"-\", \"*\", \"dif\", \"int\"), a float value for a constant gain, a Linear System, or a function (function of input signals). "+
+			"If a function is used, and no input signals are specified, the function is assumed to be a function of time. Otherwise, "+
+			"the number of input signals must match the number of arguments of the function."),
+		"delay": value.MethodAtType(3, func(s NonLinDescription, st funcGen.Stack[value.Value]) (value.Value, error) {
+			inList, err := getInputList(st, st.Get(1))
+			if err != nil {
+				return nil, err
+			}
+			if delay, ok := st.Get(2).ToFloat(); ok {
+				if out, err := st.Get(3).ToString(st); err == nil {
+					return NonLinDescription{append(s.blocks, SystemBlock{
+						factory: Delay(delay),
+						inputs:  inList,
+						output:  out,
+					})}, nil
+				} else {
+					return nil, fmt.Errorf("invalid output name %v", st.Get(3))
+				}
+			} else {
+				return nil, fmt.Errorf("invalid delay value %v", st.Get(2))
+			}
+		}).SetMethodDescription("in", "delayTime", "out", "Adds a delay block to the system."),
+		"limiter": value.MethodAtType(4, func(s NonLinDescription, st funcGen.Stack[value.Value]) (value.Value, error) {
+			inList, err := getInputList(st, st.Get(1))
+			if err != nil {
+				return nil, err
+			}
+			if uMin, ok := st.Get(2).ToFloat(); ok {
+				if uMax, ok := st.Get(3).ToFloat(); ok {
+					if out, err := st.Get(4).ToString(st); err == nil {
+						return NonLinDescription{append(s.blocks, SystemBlock{
+							factory: Limit(uMin, uMax),
+							inputs:  inList,
+							output:  out,
+						})}, nil
+					} else {
+						return nil, fmt.Errorf("invalid output name %v", st.Get(4))
+					}
+				} else {
+					return nil, fmt.Errorf("invalid max value %v", st.Get(3))
+				}
+			} else {
+				return nil, fmt.Errorf("invalid min value %v", st.Get(2))
+			}
+		}).SetMethodDescription("in", "min", "max", "out", "Adds a limiter block to the system. The output is limited to the range [min, max]."),
+		"pid": value.MethodAtType(5, func(s NonLinDescription, st funcGen.Stack[value.Value]) (value.Value, error) {
+			inList, err := getInputList(st, st.Get(1))
+			if err != nil {
+				return nil, err
+			}
+			if kp, ok := st.Get(2).ToFloat(); ok {
+				if Ti, ok := st.Get(3).ToFloat(); ok {
+					if Td, ok := st.Get(4).ToFloat(); ok {
+						pid, err := BlockPID(kp, Ti, Td)
+						if err != nil {
+							return nil, fmt.Errorf("invalid PID parameters: %v", err)
+						}
+						if out, err := st.Get(5).ToString(st); err == nil {
+							return NonLinDescription{append(s.blocks, SystemBlock{
+								factory: pid,
+								inputs:  inList,
+								output:  out,
+							})}, nil
+						} else {
+							return nil, fmt.Errorf("invalid output name %v", st.Get(5))
+						}
+					} else {
+						return nil, fmt.Errorf("invalid Td value %v", st.Get(4))
+					}
+				} else {
+					return nil, fmt.Errorf("invalid Ti value %v", st.Get(3))
+				}
+			} else {
+				return nil, fmt.Errorf("invalid kp value %v", st.Get(2))
+			}
+		}).SetMethodDescription("in", "kp", "Ti", "Td", "out", "Adds a PID block to the system."),
+		"simulate": value.MethodAtType(3, func(s NonLinDescription, st funcGen.Stack[value.Value]) (value.Value, error) {
+			tMax, ok := st.Get(1).ToFloat()
+			if !ok {
+				return nil, fmt.Errorf("invalid tMax %v", st.Get(1))
+			}
+
+			dt := 0.0
+			if dtVal, ok := st.GetOptional(2, value.Float(0)).ToFloat(); ok {
+				dt = dtVal
+			} else {
+				return nil, fmt.Errorf("the second argument of simulate requires a float value")
+			}
+
+			points := 0
+			if pointsVal, ok := st.GetOptional(3, value.Int(0)).(value.Int); ok {
+				points = int(pointsVal)
+			} else {
+				return nil, fmt.Errorf("the third argument of simulate requires an int value")
+			}
+
+			sys := &System{blocks: s.blocks}
+			err := sys.Initialize()
+			if err != nil {
+				return nil, err
+			}
+
+			resultData, err := sys.Run(tMax, dt, points)
+			if err != nil {
+				return nil, err
+			}
+			rm := make(map[string]value.Value)
+			for i, name := range sys.outputs {
+				rm[name] = resultData.toPointList(0, i+1)
+			}
+
+			return value.NewMap(value.RealMap(rm)), nil
+		}).SetMethodDescription("tMax", "dt", "pointsExported", "Simulates the system and returns a map of output signals.").VarArgsMethod(1, 3),
+	}
+}
+
+func getInputList(st funcGen.Stack[value.Value], v value.Value) ([]string, error) {
 	if s, ok := v.(value.String); ok {
+		if s == "" {
+			return []string{}, nil
+		}
 		if isIdent(string(s)) {
 			return []string{string(s)}, nil
 		}
@@ -527,22 +678,4 @@ func getStringList(st funcGen.Stack[value.Value], m value.Map, key string) ([]st
 		return result, nil
 	}
 	return nil, fmt.Errorf("invalid signal type: %v", v)
-}
-
-func isIdent(s string) bool {
-	if len(s) == 0 {
-		return false
-	}
-	for i, c := range s {
-		if i == 0 {
-			if !unicode.IsLetter(c) || c == '_' {
-				return false
-			}
-		} else {
-			if !(unicode.IsLetter(c) || unicode.IsDigit(c) || c == '_') {
-				return false
-			}
-		}
-	}
-	return true
 }

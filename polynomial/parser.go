@@ -21,21 +21,13 @@ import (
 )
 
 var (
-	ComplexValueType      value.Type
-	PolynomialValueType   value.Type
-	LinearValueType       value.Type
-	BlockFactoryValueType value.Type
-	TwoPortValueType      value.Type
-	GuiElementsType       value.Type
+	ComplexValueType    value.Type
+	PolynomialValueType value.Type
+	LinearValueType     value.Type
+	NonLinValueType     value.Type
+	TwoPortValueType    value.Type
+	GuiElementsType     value.Type
 )
-
-type BlockFactoryValue struct {
-	grParser.Holder[BlockFactory]
-}
-
-func (f BlockFactoryValue) GetType() value.Type {
-	return BlockFactoryValueType
-}
 
 type Complex complex128
 
@@ -1352,7 +1344,7 @@ var Parser = value.New().
 		ComplexValueType = fg.RegisterType("complex", " A complex number")
 		PolynomialValueType = fg.RegisterType("polynomial", "A polynomial. The polynomial is represented by it's real coefficients.")
 		LinearValueType = fg.RegisterType("linearSystem", "A linear system. The system is represented by its numerator and denominator polynomials.")
-		BlockFactoryValueType = fg.RegisterType("block", "A Simulink like simulation block. Blocks are connected by the names of the input and output signals. See the non linear simulation example for details on it's usage.")
+		NonLinValueType = fg.RegisterType("nonLin", "A non linear system.")
 		TwoPortValueType = fg.RegisterType("twoPort", "A classical two-port described by a 2x2 matrix.")
 		GuiElementsType = fg.RegisterType("gui", "The interface to gui elements able to modify the output.")
 
@@ -1375,8 +1367,9 @@ var Parser = value.New().
 	RegisterMethods(value.IntTypeId, intMethods()).
 	RegisterMethods(value.ListTypeId, listMethods()).
 	RegisterMethods(value.ClosureTypeId, closureMethods()).
-	RegisterMethods(ComplexValueType, cmplxMethods()).
 	RegisterMethods(TwoPortValueType, twoPortMethods()).
+	RegisterMethods(ComplexValueType, cmplxMethods()).
+	RegisterMethods(NonLinValueType, nonLinMethods()).
 	RegisterMethods(GuiElementsType, guiMethods()).
 	Modify(grParser.Setup).
 	RegisterMethods(grParser.Chart3dType, chart3dMethods()).
@@ -1548,56 +1541,6 @@ var Parser = value.New().
 		IsPure: true,
 	}.SetDescription("k_p", "T_I", "T_D", "T_P", "Creates a PID linear system. The fourth time T_P is the time "+
 		"constant that describes the parasitic PT1 term occurring in a real differentiation.").VarArgs(2, 4)).
-	AddStaticFunction("blockDelay", funcGen.Function[value.Value]{
-		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
-			if delay, ok := stack.Get(0).ToFloat(); ok {
-				return BlockFactoryValue{Holder: grParser.Holder[BlockFactory]{Value: Delay(delay)}}, nil
-			}
-			return nil, fmt.Errorf("blockDelay requires a float values")
-		},
-		Args:   1,
-		IsPure: true,
-	}.SetDescription("dt", "Creates a delay block.")).
-	AddStaticFunction("blockLimiter", funcGen.Function[value.Value]{
-		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
-			if aMin, ok := stack.Get(0).ToFloat(); ok {
-				if aMax, ok := stack.Get(1).ToFloat(); ok {
-					return BlockFactoryValue{Holder: grParser.Holder[BlockFactory]{Value: Limit(math.Min(aMin, aMax), math.Max(aMin, aMax))}}, nil
-				}
-			}
-			return nil, fmt.Errorf("blockLimiter requires 2 float values")
-		},
-		Args:   2,
-		IsPure: true,
-	}.SetDescription("min", "max", "Creates a limiter block.")).
-	AddStaticFunction("blockGain", funcGen.Function[value.Value]{
-		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
-			if g, ok := stack.Get(0).ToFloat(); ok {
-				return BlockFactoryValue{Holder: grParser.Holder[BlockFactory]{Value: Gain(g)}}, nil
-			}
-			return nil, fmt.Errorf("blockGainr requires a float value")
-		},
-		Args:   1,
-		IsPure: true,
-	}.SetDescription("gain", "Creates a gain block.")).
-	AddStaticFunction("blockPid", funcGen.Function[value.Value]{
-		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
-			if kp, ok := stack.Get(0).ToFloat(); ok {
-				if ti, ok := stack.Get(1).ToFloat(); ok {
-					if td, ok := stack.GetOptional(2, value.Float(0)).ToFloat(); ok {
-						pid, err := BlockPID(kp, ti, td)
-						if err != nil {
-							return nil, err
-						}
-						return BlockFactoryValue{Holder: grParser.Holder[BlockFactory]{Value: pid}}, nil
-					}
-				}
-			}
-			return nil, fmt.Errorf("blockPid requires 3 float values")
-		},
-		Args:   3,
-		IsPure: true,
-	}.SetDescription("k_p", "T_I", "T_D", "Creates a PID block.").VarArgs(2, 3)).
 	AddStaticFunction("tpCascade", funcGen.Function[value.Value]{
 		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
 			var tpl []*TwoPort
@@ -1643,31 +1586,13 @@ var Parser = value.New().
 	AddStaticFunction("tpH", createTwoPort(HParam)).
 	AddStaticFunction("tpC", createTwoPort(CParam)).
 	AddStaticFunction("tpA", createTwoPort(AParam)).
-	AddStaticFunction("simulateBlocks", funcGen.Function[value.Value]{
+	AddStaticFunction("nonLin", funcGen.Function[value.Value]{
 		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
-			if def, ok := stack.Get(0).ToList(); ok {
-				if tMax, ok := stack.Get(1).ToFloat(); ok {
-					dt := 0.0
-					if dtVal, ok := stack.GetOptional(2, value.Float(0)).ToFloat(); ok {
-						dt = dtVal
-					} else {
-						return nil, fmt.Errorf("the third argument of simulate requires a float value")
-					}
-					points := 0
-					if pointsVal, ok := stack.GetOptional(3, value.Int(0)).(value.Int); ok {
-						points = int(pointsVal)
-					} else {
-						return nil, fmt.Errorf("the fourth argument of simulate requires an int value")
-					}
-
-					return SimulateBlock(stack, def, tMax, dt, points)
-				}
-			}
-			return nil, fmt.Errorf("simulate requires a list and a flost")
+			return NewNonLinSystem(), nil
 		},
-		Args:   4,
-		IsPure: true,
-	}.SetDescription("def", "tMax", "dt", "pointsExported", "Simulates the given model.").VarArgs(2, 4)).
+		Args:   0,
+		IsPure: false,
+	}.SetDescription("Creates a non linear system. See the non linear simulation example for details on it's usage.")).
 	Modify(func(f *funcGen.FunctionGenerator[value.Value]) {
 		p := f.GetParser()
 		p.SetStringConverter(parser2.StringConverterFunc[value.Value](func(s string) value.Value {
