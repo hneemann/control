@@ -24,7 +24,7 @@ var (
 	ComplexValueType    value.Type
 	PolynomialValueType value.Type
 	LinearValueType     value.Type
-	NonLinValueType     value.Type
+	NonLinearValueType  value.Type
 	TwoPortValueType    value.Type
 	GuiElementsType     value.Type
 )
@@ -1344,7 +1344,7 @@ var Parser = value.New().
 		ComplexValueType = fg.RegisterType("complex", " A complex number")
 		PolynomialValueType = fg.RegisterType("polynomial", "A polynomial. The polynomial is represented by it's real coefficients.")
 		LinearValueType = fg.RegisterType("linearSystem", "A linear system. The system is represented by its numerator and denominator polynomials.")
-		NonLinValueType = fg.RegisterType("nonLin", "A non linear system.")
+		NonLinearValueType = fg.RegisterType("nonLinearSystem", "A non linear system.")
 		TwoPortValueType = fg.RegisterType("twoPort", "A classical two-port described by a 2x2 matrix.")
 		GuiElementsType = fg.RegisterType("gui", "The interface to gui elements able to modify the output.")
 
@@ -1369,7 +1369,7 @@ var Parser = value.New().
 	RegisterMethods(value.ClosureTypeId, closureMethods()).
 	RegisterMethods(TwoPortValueType, twoPortMethods()).
 	RegisterMethods(ComplexValueType, cmplxMethods()).
-	RegisterMethods(NonLinValueType, nonLinMethods()).
+	RegisterMethods(NonLinearValueType, nonLinMethods()).
 	RegisterMethods(GuiElementsType, guiMethods()).
 	Modify(grParser.Setup).
 	RegisterMethods(grParser.Chart3dType, chart3dMethods()).
@@ -1586,9 +1586,9 @@ var Parser = value.New().
 	AddStaticFunction("tpH", createTwoPort(HParam)).
 	AddStaticFunction("tpC", createTwoPort(CParam)).
 	AddStaticFunction("tpA", createTwoPort(AParam)).
-	AddStaticFunction("nonLin", funcGen.Function[value.Value]{
+	AddStaticFunction("nonLinearSystem", funcGen.Function[value.Value]{
 		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
-			return NewNonLinSystem(), nil
+			return NonLinDescription{}, nil
 		},
 		Args:   0,
 		IsPure: false,

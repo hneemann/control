@@ -287,18 +287,14 @@ func (b SystemBlock) String() string {
 	return fmt.Sprintf("%s: %v->%s", b.factory.name, b.inputs, b.output)
 }
 
-type System struct {
+type NonLinearSystem struct {
 	blocks  []SystemBlock
 	outputs []string
 	next    []BlockNextFunc
 	values  []float64
 }
 
-func NewSystem() *System {
-	return &System{}
-}
-
-func (s *System) AddBlock(inputs []string, output string, factory BlockFactory) *System {
+func (s *NonLinearSystem) AddBlock(inputs []string, output string, factory BlockFactory) *NonLinearSystem {
 	s.blocks = append(s.blocks, SystemBlock{
 		factory: factory,
 		inputs:  inputs,
@@ -307,7 +303,11 @@ func (s *System) AddBlock(inputs []string, output string, factory BlockFactory) 
 	return s
 }
 
-func (s *System) Initialize() error {
+func NewNonLinearSystem() *NonLinearSystem {
+	return &NonLinearSystem{}
+}
+
+func (s *NonLinearSystem) Initialize() error {
 	var outputs []string
 	var outputMap = make(map[string]int)
 	for _, block := range s.blocks {
@@ -354,7 +354,7 @@ func (s *System) Initialize() error {
 	return nil
 }
 
-func (s *System) Run(tMax, dt float64, pointsExported int) (*dataSet, error) {
+func (s *NonLinearSystem) Run(tMax, dt float64, pointsExported int) (*dataSet, error) {
 	if pointsExported < 10 {
 		pointsExported = 1000
 	}
@@ -470,10 +470,6 @@ type NonLinDescription struct {
 	blocks []SystemBlock
 }
 
-func NewNonLinSystem() NonLinDescription {
-	return NonLinDescription{}
-}
-
 func (s NonLinDescription) ToList() (*value.List, bool) {
 	return nil, false
 }
@@ -491,7 +487,13 @@ func (s NonLinDescription) ToString(_ funcGen.Stack[value.Value]) (string, error
 }
 
 func (s NonLinDescription) GetType() value.Type {
-	return NonLinValueType
+	return NonLinearValueType
+}
+
+func (s *NonLinDescription) add(sb SystemBlock) NonLinDescription {
+	blocks := append(s.blocks, sb)
+	s.blocks = s.blocks[0:len(s.blocks):len(s.blocks)]
+	return NonLinDescription{blocks: blocks}
 }
 
 func nonLinMethods() value.MethodMap {
@@ -503,11 +505,11 @@ func nonLinMethods() value.MethodMap {
 				return nil, fmt.Errorf("only a function or a constant can be used as an input block: %w", err)
 			}
 			if out, err := st.Get(2).ToString(st); err == nil {
-				return NonLinDescription{append(s.blocks, SystemBlock{
+				return s.add(SystemBlock{
 					factory: bf,
 					inputs:  []string{},
 					output:  out,
-				})}, nil
+				}), nil
 			} else {
 				return nil, fmt.Errorf("invalid output name %v", st.Get(2))
 			}
@@ -524,11 +526,11 @@ func nonLinMethods() value.MethodMap {
 				return nil, err
 			}
 			if out, err := st.Get(3).ToString(st); err == nil {
-				return NonLinDescription{append(s.blocks, SystemBlock{
+				return s.add(SystemBlock{
 					factory: bf,
 					inputs:  inList,
 					output:  out,
-				})}, nil
+				}), nil
 			} else {
 				return nil, fmt.Errorf("invalid output name %v", st.Get(3))
 			}
@@ -543,11 +545,11 @@ func nonLinMethods() value.MethodMap {
 			}
 			if delay, ok := st.Get(2).ToFloat(); ok {
 				if out, err := st.Get(3).ToString(st); err == nil {
-					return NonLinDescription{append(s.blocks, SystemBlock{
+					return s.add(SystemBlock{
 						factory: Delay(delay),
 						inputs:  inList,
 						output:  out,
-					})}, nil
+					}), nil
 				} else {
 					return nil, fmt.Errorf("invalid output name %v", st.Get(3))
 				}
@@ -563,11 +565,11 @@ func nonLinMethods() value.MethodMap {
 			if uMin, ok := st.Get(2).ToFloat(); ok {
 				if uMax, ok := st.Get(3).ToFloat(); ok {
 					if out, err := st.Get(4).ToString(st); err == nil {
-						return NonLinDescription{append(s.blocks, SystemBlock{
+						return s.add(SystemBlock{
 							factory: Limit(uMin, uMax),
 							inputs:  inList,
 							output:  out,
-						})}, nil
+						}), nil
 					} else {
 						return nil, fmt.Errorf("invalid output name %v", st.Get(4))
 					}
@@ -591,11 +593,11 @@ func nonLinMethods() value.MethodMap {
 							return nil, fmt.Errorf("invalid PID parameters: %v", err)
 						}
 						if out, err := st.Get(5).ToString(st); err == nil {
-							return NonLinDescription{append(s.blocks, SystemBlock{
+							return s.add(SystemBlock{
 								factory: pid,
 								inputs:  inList,
 								output:  out,
-							})}, nil
+							}), nil
 						} else {
 							return nil, fmt.Errorf("invalid output name %v", st.Get(5))
 						}
@@ -629,7 +631,7 @@ func nonLinMethods() value.MethodMap {
 				return nil, fmt.Errorf("the third argument of simulate requires an int value")
 			}
 
-			sys := &System{blocks: s.blocks}
+			sys := &NonLinearSystem{blocks: s.blocks}
 			err := sys.Initialize()
 			if err != nil {
 				return nil, err

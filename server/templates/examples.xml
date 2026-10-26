@@ -139,14 +139,11 @@ let K = pid(kp, Ti, Td, Tp);
 // and outputs. The order of the blocks does not matter.
 // A block can be a constant, a transfer function, an operation
 // like "+", "-", "*", "dif" or "int" or a custom function.
-// If a function is used, and there is no 'in' field given, the
-// function has to have exactly one argument, which is the time.
-// If the function has an in-field, it has to have exactly as
-// many arguments as there are inputs and the output is the
-// function result.
+// The “in” method generates an input signal. This can be either
+// a constant or a function of time.
 // There are also some methods, which create special blocks
 // like 'delay', 'limiter' and 'pid'.
-let simLimited = nonLin()
+let simLimited = nonLinearSystem()
        .in     (           1,   "w"   )
        .block  (["w","y"], "-", "e"   )
        .block  ("e"      , K,   "u"   )

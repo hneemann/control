@@ -9,7 +9,7 @@ import (
 
 func TestSimple(t *testing.T) {
 
-	s := NewSystem().
+	s := NewNonLinearSystem().
 		AddBlock([]string{}, "w", Const(1)).
 		AddBlock([]string{"ul"}, "y", BlockLinear(&Linear{
 			Numerator:   Polynomial{70},
