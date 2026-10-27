@@ -629,3 +629,192 @@ func (tp *TwoPort) ToBase() (*TwoPort, error) {
 	}
 	return inverter.Cascade(ps)
 }
+
+func twoPortMethods() value.MethodMap {
+	return value.MethodMap{
+		"voltageGain": value.MethodAtType(1, func(tp *TwoPort, st funcGen.Stack[value.Value]) (value.Value, error) {
+			z, err := getComplex(st, 1)
+			if err != nil {
+				return nil, fmt.Errorf("voltageGain requires a complex value")
+			}
+			return Complex(tp.VoltageGain(z)), nil
+		}).SetMethodDescription("load", "Returns the voltage gain including the given load impedance."),
+		"voltageGainOpen": value.MethodAtType(0, func(tp *TwoPort, st funcGen.Stack[value.Value]) (value.Value, error) {
+			return Complex(tp.VoltageGainOpen()), nil
+		}).SetMethodDescription("Returns the open circuit voltage gain."),
+		"currentGain": value.MethodAtType(1, func(tp *TwoPort, st funcGen.Stack[value.Value]) (value.Value, error) {
+			z, err := getComplex(st, 1)
+			if err != nil {
+				return nil, fmt.Errorf("voltageGain requires a complex value")
+			}
+			return Complex(tp.CurrentGain(z)), nil
+		}).SetMethodDescription("load", "Returns the current gain including the given load impedance."),
+		"inputImp": value.MethodAtType(1, func(tp *TwoPort, st funcGen.Stack[value.Value]) (value.Value, error) {
+			z, err := getComplex(st, 1)
+			if err != nil {
+				return nil, fmt.Errorf("inputImp requires a complex value")
+			}
+			return Complex(tp.InputImpedance(z)), nil
+		}).SetMethodDescription("load", "Returns the input impedance including the given load impedance."),
+		"inputImpOpen": value.MethodAtType(0, func(tp *TwoPort, st funcGen.Stack[value.Value]) (value.Value, error) {
+			return Complex(tp.InputImpedanceOpen()), nil
+		}).SetMethodDescription("Returns the open circuit input impedance."),
+		"outputImp": value.MethodAtType(1, func(tp *TwoPort, st funcGen.Stack[value.Value]) (value.Value, error) {
+			z, err := getComplex(st, 1)
+			if err != nil {
+				return nil, fmt.Errorf("outputImp requires a complex value")
+			}
+			return Complex(tp.OutputImpedance(z)), nil
+		}).SetMethodDescription("load", "Returns the output impedance including the given input load impedance."),
+		"outputImpOpen": value.MethodAtType(0, func(tp *TwoPort, st funcGen.Stack[value.Value]) (value.Value, error) {
+			return Complex(tp.OutputImpedanceOpen()), nil
+		}).SetMethodDescription("Returns the open circuit output impedance."),
+		"cascade": value.MethodAtType(1, func(tp *TwoPort, st funcGen.Stack[value.Value]) (value.Value, error) {
+			if o, ok := st.Get(1).(*TwoPort); ok {
+				return tp.Cascade(o)
+			}
+			return nil, fmt.Errorf("cascade requires a two-port value")
+		}).SetMethodDescription("tp", "Returns the two-port created by cascading this two-port with the given one."),
+		"series": value.MethodAtType(1, func(tp *TwoPort, st funcGen.Stack[value.Value]) (value.Value, error) {
+			if o, ok := st.Get(1).(*TwoPort); ok {
+				return tp.Series(o)
+			}
+			return nil, fmt.Errorf("series requires a two-port value")
+		}).SetMethodDescription("tp", "Returns a series-series connection."),
+		"parallel": value.MethodAtType(1, func(tp *TwoPort, st funcGen.Stack[value.Value]) (value.Value, error) {
+			if o, ok := st.Get(1).(*TwoPort); ok {
+				return tp.Parallel(o)
+			}
+			return nil, fmt.Errorf("parallel requires a two-port value")
+		}).SetMethodDescription("tp", "Returns a parallel-parallel connection."),
+		"seriesParallel": value.MethodAtType(1, func(tp *TwoPort, st funcGen.Stack[value.Value]) (value.Value, error) {
+			if o, ok := st.Get(1).(*TwoPort); ok {
+				return tp.SeriesParallel(o)
+			}
+			return nil, fmt.Errorf("seriesParallel requires a two-port value")
+		}).SetMethodDescription("tp", "Returns a series-parallel connection."),
+		"parallelSeries": value.MethodAtType(1, func(tp *TwoPort, st funcGen.Stack[value.Value]) (value.Value, error) {
+			if o, ok := st.Get(1).(*TwoPort); ok {
+				return tp.ParallelSeries(o)
+			}
+			return nil, fmt.Errorf("ParallelSeries requires a two-port value")
+		}).SetMethodDescription("tp", "Returns a parallel-series connection."),
+		"getZ": value.MethodAtType(0, func(tp *TwoPort, st funcGen.Stack[value.Value]) (value.Value, error) {
+			return tp.GetZ()
+		}).SetMethodDescription("Returns the Z-parameters."),
+		"getY": value.MethodAtType(0, func(tp *TwoPort, st funcGen.Stack[value.Value]) (value.Value, error) {
+			return tp.GetY()
+		}).SetMethodDescription("Returns the Y-parameters."),
+		"getH": value.MethodAtType(0, func(tp *TwoPort, st funcGen.Stack[value.Value]) (value.Value, error) {
+			return tp.GetH()
+		}).SetMethodDescription("Returns the H-parameters."),
+		"getA": value.MethodAtType(0, func(tp *TwoPort, st funcGen.Stack[value.Value]) (value.Value, error) {
+			return tp.GetA()
+		}).SetMethodDescription("Returns the A-parameters."),
+		"getC": value.MethodAtType(0, func(tp *TwoPort, st funcGen.Stack[value.Value]) (value.Value, error) {
+			return tp.GetC()
+		}).SetMethodDescription("Returns the C-parameters."),
+		"det": value.MethodAtType(0, func(tp *TwoPort, st funcGen.Stack[value.Value]) (value.Value, error) {
+			return Complex(tp.det()), nil
+		}).SetMethodDescription("Returns the determinant of the two-port matrix."),
+		"string": value.MethodAtType(0, func(tp *TwoPort, st funcGen.Stack[value.Value]) (value.Value, error) {
+			return value.String(tp.String()), nil
+		}).SetMethodDescription("Returns a string representation of the two-port."),
+		"emitterToCollector": value.MethodAtType(0, func(tp *TwoPort, st funcGen.Stack[value.Value]) (value.Value, error) {
+			return tp.ToCollector()
+		}).SetMethodDescription("Converts a common emitter two-port to a common collector two-port."),
+		"emitterToBase": value.MethodAtType(0, func(tp *TwoPort, st funcGen.Stack[value.Value]) (value.Value, error) {
+			return tp.ToBase()
+		}).SetMethodDescription("Converts a common emitter two-port to a common base two-port."),
+	}
+}
+
+func getComplex(stack funcGen.Stack[value.Value], i int) (complex128, error) {
+	var z complex128
+	v := stack.Get(i)
+	if c, ok := v.(Complex); ok {
+		z = complex128(c)
+	} else {
+		if f, ok := v.ToFloat(); ok {
+			z = complex(f, 0)
+		} else {
+			return 0, fmt.Errorf("complex or a float value required")
+		}
+	}
+	return z, nil
+}
+
+func createTwoPort(typ TpType) funcGen.Function[value.Value] {
+	return value.MethodAtType(4, func(tp TwoPortMath, st funcGen.Stack[value.Value]) (value.Value, error) {
+		m := make([]complex128, 4)
+		for i := 0; i < 4; i++ {
+			var err error
+			m[i], err = getComplex(st, i+1)
+			if err != nil {
+				return nil, fmt.Errorf("twoport requires complex or float values")
+			}
+		}
+		return NewTwoPort(m[0], m[1], m[2], m[3], typ), nil
+	}).Pure(true).SetMethodDescription("m11", "m12", "m21", "m22", "Creates a new two-port of type "+typ.String()+".")
+}
+
+type TwoPortMath struct {
+}
+
+func (t TwoPortMath) ToList() (*value.List, bool) {
+	return nil, false
+}
+
+func (t TwoPortMath) ToMap() (value.Map, bool) {
+	return value.Map{}, false
+}
+
+func (t TwoPortMath) ToFloat() (float64, bool) {
+	return 0, false
+}
+
+func (t TwoPortMath) ToString(_ funcGen.Stack[value.Value]) (string, error) {
+	return "TwoPortMath", nil
+}
+
+func (t TwoPortMath) GetType() value.Type {
+	return TwoPortMathType
+}
+
+func twoPortMathMethods() value.MethodMap {
+	return value.MethodMap{
+		"cascade": value.MethodAtType(-1, func(tp TwoPortMath, st funcGen.Stack[value.Value]) (value.Value, error) {
+			var tpl []*TwoPort
+			for i := 1; i < st.Size(); i++ {
+				if _, ok := st.Get(i).(*TwoPort); ok {
+					tpl = append(tpl, st.Get(i).(*TwoPort))
+				} else {
+					return nil, fmt.Errorf("tpCascade requires two-ports as arguments")
+				}
+			}
+			if len(tpl) < 2 {
+				return nil, fmt.Errorf("tpCascade requires at least two two-ports")
+			}
+			return Cascade(tpl...)
+		}).Pure(true).SetMethodDescription("tp...", "Cascades the given two-ports."),
+		"H": createTwoPort(HParam),
+		"Y": createTwoPort(YParam),
+		"Z": createTwoPort(ZParam),
+		"C": createTwoPort(CParam),
+		"A": createTwoPort(AParam),
+		"series": value.MethodAtType(-1, func(tp TwoPortMath, st funcGen.Stack[value.Value]) (value.Value, error) {
+			z, err := getComplex(st, 1)
+			if err != nil {
+				return nil, fmt.Errorf("tp.series requires a complex or a float value")
+			}
+			return NewSeries(z), nil
+		}).Pure(true).SetMethodDescription("z", "Returns a series two-port."),
+		"shunt": value.MethodAtType(-1, func(tp TwoPortMath, st funcGen.Stack[value.Value]) (value.Value, error) {
+			z, err := getComplex(st, 1)
+			if err != nil {
+				return nil, fmt.Errorf("tp.shunt requires a complex or a float value")
+			}
+			return NewShunt(z), nil
+		}).Pure(true).SetMethodDescription("z", "Returns a shunt two-port."),
+	}
+}

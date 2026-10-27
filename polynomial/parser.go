@@ -26,6 +26,7 @@ var (
 	LinearValueType     value.Type
 	NonLinearValueType  value.Type
 	TwoPortValueType    value.Type
+	TwoPortMathType     value.Type
 	GuiElementsType     value.Type
 )
 
@@ -149,105 +150,6 @@ func cmplxMethods() value.MethodMap {
 			}
 			return value.String(c.PolarLatex(precision)), nil
 		}).SetMethodDescription("precision", "Returns a LaTeX representation of the complex number in polar form.").VarArgsMethod(0, 1),
-	}
-}
-
-func twoPortMethods() value.MethodMap {
-	return value.MethodMap{
-		"voltageGain": value.MethodAtType(1, func(tp *TwoPort, st funcGen.Stack[value.Value]) (value.Value, error) {
-			z, err := getComplex(st, 1)
-			if err != nil {
-				return nil, fmt.Errorf("voltageGain requires a complex value")
-			}
-			return Complex(tp.VoltageGain(z)), nil
-		}).SetMethodDescription("load", "Returns the voltage gain including the given load impedance."),
-		"voltageGainOpen": value.MethodAtType(0, func(tp *TwoPort, st funcGen.Stack[value.Value]) (value.Value, error) {
-			return Complex(tp.VoltageGainOpen()), nil
-		}).SetMethodDescription("Returns the open circuit voltage gain."),
-		"currentGain": value.MethodAtType(1, func(tp *TwoPort, st funcGen.Stack[value.Value]) (value.Value, error) {
-			z, err := getComplex(st, 1)
-			if err != nil {
-				return nil, fmt.Errorf("voltageGain requires a complex value")
-			}
-			return Complex(tp.CurrentGain(z)), nil
-		}).SetMethodDescription("load", "Returns the current gain including the given load impedance."),
-		"inputImp": value.MethodAtType(1, func(tp *TwoPort, st funcGen.Stack[value.Value]) (value.Value, error) {
-			z, err := getComplex(st, 1)
-			if err != nil {
-				return nil, fmt.Errorf("inputImp requires a complex value")
-			}
-			return Complex(tp.InputImpedance(z)), nil
-		}).SetMethodDescription("load", "Returns the input impedance including the given load impedance."),
-		"inputImpOpen": value.MethodAtType(0, func(tp *TwoPort, st funcGen.Stack[value.Value]) (value.Value, error) {
-			return Complex(tp.InputImpedanceOpen()), nil
-		}).SetMethodDescription("Returns the open circuit input impedance."),
-		"outputImp": value.MethodAtType(1, func(tp *TwoPort, st funcGen.Stack[value.Value]) (value.Value, error) {
-			z, err := getComplex(st, 1)
-			if err != nil {
-				return nil, fmt.Errorf("outputImp requires a complex value")
-			}
-			return Complex(tp.OutputImpedance(z)), nil
-		}).SetMethodDescription("load", "Returns the output impedance including the given input load impedance."),
-		"outputImpOpen": value.MethodAtType(0, func(tp *TwoPort, st funcGen.Stack[value.Value]) (value.Value, error) {
-			return Complex(tp.OutputImpedanceOpen()), nil
-		}).SetMethodDescription("Returns the open circuit output impedance."),
-		"cascade": value.MethodAtType(1, func(tp *TwoPort, st funcGen.Stack[value.Value]) (value.Value, error) {
-			if o, ok := st.Get(1).(*TwoPort); ok {
-				return tp.Cascade(o)
-			}
-			return nil, fmt.Errorf("cascade requires a two-port value")
-		}).SetMethodDescription("tp", "Returns the two-port created by cascading this two-port with the given one."),
-		"series": value.MethodAtType(1, func(tp *TwoPort, st funcGen.Stack[value.Value]) (value.Value, error) {
-			if o, ok := st.Get(1).(*TwoPort); ok {
-				return tp.Series(o)
-			}
-			return nil, fmt.Errorf("series requires a two-port value")
-		}).SetMethodDescription("tp", "Returns a series-series connection."),
-		"parallel": value.MethodAtType(1, func(tp *TwoPort, st funcGen.Stack[value.Value]) (value.Value, error) {
-			if o, ok := st.Get(1).(*TwoPort); ok {
-				return tp.Parallel(o)
-			}
-			return nil, fmt.Errorf("parallel requires a two-port value")
-		}).SetMethodDescription("tp", "Returns a parallel-parallel connection."),
-		"seriesParallel": value.MethodAtType(1, func(tp *TwoPort, st funcGen.Stack[value.Value]) (value.Value, error) {
-			if o, ok := st.Get(1).(*TwoPort); ok {
-				return tp.SeriesParallel(o)
-			}
-			return nil, fmt.Errorf("seriesParallel requires a two-port value")
-		}).SetMethodDescription("tp", "Returns a series-parallel connection."),
-		"parallelSeries": value.MethodAtType(1, func(tp *TwoPort, st funcGen.Stack[value.Value]) (value.Value, error) {
-			if o, ok := st.Get(1).(*TwoPort); ok {
-				return tp.ParallelSeries(o)
-			}
-			return nil, fmt.Errorf("ParallelSeries requires a two-port value")
-		}).SetMethodDescription("tp", "Returns a parallel-series connection."),
-		"getZ": value.MethodAtType(0, func(tp *TwoPort, st funcGen.Stack[value.Value]) (value.Value, error) {
-			return tp.GetZ()
-		}).SetMethodDescription("Returns the Z-parameters."),
-		"getY": value.MethodAtType(0, func(tp *TwoPort, st funcGen.Stack[value.Value]) (value.Value, error) {
-			return tp.GetY()
-		}).SetMethodDescription("Returns the Y-parameters."),
-		"getH": value.MethodAtType(0, func(tp *TwoPort, st funcGen.Stack[value.Value]) (value.Value, error) {
-			return tp.GetH()
-		}).SetMethodDescription("Returns the H-parameters."),
-		"getA": value.MethodAtType(0, func(tp *TwoPort, st funcGen.Stack[value.Value]) (value.Value, error) {
-			return tp.GetA()
-		}).SetMethodDescription("Returns the A-parameters."),
-		"getC": value.MethodAtType(0, func(tp *TwoPort, st funcGen.Stack[value.Value]) (value.Value, error) {
-			return tp.GetC()
-		}).SetMethodDescription("Returns the C-parameters."),
-		"det": value.MethodAtType(0, func(tp *TwoPort, st funcGen.Stack[value.Value]) (value.Value, error) {
-			return Complex(tp.det()), nil
-		}).SetMethodDescription("Returns the determinant of the two-port matrix."),
-		"string": value.MethodAtType(0, func(tp *TwoPort, st funcGen.Stack[value.Value]) (value.Value, error) {
-			return value.String(tp.String()), nil
-		}).SetMethodDescription("Returns a string representation of the two-port."),
-		"emitterToCollector": value.MethodAtType(0, func(tp *TwoPort, st funcGen.Stack[value.Value]) (value.Value, error) {
-			return tp.ToCollector()
-		}).SetMethodDescription("Converts a common emitter two-port to a common collector two-port."),
-		"emitterToBase": value.MethodAtType(0, func(tp *TwoPort, st funcGen.Stack[value.Value]) (value.Value, error) {
-			return tp.ToBase()
-		}).SetMethodDescription("Converts a common emitter two-port to a common base two-port."),
 	}
 }
 
@@ -1345,6 +1247,7 @@ var Parser = value.New().
 		PolynomialValueType = fg.RegisterType("polynomial", "A polynomial. The polynomial is represented by it's real coefficients.")
 		LinearValueType = fg.RegisterType("linearSystem", "A linear system. The system is represented by its numerator and denominator polynomials.")
 		NonLinearValueType = fg.RegisterType("nonLinearSystem", "A non linear system.")
+		TwoPortMathType = fg.RegisterType("twoPortMath", "Some static methods to support two-port calculations. Methods are available by the global instance tpMath.")
 		TwoPortValueType = fg.RegisterType("twoPort", "A classical two-port described by a 2x2 matrix.")
 		GuiElementsType = fg.RegisterType("gui", "The interface to gui elements able to modify the output.")
 
@@ -1368,6 +1271,7 @@ var Parser = value.New().
 	RegisterMethods(value.ListTypeId, listMethods()).
 	RegisterMethods(value.ClosureTypeId, closureMethods()).
 	RegisterMethods(TwoPortValueType, twoPortMethods()).
+	RegisterMethods(TwoPortMathType, twoPortMathMethods()).
 	RegisterMethods(ComplexValueType, cmplxMethods()).
 	RegisterMethods(NonLinearValueType, nonLinMethods()).
 	RegisterMethods(GuiElementsType, guiMethods()).
@@ -1375,6 +1279,7 @@ var Parser = value.New().
 	RegisterMethods(grParser.Chart3dType, chart3dMethods()).
 	AddConstant("j", Complex(complex(0, 1))).
 	AddConstant("s", Polynomial{0, 1}).
+	AddConstant("tpMath", TwoPortMath{}).
 	EnhanceStaticFunction("exp", func(old funcGen.Function[value.Value]) funcGen.Function[value.Value] {
 		return funcGen.Function[value.Value]{
 			Func: func(st funcGen.Stack[value.Value], cs []value.Value) (value.Value, error) {
@@ -1541,51 +1446,6 @@ var Parser = value.New().
 		IsPure: true,
 	}.SetDescription("k_p", "T_I", "T_D", "T_P", "Creates a PID linear system. The fourth time T_P is the time "+
 		"constant that describes the parasitic PT1 term occurring in a real differentiation.").VarArgs(2, 4)).
-	AddStaticFunction("tpCascade", funcGen.Function[value.Value]{
-		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
-			var tpl []*TwoPort
-			for i := 0; i < stack.Size(); i++ {
-				if _, ok := stack.Get(i).(*TwoPort); ok {
-					tpl = append(tpl, stack.Get(i).(*TwoPort))
-				} else {
-					return nil, fmt.Errorf("tpCascade requires two-ports as arguments")
-				}
-			}
-			if len(tpl) < 2 {
-				return nil, fmt.Errorf("tpCascade requires at least two two-ports")
-			}
-			return Cascade(tpl...)
-		},
-		Args:   -1,
-		IsPure: true,
-	}.SetDescription("tp...", "Cascades the given two-ports.")).
-	AddStaticFunction("tpSeries", funcGen.Function[value.Value]{
-		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
-			z, err := getComplex(stack, 0)
-			if err != nil {
-				return nil, fmt.Errorf("tpSeries requires a complex or a float value")
-			}
-			return NewSeries(z), nil
-		},
-		Args:   1,
-		IsPure: true,
-	}.SetDescription("z", "Returns a series two-port.")).
-	AddStaticFunction("tpShunt", funcGen.Function[value.Value]{
-		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
-			z, err := getComplex(stack, 0)
-			if err != nil {
-				return nil, fmt.Errorf("tpShunt requires a complex or a float value")
-			}
-			return NewShunt(z), nil
-		},
-		Args:   1,
-		IsPure: true,
-	}.SetDescription("z", "Returns a shunt two-port.")).
-	AddStaticFunction("tpY", createTwoPort(YParam)).
-	AddStaticFunction("tpZ", createTwoPort(ZParam)).
-	AddStaticFunction("tpH", createTwoPort(HParam)).
-	AddStaticFunction("tpC", createTwoPort(CParam)).
-	AddStaticFunction("tpA", createTwoPort(AParam)).
 	AddStaticFunction("nonLinearSystem", funcGen.Function[value.Value]{
 		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
 			return NonLinDescription{}, nil
@@ -2020,39 +1880,6 @@ func NelderMead(fu value.Closure, initial *value.List, delta *value.List, iter i
 	m["min"] = value.Float(minVal)
 
 	return value.NewMap(value.RealMap(m)), nil
-}
-
-func getComplex(stack funcGen.Stack[value.Value], i int) (complex128, error) {
-	var z complex128
-	v := stack.Get(i)
-	if c, ok := v.(Complex); ok {
-		z = complex128(c)
-	} else {
-		if f, ok := v.ToFloat(); ok {
-			z = complex(f, 0)
-		} else {
-			return 0, fmt.Errorf("complex or a float value required")
-		}
-	}
-	return z, nil
-}
-
-func createTwoPort(typ TpType) funcGen.Function[value.Value] {
-	return funcGen.Function[value.Value]{
-		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
-			m := make([]complex128, 4)
-			for i := 0; i < 4; i++ {
-				var err error
-				m[i], err = getComplex(stack, i)
-				if err != nil {
-					return nil, fmt.Errorf("twoport requires complex or float values")
-				}
-			}
-			return NewTwoPort(m[0], m[1], m[2], m[3], typ), nil
-		},
-		Args:   4,
-		IsPure: true,
-	}.SetDescription("m11", "m12", "m21", "m22", "Creates a new two-port of type "+typ.String()+".")
 }
 
 func toUniCode(str string) string {

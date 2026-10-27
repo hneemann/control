@@ -186,16 +186,16 @@ let gain=transformer.voltageGain(Rload).abs();
  ["Uout:",gain*240]
 ]</example-->
     <example i18n="ex-twoPort"
-             name="Two-Port Transistor" desc="Two-Port Transistor">let tr=tpH(2700, 1.5e-4,
-            220,  18e-6);
+             name="Two-Port Transistor" desc="Two-Port Transistor">let tr=tpMath.H(2700, 1.5e-4,
+                 220,  18e-6);
 
-let t2=tr.series(tpShunt(3300));
+let t2=tr.series(tpMath.shunt(3300));
 
-let ges=tpCascade(
+let ges=tpMath.cascade(
   tr,
-  tpShunt(15000),
-  tpShunt(82000),
-  tpShunt(820000),
+  tpMath.shunt(15000),
+  tpMath.shunt(82000),
+  tpMath.shunt(820000),
   t2
 );
 
