@@ -1976,6 +1976,7 @@ var unicodeMap = map[string]string{
 	"Phi":           "\u03A6",
 	"Psi":           "\u03A8",
 	"Omega":         "\u03A9",
+	"sqrt":          "√",
 	"^0":            "⁰",
 	"^1":            "¹",
 	"^2":            "²",
