@@ -12,6 +12,7 @@ import (
 
 type Translator struct {
 	*message.Printer
+	German bool
 }
 
 func (t Translator) MsgID(key string, args ...any) string {
@@ -83,6 +84,6 @@ func createTranslatorFactory(tags []language.Tag) (TranslatorFactory, error) {
 		accept := request.Header.Get("Accept-Language")
 		tag, _ := language.MatchStrings(matcher, accept)
 		p := message.NewPrinter(tag)
-		return Translator{p}
+		return Translator{Printer: p, German: tag == language.German}
 	}, nil
 }
