@@ -77,7 +77,7 @@ func GetBuildInfo() string {
 	return info
 }
 
-func CreateMain(examples []Example, runOnServer bool, translatorFactory TranslatorFactory) http.HandlerFunc {
+func CreateMain(examples []Example, runOnServer bool, translatorFactory TranslatorFactory, impressum string) http.HandlerFunc {
 	info := GetBuildInfo()
 	return func(writer http.ResponseWriter, request *http.Request) {
 		var result template.HTML
@@ -136,12 +136,14 @@ func CreateMain(examples []Example, runOnServer bool, translatorFactory Translat
 			InfoText  string
 			Result    template.HTML
 			Code      string
+			Impressum string
 		}{
 			Examples:   examples,
 			InBrowser:  !runOnServer,
 			InfoText:   info,
 			Result:     result,
 			Code:       code,
+			Impressum:  impressum,
 			Translator: translatorFactory(request),
 		}
 

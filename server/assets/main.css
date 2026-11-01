@@ -247,3 +247,8 @@ div.gui-container {
     align-items: center;
     gap: 0.2em;
 }
+
+div.footer {
+    display: flex;
+    justify-content: space-between;
+}

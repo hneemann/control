@@ -65,6 +65,7 @@ func main() {
 	debug := flag.Bool("debug", false, "debug mode. In this mode, the server does not enable browser caching. Also, user 'admin' with password 'admin' is created with a fixed session token. This does not work if OIDC is used!")
 	onServer := flag.Bool("onServer", false, "execution on server, otherwise in browser")
 	oidc := flag.Bool("oidc", false, "oidc mode")
+	impressum := flag.String("impressum", "/assets/impressum.html", "impressums url")
 	flag.Parse()
 
 	i18nFunc, err := server.LoadJSONTranslations(server.TemplateFS, "templates/i18n", language.English)
@@ -133,7 +134,7 @@ func main() {
 	}
 
 	examples := server.ReadExamples()
-	mux.HandleFunc("/", sc.CheckSessionFunc(server.CreateMain(examples, *onServer, i18nFunc)))
+	mux.HandleFunc("/", sc.CheckSessionFunc(server.CreateMain(examples, *onServer, i18nFunc, *impressum)))
 	mux.HandleFunc("/help.html", server.CreateHelp())
 	mux.Handle("/assets/", Cache(http.FileServer(http.FS(server.Assets)), 180, !*debug))
 	if *onServer {

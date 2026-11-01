@@ -51,6 +51,7 @@
     </div>
     <div class="footer">
         <span style="display:inline-block;width:3em;text-align:center;" id="row">1</span>
+        {{if .Impressum}}<a href="{{.Impressum}}" target="_blank" style="margin-left:auto">{{$.MsgID "impressum" }}</a>{{end}}
     </div>
   </div>
 </div>
