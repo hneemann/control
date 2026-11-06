@@ -165,10 +165,7 @@ func (l *linTickCreator) ticks(minParent, maxParent float64, ctw CheckTextWidth,
 	tick := math.Ceil(l.min/l.delta) * l.delta
 	var ticks []Tick
 	for tick <= l.max+eps {
-		if math.Abs(tick) < eps {
-			tick = 0
-		}
-		ticks = append(ticks, Tick{tick * fac, fmt.Sprintf(format, tick)})
+		ticks = append(ticks, Tick{tick * fac, checkSignedZero(fmt.Sprintf(format, tick))})
 		tick += l.delta
 	}
 	return ticks
@@ -427,7 +424,7 @@ func CreateFixedStepAxis(stepWidth, subStepWidth float64) AxisFactory {
 		var ticks Ticks
 		for pos <= linearDef.Bounds.Max {
 			if math.Abs(pos-start) < 1e-6 {
-				ticks = append(ticks, Tick{pos, fmt.Sprintf("%g", pos)})
+				ticks = append(ticks, Tick{pos, checkSignedZero(fmt.Sprintf("%g", pos))})
 				start += delta
 			} else {
 				ticks = append(ticks, Tick{Position: pos})
@@ -444,6 +441,21 @@ func CreateFixedStepAxis(stepWidth, subStepWidth float64) AxisFactory {
 			IsLinear:    true,
 		}
 	}
+}
+
+func checkSignedZero(v string) string {
+	if len(v) < 2 {
+		return v
+	}
+	if v[0] != '-' {
+		return v
+	}
+	for i := 1; i < len(v); i++ {
+		if v[i] != '0' && v[i] != '.' {
+			return v
+		}
+	}
+	return v[1:]
 }
 
 // DBAxis creates a dB axis.

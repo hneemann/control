@@ -128,3 +128,26 @@ func Test_toExpStr(t *testing.T) {
 		})
 	}
 }
+
+func Test_checkSignedZero(t *testing.T) {
+	tests := []struct {
+		num  string
+		want string
+	}{
+		{"", ""},
+		{"-", "-"},
+		{"0", "0"},
+		{"-0", "0"},
+		{"-0.0", "0.0"},
+		{"-0.000", "0.000"},
+		{"-0.001", "-0.001"},
+		{"-0.009", "-0.009"},
+		{"-2", "-2"},
+		{"-99", "-99"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.num, func(t *testing.T) {
+			assert.Equalf(t, tt.want, checkSignedZero(tt.num), "checkSignedZero(%v)", tt.num)
+		})
+	}
+}
