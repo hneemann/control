@@ -63,20 +63,20 @@ func noLabelFormat(label string) string {
 type AxisFactory func(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth, expand float64) Axis
 
 func LinearAxis(minParent, maxParent float64, bounds Bounds, ctw CheckTextWidth, expand float64) Axis {
-	const max = 1e10
+	const maxBound = 1e10
 	delta := bounds.Width() * expand
-	if delta > max {
-		delta = max
+	if delta > maxBound {
+		delta = maxBound
 	} else if bounds.Width() < 1e-6 {
 		delta = 1 + 2*expand
 	}
 	eMin := bounds.Min - delta
-	if eMin < -max {
-		eMin = -max
+	if eMin < -maxBound {
+		eMin = -maxBound
 	}
 	eMax := bounds.Max + delta
-	if eMax > max {
-		eMax = max
+	if eMax > maxBound {
+		eMax = maxBound
 	}
 
 	labelFormat := noLabelFormat
