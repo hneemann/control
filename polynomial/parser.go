@@ -7,6 +7,7 @@ import (
 	"github.com/hneemann/control/graph"
 	"github.com/hneemann/control/graph/grParser"
 	"github.com/hneemann/control/nelderMead"
+	"github.com/hneemann/control/polynomial/lgs"
 	"github.com/hneemann/parser2"
 	"github.com/hneemann/parser2/funcGen"
 	"github.com/hneemann/parser2/value"
@@ -1453,6 +1454,15 @@ var Parser = value.New().
 		Args:   0,
 		IsPure: false,
 	}.SetDescription("Creates a non linear system. See the non linear simulation example for details on it's usage.")).
+	AddStaticFunction("linSolve", funcGen.Function[value.Value]{
+		Func: func(stack funcGen.Stack[value.Value], closureStore []value.Value) (value.Value, error) {
+			return LinSolve(stack.Get(0), stack.Get(1), stack)
+		},
+		Args:        2,
+		IsPure:      true,
+		Description: nil,
+	}.SetDescription("A", "b", "Solves a system of linear equations A⋅x=b. The first argument is the matrix A and the "+
+		"second argument is the vector b. The return value is the solution vector x.")).
 	Modify(func(f *funcGen.FunctionGenerator[value.Value]) {
 		p := f.GetParser()
 		p.SetStringConverter(parser2.StringConverterFunc[value.Value](func(s string) value.Value {
@@ -1460,6 +1470,73 @@ var Parser = value.New().
 		}))
 		p.AllowComments()
 	})
+
+func LinSolve(A value.Value, b value.Value, stack funcGen.Stack[value.Value]) (value.Value, error) {
+	bVec, err := toVec(b, stack)
+	if err != nil {
+		return nil, err
+	}
+	AMat, err := toMat(A, len(bVec), stack)
+	if err != nil {
+		return nil, err
+	}
+	x, err := lgs.SolveLinearSystem(AMat, bVec)
+	if err != nil {
+		return nil, err
+	}
+	return value.NewListConvert(func(c complex128) (value.Value, error) {
+		if math.Abs(imag(c)) == 0 {
+			return value.Float(real(c)), nil
+		}
+		return Complex(c), nil
+	}, x), nil
+}
+
+func toMat(a value.Value, cols int, stack funcGen.Stack[value.Value]) (lgs.ComplexMatrix, error) {
+	if bList, ok := a.ToList(); ok {
+		list, err := bList.ToSlice(stack)
+		if err != nil {
+			return nil, err
+		}
+		if len(list) != cols {
+			return nil, fmt.Errorf("matrix must have %d rows", cols)
+		}
+		mat := make(lgs.ComplexMatrix, len(list))
+		for i, v := range list {
+			vec, err := toVec(v, stack)
+			if err != nil {
+				return nil, err
+			}
+			if len(vec) != cols {
+				return nil, fmt.Errorf("matrix must have %d columns", cols)
+			}
+			mat[i] = vec
+		}
+		return mat, nil
+	}
+	return nil, fmt.Errorf("matrix must be a list of lists")
+}
+
+func toVec(b value.Value, stack funcGen.Stack[value.Value]) (lgs.ComplexVector, error) {
+	if bList, ok := b.ToList(); ok {
+		list, err := bList.ToSlice(stack)
+		if err != nil {
+			return nil, err
+		}
+		vec := make(lgs.ComplexVector, len(list))
+		for i, v := range list {
+			if f, ok := v.ToFloat(); ok {
+				vec[i] = complex(f, 0)
+			} else if c, ok := v.(Complex); ok {
+				vec[i] = complex128(c)
+			} else {
+				return nil, fmt.Errorf("vector must contain only float or complex values")
+			}
+		}
+		return vec, nil
+	}
+	return nil, fmt.Errorf("vector must be a list")
+}
 
 func dirac(e float64) value.Value {
 	return value.Closure(funcGen.Function[value.Value]{
