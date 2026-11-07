@@ -19,9 +19,9 @@ func Test_doLgsStep(t *testing.T) {
 				{{0, -1, -1}, {10, 20, 0}, {0, 20, 40}},
 				{{0, 0, 1}, {10, 20, 0}, {0, 20, 40}},
 			}, BList: []ComplexVector{
-			{-0.4, 4, 8},
-			{0, 4, 8},
-		}},
+				{-0.4, 4, 8},
+				{0, 4, 8},
+			}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

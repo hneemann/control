@@ -211,6 +211,8 @@ div.fileList {
     grid-template-columns: 1fr 1fr;
     overflow-y:auto;
     max-height: 20em;
+    min-height: 10em;
+    align-content: start;
     border-style: solid;
     border-color: darkgray;
     border-width: 1px;
