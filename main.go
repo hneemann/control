@@ -141,7 +141,7 @@ func main() {
 		mux.HandleFunc("/execute/", sc.CheckSessionRestFunc(server.Execute))
 	}
 	mux.HandleFunc("/example/", sc.CheckSessionRestFunc(server.CreateExamples(examples)))
-	mux.HandleFunc("/files/", sc.CheckSessionRestFunc(server.Files))
+	mux.HandleFunc("/files/", sc.CheckSessionRestFunc(server.CreateFiles(*debug)))
 
 	serv := &http.Server{Addr: ":" + strconv.Itoa(*port), Handler: mux}
 

@@ -230,45 +230,51 @@ func customHtml(v value.Value) (template.HTML, bool, error) {
 var loadListTemp = Templates.Lookup("loadList.html")
 var saveListTemp = Templates.Lookup("saveList.html")
 
-func Files(writer http.ResponseWriter, request *http.Request) {
-	command := strings.TrimSpace(request.FormValue("cmd"))
-	userData := session.GetData[data.UserData](request)
-	if userData != nil {
-		switch command {
-		case "loadList":
-			err := loadListTemp.Execute(writer, userData.Scripts)
-			if err != nil {
-				log.Println(err)
+func CreateFiles(debug bool) http.HandlerFunc {
+	return func(writer http.ResponseWriter, request *http.Request) {
+		command := strings.TrimSpace(request.FormValue("cmd"))
+		userData := session.GetData[data.UserData](request)
+		if userData != nil {
+			switch command {
+			case "loadList":
+				err := loadListTemp.Execute(writer, userData.Scripts)
+				if err != nil {
+					log.Println(err)
+				}
+			case "saveList":
+				err := saveListTemp.Execute(writer, userData.Scripts)
+				if err != nil {
+					log.Println(err)
+				}
+			case "save":
+				name := strings.TrimSpace(request.FormValue("name"))
+				src := strings.TrimSpace(request.FormValue("src"))
+				userData.Add(name, src)
+				if debug {
+					log.Println("save", name)
+				}
+				writeOk(writer, true)
+			case "load":
+				name := strings.TrimSpace(request.FormValue("name"))
+				src, ok := userData.Get(name)
+				writer.Header().Set("Content-Type", "text; charset=utf-8")
+				if ok {
+					writer.Write([]byte(src))
+				} else {
+					writer.Write([]byte("no such script"))
+				}
+			case "exists":
+				name := strings.TrimSpace(request.FormValue("name"))
+				_, ok := userData.Get(name)
+				writeOk(writer, ok)
+			case "delete":
+				name := strings.TrimSpace(request.FormValue("name"))
+				if debug {
+					log.Println("delete", name)
+				}
+				ok := userData.Delete(name)
+				writeOk(writer, ok)
 			}
-		case "saveList":
-			err := saveListTemp.Execute(writer, userData.Scripts)
-			if err != nil {
-				log.Println(err)
-			}
-		case "save":
-			name := strings.TrimSpace(request.FormValue("name"))
-			src := strings.TrimSpace(request.FormValue("src"))
-			userData.Add(name, src)
-			log.Println("save", name)
-			writeOk(writer, true)
-		case "load":
-			name := strings.TrimSpace(request.FormValue("name"))
-			src, ok := userData.Get(name)
-			writer.Header().Set("Content-Type", "text; charset=utf-8")
-			if ok {
-				writer.Write([]byte(src))
-			} else {
-				writer.Write([]byte("no such script"))
-			}
-		case "exists":
-			name := strings.TrimSpace(request.FormValue("name"))
-			_, ok := userData.Get(name)
-			writeOk(writer, ok)
-		case "delete":
-			name := strings.TrimSpace(request.FormValue("name"))
-			log.Println("delete", name)
-			ok := userData.Delete(name)
-			writeOk(writer, ok)
 		}
 	}
 }
