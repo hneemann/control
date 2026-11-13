@@ -443,7 +443,7 @@ func linMethods() value.MethodMap {
 				"gMargin": value.Float(margin),
 			}), err
 		}).SetMethodDescription("Returns the frequency ωₘ and the gain margin kₘ with kₘG(jωₘ)=-1. The gain margin kₘ is given in dB."),
-		"simStep": value.MethodAtType(2, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
+		"simStep": value.MethodAtType(3, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
 			if tMax, ok := st.Get(1).ToFloat(); ok {
 				dt := 0.0
 				if adt, ok := st.GetOptional(2, value.Float(0)).ToFloat(); ok {
@@ -451,18 +451,29 @@ func linMethods() value.MethodMap {
 				} else {
 					return nil, fmt.Errorf("simStep requires a float as second argument")
 				}
-				return lin.Simulate(tMax, dt, func(t float64) (float64, error) {
+				points := 0
+				if pointsVal, ok := st.GetOptional(3, value.Int(0)).ToFloat(); ok {
+					points = int(pointsVal)
+				} else {
+					return nil, fmt.Errorf("the third argument of simStep requires an int value")
+				}
+
+				return lin.Simulate(tMax, dt, points, func(t float64) (float64, error) {
 					if t < 0 {
 						return 0, nil
 					}
 					return 1, nil
 				})
 			}
-			return nil, fmt.Errorf("sim requires a float")
-		}).SetMethodDescription("tMax", "dt", "Simulates the transfer function with the step function as input signal. "+
+			return nil, fmt.Errorf("simStep requires a float")
+		}).SetMethodDescription("tMax", "dt", "pointsExported", "Simulates the transfer function with the step function as input signal. "+
 			"It does not close the loop! If the closed control loop is to be simulated, the instruction is G.loop().simStep(10). "+
-			"The value tMax gives the maximum time for the simulation. The value dt is the step with which defaults to 1e-5.").VarArgsMethod(1, 2),
-		"sim": value.MethodAtType(3, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
+			"The value tMax gives the maximum time for the simulation. The value dt is the step with which defaults to tMax*1e-6. "+
+			"The argument pointsExported specifies how many points should be exported. The time step dt is used for the simulation itself, "+
+			"but not every point needs to be exported. For example, if only every 10th point is exported, this is sufficient for a "+
+			"graphical representation but requires significantly less memory. "+
+			"The Euler method is used to solve the differential equation. This method is sufficient for most simple cases, but it is not well suited for more complex systems.").VarArgsMethod(1, 3),
+		"sim": value.MethodAtType(4, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
 			if cl, ok := st.Get(1).(value.Closure); ok {
 				stack := funcGen.NewEmptyStack[value.Value]()
 				u := func(t float64) (float64, error) {
@@ -483,13 +494,24 @@ func linMethods() value.MethodMap {
 					} else {
 						return nil, fmt.Errorf("sim requires a float as third argument")
 					}
-					return lin.Simulate(tMax, dt, u)
+
+					points := 0
+					if pointsVal, ok := st.GetOptional(4, value.Int(0)).ToFloat(); ok {
+						points = int(pointsVal)
+					} else {
+						return nil, fmt.Errorf("the fourth argument of sim requires an int value")
+					}
+					return lin.Simulate(tMax, dt, points, u)
 				}
 			}
 			return nil, fmt.Errorf("sim requires a function and a float")
-		}).SetMethodDescription("u(t)", "tMax", "dt", "Simulates the transfer function with the input signal u(t) as input signal. "+
+		}).SetMethodDescription("u(t)", "tMax", "dt", "pointsExported", "Simulates the transfer function with the input signal u(t). "+
 			"It does not close the loop! If the closed control loop is to be simulated, the instruction is G.loop().sim(t->sin(t), 10). "+
-			"The value tMax gives the maximum time for the simulation. The value dt is the step with which defaults to 1e-5.").VarArgsMethod(2, 3),
+			"The value tMax gives the maximum time for the simulation. The value dt is the step with which defaults to tMax*1e-6. "+
+			"The argument pointsExported specifies how many points should be exported. The time step dt is used for the simulation itself, "+
+			"but not every point needs to be exported. For example, if only every 10th point is exported, this is sufficient for a "+
+			"graphical representation but requires significantly less memory. "+
+			"The Euler method is used to solve the differential equation. This method is sufficient for most simple cases, but it is not well suited for more complex systems.").VarArgsMethod(2, 4),
 		"toLaTeX": value.MethodAtType(0, func(lin *Linear, st funcGen.Stack[value.Value]) (value.Value, error) {
 			var b bytes.Buffer
 			lin.ToLaTeX(&b)

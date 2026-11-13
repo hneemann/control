@@ -1476,7 +1476,9 @@ func (v dataSet) toPointList(i0, i1 int) *value.List {
 	}, v.rows)
 }
 
-func (l *Linear) Simulate(tMax, dt float64, u func(float64) (float64, error)) (*value.List, error) {
+const tMaxDtFactor = 1e-6
+
+func (l *Linear) Simulate(tMax, dt float64, pointsExported int, u func(float64) (float64, error)) (*value.List, error) {
 	if tMax <= 0 {
 		return nil, fmt.Errorf("tMax must be greater than 0")
 	}
@@ -1489,22 +1491,26 @@ func (l *Linear) Simulate(tMax, dt float64, u func(float64) (float64, error)) (*
 	}
 
 	if dt <= 0 {
-		dt = 1e-5
+		dt = tMax * tMaxDtFactor
 	}
 
-	const shouldPointsExported = 1000
-	skip := int(tMax/dt) / shouldPointsExported
+	if pointsExported < 1000 {
+		pointsExported = 1000
+	}
+
+	skip := int(tMax/dt) / pointsExported
 	if skip < 1 {
 		return nil, fmt.Errorf("step width (dt=%v) is too large for a meaningful simulation", dt)
 	}
-	pointsExported := int(tMax / (dt * float64(skip)))
+	pointsExported = int(tMax / (dt * float64(skip)))
 
 	t := 0.0
 	n := lin.Denominator.Degree()
 	x := make(Vector, n)
 	xDot := make(Vector, n)
 
-	data := newDataSet(pointsExported+1, 2)
+	dataSetRows := pointsExported + 10
+	data := newDataSet(dataSetRows, 2)
 	row := 0
 	counter := 0
 	for {
@@ -1513,11 +1519,11 @@ func (l *Linear) Simulate(tMax, dt float64, u func(float64) (float64, error)) (*
 			return nil, err
 		}
 		y := c.Mul(x) + d*ut
-		if counter == 0 {
+		if counter == 0 || row < 10 {
 			data.set(row, 0, t)
 			data.set(row, 1, y)
 			row++
-			if row > pointsExported {
+			if row >= dataSetRows {
 				return data.toPointList(0, 1), nil
 			}
 			counter = skip

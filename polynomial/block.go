@@ -355,19 +355,23 @@ func (s *NonLinearSystem) Initialize() error {
 }
 
 func (s *NonLinearSystem) Run(tMax, dt float64, pointsExported int) (*dataSet, error) {
-	if pointsExported < 10 {
+	if tMax <= 0 {
+		return nil, fmt.Errorf("tMax must be greater than 0")
+	}
+
+	if dt <= 0 {
+		dt = tMax * tMaxDtFactor
+	}
+
+	if pointsExported < 1000 {
 		pointsExported = 1000
 	}
 
-	if dt == 0 {
-		dt = 1e-4
-	}
-
-	pointsCalculated := int(tMax / dt)
-	skip := pointsCalculated / pointsExported
+	skip := int(tMax/dt) / pointsExported
 	if skip < 1 {
-		skip = 1
+		return nil, fmt.Errorf("step width (dt=%v) is too large for a meaningful simulation", dt)
 	}
+	pointsExported = int(tMax / (dt * float64(skip)))
 
 	t := 0.0
 
@@ -611,7 +615,7 @@ func nonLinMethods() value.MethodMap {
 				return nil, fmt.Errorf("invalid kp value %v", st.Get(2))
 			}
 		}).SetMethodDescription("in", "kp", "Ti", "Td", "out", "Adds a PID block to the system."),
-		"simulate": value.MethodAtType(3, func(s NonLinDescription, st funcGen.Stack[value.Value]) (value.Value, error) {
+		"sim": value.MethodAtType(3, func(s NonLinDescription, st funcGen.Stack[value.Value]) (value.Value, error) {
 			tMax, ok := st.Get(1).ToFloat()
 			if !ok {
 				return nil, fmt.Errorf("invalid tMax %v", st.Get(1))
@@ -625,7 +629,7 @@ func nonLinMethods() value.MethodMap {
 			}
 
 			points := 0
-			if pointsVal, ok := st.GetOptional(3, value.Int(0)).(value.Int); ok {
+			if pointsVal, ok := st.GetOptional(3, value.Int(0)).ToFloat(); ok {
 				points = int(pointsVal)
 			} else {
 				return nil, fmt.Errorf("the third argument of simulate requires an int value")
@@ -647,7 +651,13 @@ func nonLinMethods() value.MethodMap {
 			}
 
 			return value.NewMap(value.RealMap(rm)), nil
-		}).SetMethodDescription("tMax", "dt", "pointsExported", "Simulates the system and returns a map of output signals.").VarArgsMethod(1, 3),
+		}).SetMethodDescription("tMax", "dt", "pointsExported", "Simulates the system and returns a map of output signals. "+
+			"The first argument is the maximum simulation time, the second argument is the time step (if set to 0, the default value tMax*1e-6 is used). "+
+			"The argument pointsExported specifies how many points should be exported. The time step dt is used for the simulation itself, "+
+			"but not every point needs to be exported. For example, if only every 10th point is exported, this is sufficient for a "+
+			"graphical representation but requires significantly less memory. "+
+			"The return value is a map of output signals, where each signal is a list of points. "+
+			"The Euler method is used to solve the differential equations. This method is sufficient for most simple cases, but it is not well suited for more complex systems.").VarArgsMethod(1, 3),
 	}
 }
 

@@ -149,7 +149,7 @@ let simLimited = nonLinearSystem()
        .block  ("e"      , K,   "u"   )
        .limiter("u"      , 0,1, "uLim")
        .block  ("uLim"   , G,   "y"   )
-       .simulate(6);
+       .sim(6);
 
 let simNormal  = (K*G).loop().simStep(6);
 
