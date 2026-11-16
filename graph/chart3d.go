@@ -291,17 +291,24 @@ type unityCube struct {
 	ax, ay, az Axis
 }
 
-func newUnityCube(parent Cube, x, y, z AxisDescription) *unityCube {
+func newUnityCube(parent Cube, x, y, z *AxisDescription) *unityCube {
+	xb := x.Bounds.EnsureValid()
+	yb := y.Bounds.EnsureValid()
+	zb := z.Bounds.EnsureValid()
 	ctw := func(width float64, digits int) bool {
 		return width > float64(digits)*10
 	}
-	ax := x.GetAxis(-100, 100, x.Bounds, ctw, 0.02)
-	ay := y.GetAxis(-100, 100, y.Bounds, ctw, 0.02)
-	az := z.GetAxis(-100, 100, z.Bounds, ctw, 0.02)
+	ax := x.GetAxis(-100, 100, xb, ctw, 0.02)
+	ay := y.GetAxis(-100, 100, yb, ctw, 0.02)
+	az := z.GetAxis(-100, 100, zb, ctw, 0.02)
 	return &unityCube{
 		parent: parent,
-		X:      x.Bounds, Y: y.Bounds, Z: z.Bounds,
-		ax: ax, ay: ay, az: az,
+		X:      xb,
+		Y:      yb,
+		Z:      zb,
+		ax:     ax,
+		ay:     ay,
+		az:     az,
 	}
 }
 
@@ -507,7 +514,7 @@ func (p *Chart3d) DrawTo(canvas Canvas) (err error) {
 		nErr.Try(rot.DrawLine(Vector3d{-100, 100, -100}, Vector3d{-100, 100, 100}, cubeColor))
 		nErr.Try(rot.DrawLine(Vector3d{100, -100, -100}, Vector3d{100, -100, 100}, cubeColor))
 	}
-	cube := newUnityCube(rot, p.X, p.Y, p.Z)
+	cube := newUnityCube(rot, &p.X, &p.Y, &p.Z)
 	const facShortLabel = 1.02
 	const facLongLabel = 1.04
 	const facText = 1.1
@@ -777,7 +784,7 @@ func (g *Solid3d) DrawTo(_ *Chart3d, cube Cube) (err error) {
 	style2 := g.Style2
 	if style1 == nil {
 		style1 = Black.SetStrokeWidth(0.5).SetFill(White)
-		style2 = nil
+		style2 = Black.Softer(75)
 	} else {
 		if !style1.Fill {
 			style1 = style1.SetFill(White)

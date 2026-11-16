@@ -840,6 +840,13 @@ func (b *Bounds) Scale(scaler float64) Bounds {
 	}
 }
 
+func (b *Bounds) EnsureValid() Bounds {
+	if b.isSet {
+		return *b
+	}
+	return Bounds{isSet: true, Min: -1, Max: 1}
+}
+
 // ChartContent is the interface that all chart contents must implement.
 // If the chart is created at first, all Bounds methods are called and the
 // returned bounds are merged. After that, the DependantBounds method
