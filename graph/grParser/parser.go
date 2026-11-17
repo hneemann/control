@@ -362,6 +362,24 @@ func (p Chart3dValue) Add(pc value.Value) error {
 		p.Holder.Value.AddContent(c.Value)
 		return nil
 	}
+	if cl, ok := pc.(value.Closure); ok {
+		if cl.Args == 1 {
+			f, err := closureTo3dLine(cl)
+			if err != nil {
+				return err
+			}
+			p.Holder.Value.AddContent(&graph.Line3d{Func: f})
+			return nil
+		}
+		if cl.Args == 2 {
+			f, err := closureTo3dSurface(cl)
+			if err != nil {
+				return err
+			}
+			p.Holder.Value.AddContent(&graph.Solid3d{Func: f})
+			return nil
+		}
+	}
 	return errors.New("value is not a 3d chart content")
 }
 
@@ -1515,18 +1533,31 @@ func closureMethods() value.MethodMap {
 				if st.Size() > 2 {
 					return nil, fmt.Errorf("graph3d requires at most one argument if the function has one argument")
 				}
-				steps, f, err := create3dFuncLine(cl, st)
+
+				steps := 0
+				if s, ok := st.GetOptional(1, value.Int(0)).ToFloat(); ok {
+					steps = int(s)
+				} else {
+					return nil, fmt.Errorf("line3d requires a number as argument")
+				}
+
+				f, err := closureTo3dLine(cl)
 				if err != nil {
 					return nil, err
 				}
-				gf := &graph.Line3d{Func: f, Steps: steps, Style: graph.Black}
+
+				gf := &graph.Line3d{Func: f, Steps: steps}
 				return Chart3dContentValue{Holder[graph.Chart3dContent]{gf}}, nil
 			case 2:
-				uSteps, vSteps, f, err := create3dFunc(cl, st)
+				uSteps, vSteps, err := getStepsFromStack(st)
 				if err != nil {
 					return nil, err
 				}
-				gf := &graph.Graph3d{Func: f, USteps: uSteps, VSteps: vSteps, Style: graph.Black}
+				f, err := closureTo3dSurface(cl)
+				if err != nil {
+					return nil, err
+				}
+				gf := &graph.Graph3d{Func: f, USteps: uSteps, VSteps: vSteps}
 				return Chart3dContentValue{Holder[graph.Chart3dContent]{gf}}, nil
 			default:
 				return nil, fmt.Errorf("the function passed to graph3d requires either one or two arguments")
@@ -1535,7 +1566,7 @@ func closureMethods() value.MethodMap {
 			"If the function has one argument a line is drawn, if the function has two arguments a wire mesh is drawn.").VarArgsMethod(0, 2),
 
 		"solid3d": value.MethodAtType(3, func(cl value.Closure, st funcGen.Stack[value.Value]) (value.Value, error) {
-			uSteps, vSteps, f, err := create3dFunc(cl, st)
+			uSteps, vSteps, err := getStepsFromStack(st)
 			if err != nil {
 				return nil, err
 			}
@@ -1545,6 +1576,11 @@ func closureMethods() value.MethodMap {
 				hexagonal = bool(b)
 			} else {
 				return nil, fmt.Errorf("solid3d requires a boolean as third argument")
+			}
+
+			f, err := closureTo3dSurface(cl)
+			if err != nil {
+				return nil, err
 			}
 
 			gf := &graph.Solid3d{Func: f, USteps: uSteps, VSteps: vSteps, Hexagonal: hexagonal}
@@ -1593,26 +1629,28 @@ func getColorFromZ(z float64, colList []graph.Color) col.RGBA {
 	}
 }
 
-func create3dFunc(cl value.Closure, st funcGen.Stack[value.Value]) (int, int, func(x, y float64) (graph.Vector3d, error), error) {
+func getStepsFromStack(st funcGen.Stack[value.Value]) (int, int, error) {
 	uSteps := 0
 	if s, ok := st.GetOptional(1, value.Int(0)).ToFloat(); ok {
 		uSteps = int(s)
 	} else {
-		return 0, 0, nil, fmt.Errorf("graph3d/solid3d requires a number as argument")
+		return 0, 0, fmt.Errorf("graph3d/solid3d requires a number as argument")
 	}
 	vSteps := 0
 	if s, ok := st.GetOptional(2, value.Int(0)).ToFloat(); ok {
 		vSteps = int(s)
 	} else {
-		return 0, 0, nil, fmt.Errorf("graph3d/soild3d requires a number as second argument")
+		return 0, 0, fmt.Errorf("graph3d/soild3d requires a number as second argument")
 	}
+	return uSteps, vSteps, nil
+}
 
-	var f func(x, y float64) (graph.Vector3d, error)
+func closureTo3dSurface(cl value.Closure) (func(x, y float64) (graph.Vector3d, error), error) {
 	if cl.Args != 2 {
-		return 0, 0, nil, fmt.Errorf("graph3d/solid3d requires the function to have two arguments")
+		return nil, fmt.Errorf("graph3d/solid3d requires the function to have two arguments")
 	}
 	stack := funcGen.NewEmptyStack[value.Value]()
-	f = func(x, y float64) (graph.Vector3d, error) {
+	return func(x, y float64) (graph.Vector3d, error) {
 		stack.Push(value.Float(x))
 		stack.Push(value.Float(y))
 		z, err := cl.Func(stack.CreateFrame(2), nil)
@@ -1625,24 +1663,15 @@ func create3dFunc(cl value.Closure, st funcGen.Stack[value.Value]) (int, int, fu
 			return v, nil
 		}
 		return graph.Vector3d{}, fmt.Errorf("the function given to graph3d/solid3d must return a float or a vector")
-	}
-	return uSteps, vSteps, f, nil
+	}, nil
 }
 
-func create3dFuncLine(cl value.Closure, st funcGen.Stack[value.Value]) (int, func(u float64) (graph.Vector3d, error), error) {
-	steps := 0
-	if s, ok := st.GetOptional(1, value.Int(0)).ToFloat(); ok {
-		steps = int(s)
-	} else {
-		return 0, nil, fmt.Errorf("line3d requires a number as argument")
-	}
-
-	var f func(u float64) (graph.Vector3d, error)
+func closureTo3dLine(cl value.Closure) (func(u float64) (graph.Vector3d, error), error) {
 	if cl.Args != 1 {
-		return 0, nil, fmt.Errorf("line3d requires the function to have one argument")
+		return nil, fmt.Errorf("line3d requires the function to have one argument")
 	}
 	stack := funcGen.NewEmptyStack[value.Value]()
-	f = func(u float64) (graph.Vector3d, error) {
+	return func(u float64) (graph.Vector3d, error) {
 		stack.Push(value.Float(u))
 		z, err := cl.Func(stack.CreateFrame(1), nil)
 		if err != nil {
@@ -1652,8 +1681,7 @@ func create3dFuncLine(cl value.Closure, st funcGen.Stack[value.Value]) (int, fun
 			return v, nil
 		}
 		return graph.Vector3d{}, fmt.Errorf("the function given to graph3d must return a vector")
-	}
-	return steps, f, nil
+	}, nil
 }
 
 const defMarkerSize = 4

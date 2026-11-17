@@ -665,7 +665,7 @@ func (g *Graph3d) DrawTo(_ *Chart3d, cube Cube) error {
 	}
 	style := g.Style
 	if style == nil {
-		style = Black.SetStrokeWidth(0.5)
+		style = Black
 	}
 
 	x, y, _ := cube.Bounds()
@@ -885,7 +885,7 @@ func (g *Line3d) DrawTo(_ *Chart3d, cube Cube) error {
 	}
 	style := g.Style
 	if style == nil {
-		style = Black.SetStrokeWidth(0.5)
+		style = Black
 	}
 
 	uB := g.U
