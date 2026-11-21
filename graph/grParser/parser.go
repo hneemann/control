@@ -283,8 +283,8 @@ func createChart3dContentMethods() value.MethodMap {
 				return nil, err
 			}
 
-			var size float64 = defMarkerSize
-			if s, ok := stack.GetOptional(3, value.Float(defMarkerSize)).ToFloat(); ok {
+			size := 1.0
+			if s, ok := stack.GetOptional(3, value.Float(1)).ToFloat(); ok {
 				size = s
 			} else {
 				return nil, fmt.Errorf("the size must be a float")
@@ -304,7 +304,7 @@ func createChart3dContentMethods() value.MethodMap {
 	}
 }
 
-func valueToMarker(val value.Value, size float64) (graph.Shape, error) {
+func valueToMarker(val value.Value, size float64) (graph.ShapeFactory, error) {
 	if markerFloat, ok := val.ToFloat(); ok {
 		switch int(markerFloat) % 5 {
 		case 1:
@@ -659,6 +659,13 @@ func createChart3dMethods() value.MethodMap {
 			}
 			return nil, fmt.Errorf("outputSize requires two float values")
 		}).SetMethodDescription("width", "height", "Sets the svg-output size."),
+		"textSize": value.MethodAtType(1, func(chart Chart3dValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			if si, ok := stack.Get(1).ToFloat(); ok {
+				chart.context.TextSize = si
+				return chart, nil
+			}
+			return nil, fmt.Errorf("textSize requires a float value")
+		}).SetMethodDescription("size", "Sets the text size."),
 		"hlr": value.MethodAtType(1, func(im Chart3dValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if on, ok := stack.GetOptional(1, value.Bool(true)).(value.Bool); ok {
 				im.Value = im.Value.EnableHLR(bool(on))
@@ -872,7 +879,6 @@ func createChartMethods() value.MethodMap {
 		}).SetMethodDescription("Hides the legend."),
 		"textSize": value.MethodAtType(1, func(chart ChartValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
 			if si, ok := stack.Get(1).ToFloat(); ok {
-				chart = chart.Copy()
 				chart.context.TextSize = si
 				return chart, nil
 			}
@@ -918,6 +924,17 @@ func createChartMethods() value.MethodMap {
 			}
 			return nil, fmt.Errorf("zoom requires three float values")
 		}).SetMethodDescription("x", "y", "factor", "Zoom at the given point by the given factor."),
+		"fontScaling": value.MethodAtType(1, func(chart ChartValue, stack funcGen.Stack[value.Value]) (value.Value, error) {
+			if fs, ok := stack.GetOptional(1, value.Float(0.85)).ToFloat(); ok {
+				chart = chart.Copy()
+				chart.Value.FontScaling = fs
+				return chart, nil
+			} else {
+				return nil, errors.New("fontScaling requires a float value")
+			}
+		}).SetMethodDescription("factor", "Sets the font scaling factor for insets. "+
+			"The font size is multiplied by this factor. This allows the fontsize used in an inset to be smaller. "+
+			"If no argument is given, the factor defaults to 0.85.").VarArgsMethod(0, 1),
 		"inset": value.MethodAtType(5, CreateInsetMethod(false)).SetMethodDescription("xMin", "xMax", "yMin", "yMax", "visualGuideColor", "Converts the chart into an inset that can be added to another chart. "+
 			"If a Visual Guide Color is given, it is assumed that the inset is a part of the large chart, and a visual guide is drawn.").VarArgsMethod(4, 5),
 		"insetRel": value.MethodAtType(5, CreateInsetMethod(true)).SetMethodDescription("xMin", "xMax", "yMin", "yMax", "visualGuideColor", "Converts the chart into an inset that can be added to another chart. "+
@@ -1125,8 +1142,8 @@ func createChartContentMethods() value.MethodMap {
 				return nil, err
 			}
 
-			var size float64 = defMarkerSize
-			if s, ok := stack.GetOptional(3, value.Float(defMarkerSize)).ToFloat(); ok {
+			size := 1.0
+			if s, ok := stack.GetOptional(3, value.Float(1)).ToFloat(); ok {
 				size = s
 			} else {
 				return nil, fmt.Errorf("the size must be a float")
@@ -1150,14 +1167,14 @@ func createChartContentMethods() value.MethodMap {
 				if sc, ok := pc.(graph.HasLine); ok {
 					pc = sc.SetLine(style.Value)
 				} else {
-					return nil, fmt.Errorf("line can only be set for charts using a line")
+					return nil, fmt.Errorf("line can only be set for chart contents supporting a line")
 				}
 				if title, ok := stack.GetOptional(2, value.String("")).(value.String); ok {
 					if title != "" {
 						if sc, ok := pc.(graph.HasTitle); ok {
 							pc = sc.SetTitle(string(title))
 						} else {
-							return nil, fmt.Errorf("a title can only be set for charts using a title")
+							return nil, fmt.Errorf("a title can only be set for chart contents supporting a title")
 						}
 					}
 				} else {
@@ -1177,11 +1194,11 @@ func createChartContentMethods() value.MethodMap {
 					somethingSet = true
 				}
 				if sc, ok := pc.(graph.HasShape); ok {
-					pc = sc.SetShape(graph.NewCircleMarker(3), style.Value.SetDash())
+					pc = sc.SetShape(graph.NewCircleMarker(1), style.Value.SetDash())
 					somethingSet = true
 				}
 				if !somethingSet {
-					return nil, fmt.Errorf("color can only be set for charts using a line or points")
+					return nil, fmt.Errorf("color can only be set for chart contents supporting a line or points")
 				}
 
 				return ChartContentValue{Holder[graph.ChartContent]{pc}, ccv.SecondaryAxis, nil}, nil
@@ -1683,8 +1700,6 @@ func closureTo3dLine(cl value.Closure) (func(u float64) (graph.Vector3d, error),
 		return graph.Vector3d{}, fmt.Errorf("the function given to graph3d must return a vector")
 	}, nil
 }
-
-const defMarkerSize = 4
 
 func Setup(fg *value.FunctionGenerator) {
 	ChartType = fg.RegisterType("chart", "Represents a chart. It is possible ta add different content types to it. The chart is visualized as an embedded SVG graphic.")

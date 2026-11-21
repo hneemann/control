@@ -12,6 +12,7 @@ type Cube interface {
 	DrawShape(Vector3d, Shape, *Style) error
 	DrawText(Vector3d, Vector3d, string, *Style)
 	Bounds() (x, y, z Bounds)
+	Context() *Context
 }
 
 type CanvasCube struct {
@@ -23,6 +24,10 @@ type CanvasCube struct {
 	requiresHLR bool
 
 	objects []Object3d
+}
+
+func (c *CanvasCube) Context() *Context {
+	return c.canvas.Context()
 }
 
 func newCanvasCube(canvas Canvas, size, perspective float64, rhlr bool) *CanvasCube {

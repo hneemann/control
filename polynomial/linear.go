@@ -721,26 +721,26 @@ func (l *Linear) CreateEvans(kMin, kMax float64) (listMap.ListMap[value.Value], 
 
 	markerStyle := graph.Black.SetStrokeWidth(2)
 	if p.Count() > 0 {
-		polesMarker := graph.NewCrossMarker(4)
+		polesMarker := graph.NewCrossMarker(1)
 		contentMap = contentMap.Append("poles", grParser.NewChartContentValue(
 			graph.Scatter{
 				Points: graph.PointsFromSlice(p.ToPoints()...),
 				ShapeLineStyle: graph.ShapeLineStyle{
-					Shape:      polesMarker,
-					ShapeStyle: markerStyle,
+					ShapeFactory: polesMarker,
+					ShapeStyle:   markerStyle,
 				},
 				Title: "Poles",
 			}, nil),
 		)
 	}
 	if z.Count() > 0 {
-		zeroMarker := graph.NewCircleMarker(4)
+		zeroMarker := graph.NewCircleMarker(1)
 		contentMap = contentMap.Append("zeros", grParser.NewChartContentValue(
 			graph.Scatter{
 				Points: graph.PointsFromSlice(z.ToPoints()...),
 				ShapeLineStyle: graph.ShapeLineStyle{
-					Shape:      zeroMarker,
-					ShapeStyle: markerStyle,
+					ShapeFactory: zeroMarker,
+					ShapeStyle:   markerStyle,
 				},
 				Title: "Zeros",
 			}, nil),
@@ -985,8 +985,8 @@ func RootLocus(cpp PolynomialProvider, kMin, kMax float64, parName string) (list
 		minMarker := graph.Scatter{
 			Points: graph.PointsFromSlice(ecs.evPoints[0].points...),
 			ShapeLineStyle: graph.ShapeLineStyle{
-				Shape:      graph.NewSquareMarker(4),
-				ShapeStyle: graph.Black.SetStrokeWidth(2),
+				ShapeFactory: graph.NewSquareMarker(1),
+				ShapeStyle:   graph.Black.SetStrokeWidth(2),
 			},
 			Title: fmt.Sprintf("%s = %g", parName, kMin),
 		}
@@ -994,8 +994,8 @@ func RootLocus(cpp PolynomialProvider, kMin, kMax float64, parName string) (list
 		maxMarker := graph.Scatter{
 			Points: graph.PointsFromSlice(ecs.evPoints[len(ecs.evPoints)-1].points...),
 			ShapeLineStyle: graph.ShapeLineStyle{
-				Shape:      graph.NewCircleMarker(4),
-				ShapeStyle: graph.Black.SetStrokeWidth(2),
+				ShapeFactory: graph.NewCircleMarker(1),
+				ShapeStyle:   graph.Black.SetStrokeWidth(2),
 			},
 			Title: fmt.Sprintf("%s = %g", parName, kMax),
 		}
@@ -1397,11 +1397,11 @@ func (l *Linear) Nyquist(sMin, sMax float64, alsoNeg bool, steps int) ([]graph.C
 			return nil, err
 		}
 		cp = append(cp, neg)
-		cp = append(cp, graph.Scatter{Points: graph.PointsFromPoint(graph.Point{X: -1, Y: 0}), ShapeLineStyle: graph.ShapeLineStyle{Shape: graph.NewCrossMarker(4), ShapeStyle: graph.Red}})
+		cp = append(cp, graph.Scatter{Points: graph.PointsFromPoint(graph.Point{X: -1, Y: 0}), ShapeLineStyle: graph.ShapeLineStyle{ShapeFactory: graph.NewCrossMarker(1), ShapeStyle: graph.Red}})
 	}
 	if isZero {
-		zeroMarker := graph.NewCircleMarker(4)
-		cp = append(cp, graph.Scatter{Points: graph.PointsFromPoint(graph.Point{X: real(cZero), Y: imag(cZero)}), ShapeLineStyle: graph.ShapeLineStyle{Shape: zeroMarker, ShapeStyle: graph.Black}, Title: "ω=0"})
+		zeroMarker := graph.NewCircleMarker(1)
+		cp = append(cp, graph.Scatter{Points: graph.PointsFromPoint(graph.Point{X: real(cZero), Y: imag(cZero)}), ShapeLineStyle: graph.ShapeLineStyle{ShapeFactory: zeroMarker, ShapeStyle: graph.Black}, Title: "ω=0"})
 	}
 	pos, err := l.NyquistPos(sMin, sMax, steps)
 	if err != nil {

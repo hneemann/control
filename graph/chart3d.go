@@ -246,7 +246,7 @@ type IsCloseable3d interface {
 }
 
 type HasShape3d interface {
-	SetShape(Shape, *Style) Chart3dContent
+	SetShape(ShapeFactory, *Style) Chart3dContent
 }
 
 type hlrMode int
@@ -289,6 +289,10 @@ type unityCube struct {
 	parent     Cube
 	X, Y, Z    Bounds
 	ax, ay, az Axis
+}
+
+func (uc *unityCube) Context() *Context {
+	return uc.parent.Context()
 }
 
 func newUnityCube(parent Cube, x, y, z *AxisDescription) *unityCube {
@@ -367,6 +371,10 @@ func (uc *unityCube) Bounds() (x, y, z Bounds) {
 type RotCube struct {
 	parent Cube
 	matrix Matrix3d
+}
+
+func (r RotCube) Context() *Context {
+	return r.parent.Context()
 }
 
 func NewRotCube(cube Cube, alpha float64, beta float64, gamma float64) Cube {
@@ -1054,11 +1062,12 @@ func (s ListBasedLine3d) DrawTo(_ *Chart3d, cube Cube) error {
 		}
 	}
 	if sls.IsShape() {
+		shape := sls.ShapeFactory(0)
 		for v, err := range s.Vectors {
 			if err != nil {
 				return err
 			}
-			err = cube.DrawShape(v, sls.Shape, sls.ShapeStyle)
+			err = cube.DrawShape(v, shape, sls.ShapeStyle)
 			if err != nil {
 				return err
 			}
@@ -1079,8 +1088,8 @@ func (s ListBasedLine3d) SetStyle(style *Style) Chart3dContent {
 	return s
 }
 
-func (s ListBasedLine3d) SetShape(shape Shape, style *Style) Chart3dContent {
-	s.ShapeLineStyle.Shape = shape
+func (s ListBasedLine3d) SetShape(sf ShapeFactory, style *Style) Chart3dContent {
+	s.ShapeLineStyle.ShapeFactory = sf
 	s.ShapeLineStyle.ShapeStyle = style
 	return s
 }

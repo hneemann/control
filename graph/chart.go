@@ -12,20 +12,22 @@ import (
 	"sync"
 )
 
+type ShapeFactory func(size float64) Shape
+
 type ShapeLineStyle struct {
-	LineStyle  *Style
-	Shape      Shape
-	ShapeStyle *Style
+	LineStyle    *Style
+	ShapeFactory ShapeFactory
+	ShapeStyle   *Style
 }
 
 var defShapeLineStyle = ShapeLineStyle{
-	Shape:      NewCircleMarker(4),
-	ShapeStyle: Black.SetFill(White),
-	LineStyle:  Black.SetDash(7, 7),
+	ShapeFactory: NewCircleMarker(1),
+	ShapeStyle:   Black.SetFill(White),
+	LineStyle:    Black.SetDash(7, 7),
 }
 
 func (ml ShapeLineStyle) IsShape() bool {
-	return ml.Shape != nil && ml.ShapeStyle != nil
+	return ml.ShapeFactory != nil && ml.ShapeStyle != nil
 }
 
 func (ml ShapeLineStyle) IsLine() bool {
@@ -184,6 +186,7 @@ type Chart struct {
 	HideLegend     bool
 	LegendPos      RelativePos
 	LegendPosY2    RelativePos
+	FontScaling    float64
 
 	content chartContent
 }
@@ -241,8 +244,16 @@ const (
 )
 
 func (p *ChartContentEnvironment) getArrowHeadSize() (len, width float64) {
-	textSize := p.ParentCanvas.Context().TextSize
+	textSize := p.TextSize()
 	return textSize * arrowLenFactor, textSize * arrowWidthFactor
+}
+
+func (p *ChartContentEnvironment) TextSize() float64 {
+	fs := p.Canvas.Context().TextSize
+	if p.Chart.FontScaling != 0 {
+		fs *= p.Chart.FontScaling
+	}
+	return fs
 }
 
 func (p *Chart) DrawTo(canvas Canvas) error {
@@ -269,7 +280,7 @@ func (p *Chart) DrawToAsInset(canvas Canvas) (err error, env *ChartContentEnviro
 }
 
 func (p *Chart) drawToInternal(canvas Canvas) (error, *ChartContentEnvironment) {
-	c := canvas.Context()
+
 	rect := canvas.Rect()
 	textStyle := Black.Text()
 	if p.Frame == nil {
@@ -281,7 +292,10 @@ func (p *Chart) drawToInternal(canvas Canvas) (error, *ChartContentEnvironment) 
 
 	hasY2Content := p.content.hasY2Content()
 
-	textSize := c.TextSize
+	textSize := canvas.Context().TextSize
+	if p.FontScaling != 0 {
+		textSize *= p.FontScaling
+	}
 	if textSize <= rect.Height()/200 {
 		textSize = rect.Height() / 200
 	}
@@ -620,7 +634,8 @@ func (p *Chart) drawLegend(canvas Canvas, lp Point, leg Legend, textStyle *Style
 			nErr.Try(canvas.DrawPath(PointsFromSlice(lp.Add(Point{-2*textSize - small, 0}), lp.Add(Point{-small, 0})), sls.LineStyle))
 		}
 		if sls.IsShape() {
-			nErr.Try(canvas.DrawShape(lp.Add(Point{-1*textSize - small, 0}), sls.Shape, sls.ShapeStyle))
+			shape := sls.ShapeFactory(textSize)
+			nErr.Try(canvas.DrawShape(lp.Add(Point{-1*textSize - small, 0}), shape, sls.ShapeStyle))
 		}
 	}
 	return lp.Add(Point{0, -textSize * 1.5})
@@ -876,7 +891,7 @@ type HasLine interface {
 }
 
 type HasShape interface {
-	SetShape(Shape, *Style) ChartContent
+	SetShape(ShapeFactory, *Style) ChartContent
 }
 
 type HasTitle interface {
@@ -987,8 +1002,8 @@ type Scatter struct {
 	Title  string
 }
 
-func (s Scatter) SetShape(shape Shape, style *Style) ChartContent {
-	s.Shape = shape
+func (s Scatter) SetShape(sf ShapeFactory, style *Style) ChartContent {
+	s.ShapeFactory = sf
 	s.ShapeStyle = style
 	return s
 }
@@ -1048,12 +1063,13 @@ func (s Scatter) DrawTo(env *ChartContentEnvironment) error {
 		}
 	}
 	if sls.IsShape() {
+		shape := sls.ShapeFactory(env.TextSize())
 		for p, err := range s.Points {
 			if err != nil {
 				return err
 			}
 			if rect.Contains(p) {
-				err := canvas.DrawShape(p, sls.Shape, sls.ShapeStyle)
+				err := canvas.DrawShape(p, shape, sls.ShapeStyle)
 				if err != nil {
 					return err
 				}
@@ -1100,7 +1116,7 @@ const arrowLen = 2.5
 func (h Hint) DrawTo(env *ChartContentEnvironment) error {
 	canvas := env.Canvas
 	r := canvas.Rect()
-	textSize := canvas.Context().TextSize
+	textSize := env.TextSize()
 	if r.Contains(h.Pos) {
 		r := env.ParentCanvas.Rect()
 		hPos := env.Transform(h.Pos)
@@ -1136,7 +1152,7 @@ func (h HintDir) DrawTo(env *ChartContentEnvironment) error {
 		p1 := env.Transform(h.Pos)
 		p2 := env.Transform(h.PosDir)
 
-		delta := p1.Sub(p2).Norm().Rot90().Mul(env.Canvas.Context().TextSize * arrowLen)
+		delta := p1.Sub(p2).Norm().Rot90().Mul(env.TextSize() * arrowLen)
 		tPos := p1.Add(delta)
 
 		return drawArrow(env, tPos, p1, h.Style, 1, h.Text)
@@ -1195,7 +1211,7 @@ func (a Arrow) Legend() []Legend {
 }
 
 func drawArrow(env *ChartContentEnvironment, from, to Point, style *Style, mode int, label string) error {
-	textSize := env.ParentCanvas.Context().TextSize
+	textSize := env.TextSize()
 	headLen, headWidth := env.getArrowHeadSize()
 
 	d := to.Sub(from).Norm()
@@ -1303,7 +1319,7 @@ func (a Arc) DependantBounds(_, _ Bounds) (Bounds, Bounds, error) {
 }
 
 func (a Arc) DrawTo(env *ChartContentEnvironment) error {
-	textSize := env.ParentCanvas.Context().TextSize
+	textSize := env.TextSize()
 	r := a.Radius * textSize
 	if r <= 0 {
 		return nil
@@ -1380,10 +1396,13 @@ type circleMarker struct {
 	p1, p2 Point
 }
 
-func NewCircleMarker(r float64) Shape {
-	p1 := Point{X: -r, Y: -r}
-	p2 := Point{X: r, Y: r}
-	return circleMarker{p1: p1, p2: p2}
+func NewCircleMarker(scale float64) ShapeFactory {
+	return func(fontsize float64) Shape {
+		r := fontsize * scale / 3
+		p1 := Point{X: -r, Y: -r}
+		p2 := Point{X: r, Y: r}
+		return circleMarker{p1: p1, p2: p2}
+	}
 }
 
 func (c circleMarker) DrawTo(canvas Canvas, style *Style) error {
@@ -1391,33 +1410,44 @@ func (c circleMarker) DrawTo(canvas Canvas, style *Style) error {
 	return nil
 }
 
-func NewCrossMarker(r float64) Shape {
-	return NewPath(false).
-		AddMode('M', Point{-r, -r}).
-		AddMode('L', Point{r, r}).
-		AddMode('M', Point{-r, r}).
-		AddMode('L', Point{r, -r})
-}
-
-func NewSquareMarker(r float64) Shape {
-	return CloseablePointsPath{
-		Points: PointsFromSlice(Point{-r, -r}, Point{-r, r}, Point{r, r}, Point{r, -r}),
-		Closed: true,
+func NewCrossMarker(scale float64) ShapeFactory {
+	return func(fontsize float64) Shape {
+		r := fontsize * scale / 3
+		return NewPath(false).
+			AddMode('M', Point{-r, -r}).
+			AddMode('L', Point{r, r}).
+			AddMode('M', Point{-r, r}).
+			AddMode('L', Point{r, -r})
 	}
 }
 
-func NewTriangleMarker(r float64) Shape {
-	return CloseablePointsPath{
-		Points: PointsFromSlice(Point{0, r}, Point{-r, -r}, Point{r, -r}),
-		Closed: true,
+func NewSquareMarker(scale float64) ShapeFactory {
+	return func(fontsize float64) Shape {
+		r := fontsize * scale / 3
+		return CloseablePointsPath{
+			Points: PointsFromSlice(Point{-r, -r}, Point{-r, r}, Point{r, r}, Point{r, -r}),
+			Closed: true,
+		}
 	}
 }
 
-func NewDiamondMarker(r float64) Shape {
-	r = r * math.Sqrt2
-	return CloseablePointsPath{
-		Points: PointsFromSlice(Point{-r, 0}, Point{0, r}, Point{r, 0}, Point{0, -r}),
-		Closed: true,
+func NewTriangleMarker(scale float64) ShapeFactory {
+	return func(fontsize float64) Shape {
+		r := fontsize * scale / 3
+		return CloseablePointsPath{
+			Points: PointsFromSlice(Point{0, r}, Point{-r, -r}, Point{r, -r}),
+			Closed: true,
+		}
+	}
+}
+
+func NewDiamondMarker(scale float64) ShapeFactory {
+	return func(fontsize float64) Shape {
+		r := fontsize * scale * math.Sqrt2 / 3
+		return CloseablePointsPath{
+			Points: PointsFromSlice(Point{-r, 0}, Point{0, r}, Point{r, 0}, Point{0, -r}),
+			Closed: true,
+		}
 	}
 }
 
@@ -1885,7 +1915,7 @@ func (t Text) DependantBounds(_, _ Bounds) (x, y Bounds, err error) {
 }
 
 func (t Text) DrawTo(env *ChartContentEnvironment) error {
-	env.Canvas.DrawText(t.Pos, t.Text, t.Orientation, t.Style.Text(), env.Canvas.Context().TextSize)
+	env.Canvas.DrawText(t.Pos, t.Text, t.Orientation, t.Style.Text(), env.TextSize())
 	return nil
 }
 
