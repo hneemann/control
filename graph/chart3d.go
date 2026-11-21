@@ -962,44 +962,51 @@ func (a Arrow3d) String() string {
 
 func (a Arrow3d) DrawTo(_ *Chart3d, cube Cube) (e error) {
 	defer nErr.CatchErr(&e)
-	nErr.Try(cube.DrawLine(a.From, a.To, a.Style))
 
-	const headLen = 0.2
+	if uc, ok := cube.(*unityCube); ok {
+		from := uc.transform(a.From)
+		to := uc.transform(a.To)
+		raw := uc.parent
 
-	dist := a.To.Sub(a.From)
+		headLen := raw.Context().TextSize / raw.Context().Height * 250
 
-	dNorm := dist.Normalize()
-	inPlaneVec := dNorm.Cross(a.PlaneDefVec).Neg()
-	if inPlaneVec.Zero() {
-		// if no plane is given, make the two reverse tips of the arrow head
-		// having the same z-value
-		if dNorm.X == 0 {
-			inPlaneVec = Vector3d{1, 0, 0}
+		nErr.Try(raw.DrawLine(from, to, a.Style))
+
+		dist := to.Sub(from)
+
+		dNorm := dist.Normalize()
+		inPlaneVec := dNorm.Cross(a.PlaneDefVec).Neg()
+		if inPlaneVec.Zero() {
+			// if no plane is given, make the two reverse tips of the arrow head
+			// having the same z-value
+			if dNorm.X == 0 {
+				inPlaneVec = Vector3d{1, 0, 0}
+			} else {
+				inPlaneVec = Vector3d{-dNorm.Y / dNorm.X, 1, 0}.Normalize()
+			}
 		} else {
-			inPlaneVec = Vector3d{-dNorm.Y / dNorm.X, 1, 0}.Normalize()
+			// If a plane is given, the given plane is the normal vector of the plane
+			// created by the tips of the arrow head and the two reverse tips.
+			inPlaneVec = inPlaneVec.Normalize()
 		}
-	} else {
-		// If a plane is given, the given plane is the normal vector of the plane
-		// created by the tips of the arrow head and the two reverse tips.
-		inPlaneVec = inPlaneVec.Normalize()
-	}
 
-	if dist.Abs() > headLen {
-		d := dNorm.Mul(headLen)
-		plane := inPlaneVec.Mul(headLen / 4)
-		if a.Mode&1 != 0 {
-			nErr.Try(cube.DrawLine(a.To, a.To.Sub(d).Add(plane), a.Style))
-			nErr.Try(cube.DrawLine(a.To, a.To.Sub(d).Sub(plane), a.Style))
+		if dist.Abs() > headLen {
+			d := dNorm.Mul(headLen)
+			plane := inPlaneVec.Mul(headLen / 4)
+			if a.Mode&1 != 0 {
+				nErr.Try(raw.DrawLine(to, to.Sub(d).Add(plane), a.Style))
+				nErr.Try(raw.DrawLine(to, to.Sub(d).Sub(plane), a.Style))
+			}
+			if a.Mode&2 != 0 {
+				nErr.Try(raw.DrawLine(from, from.Add(d).Add(plane), a.Style))
+				nErr.Try(raw.DrawLine(from, from.Add(d).Sub(plane), a.Style))
+			}
 		}
-		if a.Mode&2 != 0 {
-			nErr.Try(cube.DrawLine(a.From, a.From.Add(d).Add(plane), a.Style))
-			nErr.Try(cube.DrawLine(a.From, a.From.Add(d).Sub(plane), a.Style))
+		if a.Label != "" {
+			t1 := dist.Cross(inPlaneVec).Normalize().Mul(headLen / 3)
+			p1 := to.Add(from).Mul(0.5)
+			raw.DrawText(p1, p1.Add(t1), a.Label, a.Style.Text())
 		}
-	}
-	if a.Label != "" {
-		t1 := dist.Cross(inPlaneVec).Normalize().Mul(headLen / 3)
-		p1 := a.To.Add(a.From).Mul(0.5)
-		cube.DrawText(p1, p1.Add(t1), a.Label, a.Style.Text())
 	}
 
 	return nil
