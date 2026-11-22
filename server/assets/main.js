@@ -170,6 +170,18 @@ function sourceLink() {
         .catch(err => console.error(err));
 }
 
+function qrLink() {
+    hidePopUp();
+    let source = document.getElementById('source').value;
+
+    compressAndEncode(source)
+        .then(base64 => {
+            let newUrl = window.location.origin + "/qr/?h="+window.location.origin+"&c=" + base64;
+            window.open(newUrl, '_blank','menubar=no,toolbar=no,titlebar=no,location=no');
+        })
+        .catch(err => console.error(err));
+}
+
 
 function save() {
     if (loadedName === "") {

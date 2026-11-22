@@ -6,6 +6,7 @@ require (
 	github.com/hneemann/iterator v0.0.0-20260903075249-841afed57942
 	github.com/hneemann/parser2 v0.0.0-20261109102836-ce0a3860496e
 	github.com/hneemann/session v0.0.0-20261022084928-8fdf90d0c18b
+	github.com/skip2/go-qrcode v0.0.0-20200617195104-da1b6568686e
 	github.com/stretchr/testify v1.12.1
 	golang.org/x/text v0.43.0
 )

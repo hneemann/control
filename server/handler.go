@@ -1,14 +1,12 @@
 package server
 
 import (
-	"bytes"
-	"compress/zlib"
 	"embed"
-	"encoding/base64"
 	"encoding/xml"
 	"github.com/hneemann/control/graph/grParser/mathml"
 	"github.com/hneemann/control/polynomial"
 	"github.com/hneemann/control/server/data"
+	"github.com/hneemann/control/server/qr"
 	"github.com/hneemann/parser2/funcGen"
 	"github.com/hneemann/parser2/value"
 	"github.com/hneemann/parser2/value/export"
@@ -16,7 +14,6 @@ import (
 	"github.com/hneemann/session"
 	"html"
 	"html/template"
-	"io"
 	"log"
 	"net/http"
 	"runtime/debug"
@@ -32,6 +29,8 @@ var TemplateFS embed.FS
 var Templates = template.Must(template.New("").ParseFS(TemplateFS, "templates/*.html"))
 
 var mainViewTemp = Templates.Lookup("main.html")
+
+var QrTemplate = Templates.Lookup("qr.html")
 
 type Example struct {
 	Name string `xml:"name,attr"`
@@ -77,54 +76,47 @@ func GetBuildInfo() string {
 	return info
 }
 
-func CreateMain(examples []Example, runOnServer bool, translatorFactory TranslatorFactory, impressum string) http.HandlerFunc {
+func CreateMain(examples []Example, runOnServer bool, translatorFactory TranslatorFactory, impressum string, qrGenerator *qr.Generator) http.HandlerFunc {
 	info := GetBuildInfo()
 	return func(writer http.ResponseWriter, request *http.Request) {
 		var result template.HTML
 		query := request.URL.Query()
+		qrId := query.Get("qr")
 		b64Source := query.Get("c")
 		code := ""
-		if b64Source != "" {
-			b, err := base64.URLEncoding.WithPadding(-1).DecodeString(b64Source)
-			if err != nil {
-				log.Println("error decoding code from base64:", err)
+		if b64Source != "" || qrId != "" {
+			var err error
+			if qrId != "" {
+				code, err = qrGenerator.Get(qrId)
 			} else {
-				byteReader := bytes.NewReader(b)
-				zlibReader, err := zlib.NewReader(byteReader)
-				if err == nil {
-					defer zlibReader.Close()
-					out, err := io.ReadAll(zlibReader)
+				code, err = qr.DecodeSourceCode(b64Source)
+			}
+			if err != nil {
+				log.Println("error decoding code from url:", err)
+			} else {
+				if runOnServer {
+					var fu funcGen.Func[value.Value]
+					fu, _, err = polynomial.Parser.Generate(code, "gui")
 					if err == nil {
-						code = string(out)
-						if runOnServer {
-							var fu funcGen.Func[value.Value]
-							fu, _, err = polynomial.Parser.Generate(code, "gui")
+						var res value.Value
+						gui := polynomial.NewGuiElements("")
+						res, err = fu(funcGen.NewStack[value.Value](gui))
+						if err == nil {
+							result, _, err = export.ToHtml(res, 50, customHtml, true)
 							if err == nil {
-								var res value.Value
-								gui := polynomial.NewGuiElements("")
-								res, err = fu(funcGen.NewStack[value.Value](gui))
-								if err == nil {
-									result, _, err = export.ToHtml(res, 50, customHtml, true)
-									if err == nil {
-										if gui.IsGui() {
-											result = gui.Wrap(result, code)
-										}
-									} else {
-										result = ""
-										log.Println("error exporting to html:", err)
-									}
-								} else {
-									log.Println("error executing code:", err)
+								if gui.IsGui() {
+									result = gui.Wrap(result, code)
 								}
 							} else {
-								log.Println("error generating code:", err)
+								result = ""
+								log.Println("error exporting to html:", err)
 							}
+						} else {
+							log.Println("error executing code:", err)
 						}
 					} else {
-						log.Println("error deflate code:", err)
+						log.Println("error generating code:", err)
 					}
-				} else {
-					log.Println("error reading zlib header of code:", err)
 				}
 			}
 		}

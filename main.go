@@ -6,6 +6,7 @@ import (
 	"github.com/hneemann/control/polynomial"
 	"github.com/hneemann/control/server"
 	"github.com/hneemann/control/server/data"
+	"github.com/hneemann/control/server/qr"
 	"github.com/hneemann/session"
 	"github.com/hneemann/session/fileSys"
 	"github.com/hneemann/session/myOidc"
@@ -133,8 +134,10 @@ func main() {
 		polynomial.Parser.GetParser().Debug(true)
 	}
 
+	qrGenerator := qr.New()
+
 	examples := server.ReadExamples()
-	mux.HandleFunc("/", sc.CheckSessionFunc(server.CreateMain(examples, *onServer, i18nFunc, *impressum)))
+	mux.HandleFunc("/", sc.CheckSessionFunc(server.CreateMain(examples, *onServer, i18nFunc, *impressum, qrGenerator)))
 	mux.HandleFunc("/help.html", server.CreateHelp())
 	mux.Handle("/assets/", Cache(http.FileServer(http.FS(server.Assets)), 180, !*debug))
 	if *onServer {
@@ -142,6 +145,7 @@ func main() {
 	}
 	mux.HandleFunc("/example/", sc.CheckSessionRestFunc(server.CreateExamples(examples)))
 	mux.HandleFunc("/files/", sc.CheckSessionRestFunc(server.CreateFiles(*debug)))
+	mux.HandleFunc("/qr/", sc.CheckSessionRestFunc(qrGenerator.CreateHandler(server.QrTemplate)))
 
 	serv := &http.Server{Addr: ":" + strconv.Itoa(*port), Handler: mux}
 

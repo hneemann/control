@@ -13,6 +13,8 @@
   "linkCopied": "Ein Link zum aktuellen Skript wurde in die Zwischenablage kopiert und kann jetzt z.B. in Moodle eingefügt werden.",
   "help": "Hilfe",
   "sourceLink": "Link zum Skript",
+  "qrLink": "QR-Code zum Skript",
+  "qrLinkTitle": "Erzeugt einen QR-Code zu diesem Skript",
   "info": "Info",
   "impressum": "Impressum",
 
