@@ -67,6 +67,9 @@ func main() {
 	onServer := flag.Bool("onServer", false, "execution on server, otherwise in browser")
 	oidc := flag.Bool("oidc", false, "oidc mode")
 	impressum := flag.String("impressum", "/assets/impressum.html", "impressums url")
+	maxQrCodes := flag.Int("maxQrCodes", 100, "maximum number of QR codes")
+	qrCodesLifeTime := flag.Int("qrLifeTime", 60, "QR code lifetime in minutes")
+	qrHost := flag.String("qrHost", "", "QR code host. If not set, the host of the request is used. This is only relevant if the server is behind a reverse proxy.")
 	flag.Parse()
 
 	i18nFunc, err := server.LoadJSONTranslations(server.TemplateFS, "templates/i18n", language.English)
@@ -134,7 +137,7 @@ func main() {
 		polynomial.Parser.GetParser().Debug(true)
 	}
 
-	qrGenerator := qr.New()
+	qrGenerator := qr.New(*maxQrCodes, time.Duration(*qrCodesLifeTime)*time.Minute, *qrHost)
 
 	examples := server.ReadExamples()
 	mux.HandleFunc("/", sc.CheckSessionFunc(server.CreateMain(examples, *onServer, i18nFunc, *impressum, qrGenerator)))

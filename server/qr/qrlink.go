@@ -15,9 +15,13 @@ import (
 	"time"
 )
 
-func New() *Generator {
+func New(maxEntries int, lifeTime time.Duration, host string) *Generator {
+	log.Printf("Creating QR code generator with maxEntries=%d and lifeTime=%v", maxEntries, lifeTime)
 	gen := &Generator{
-		store: make(map[string]codeEntry),
+		maxEntries: maxEntries,
+		lifeTime:   lifeTime,
+		host:       host,
+		store:      make(map[string]codeEntry),
 	}
 	gen.cleanupOldEntries()
 	return gen
@@ -46,12 +50,37 @@ func DecodeSourceCode(b64Source string) (string, error) {
 func (qr *Generator) add(code string) string {
 	qr.mutex.Lock()
 	defer qr.mutex.Unlock()
-	// Generate a unique ID for the code (you can use a UUID or any other method)
+
+	if len(qr.store) >= qr.maxEntries {
+		var oldestId string
+		var oldestTime time.Time
+		for id, entry := range qr.store {
+			if oldestId == "" {
+				oldestId = id
+				oldestTime = entry.createdAt
+			} else if entry.createdAt.Before(oldestTime) {
+				oldestId = id
+				oldestTime = entry.createdAt
+			}
+		}
+		if oldestId != "" {
+			log.Println("Deleting oldest QR code entry with id:", oldestId)
+			delete(qr.store, oldestId)
+		}
+	}
+
+	for id, entry := range qr.store {
+		if entry.code == code {
+			return id
+		}
+	}
+
 	id := generateUniqueID()
 	qr.store[id] = codeEntry{
 		code:      code,
 		createdAt: time.Now(),
 	}
+	log.Println("Generated QR code for id:", id, "-", len(qr.store), "of", qr.maxEntries)
 	return id
 }
 
@@ -82,6 +111,10 @@ type codeEntry struct {
 type Generator struct {
 	mutex sync.Mutex
 	store map[string]codeEntry
+
+	maxEntries int
+	lifeTime   time.Duration
+	host       string
 }
 
 func (qr *Generator) CreateHandler(temp *template.Template) func(w http.ResponseWriter, r *http.Request) {
@@ -93,7 +126,7 @@ func (qr *Generator) CreateHandler(temp *template.Template) func(w http.Response
 			http.Error(w, fmt.Sprintf("error decoding source code: %v", err), http.StatusBadRequest)
 			return
 		}
-		host := query.Get("h")
+		host := qr.host
 		if host == "" {
 			host = "https://" + r.Host
 		}
@@ -105,26 +138,27 @@ func (qr *Generator) CreateHandler(temp *template.Template) func(w http.Response
 			return
 		}
 
-		log.Println("Generated QR code for id:", id, "with host:", host, r.Host)
-
 		base64Image := base64.StdEncoding.EncodeToString(qrCode)
 		temp.Execute(w, base64Image)
 	}
 }
 
-const deleteAfter = time.Hour
-
 func (qr *Generator) cleanupOldEntries() {
-	ticker := time.NewTicker(deleteAfter)
+	ticker := time.NewTicker(qr.lifeTime)
 	go func() {
-		log.Println("Starting cleanup of old QR code entries every", deleteAfter)
+		log.Println("Starting cleanup of old QR code entries every", qr.lifeTime)
 		for range ticker.C {
+			deleted := 0
 			qr.mutex.Lock()
 			for id, entry := range qr.store {
-				if time.Since(entry.createdAt) > deleteAfter {
+				if time.Since(entry.createdAt) > qr.lifeTime {
 					log.Println("Deleting old QR code entry with id:", id)
 					delete(qr.store, id)
+					deleted++
 				}
+			}
+			if deleted > 0 && len(qr.store) == 0 {
+				log.Println("No more QR code entries left.")
 			}
 			qr.mutex.Unlock()
 		}
